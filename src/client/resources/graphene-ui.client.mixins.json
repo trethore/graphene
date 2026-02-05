@@ -2,9 +2,7 @@
 	"required": true,
 	"package": "tytoo.grapheneui.mixin.client",
 	"compatibilityLevel": "JAVA_21",
-	"client": [
-		"ExampleClientMixin"
-	],
+	"client": [],
 	"injectors": {
 		"defaultRequire": 1
 	}
