@@ -3,7 +3,7 @@
   "id": "graphene-ui-debug",
   "version": "${version}",
   "name": "Graphene Debug",
-  "description": "Graphene (Debug) — a modern, Chromium-based UI library for Minecraft\n",
+  "description": "Graphene (Debug) — a modern, Chromium-based UI library for Minecraft",
   "authors": [
     "Tytoo"
   ],

@@ -5,7 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class GrapheneDebugClient implements ClientModInitializer {
-    public static final String MOD_ID = "assets/graphene-ui-debug";
+    public static final String MOD_ID = "graphene-ui-debug";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
     @Override

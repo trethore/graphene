@@ -1,3 +1,9 @@
+import org.gradle.api.file.Directory
+import org.gradle.api.artifacts.Configuration
+import org.gradle.api.attributes.Category
+import org.gradle.api.attributes.DocsType
+import tytoo.graphene.UnpackSourcesTask
+
 plugins {
 	id("net.fabricmc.fabric-loom-remap")
 	id("maven-publish")
@@ -21,6 +27,19 @@ repositories {
 	// Add repositories to retrieve artifacts from in here.
 }
 
+val sourceDeps: Configuration by configurations.creating {
+	isCanBeConsumed = false
+	isCanBeResolved = true
+	attributes {
+		attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.DOCUMENTATION))
+		attribute(DocsType.DOCS_TYPE_ATTRIBUTE, objects.named(DocsType.SOURCES))
+	}
+	extendsFrom(
+		configurations.named("implementation").get(),
+		configurations.named("modImplementation").get()
+	)
+}
+
 loom {
 	splitEnvironmentSourceSets() // so client source set is created
 }
@@ -28,8 +47,8 @@ loom {
 val clientSS: NamedDomainObjectProvider<SourceSet> = sourceSets.named("client")
 sourceSets {
 	create("debug") {
-		java.srcDir("src/debug/java")
-		resources.srcDir("src/debug/resources")
+		java.setSrcDirs(listOf("src/debug/java"))
+		resources.setSrcDirs(listOf("src/debug/resources"))
 		// Inherit classpaths + compiled output from client
 		compileClasspath += clientSS.get().compileClasspath + clientSS.get().output
 		runtimeClasspath += clientSS.get().runtimeClasspath + clientSS.get().output
@@ -79,7 +98,6 @@ tasks.named<ProcessResources>("processClientResources") {
 }
 
 tasks.named<ProcessResources>("processDebugResources") {
-	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 	val version = project.version
 	inputs.property("version", version)
 	filesMatching("fabric.mod.json") {
@@ -104,6 +122,13 @@ tasks.jar {
 	from("LICENSE") {
 		rename { "${it}_${archivesName.get()}" }
 	}
+
+	// exclude debug
+	exclude("tytoo/grapheneuidebug/**")
+	exclude("assets/graphene-ui-debug/**")
+	exclude("graphene-ui-debug.mixins.json")
+	// exclude tests
+	exclude("tytoo/grapheneuitest/**")
 }
 
 // configure the maven publication
@@ -119,4 +144,26 @@ publishing {
 	repositories {
 		// Add repositories to publish to here.
 	}
+}
+
+// Source Browsing Helpers
+
+val unpackedSourcesDir: Directory = layout.projectDirectory.dir("libs-src")
+val minecraftCacheDirProvider: Directory = layout.projectDirectory.dir(".gradle/loom-cache/minecraftMaven")
+val fabricCacheDirProvider: Directory = layout.projectDirectory.dir(".gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api")
+
+val cleanSources by tasks.registering(Delete::class) {
+	group = "help"
+	description = "Deletes unpacked sources in libs-src/"
+	delete(unpackedSourcesDir)
+}
+
+val unpackSources by tasks.registering(UnpackSourcesTask::class) {
+	group = "help"
+	description = "Unpacks library, Minecraft, and Fabric sources into libs-src/"
+	dependsOn(cleanSources)
+	sourceDeps.from(configurations.named("sourceDeps"))
+	outputDir.set(unpackedSourcesDir)
+	minecraftCacheDir.set(minecraftCacheDirProvider)
+	fabricCacheDir.set(fabricCacheDirProvider)
 }
