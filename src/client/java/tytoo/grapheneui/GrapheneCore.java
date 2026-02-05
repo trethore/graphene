@@ -15,6 +15,6 @@ public final class GrapheneCore {
 
     /* Initializes the library. */
     public static void init() {
-        LOGGER.info("Graphene initialized!");    
+        LOGGER.info("Graphene initialized!");
     }
 }

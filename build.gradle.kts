@@ -13,6 +13,7 @@ val archivesBaseName = property("archives_base_name") as String
 val minecraftVersion = property("minecraft_version") as String
 val loaderVersion = property("loader_version") as String
 val fabricApiVersion = property("fabric_api_version") as String
+val jcefGithubVersion = property("jcefgithub_version") as String
 
 version = modVersion
 group = mavenGroup
@@ -22,7 +23,16 @@ base {
 }
 
 repositories {
-	// Add repositories to retrieve artifacts from in here.
+	mavenLocal()
+	maven {
+		name = "GitHubPackages"
+		url = uri("https://maven.pkg.github.com/trethore/jcefgithub")
+		credentials {
+			username = (findProperty("gpr.user") as String?) ?: System.getenv("GITHUB_ACTOR")
+			password = (findProperty("gpr.key") as String?) ?: System.getenv("GITHUB_TOKEN")
+		}
+	}
+	mavenCentral()
 }
 
 val sourceDeps: Configuration by configurations.creating {
@@ -83,6 +93,8 @@ dependencies {
 	minecraft("com.mojang:minecraft:${minecraftVersion}")
 	mappings(loom.officialMojangMappings())
 	modImplementation("net.fabricmc:fabric-loader:${loaderVersion}")
+	implementation("me.tytoo:jcefgithub:${jcefGithubVersion}")
+	include("me.tytoo:jcefgithub:${jcefGithubVersion}")
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation("net.fabricmc.fabric-api:fabric-api:${fabricApiVersion}")
