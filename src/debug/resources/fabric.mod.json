@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "graphene-ui-debug",
+  "version": "${version}",
+  "name": "Graphene Debug",
+  "description": "Graphene (Debug) — a modern, Chromium-based UI library for Minecraft\n",
+  "authors": [
+    "Tytoo"
+  ],
+  "contact": {
+    "sources": "https://github.com/trethore/graphene"
+  },
+  "license": "MIT",
+  "icon": "assets/graphene-ui-debug/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "tytoo.grapheneuidebug.GrapheneDebugClient"
+    ]
+  },
+  "mixins": [
+    "graphene-ui-debug.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.18.4",
+    "minecraft": "~1.21.11",
+    "java": ">=25",
+    "fabric-api": ">=0.141.3+1.21.11",
+    "graphene-ui": "*"
+  }
+}

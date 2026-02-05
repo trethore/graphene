@@ -15,11 +15,40 @@ repositories {
 }
 
 loom {
-	splitEnvironmentSourceSets()
+	splitEnvironmentSourceSets() // so client source set is created
+}
 
+def clientSS = sourceSets.named('client')
+sourceSets {
+	debug {
+		java.srcDir 'src/debug/java'
+		resources.srcDir 'src/debug/resources'
+		// Inherit classpaths + compiled output from client
+		compileClasspath += clientSS.get().compileClasspath + clientSS.get().output
+		runtimeClasspath += clientSS.get().runtimeClasspath + clientSS.get().output
+	}
+}
+
+loom {
 	mods {
 		"graphene-ui" {
-			sourceSet sourceSets.client
+			sourceSet sourceSets.named('client').get()
+		}
+		"graphene-ui-debug" {
+			sourceSet sourceSets.named('debug').get()
+		}
+	}
+
+	runs {
+		client {
+			client()
+			source sourceSets.named('client').get()
+			ideConfigGenerated true
+		}
+		debugClient {
+			client()
+			source sourceSets.named('debug').get()
+			ideConfigGenerated true
 		}
 	}
 }
@@ -35,11 +64,20 @@ dependencies {
 	
 }
 
-processResources {
-	inputs.property "version", project.version
-
+tasks.named("processClientResources").configure {
+	def version = project.version
+	inputs.property("version", version)
 	filesMatching("fabric.mod.json") {
-		expand "version": inputs.properties.version
+		expand "version": version
+	}
+}
+
+tasks.named("processDebugResources").configure {
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+	def version = project.version
+	inputs.property("version", version)
+	filesMatching("fabric.mod.json") {
+		expand "version": version
 	}
 }
 
