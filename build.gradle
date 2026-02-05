@@ -20,10 +20,8 @@ loom {
 	mods {
 		"graphene-ui" {
 			sourceSet sourceSets.main
-			sourceSet sourceSets.client
 		}
 	}
-
 }
 
 dependencies {
