@@ -1,5 +1,3 @@
-import org.gradle.api.file.Directory
-import org.gradle.api.artifacts.Configuration
 import org.gradle.api.attributes.Category
 import org.gradle.api.attributes.DocsType
 import tytoo.graphene.UnpackSourcesTask
@@ -30,6 +28,7 @@ repositories {
 val sourceDeps: Configuration by configurations.creating {
 	isCanBeConsumed = false
 	isCanBeResolved = true
+	isTransitive = false
 	attributes {
 		attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.DOCUMENTATION))
 		attribute(DocsType.DOCS_TYPE_ATTRIBUTE, objects.named(DocsType.SOURCES))
@@ -89,19 +88,10 @@ dependencies {
 	modImplementation("net.fabricmc.fabric-api:fabric-api:${fabricApiVersion}")
 }
 
-tasks.named<ProcessResources>("processClientResources") {
-	val version = project.version
-	inputs.property("version", version)
+tasks.withType<ProcessResources>().configureEach {
+	inputs.property("version", project.version)
 	filesMatching("fabric.mod.json") {
-		expand("version" to version)
-	}
-}
-
-tasks.named<ProcessResources>("processDebugResources") {
-	val version = project.version
-	inputs.property("version", version)
-	filesMatching("fabric.mod.json") {
-		expand("version" to version)
+		expand("version" to project.version)
 	}
 }
 
@@ -111,9 +101,6 @@ tasks.withType<JavaCompile>().configureEach {
 
 java {
 	withSourcesJar()
-
-	sourceCompatibility = JavaVersion.VERSION_25
-	targetCompatibility = JavaVersion.VERSION_25
 }
 
 tasks.jar {

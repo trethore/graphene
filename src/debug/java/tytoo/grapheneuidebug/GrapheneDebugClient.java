@@ -3,13 +3,16 @@ package tytoo.grapheneuidebug;
 import net.fabricmc.api.ClientModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tytoo.grapheneui.GrapheneCore;
 
 public class GrapheneDebugClient implements ClientModInitializer {
-    public static final String MOD_ID = "graphene-ui-debug";
-    public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+    public static final String ID = "graphene-ui-debug";
+    public static final Logger LOGGER = LoggerFactory.getLogger(ID);
 
+    /* Debug entry point for testing purposes. */
     @Override
     public void onInitializeClient() {
-        LOGGER.info("Graphene UI Debug mod initialized — ready for e2e testing");
+        GrapheneCore.init();
+        LOGGER.info("Hello developer!");
     }
 }
