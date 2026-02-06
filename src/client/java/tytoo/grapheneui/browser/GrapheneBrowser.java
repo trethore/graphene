@@ -1,5 +1,7 @@
 package tytoo.grapheneui.browser;
 
+import com.mojang.blaze3d.platform.cursor.CursorType;
+import com.mojang.blaze3d.platform.cursor.CursorTypes;
 import net.minecraft.client.gui.GuiGraphics;
 import org.cef.CefBrowserSettings;
 import org.cef.CefClient;
@@ -26,6 +28,7 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
     private final GraphenePaintBuffer paintBuffer = new GraphenePaintBuffer();
     private final Rectangle browserRect = new Rectangle(0, 0, 1, 1);
     private final Point screenPoint = new Point(0, 0);
+    private volatile int cursorType = Cursor.DEFAULT_CURSOR;
     private boolean closed = false;
 
     public GrapheneBrowser(CefClient client, String url, boolean transparent, CefRequestContext context, GrapheneRenderer renderer) {
@@ -121,6 +124,7 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
 
     @Override
     public boolean onCursorChange(CefBrowser browser, int cursorType) {
+        this.cursorType = cursorType;
         return true;
     }
 
@@ -217,6 +221,24 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
 
     public void onTitleChange(String title) {
         renderer.onTitleChange(title);
+    }
+
+    public CursorType getRequestedCursor() {
+        return switch (cursorType) {
+            case Cursor.CROSSHAIR_CURSOR -> CursorTypes.CROSSHAIR;
+            case Cursor.TEXT_CURSOR -> CursorTypes.IBEAM;
+            case Cursor.HAND_CURSOR -> CursorTypes.POINTING_HAND;
+            case Cursor.N_RESIZE_CURSOR,
+                 Cursor.S_RESIZE_CURSOR -> CursorTypes.RESIZE_NS;
+            case Cursor.E_RESIZE_CURSOR,
+                 Cursor.W_RESIZE_CURSOR -> CursorTypes.RESIZE_EW;
+            case Cursor.NE_RESIZE_CURSOR,
+                 Cursor.NW_RESIZE_CURSOR,
+                 Cursor.SE_RESIZE_CURSOR,
+                 Cursor.SW_RESIZE_CURSOR,
+                 Cursor.MOVE_CURSOR -> CursorTypes.RESIZE_ALL;
+            default -> CursorTypes.ARROW;
+        };
     }
 
     private void createBrowserIfRequired() {

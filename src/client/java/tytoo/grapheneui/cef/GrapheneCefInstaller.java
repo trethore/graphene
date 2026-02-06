@@ -33,7 +33,6 @@ public final class GrapheneCefInstaller {
 
         cefAppBuilder.getCefSettings().windowless_rendering_enabled = true;
         cefAppBuilder.getCefSettings().remote_debugging_port = findRandomPort();
-        cefAppBuilder.getCefSettings().user_agent_product = "Graphene";
 
         return cefAppBuilder;
     }
