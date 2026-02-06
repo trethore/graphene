@@ -1,6 +1,6 @@
 {
   "required": true,
-  "package": "tytoo.grapheneuidebug.debug.mixin",
+  "package": "tytoo.grapheneuidebug.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [],
   "injectors": {

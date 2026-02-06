@@ -1,4 +1,4 @@
-package tytoo.grapheneui.client.cef;
+package tytoo.grapheneui.cef;
 
 import me.tytoo.jcefgithub.CefAppBuilder;
 import me.tytoo.jcefgithub.CefInitializationException;
@@ -7,7 +7,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import org.cef.CefApp;
 import org.cef.CefClient;
 import tytoo.grapheneui.GrapheneCore;
-import tytoo.grapheneui.client.event.GrapheneLoadEventBus;
+import tytoo.grapheneui.event.GrapheneLoadEventBus;
 
 import java.io.IOException;
 

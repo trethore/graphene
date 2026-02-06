@@ -1,4 +1,4 @@
-package tytoo.grapheneuidebug.debug.key;
+package tytoo.grapheneuidebug.key;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -8,7 +8,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
 import tytoo.grapheneuidebug.GrapheneDebugClient;
-import tytoo.grapheneuidebug.debug.screen.GrapheneBrowserDebugScreen;
+import tytoo.grapheneuidebug.screen.GrapheneBrowserDebugScreen;
 
 public final class GrapheneDebugKeyBindings {
     private static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(

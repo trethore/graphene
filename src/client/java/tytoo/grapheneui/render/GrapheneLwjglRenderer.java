@@ -1,4 +1,4 @@
-package tytoo.grapheneui.client.render;
+package tytoo.grapheneui.render;
 
 import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.gui.GuiGraphics;

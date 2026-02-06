@@ -1,4 +1,4 @@
-package tytoo.grapheneui.client.event;
+package tytoo.grapheneui.event;
 
 import org.cef.browser.CefBrowser;
 import org.cef.browser.CefFrame;

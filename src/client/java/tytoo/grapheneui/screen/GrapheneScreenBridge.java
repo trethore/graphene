@@ -1,6 +1,6 @@
-package tytoo.grapheneui.client.screen;
+package tytoo.grapheneui.screen;
 
-import tytoo.grapheneui.client.browser.GrapheneWebViewWidget;
+import tytoo.grapheneui.browser.GrapheneWebViewWidget;
 
 import java.util.List;
 

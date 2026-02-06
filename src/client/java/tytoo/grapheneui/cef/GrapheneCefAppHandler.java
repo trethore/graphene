@@ -1,4 +1,4 @@
-package tytoo.grapheneui.client.cef;
+package tytoo.grapheneui.cef;
 
 import me.tytoo.jcefgithub.MavenCefAppHandlerAdapter;
 import org.cef.CefApp;

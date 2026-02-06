@@ -1,4 +1,4 @@
-package tytoo.grapheneui.client.mixin;
+package tytoo.grapheneui.mixin;
 
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.components.events.AbstractContainerEventHandler;
@@ -8,8 +8,8 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import tytoo.grapheneui.client.browser.GrapheneWebViewWidget;
-import tytoo.grapheneui.client.screen.GrapheneScreenBridge;
+import tytoo.grapheneui.browser.GrapheneWebViewWidget;
+import tytoo.grapheneui.screen.GrapheneScreenBridge;
 
 import java.util.ArrayList;
 import java.util.List;

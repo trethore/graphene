@@ -1,4 +1,4 @@
-package tytoo.grapheneui.client.browser;
+package tytoo.grapheneui.browser;
 
 import org.cef.CefBrowserSettings;
 import org.cef.CefClient;
@@ -11,8 +11,8 @@ import org.cef.handler.CefRenderHandler;
 import org.cef.handler.CefScreenInfo;
 import org.lwjgl.glfw.GLFW;
 import sun.misc.Unsafe;
-import tytoo.grapheneui.client.input.GrapheneKeyCodeUtil;
-import tytoo.grapheneui.client.render.GrapheneRenderer;
+import tytoo.grapheneui.input.GrapheneKeyCodeUtil;
+import tytoo.grapheneui.render.GrapheneRenderer;
 
 import java.awt.*;
 import java.awt.event.InputEvent;

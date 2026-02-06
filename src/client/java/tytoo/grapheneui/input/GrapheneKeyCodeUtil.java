@@ -1,4 +1,4 @@
-package tytoo.grapheneui.client.input;
+package tytoo.grapheneui.input;
 
 import org.lwjgl.glfw.GLFW;
 

@@ -1,4 +1,4 @@
-package tytoo.grapheneui.client.cef;
+package tytoo.grapheneui.cef;
 
 import org.cef.CefClient;
 import org.cef.browser.CefBrowser;
@@ -7,8 +7,8 @@ import org.cef.handler.CefDisplayHandlerAdapter;
 import org.cef.handler.CefLoadHandler;
 import org.cef.handler.CefLoadHandlerAdapter;
 import org.cef.network.CefRequest;
-import tytoo.grapheneui.client.browser.GrapheneBrowser;
-import tytoo.grapheneui.client.event.GrapheneLoadEventBus;
+import tytoo.grapheneui.browser.GrapheneBrowser;
+import tytoo.grapheneui.event.GrapheneLoadEventBus;
 
 public final class GrapheneCefClientConfig {
     private GrapheneCefClientConfig() {

@@ -1,4 +1,4 @@
-package tytoo.grapheneuidebug.debug.screen;
+package tytoo.grapheneuidebug.screen;
 
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
@@ -6,8 +6,8 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
-import tytoo.grapheneui.client.browser.GrapheneWebViewWidget;
-import tytoo.grapheneui.client.cef.GrapheneCefRuntime;
+import tytoo.grapheneui.browser.GrapheneWebViewWidget;
+import tytoo.grapheneui.cef.GrapheneCefRuntime;
 
 import java.net.URI;
 

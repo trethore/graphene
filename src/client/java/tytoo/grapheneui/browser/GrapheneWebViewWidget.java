@@ -1,4 +1,4 @@
-package tytoo.grapheneui.client.browser;
+package tytoo.grapheneui.browser;
 
 import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.Minecraft;
@@ -11,10 +11,10 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import org.cef.browser.CefRequestContext;
-import tytoo.grapheneui.client.cef.GrapheneCefRuntime;
-import tytoo.grapheneui.client.event.GrapheneLoadListener;
-import tytoo.grapheneui.client.render.GrapheneLwjglRenderer;
-import tytoo.grapheneui.client.screen.GrapheneScreenBridge;
+import tytoo.grapheneui.cef.GrapheneCefRuntime;
+import tytoo.grapheneui.event.GrapheneLoadListener;
+import tytoo.grapheneui.render.GrapheneLwjglRenderer;
+import tytoo.grapheneui.screen.GrapheneScreenBridge;
 
 import java.io.Closeable;
 import java.util.HashMap;

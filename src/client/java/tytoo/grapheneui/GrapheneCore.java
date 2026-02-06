@@ -2,7 +2,7 @@ package tytoo.grapheneui;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tytoo.grapheneui.client.cef.GrapheneCefRuntime;
+import tytoo.grapheneui.cef.GrapheneCefRuntime;
 
 /**
  * The core class of the Graphene library.
@@ -18,6 +18,7 @@ public final class GrapheneCore {
     /* Initializes the library. */
     public static synchronized void init() {
         if (GrapheneCefRuntime.isInitialized()) {
+            LOGGER.warn("GrapheneCefRuntime has already been initialized");
             return;
         }
 
@@ -25,6 +26,7 @@ public final class GrapheneCore {
         LOGGER.info("Graphene initialized");
     }
 
+    @SuppressWarnings("unused")
     public static synchronized boolean isInitialized() {
         return GrapheneCefRuntime.isInitialized();
     }

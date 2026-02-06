@@ -1,4 +1,4 @@
-package tytoo.grapheneui.client.render;
+package tytoo.grapheneui.render;
 
 import net.minecraft.client.gui.GuiGraphics;
 
