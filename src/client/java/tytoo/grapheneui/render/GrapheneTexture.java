@@ -1,9 +1,9 @@
 package tytoo.grapheneui.render;
 
 import com.mojang.blaze3d.platform.NativeImage;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.Identifier;
+import tytoo.grapheneui.mc.McTextures;
 
 public final class GrapheneTexture {
     private final Identifier textureId;
@@ -22,8 +22,7 @@ public final class GrapheneTexture {
         }
 
         release();
-        dynamicTexture = new DynamicTexture(textureId::toString, width, height, true);
-        Minecraft.getInstance().getTextureManager().register(textureId, dynamicTexture);
+        dynamicTexture = McTextures.createAndRegister(textureId, width, height);
         return true;
     }
 
@@ -42,7 +41,7 @@ public final class GrapheneTexture {
     }
 
     public void release() {
-        Minecraft.getInstance().getTextureManager().release(textureId);
+        McTextures.release(textureId);
         dynamicTexture = null;
     }
 

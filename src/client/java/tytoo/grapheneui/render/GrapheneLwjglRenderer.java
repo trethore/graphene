@@ -2,10 +2,9 @@ package tytoo.grapheneui.render;
 
 import com.mojang.blaze3d.platform.NativeImage;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
-import tytoo.grapheneui.GrapheneCore;
+import tytoo.grapheneui.mc.McGuiRender;
+import tytoo.grapheneui.mc.McIdentifiers;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -24,8 +23,7 @@ public final class GrapheneLwjglRenderer implements GrapheneRenderer {
 
     public GrapheneLwjglRenderer(boolean transparent) {
         this.transparent = transparent;
-        Identifier textureId = Identifier.fromNamespaceAndPath(GrapheneCore.ID, "cef/texture_" + textureCounter++);
-        this.texture = new GrapheneTexture(textureId);
+        this.texture = new GrapheneTexture(McIdentifiers.id("cef/texture_" + textureCounter++));
     }
 
     private static boolean shouldCopyFullFrame(boolean resized, boolean completeReRender, Rectangle[] dirtyRects) {
@@ -38,20 +36,7 @@ public final class GrapheneLwjglRenderer implements GrapheneRenderer {
             return;
         }
 
-        guiGraphics.blit(
-                RenderPipelines.GUI_TEXTURED,
-                texture.textureId(),
-                x,
-                y,
-                0.0F,
-                0.0F,
-                width,
-                height,
-                viewWidth,
-                viewHeight,
-                viewWidth,
-                viewHeight
-        );
+        McGuiRender.blitTexture(guiGraphics, texture.textureId(), x, y, width, height, viewWidth, viewHeight);
     }
 
     @Override

@@ -1,7 +1,5 @@
 package tytoo.grapheneui.browser;
 
-import com.mojang.blaze3d.platform.Window;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
@@ -17,6 +15,7 @@ import org.cef.handler.CefLoadHandler;
 import org.jspecify.annotations.NonNull;
 import tytoo.grapheneui.cef.GrapheneCefRuntime;
 import tytoo.grapheneui.event.GrapheneLoadListener;
+import tytoo.grapheneui.mc.McWindowScale;
 import tytoo.grapheneui.render.GrapheneLwjglRenderer;
 import tytoo.grapheneui.screen.GrapheneScreenBridge;
 
@@ -268,18 +267,16 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
     }
 
     private void resizeBrowser(int width, int height) {
-        int realPixelWidth = (int) Math.max(1.0, width * getScaleX());
-        int realPixelHeight = (int) Math.max(1.0, height * getScaleY());
+        int realPixelWidth = (int) Math.max(1.0, width * McWindowScale.getScaleX());
+        int realPixelHeight = (int) Math.max(1.0, height * McWindowScale.getScaleY());
         browser.wasResizedTo(realPixelWidth, realPixelHeight);
     }
 
     private double getScaleX() {
-        Window window = Minecraft.getInstance().getWindow();
-        return window.getWidth() / (double) window.getGuiScaledWidth();
+        return McWindowScale.getScaleX();
     }
 
     private double getScaleY() {
-        Window window = Minecraft.getInstance().getWindow();
-        return window.getHeight() / (double) window.getGuiScaledHeight();
+        return McWindowScale.getScaleY();
     }
 }
