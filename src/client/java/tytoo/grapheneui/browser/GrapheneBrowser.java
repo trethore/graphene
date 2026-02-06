@@ -1,5 +1,6 @@
 package tytoo.grapheneui.browser;
 
+import net.minecraft.client.gui.GuiGraphics;
 import org.cef.CefBrowserSettings;
 import org.cef.CefClient;
 import org.cef.browser.CefBrowser;
@@ -10,7 +11,6 @@ import org.cef.callback.CefDragData;
 import org.cef.handler.CefRenderHandler;
 import org.cef.handler.CefScreenInfo;
 import org.lwjgl.glfw.GLFW;
-import sun.misc.Unsafe;
 import tytoo.grapheneui.input.GrapheneKeyCodeUtil;
 import tytoo.grapheneui.render.GrapheneRenderer;
 
@@ -20,6 +20,9 @@ import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.awt.image.BufferedImage;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
@@ -29,9 +32,7 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
     private static final int MOUSE_LEFT_BUTTON = 0;
     private static final int MOUSE_RIGHT_BUTTON = 1;
     private static final int MOUSE_MIDDLE_BUTTON = 2;
-    @SuppressWarnings("removal")
-    private static final Unsafe UNSAFE = resolveUnsafe();
-    private static final long KEY_EVENT_SCANCODE_OFFSET = resolveScancodeOffset();
+    private static final ScancodeInjector SCANCODE_INJECTOR = ScancodeInjector.create();
 
     private final long windowHandle = this.hashCode();
     private final GrapheneRenderer renderer;
@@ -42,12 +43,10 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
     };
     private final PaintData paintData = new PaintData();
     private final PopupData popupData = new PopupData();
-    private boolean justCreated = false;
     private boolean closed = false;
-    private String title = "Loading";
 
     public GrapheneBrowser(CefClient client, String url, boolean transparent, CefRequestContext context, GrapheneRenderer renderer) {
-        this(client, url, transparent, context, renderer, null, null, new CefBrowserSettings());
+        this(client, url, transparent, context, renderer, null, null);
     }
 
     private GrapheneBrowser(
@@ -57,10 +56,9 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
             CefRequestContext context,
             GrapheneRenderer renderer,
             CefBrowserNAccessor parent,
-            Point inspectAt,
-            CefBrowserSettings settings
+            Point inspectAt
     ) {
-        super(client, url, context, parent, inspectAt, settings);
+        super(client, url, context, parent, inspectAt, new CefBrowserSettings());
         this.transparent = transparent;
         this.renderer = renderer;
     }
@@ -76,58 +74,38 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
 
     private static int toAwtModifiers(int modifiers) {
         int awtModifiers = 0;
-        if ((modifiers & 1) != 0) {
+        if ((modifiers & GLFW.GLFW_MOD_SHIFT) != 0) {
             awtModifiers |= InputEvent.SHIFT_DOWN_MASK;
         }
 
-        if ((modifiers & 2) != 0) {
+        if ((modifiers & GLFW.GLFW_MOD_CONTROL) != 0) {
             awtModifiers |= InputEvent.CTRL_DOWN_MASK;
         }
 
-        if ((modifiers & 4) != 0) {
+        if ((modifiers & GLFW.GLFW_MOD_ALT) != 0) {
             awtModifiers |= InputEvent.ALT_DOWN_MASK;
+        }
+
+        if ((modifiers & GLFW.GLFW_MOD_SUPER) != 0) {
+            awtModifiers |= InputEvent.META_DOWN_MASK;
         }
 
         return awtModifiers;
     }
 
-    @SuppressWarnings("removal")
-    private static Unsafe resolveUnsafe() {
-        try {
-            Field unsafeField = Unsafe.class.getDeclaredField("theUnsafe");
-            unsafeField.setAccessible(true);
-            return (Unsafe) unsafeField.get(null);
-        } catch (ReflectiveOperationException exception) {
-            return null;
-        }
-    }
-
-    private static long resolveScancodeOffset() {
-        if (UNSAFE == null) {
-            return -1L;
-        }
-
-        try {
-            Field scancodeField = KeyEvent.class.getDeclaredField("scancode");
-            return UNSAFE.objectFieldOffset(scancodeField);
-        } catch (NoSuchFieldException exception) {
-            return -1L;
-        }
-    }
-
-    private static void applyScancode(KeyEvent event, int scancode) {
-        if (UNSAFE == null || KEY_EVENT_SCANCODE_OFFSET < 0L) {
-            return;
-        }
-
-        UNSAFE.putInt(event, KEY_EVENT_SCANCODE_OFFSET, scancode & 0xFF);
+    private static int toAwtButtonDownModifier(int button) {
+        return switch (remapMouseCode(button)) {
+            case MouseEvent.BUTTON1 -> InputEvent.BUTTON1_DOWN_MASK;
+            case MouseEvent.BUTTON2 -> InputEvent.BUTTON2_DOWN_MASK;
+            case MouseEvent.BUTTON3 -> InputEvent.BUTTON3_DOWN_MASK;
+            default -> 0;
+        };
     }
 
     @Override
     public void createImmediately() {
-        justCreated = true;
         setCloseAllowed();
-        createBrowserIfRequired(false);
+        createBrowserIfRequired();
     }
 
     @Override
@@ -224,14 +202,17 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
 
     @Override
     public void addOnPaintListener(Consumer<CefPaintEvent> listener) {
+        // Not used by this browser implementation because rendering is pulled via updateRendererFrame().
     }
 
     @Override
     public void setOnPaintListener(Consumer<CefPaintEvent> listener) {
+        // Not used by this browser implementation because rendering is pulled via updateRendererFrame().
     }
 
     @Override
     public void removeOnPaintListener(Consumer<CefPaintEvent> listener) {
+        // Not used by this browser implementation because rendering is pulled via updateRendererFrame().
     }
 
     @Override
@@ -246,6 +227,7 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
 
     @Override
     public void updateDragCursor(CefBrowser browser, int operation) {
+        // No-op: Minecraft cursor handling is managed outside CEF drag operations.
     }
 
     @Override
@@ -277,7 +259,7 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
             CefBrowserNAccessor parent,
             Point inspectAt
     ) {
-        return new GrapheneBrowser(client, url == null ? "about:blank" : url, false, context, new NoopRenderer(), parent, inspectAt, new CefBrowserSettings());
+        return new GrapheneBrowser(client, url == null ? "about:blank" : url, false, context, new NoopRenderer(), parent, inspectAt);
     }
 
     public void updateRendererFrame() {
@@ -297,7 +279,7 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
         }
     }
 
-    public void renderTo(int x, int y, int width, int height, net.minecraft.client.gui.GuiGraphics guiGraphics) {
+    public void renderTo(int x, int y, int width, int height, GuiGraphics guiGraphics) {
         renderer.render(guiGraphics, x, y, width, height);
     }
 
@@ -306,23 +288,29 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
         super.wasResized(width, height);
     }
 
+    @SuppressWarnings("MagicConstant")
     public void mouseMoved(int x, int y, int modifiers) {
-        MouseEvent event = new MouseEvent(uiComponent, MouseEvent.MOUSE_MOVED, System.currentTimeMillis(), modifiers, x, y, 0, false);
+        int awtModifiers = toAwtModifiers(modifiers);
+        MouseEvent event = new MouseEvent(uiComponent, MouseEvent.MOUSE_MOVED, System.currentTimeMillis(), awtModifiers, x, y, 0, false);
         sendMouseEvent(event);
     }
 
-    public void mouseDragged(double x, double y, int button, double dragX, double dragY) {
-        MouseEvent event = new MouseEvent(uiComponent, MouseEvent.MOUSE_DRAGGED, System.currentTimeMillis(), 0, (int) x, (int) y, 1, true);
+    @SuppressWarnings("MagicConstant")
+    public void mouseDragged(double x, double y, int button) {
+        int awtModifiers = toAwtButtonDownModifier(button);
+        MouseEvent event = new MouseEvent(uiComponent, MouseEvent.MOUSE_DRAGGED, System.currentTimeMillis(), awtModifiers, (int) x, (int) y, 1, true);
         sendMouseEvent(event);
     }
 
+    @SuppressWarnings("MagicConstant")
     public void mouseInteracted(int x, int y, int modifiers, int button, boolean pressed, int clickCount) {
         int awtButton = remapMouseCode(button);
+        int awtModifiers = toAwtModifiers(modifiers);
         MouseEvent event = new MouseEvent(
                 uiComponent,
                 pressed ? MouseEvent.MOUSE_PRESSED : MouseEvent.MOUSE_RELEASED,
                 System.currentTimeMillis(),
-                modifiers,
+                awtModifiers,
                 x,
                 y,
                 clickCount,
@@ -332,12 +320,14 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
         sendMouseEvent(event);
     }
 
+    @SuppressWarnings("MagicConstant")
     public void mouseScrolled(int x, int y, int modifiers, int amount, int rotation) {
+        int awtModifiers = toAwtModifiers(modifiers);
         MouseWheelEvent event = new MouseWheelEvent(
                 uiComponent,
                 MouseEvent.MOUSE_WHEEL,
                 System.currentTimeMillis(),
-                modifiers,
+                awtModifiers,
                 x,
                 y,
                 0,
@@ -349,16 +339,18 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
         sendMouseWheelEvent(event);
     }
 
+    @SuppressWarnings("MagicConstant")
     public void keyTyped(char character, int modifiers) {
         int awtModifiers = toAwtModifiers(modifiers);
         KeyEvent event = new KeyEvent(uiComponent, KeyEvent.KEY_TYPED, System.currentTimeMillis(), awtModifiers, 0, character);
         sendKeyEvent(event);
     }
 
+    @SuppressWarnings("MagicConstant")
     public void keyEventByKeyCode(int keyCode, int scanCode, int modifiers, boolean pressed) {
         int awtModifiers = toAwtModifiers(modifiers);
         int awtKeyCode = GrapheneKeyCodeUtil.toAwtKeyCode(keyCode);
-        char character = GrapheneKeyCodeUtil.toCharacter(keyCode, (modifiers & 1) != 0);
+        char character = GrapheneKeyCodeUtil.toCharacter(keyCode, (modifiers & GLFW.GLFW_MOD_SHIFT) != 0);
 
         KeyEvent event = new KeyEvent(
                 uiComponent,
@@ -370,48 +362,73 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
                 KeyEvent.KEY_LOCATION_STANDARD
         );
 
-        applyScancode(event, scanCode);
+        SCANCODE_INJECTOR.inject(event, scanCode);
         sendKeyEvent(event);
 
         if (pressed && keyCode == GLFW.GLFW_KEY_BACKSPACE) {
             KeyEvent typedBackspace = new KeyEvent(uiComponent, KeyEvent.KEY_TYPED, System.currentTimeMillis(), awtModifiers, 0, '\b');
-            applyScancode(typedBackspace, scanCode);
+            SCANCODE_INJECTOR.inject(typedBackspace, scanCode);
             sendKeyEvent(typedBackspace);
         }
     }
 
-    public String getTitle() {
-        return title;
-    }
-
     public void onTitleChange(String title) {
-        this.title = title;
         renderer.onTitleChange(title);
     }
 
-    private void createBrowserIfRequired(boolean hasParent) {
-        long currentWindowHandle = windowHandle;
-        if (getParentBrowser() != null) {
-            currentWindowHandle = getWindowHandle();
+    private void createBrowserIfRequired() {
+        if (getNativeRef("CefBrowser") != 0L) {
+            return;
         }
 
-        if (getNativeRef("CefBrowser") == 0L) {
-            if (getParentBrowser() == null) {
-                createBrowser(getClient(), currentWindowHandle, getUrl(), true, transparent, null, getRequestContext());
+        if (getParentBrowser() == null) {
+            createBrowser(getClient(), windowHandle, getUrl(), true, transparent, null, getRequestContext());
+        }
+    }
+
+    private record ScancodeInjector(Object unsafe, MethodHandle putLongHandle, long scancodeOffset) {
+        private static final long SCANCODE_UNSUPPORTED = -1L;
+
+        private static ScancodeInjector create() {
+            try {
+                Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");
+                MethodHandles.Lookup unsafeLookup = MethodHandles.privateLookupIn(unsafeClass, MethodHandles.lookup());
+                Object unsafe = unsafeLookup.findStaticVarHandle(unsafeClass, "theUnsafe", unsafeClass).get();
+
+                MethodHandle objectFieldOffsetHandle = unsafeLookup.findVirtual(
+                        unsafeClass,
+                        "objectFieldOffset",
+                        MethodType.methodType(long.class, Field.class)
+                );
+                MethodHandle putLongHandle = unsafeLookup.findVirtual(
+                        unsafeClass,
+                        "putLong",
+                        MethodType.methodType(void.class, Object.class, long.class, long.class)
+                );
+
+                Field scancodeField = KeyEvent.class.getDeclaredField("scancode");
+                long scancodeOffset = (long) objectFieldOffsetHandle.invoke(unsafe, scancodeField);
+                return new ScancodeInjector(unsafe, putLongHandle, scancodeOffset);
+            } catch (Throwable _) {
+                return new ScancodeInjector(null, null, SCANCODE_UNSUPPORTED);
             }
-        } else if (hasParent && justCreated) {
-            notifyAfterParentChanged();
-            setFocus(true);
-            justCreated = false;
         }
-    }
 
-    private void notifyAfterParentChanged() {
-        getClient().onAfterParentChanged(this);
-    }
+        private void inject(KeyEvent event, int scanCode) {
+            if (!isSupported()) {
+                return;
+            }
 
-    private long getWindowHandle() {
-        return windowHandle;
+            try {
+                putLongHandle.invoke(unsafe, event, scancodeOffset, scanCode & 0xFFL);
+            } catch (Throwable _) {
+                // Ignore and keep dispatching key events without native scancode.
+            }
+        }
+
+        private boolean isSupported() {
+            return unsafe != null && putLongHandle != null && scancodeOffset >= 0L;
+        }
     }
 
     private static final class PaintData {
@@ -432,23 +449,28 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
 
     private static final class NoopRenderer implements GrapheneRenderer {
         @Override
-        public void render(net.minecraft.client.gui.GuiGraphics guiGraphics, int x, int y, int width, int height) {
+        public void render(GuiGraphics guiGraphics, int x, int y, int width, int height) {
+            // Intentionally empty: DevTools helper browser is not rendered in-game.
         }
 
         @Override
         public void destroy() {
+            // Intentionally empty: no native resources are allocated by this renderer.
         }
 
         @Override
         public void onPaint(boolean popup, Rectangle[] dirtyRects, ByteBuffer buffer, int width, int height, boolean completeReRender) {
+            // Intentionally empty: DevTools helper browser does not consume paint frames.
         }
 
         @Override
         public void onPopupSize(Rectangle rect) {
+            // Intentionally empty: popup state is irrelevant for the DevTools helper browser.
         }
 
         @Override
         public void onPopupClosed() {
+            // Intentionally empty: popup state is irrelevant for the DevTools helper browser.
         }
 
         @Override

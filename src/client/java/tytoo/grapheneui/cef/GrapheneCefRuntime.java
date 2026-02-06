@@ -35,8 +35,10 @@ public final class GrapheneCefRuntime {
 
             try {
                 cefApp = cefAppBuilder.build();
-            } catch (IOException | UnsupportedPlatformException | InterruptedException |
-                     CefInitializationException exception) {
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("Failed to initialize Graphene CEF runtime", exception);
+            } catch (IOException | UnsupportedPlatformException | CefInitializationException exception) {
                 throw new IllegalStateException("Failed to initialize Graphene CEF runtime", exception);
             }
 

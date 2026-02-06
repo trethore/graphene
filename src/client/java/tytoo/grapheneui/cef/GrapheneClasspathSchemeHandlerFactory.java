@@ -12,118 +12,145 @@ import org.cef.network.CefRequest;
 import org.cef.network.CefResponse;
 import tytoo.grapheneui.GrapheneCore;
 
+import java.io.IOException;
 import java.io.InputStream;
 
 public final class GrapheneClasspathSchemeHandlerFactory implements CefSchemeHandlerFactory {
-    private static String resolveMimeType(String path) {
-        if (path.endsWith(".html") || path.endsWith(".htm")) {
-            return "text/html";
-        }
-
-        if (path.endsWith(".js")) {
-            return "application/javascript";
-        }
-
-        if (path.endsWith(".css")) {
-            return "text/css";
-        }
-
-        if (path.endsWith(".json")) {
-            return "application/json";
-        }
-
-        if (path.endsWith(".png")) {
-            return "image/png";
-        }
-
-        if (path.endsWith(".svg")) {
-            return "image/svg+xml";
-        }
-
-        return "text/plain";
-    }
+    private static final String MIME_TEXT_PLAIN = "text/plain";
+    private static final String CLASS_PATH_URL_PREFIX = "classpath://";
+    private static final String PATH_DELIMITER = "/";
+    private static final String ASSETS_PREFIX = "assets" + PATH_DELIMITER;
 
     @Override
     public CefResourceHandler create(CefBrowser browser, CefFrame frame, String schemeName, CefRequest request) {
-        return new CefResourceHandlerAdapter() {
-            private InputStream inputStream;
-            private String mimeType = "text/plain";
+        return new ClasspathResourceHandler();
+    }
 
-            @Override
-            public boolean processRequest(CefRequest request, CefCallback callback) {
-                String path = request.getURL().substring("classpath://".length());
-                int queryIndex = path.indexOf('?');
-                if (queryIndex >= 0) {
-                    path = path.substring(0, queryIndex);
+    private static final class ClasspathResourceHandler extends CefResourceHandlerAdapter {
+        private static final String ASSETS_FALLBACK_PREFIX = ASSETS_PREFIX + GrapheneCore.ID + PATH_DELIMITER;
+
+        private InputStream inputStream;
+        private String mimeType = MIME_TEXT_PLAIN;
+
+        private static String resolveMimeType(String path) {
+            if (path.endsWith(".html") || path.endsWith(".htm")) {
+                return "text/html";
+            }
+
+            if (path.endsWith(".js")) {
+                return "application/javascript";
+            }
+
+            if (path.endsWith(".css")) {
+                return "text/css";
+            }
+
+            if (path.endsWith(".json")) {
+                return "application/json";
+            }
+
+            if (path.endsWith(".png")) {
+                return "image/png";
+            }
+
+            if (path.endsWith(".svg")) {
+                return "image/svg+xml";
+            }
+
+            return MIME_TEXT_PLAIN;
+        }
+
+        private static String normalizeResourcePath(String url) {
+            String path = url.substring(CLASS_PATH_URL_PREFIX.length());
+            int queryIndex = path.indexOf('?');
+            if (queryIndex >= 0) {
+                path = path.substring(0, queryIndex);
+            }
+
+            if (path.startsWith(PATH_DELIMITER)) {
+                return path.substring(1);
+            }
+
+            return path;
+        }
+
+        private static InputStream openResource(String path) {
+            ClassLoader classLoader = GrapheneClasspathSchemeHandlerFactory.class.getClassLoader();
+            InputStream stream = classLoader.getResourceAsStream(path);
+            if (stream != null || path.startsWith(ASSETS_PREFIX)) {
+                return stream;
+            }
+
+            return classLoader.getResourceAsStream(ASSETS_FALLBACK_PREFIX + path);
+        }
+
+        @Override
+        public boolean processRequest(CefRequest request, CefCallback callback) {
+            String resourcePath = normalizeResourcePath(request.getURL());
+            inputStream = openResource(resourcePath);
+            if (inputStream != null) {
+                mimeType = resolveMimeType(resourcePath);
+            }
+
+            callback.Continue();
+            return true;
+        }
+
+        @Override
+        public void getResponseHeaders(CefResponse response, IntRef responseLength, StringRef redirectUrl) {
+            response.setMimeType(mimeType);
+            if (inputStream == null) {
+                response.setStatus(404);
+                responseLength.set(0);
+                return;
+            }
+
+            response.setStatus(200);
+            try {
+                responseLength.set(inputStream.available());
+            } catch (IOException _) {
+                responseLength.set(0);
+            }
+        }
+
+        @Override
+        public boolean readResponse(byte[] dataOut, int bytesToRead, IntRef bytesRead, CefCallback callback) {
+            if (inputStream == null) {
+                return false;
+            }
+
+            try {
+                int bytes = inputStream.read(dataOut, 0, bytesToRead);
+                if (bytes == -1) {
+                    closeInputStreamQuietly();
+                    return false;
                 }
 
-                if (path.startsWith("/")) {
-                    path = path.substring(1);
-                }
-
-                ClassLoader classLoader = getClass().getClassLoader();
-                inputStream = classLoader.getResourceAsStream(path);
-                if (inputStream == null && !path.startsWith("assets/")) {
-                    String fallbackPath = "assets/" + GrapheneCore.ID + "/" + path;
-                    inputStream = classLoader.getResourceAsStream(fallbackPath);
-                }
-
-                if (inputStream != null) {
-                    mimeType = resolveMimeType(path);
-                }
-
-                callback.Continue();
+                bytesRead.set(bytes);
                 return true;
+            } catch (IOException _) {
+                closeInputStreamQuietly();
+                return false;
+            }
+        }
+
+        @Override
+        public void cancel() {
+            closeInputStreamQuietly();
+        }
+
+        private void closeInputStreamQuietly() {
+            if (inputStream == null) {
+                return;
             }
 
-            @Override
-            public void getResponseHeaders(CefResponse response, IntRef responseLength, StringRef redirectUrl) {
-                response.setMimeType(mimeType);
-                if (inputStream == null) {
-                    response.setStatus(404);
-                    responseLength.set(0);
-                    return;
-                }
-
-                response.setStatus(200);
-
-                try {
-                    responseLength.set(inputStream.available());
-                } catch (Exception exception) {
-                    responseLength.set(0);
-                }
+            try {
+                inputStream.close();
+            } catch (IOException _) {
+                GrapheneCore.LOGGER.debug("Failed to close classpath resource stream");
+            } finally {
+                inputStream = null;
             }
-
-            @Override
-            public boolean readResponse(byte[] dataOut, int bytesToRead, IntRef bytesRead, CefCallback callback) {
-                if (inputStream == null) {
-                    return false;
-                }
-
-                try {
-                    int bytes = inputStream.read(dataOut, 0, bytesToRead);
-                    if (bytes == -1) {
-                        inputStream.close();
-                        inputStream = null;
-                        return false;
-                    }
-
-                    bytesRead.set(bytes);
-                    return true;
-                } catch (Exception exception) {
-                    return false;
-                }
-            }
-
-            @Override
-            public void cancel() {
-                try {
-                    if (inputStream != null) {
-                        inputStream.close();
-                    }
-                } catch (Exception ignored) {
-                }
-            }
-        };
+        }
     }
 }

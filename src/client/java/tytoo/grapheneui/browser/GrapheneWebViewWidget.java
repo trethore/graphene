@@ -10,7 +10,11 @@ import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
+import org.cef.browser.CefBrowser;
+import org.cef.browser.CefFrame;
 import org.cef.browser.CefRequestContext;
+import org.cef.handler.CefLoadHandler;
+import org.jspecify.annotations.NonNull;
 import tytoo.grapheneui.cef.GrapheneCefRuntime;
 import tytoo.grapheneui.event.GrapheneLoadListener;
 import tytoo.grapheneui.render.GrapheneLwjglRenderer;
@@ -22,10 +26,10 @@ import java.util.Map;
 
 public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
     private final Screen screen;
-    private final GrapheneLwjglRenderer renderer;
     private final GrapheneBrowser browser;
     private final Map<GrapheneLoadListener, GrapheneLoadListener> loadListenerWrappers = new HashMap<>();
 
+    @SuppressWarnings("unused")
     public GrapheneWebViewWidget(Screen screen, int x, int y, int width, int height, Component message) {
         this(screen, x, y, width, height, message, "classpath://assets/graphene-ui/graphene_test/welcome.html");
     }
@@ -33,7 +37,7 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
     public GrapheneWebViewWidget(Screen screen, int x, int y, int width, int height, Component message, String url) {
         super(x, y, width, height, message);
         this.screen = screen;
-        this.renderer = new GrapheneLwjglRenderer(true);
+        GrapheneLwjglRenderer renderer = new GrapheneLwjglRenderer(true);
         this.browser = new GrapheneBrowser(
                 GrapheneCefRuntime.requireClient(),
                 url,
@@ -57,6 +61,7 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
         return browser;
     }
 
+    @SuppressWarnings("unused")
     public void addLoadListener(GrapheneLoadListener loadListener) {
         removeLoadListener(loadListener);
 
@@ -84,9 +89,9 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
 
             @Override
             public void onLoadError(
-                    org.cef.browser.CefBrowser browser,
-                    org.cef.browser.CefFrame frame,
-                    org.cef.handler.CefLoadHandler.ErrorCode errorCode,
+                    CefBrowser browser,
+                    CefFrame frame,
+                    CefLoadHandler.ErrorCode errorCode,
                     String errorText,
                     String failedUrl
             ) {
@@ -124,7 +129,7 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
     }
 
     @Override
-    protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    protected void renderWidget(@NonNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         if (browser.isLoading()) {
             guiGraphics.fill(getX(), getY(), getX() + getWidth(), getY() + getHeight(), 0x66333333);
         }
@@ -134,7 +139,8 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
     }
 
     @Override
-    protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
+    protected void updateWidgetNarration(@NonNull NarrationElementOutput narrationElementOutput) {
+        // No narration for web view widget
     }
 
     @Override
@@ -159,7 +165,7 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
     }
 
     @Override
-    public boolean mouseReleased(MouseButtonEvent mouseButtonEvent) {
+    public boolean mouseReleased(@NonNull MouseButtonEvent mouseButtonEvent) {
         if (!isFocused()) {
             return false;
         }
@@ -171,14 +177,14 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
     }
 
     @Override
-    public boolean mouseDragged(MouseButtonEvent mouseButtonEvent, double dragX, double dragY) {
+    public boolean mouseDragged(@NonNull MouseButtonEvent mouseButtonEvent, double dragX, double dragY) {
         if (!isFocused()) {
             return false;
         }
 
         int localX = (int) ((mouseButtonEvent.x() - getX()) * getScaleX());
         int localY = (int) ((mouseButtonEvent.y() - getY()) * getScaleY());
-        browser.mouseDragged(localX, localY, mouseButtonEvent.button(), dragX, dragY);
+        browser.mouseDragged(localX, localY, mouseButtonEvent.button());
         return true;
     }
 
@@ -196,7 +202,7 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
     }
 
     @Override
-    public boolean keyPressed(KeyEvent keyEvent) {
+    public boolean keyPressed(@NonNull KeyEvent keyEvent) {
         if (!isFocused()) {
             return false;
         }
@@ -206,7 +212,7 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
     }
 
     @Override
-    public boolean keyReleased(KeyEvent keyEvent) {
+    public boolean keyReleased(@NonNull KeyEvent keyEvent) {
         if (!isFocused()) {
             return false;
         }
@@ -216,7 +222,7 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
     }
 
     @Override
-    public boolean charTyped(CharacterEvent characterEvent) {
+    public boolean charTyped(@NonNull CharacterEvent characterEvent) {
         if (!isFocused()) {
             return false;
         }

@@ -28,6 +28,10 @@ public final class GrapheneLwjglRenderer implements GrapheneRenderer {
         this.texture = new GrapheneTexture(textureId);
     }
 
+    private static boolean shouldCopyFullFrame(boolean resized, boolean completeReRender, Rectangle[] dirtyRects) {
+        return resized || completeReRender || dirtyRects == null || dirtyRects.length == 0;
+    }
+
     @Override
     public void render(GuiGraphics guiGraphics, int x, int y, int width, int height) {
         if (viewWidth <= 0 || viewHeight <= 0) {
@@ -80,15 +84,13 @@ public final class GrapheneLwjglRenderer implements GrapheneRenderer {
         viewWidth = width;
         viewHeight = height;
 
-        if (resized || completeReRender || dirtyRects == null || dirtyRects.length == 0) {
+        if (shouldCopyFullFrame(resized, completeReRender, dirtyRects)) {
             copyRegion(buffer, nativeImage, 0, 0, width, height, width, height, 0, 0);
             texture.upload();
             return;
         }
 
-        for (Rectangle dirtyRect : dirtyRects) {
-            copyRegion(buffer, nativeImage, dirtyRect.x, dirtyRect.y, dirtyRect.width, dirtyRect.height, width, height, dirtyRect.x, dirtyRect.y);
-        }
+        copyDirtyRects(buffer, nativeImage, dirtyRects, width, height);
 
         texture.upload();
     }
@@ -99,8 +101,8 @@ public final class GrapheneLwjglRenderer implements GrapheneRenderer {
             return;
         }
 
-        int x = Math.max(0, Math.min(rect.x, Math.max(0, viewWidth - rect.width)));
-        int y = Math.max(0, Math.min(rect.y, Math.max(0, viewHeight - rect.height)));
+        int x = Math.clamp(rect.x, 0, Math.max(0, viewWidth - rect.width));
+        int y = Math.clamp(rect.y, 0, Math.max(0, viewHeight - rect.height));
         popupRect.setBounds(x, y, rect.width, rect.height);
     }
 
@@ -116,14 +118,17 @@ public final class GrapheneLwjglRenderer implements GrapheneRenderer {
             return CompletableFuture.failedFuture(new IllegalStateException("No browser frame available"));
         }
 
-        BufferedImage image = new BufferedImage(nativeImage.getWidth(), nativeImage.getHeight(), BufferedImage.TYPE_INT_ARGB);
-        int[] pixels = nativeImage.getPixelsABGR();
-        for (int y = 0; y < nativeImage.getHeight(); y++) {
-            for (int x = 0; x < nativeImage.getWidth(); x++) {
-                int pixelAbgr = pixels[y * nativeImage.getWidth() + x];
-                image.setRGB(x, y, ARGB.fromABGR(pixelAbgr));
-            }
+        int width = nativeImage.getWidth();
+        int height = nativeImage.getHeight();
+        int[] sourcePixels = nativeImage.getPixelsABGR();
+        int[] imagePixels = new int[width * height];
+
+        for (int index = 0; index < imagePixels.length; index++) {
+            imagePixels[index] = ARGB.fromABGR(sourcePixels[index]);
         }
+
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        image.setRGB(0, 0, width, height, imagePixels, 0, width);
 
         return CompletableFuture.completedFuture(image);
     }
@@ -165,35 +170,85 @@ public final class GrapheneLwjglRenderer implements GrapheneRenderer {
             int targetX,
             int targetY
     ) {
-        int maxWidth = Math.min(width, sourceStride - sourceX);
-        int maxHeight = Math.min(height, sourceHeight - sourceY);
+        int sourceMaxWidth = sourceStride - sourceX;
+        int sourceMaxHeight = sourceHeight - sourceY;
+        int targetMaxWidth = targetImage.getWidth() - targetX;
+        int targetMaxHeight = targetImage.getHeight() - targetY;
 
-        int clampedWidth = Math.min(maxWidth, targetImage.getWidth() - targetX);
-        int clampedHeight = Math.min(maxHeight, targetImage.getHeight() - targetY);
+        int maxWidth = Math.min(sourceMaxWidth, targetMaxWidth);
+        int maxHeight = Math.min(sourceMaxHeight, targetMaxHeight);
+
+        int clampedWidth = maxWidth > 0 ? Math.clamp(width, 0, maxWidth) : 0;
+        int clampedHeight = maxHeight > 0 ? Math.clamp(height, 0, maxHeight) : 0;
 
         if (clampedWidth <= 0 || clampedHeight <= 0) {
             return;
         }
 
-        for (int row = 0; row < clampedHeight; row++) {
-            int sourceRow = sourceY + row;
-            int targetRow = targetY + row;
-            for (int column = 0; column < clampedWidth; column++) {
-                int sourceColumn = sourceX + column;
-                int sourceIndex = (sourceRow * sourceStride + sourceColumn) * 4;
+        if (!transparent) {
+            copyOpaqueRegion(sourceBuffer, targetImage, sourceX, sourceY, sourceStride, targetX, targetY, clampedWidth, clampedHeight);
+            return;
+        }
 
+        copyTransparentRegion(sourceBuffer, targetImage, sourceX, sourceY, sourceStride, targetX, targetY, clampedWidth, clampedHeight);
+    }
+
+    private void copyTransparentRegion(
+            ByteBuffer sourceBuffer,
+            NativeImage targetImage,
+            int sourceX,
+            int sourceY,
+            int sourceStride,
+            int targetX,
+            int targetY,
+            int width,
+            int height
+    ) {
+        for (int row = 0; row < height; row++) {
+            int sourceIndex = ((sourceY + row) * sourceStride + sourceX) * 4;
+            int targetRow = targetY + row;
+            for (int column = 0; column < width; column++) {
                 int blue = sourceBuffer.get(sourceIndex) & 0xFF;
                 int green = sourceBuffer.get(sourceIndex + 1) & 0xFF;
                 int red = sourceBuffer.get(sourceIndex + 2) & 0xFF;
                 int alpha = sourceBuffer.get(sourceIndex + 3) & 0xFF;
 
-                if (!transparent) {
-                    alpha = 0xFF;
-                }
-
                 int pixelAbgr = (alpha << 24) | (blue << 16) | (green << 8) | red;
                 targetImage.setPixelABGR(targetX + column, targetRow, pixelAbgr);
+                sourceIndex += 4;
             }
+        }
+    }
+
+    private void copyOpaqueRegion(
+            ByteBuffer sourceBuffer,
+            NativeImage targetImage,
+            int sourceX,
+            int sourceY,
+            int sourceStride,
+            int targetX,
+            int targetY,
+            int width,
+            int height
+    ) {
+        for (int row = 0; row < height; row++) {
+            int sourceIndex = ((sourceY + row) * sourceStride + sourceX) * 4;
+            int targetRow = targetY + row;
+            for (int column = 0; column < width; column++) {
+                int blue = sourceBuffer.get(sourceIndex) & 0xFF;
+                int green = sourceBuffer.get(sourceIndex + 1) & 0xFF;
+                int red = sourceBuffer.get(sourceIndex + 2) & 0xFF;
+
+                int pixelAbgr = (0xFF << 24) | (blue << 16) | (green << 8) | red;
+                targetImage.setPixelABGR(targetX + column, targetRow, pixelAbgr);
+                sourceIndex += 4;
+            }
+        }
+    }
+
+    private void copyDirtyRects(ByteBuffer buffer, NativeImage nativeImage, Rectangle[] dirtyRects, int width, int height) {
+        for (Rectangle dirtyRect : dirtyRects) {
+            copyRegion(buffer, nativeImage, dirtyRect.x, dirtyRect.y, dirtyRect.width, dirtyRect.height, width, height, dirtyRect.x, dirtyRect.y);
         }
     }
 }
