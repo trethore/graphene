@@ -46,7 +46,7 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
             throw new IllegalStateException("Screen does not implement GrapheneScreenBridge: " + screen.getClass().getName());
         }
 
-        screenBridge.grapheneUi$addWebViewWidget(this);
+        screenBridge.grapheneui$addWebViewWidget(this);
         browser.createImmediately();
         browser.setFocus(true);
         browser.setCloseAllowed();
@@ -255,7 +255,7 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
         loadListenerWrappers.clear();
 
         if (screen instanceof GrapheneScreenBridge screenBridge) {
-            screenBridge.grapheneUi$removeWebViewWidget(this);
+            screenBridge.grapheneui$removeWebViewWidget(this);
         }
 
         browser.close();

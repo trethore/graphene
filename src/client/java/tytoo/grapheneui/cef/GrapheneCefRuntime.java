@@ -99,7 +99,7 @@ public final class GrapheneCefRuntime {
             return;
         }
 
-        ClientLifecycleEvents.CLIENT_STOPPING.register(client -> GrapheneCefRuntime.shutdown());
+        ClientLifecycleEvents.CLIENT_STOPPING.register(_ -> GrapheneCefRuntime.shutdown());
         shutdownHookRegistered = true;
     }
 }

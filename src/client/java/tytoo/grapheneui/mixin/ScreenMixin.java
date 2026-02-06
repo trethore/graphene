@@ -15,55 +15,56 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Mixin(Screen.class)
+@SuppressWarnings({"java:S100", "java:S116"}) // Yes sonar this is a mixin.
 public abstract class ScreenMixin extends AbstractContainerEventHandler implements Renderable, GrapheneScreenBridge {
     @Unique
-    private final List<GrapheneWebViewWidget> grapheneUi$webViewWidgets = new ArrayList<>();
+    private final List<GrapheneWebViewWidget> grapheneui$webViewWidgets = new ArrayList<>();
 
     @Unique
-    private boolean grapheneUi$autoCloseWebViews = true;
+    private boolean grapheneui$autoCloseWebViews = true;
 
     @Override
-    public List<GrapheneWebViewWidget> grapheneUi$getWebViewWidgets() {
-        return grapheneUi$webViewWidgets;
+    public List<GrapheneWebViewWidget> grapheneui$getWebViewWidgets() {
+        return grapheneui$webViewWidgets;
     }
 
     @Override
-    public void grapheneUi$addWebViewWidget(GrapheneWebViewWidget webViewWidget) {
-        grapheneUi$webViewWidgets.add(webViewWidget);
+    public void grapheneui$addWebViewWidget(GrapheneWebViewWidget webViewWidget) {
+        grapheneui$webViewWidgets.add(webViewWidget);
     }
 
     @Override
-    public void grapheneUi$removeWebViewWidget(GrapheneWebViewWidget webViewWidget) {
-        grapheneUi$webViewWidgets.remove(webViewWidget);
+    public void grapheneui$removeWebViewWidget(GrapheneWebViewWidget webViewWidget) {
+        grapheneui$webViewWidgets.remove(webViewWidget);
     }
 
     @Override
-    public boolean grapheneUi$isAutoCloseWebViews() {
-        return grapheneUi$autoCloseWebViews;
+    public boolean grapheneui$isAutoCloseWebViews() {
+        return grapheneui$autoCloseWebViews;
     }
 
     @Override
-    public void grapheneUi$setAutoCloseWebViews(boolean autoClose) {
-        grapheneUi$autoCloseWebViews = autoClose;
+    public void grapheneui$setAutoCloseWebViews(boolean autoClose) {
+        grapheneui$autoCloseWebViews = autoClose;
     }
 
     @Inject(method = "onClose", at = @At("HEAD"))
-    private void grapheneUi$onClose(CallbackInfo callbackInfo) {
-        if (!grapheneUi$autoCloseWebViews) {
+    private void grapheneui$onClose(CallbackInfo callbackInfo) {
+        if (!grapheneui$autoCloseWebViews) {
             return;
         }
 
-        List<GrapheneWebViewWidget> widgetsToClose = new ArrayList<>(grapheneUi$webViewWidgets);
+        List<GrapheneWebViewWidget> widgetsToClose = new ArrayList<>(grapheneui$webViewWidgets);
         for (GrapheneWebViewWidget webViewWidget : widgetsToClose) {
             webViewWidget.close();
         }
 
-        grapheneUi$webViewWidgets.clear();
+        grapheneui$webViewWidgets.clear();
     }
 
     @Inject(method = "resize", at = @At("HEAD"))
-    private void grapheneUi$onResize(int width, int height, CallbackInfo callbackInfo) {
-        for (GrapheneWebViewWidget webViewWidget : grapheneUi$webViewWidgets) {
+    private void grapheneui$onResize(int width, int height, CallbackInfo callbackInfo) {
+        for (GrapheneWebViewWidget webViewWidget : grapheneui$webViewWidgets) {
             webViewWidget.handleScreenResize();
         }
     }

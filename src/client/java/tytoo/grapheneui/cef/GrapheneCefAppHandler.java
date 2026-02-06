@@ -5,12 +5,13 @@ import org.cef.CefApp;
 import org.cef.callback.CefSchemeRegistrar;
 
 public final class GrapheneCefAppHandler extends MavenCefAppHandlerAdapter {
+    private static final String CUSTOM_SCHEME_NAME = "classpath";
     private boolean schemeHandlerRegistered = false;
 
     @Override
     public synchronized void onRegisterCustomSchemes(CefSchemeRegistrar registrar) {
         super.onRegisterCustomSchemes(registrar);
-        registrar.addCustomScheme("classpath", true, false, false, true, true, true, true);
+        registrar.addCustomScheme(CUSTOM_SCHEME_NAME, true, false, false, true, true, true, true);
     }
 
     @Override
@@ -23,7 +24,7 @@ public final class GrapheneCefAppHandler extends MavenCefAppHandlerAdapter {
 
         CefApp cefApp = CefApp.getInstance();
         if (cefApp != null) {
-            cefApp.registerSchemeHandlerFactory("classpath", "", new GrapheneClasspathSchemeHandlerFactory());
+            cefApp.registerSchemeHandlerFactory(CUSTOM_SCHEME_NAME, "", new GrapheneClasspathSchemeHandlerFactory());
             schemeHandlerRegistered = true;
         }
     }

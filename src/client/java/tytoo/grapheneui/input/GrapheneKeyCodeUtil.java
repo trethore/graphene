@@ -5,6 +5,8 @@ import org.lwjgl.glfw.GLFW;
 import java.awt.event.KeyEvent;
 
 public final class GrapheneKeyCodeUtil {
+    private static final String SHIFTED_DIGITS = ")!@#$%^&*(";
+
     private GrapheneKeyCodeUtil() {
     }
 
@@ -32,32 +34,40 @@ public final class GrapheneKeyCodeUtil {
     }
 
     public static char toCharacter(int keyCode, boolean shift) {
-        if (keyCode >= GLFW.GLFW_KEY_A && keyCode <= GLFW.GLFW_KEY_Z) {
-            char character = (char) ('a' + (keyCode - GLFW.GLFW_KEY_A));
-            return shift ? Character.toUpperCase(character) : character;
+        if (isAlphabetKey(keyCode)) {
+            return toAlphabetCharacter(keyCode, shift);
         }
 
-        if (keyCode >= GLFW.GLFW_KEY_0 && keyCode <= GLFW.GLFW_KEY_9) {
-            char character = (char) ('0' + (keyCode - GLFW.GLFW_KEY_0));
-            if (shift) {
-                return switch (character) {
-                    case '1' -> '!';
-                    case '2' -> '@';
-                    case '3' -> '#';
-                    case '4' -> '$';
-                    case '5' -> '%';
-                    case '6' -> '^';
-                    case '7' -> '&';
-                    case '8' -> '*';
-                    case '9' -> '(';
-                    case '0' -> ')';
-                    default -> character;
-                };
-            }
-
-            return character;
+        if (isDigitKey(keyCode)) {
+            return toDigitCharacter(keyCode, shift);
         }
 
+        return toSpecialCharacter(keyCode, shift);
+    }
+
+    private static boolean isAlphabetKey(int keyCode) {
+        return keyCode >= GLFW.GLFW_KEY_A && keyCode <= GLFW.GLFW_KEY_Z;
+    }
+
+    private static boolean isDigitKey(int keyCode) {
+        return keyCode >= GLFW.GLFW_KEY_0 && keyCode <= GLFW.GLFW_KEY_9;
+    }
+
+    private static char toAlphabetCharacter(int keyCode, boolean shift) {
+        char character = (char) ('a' + (keyCode - GLFW.GLFW_KEY_A));
+        return shift ? Character.toUpperCase(character) : character;
+    }
+
+    private static char toDigitCharacter(int keyCode, boolean shift) {
+        int digitIndex = keyCode - GLFW.GLFW_KEY_0;
+        if (shift) {
+            return SHIFTED_DIGITS.charAt(digitIndex);
+        }
+
+        return (char) ('0' + digitIndex);
+    }
+
+    private static char toSpecialCharacter(int keyCode, boolean shift) {
         return switch (keyCode) {
             case GLFW.GLFW_KEY_MINUS -> shift ? '_' : '-';
             case GLFW.GLFW_KEY_EQUAL -> shift ? '+' : '=';
