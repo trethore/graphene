@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "graphene-ui",
+  "version": "${version}",
+  "name": "Graphene",
+  "description": "Graphene — a modern, Chromium-based UI library for Minecraft",
+  "authors": [
+    "Tytoo"
+  ],
+  "contact": {
+    "sources": "https://github.com/trethore/graphene"
+  },
+  "license": "MIT",
+  "icon": "assets/graphene-ui/icon.png",
+  "environment": "client",
+  "entrypoints": {},
+  "mixins": [
+    "graphene-ui.client.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.18.4",
+    "minecraft": "~1.21.11",
+    "java": ">=25",
+    "fabric-api": ">=0.141.3+1.21.11"
+  }
+}
