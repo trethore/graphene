@@ -2,6 +2,7 @@ package tytoo.grapheneui;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tytoo.grapheneui.client.cef.GrapheneCefRuntime;
 
 /**
  * The core class of the Graphene library.
@@ -11,10 +12,20 @@ public final class GrapheneCore {
     public static final String ID = "graphene-ui";
     public static final Logger LOGGER = LoggerFactory.getLogger(ID);
 
-    private GrapheneCore() {}
+    private GrapheneCore() {
+    }
 
     /* Initializes the library. */
-    public static void init() {
-        LOGGER.info("Graphene initialized!");
+    public static synchronized void init() {
+        if (GrapheneCefRuntime.isInitialized()) {
+            return;
+        }
+
+        GrapheneCefRuntime.initialize();
+        LOGGER.info("Graphene initialized");
+    }
+
+    public static synchronized boolean isInitialized() {
+        return GrapheneCefRuntime.isInitialized();
     }
 }
