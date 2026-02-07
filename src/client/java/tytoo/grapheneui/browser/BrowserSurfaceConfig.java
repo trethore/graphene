@@ -10,6 +10,7 @@ public final class BrowserSurfaceConfig {
     private static final Consumer<CefBrowserSettings> NO_OP_SETTINGS_CUSTOMIZER = ignoredSettings -> {
     };
     private static final BrowserSurfaceConfig DEFAULT = new Builder().build();
+    private static final String SETTINGS_CUSTOMIZER = "settingsCustomizer";
 
     private final Integer windowlessFrameRate;
     private final Consumer<CefBrowserSettings> settingsCustomizer;
@@ -44,7 +45,7 @@ public final class BrowserSurfaceConfig {
     }
 
     public BrowserSurfaceConfig withSettingsCustomizer(Consumer<CefBrowserSettings> settingsCustomizer) {
-        Consumer<CefBrowserSettings> nonNullCustomizer = Objects.requireNonNull(settingsCustomizer, "settingsCustomizer");
+        Consumer<CefBrowserSettings> nonNullCustomizer = Objects.requireNonNull(settingsCustomizer, SETTINGS_CUSTOMIZER);
         return new BrowserSurfaceConfig(windowlessFrameRate, this.settingsCustomizer.andThen(nonNullCustomizer));
     }
 
@@ -72,7 +73,7 @@ public final class BrowserSurfaceConfig {
         }
 
         public Builder settingsCustomizer(Consumer<CefBrowserSettings> settingsCustomizer) {
-            this.settingsCustomizer = this.settingsCustomizer.andThen(Objects.requireNonNull(settingsCustomizer, "settingsCustomizer"));
+            this.settingsCustomizer = this.settingsCustomizer.andThen(Objects.requireNonNull(settingsCustomizer, SETTINGS_CUSTOMIZER));
             return this;
         }
 

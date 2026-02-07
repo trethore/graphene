@@ -12,28 +12,32 @@ import tytoo.grapheneui.cef.GrapheneCefRuntime;
 public final class GrapheneCore {
     public static final String ID = "graphene-ui";
     public static final Logger LOGGER = LoggerFactory.getLogger(ID);
-    private static final GrapheneBrowserSurfaceManager SURFACE_MANAGER = new GrapheneBrowserSurfaceManager();
+    private static final GrapheneCoreServices SERVICES = new GrapheneCoreServices();
 
     private GrapheneCore() {
     }
 
     /* Initializes the library. */
     public static synchronized void init() {
-        if (GrapheneCefRuntime.isInitialized()) {
+        if (runtime().isInitialized()) {
             LOGGER.warn("GrapheneCefRuntime has already been initialized");
             return;
         }
 
-        GrapheneCefRuntime.initialize();
+        runtime().initialize();
         LOGGER.info("Graphene initialized");
     }
 
     @SuppressWarnings("unused")
     public static synchronized boolean isInitialized() {
-        return GrapheneCefRuntime.isInitialized();
+        return runtime().isInitialized();
     }
 
     public static GrapheneBrowserSurfaceManager surfaces() {
-        return SURFACE_MANAGER;
+        return SERVICES.surfaceManager();
+    }
+
+    public static GrapheneCefRuntime runtime() {
+        return SERVICES.cefRuntime();
     }
 }

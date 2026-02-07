@@ -5,7 +5,6 @@ import java.util.*;
 public final class GrapheneBrowserSurfaceManager {
     private static final String OWNER_NAME = "owner";
     private static final String SURFACE_NAME = "surface";
-    private static final String BUILDER_NAME = "builder";
 
     private final Object lock = new Object();
     private final Map<Object, Set<BrowserSurface>> surfacesByOwner = new IdentityHashMap<>();
@@ -35,12 +34,6 @@ public final class GrapheneBrowserSurfaceManager {
         }
 
         return surface;
-    }
-
-    public BrowserSurface createAndRegister(Object owner, BrowserSurface.Builder builder) {
-        Objects.requireNonNull(owner, OWNER_NAME);
-        Objects.requireNonNull(builder, BUILDER_NAME);
-        return register(owner, builder.build());
     }
 
     public void unregister(Object owner, BrowserSurface surface) {

@@ -11,10 +11,10 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
 import org.jspecify.annotations.NonNull;
+import tytoo.grapheneui.GrapheneCore;
 import tytoo.grapheneui.bridge.GrapheneBridge;
 import tytoo.grapheneui.bridge.GrapheneBridgeSubscription;
 import tytoo.grapheneui.browser.GrapheneWebViewWidget;
-import tytoo.grapheneui.cef.GrapheneCefRuntime;
 import tytoo.grapheneuidebug.GrapheneDebugClient;
 
 import java.net.URI;
@@ -81,7 +81,7 @@ public final class GrapheneBrowserDebugScreen extends Screen {
     }
 
     private void openRemoteDevTools() {
-        int debugPort = GrapheneCefRuntime.getRemoteDebuggingPort();
+        int debugPort = GrapheneCore.runtime().getRemoteDebuggingPort();
         if (debugPort > 0) {
             Util.getPlatform().openUri(URI.create("http://127.0.0.1:" + debugPort + "/json"));
             emitDevToolsStatus(true, debugPort);

@@ -20,18 +20,11 @@ import java.util.Objects;
 
 public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
     private static final String DEFAULT_URL = "classpath://assets/graphene-ui/graphene_test/welcome.html";
-    private static final int MAX_CLICK_COUNT = 3;
 
     private final Screen screen;
     private final BrowserSurface surface;
     private final GrapheneBrowser browser;
-    private int lastBrowserMouseX = Integer.MIN_VALUE;
-    private int lastBrowserMouseY = Integer.MIN_VALUE;
-    private boolean pointerButtonDown = false;
-    private int lastClickButton = -1;
-    private int clickCount = 0;
-    private int pressedButton = -1;
-    private int pressedClickCount = 1;
+    private final GrapheneWebViewInputController inputController;
 
     @SuppressWarnings("unused")
     public GrapheneWebViewWidget(Screen screen, int x, int y, int width, int height, Component message) {
@@ -72,13 +65,14 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
         this.screen = screen;
         this.surface = Objects.requireNonNull(surface, "surface");
         this.browser = this.surface.browser();
+        this.inputController = new GrapheneWebViewInputController(this.browser);
 
         if (!(screen instanceof GrapheneScreenBridge screenBridge)) {
             throw new IllegalStateException("Screen does not implement GrapheneScreenBridge: " + screen.getClass().getName());
         }
 
         screenBridge.grapheneui$addWebViewWidget(this);
-        GrapheneCore.surfaces().register(this, this.surface);
+        this.surface.registerTo(this);
         browser.setFocus(true);
         this.surface.setSurfaceSize(width, height);
     }
@@ -126,8 +120,8 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
 
     @Override
     protected void renderWidget(@NonNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        if (!pointerButtonDown && isMouseOver(mouseX, mouseY)) {
-            updateBrowserMousePosition(mouseX, mouseY);
+        if (!inputController.isPrimaryPointerButtonDown() && isMouseOver(mouseX, mouseY)) {
+            inputController.updateMousePosition(toBrowserPoint(mouseX, mouseY));
         }
 
         if (browser.isLoading()) {
@@ -150,7 +144,7 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
     @Override
     public void mouseMoved(double mouseX, double mouseY) {
         super.mouseMoved(mouseX, mouseY);
-        updateBrowserMousePosition(mouseX, mouseY);
+        inputController.updateMousePosition(toBrowserPoint(mouseX, mouseY));
     }
 
     @Override
@@ -160,12 +154,7 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
         }
 
         setFocused(true);
-        pointerButtonDown = mouseButtonEvent.button() == 0;
-        Point browserPoint = toBrowserPoint(mouseButtonEvent.x(), mouseButtonEvent.y());
-        int currentClickCount = resolveClickCount(mouseButtonEvent.button(), isDoubleClick);
-        pressedButton = mouseButtonEvent.button();
-        pressedClickCount = currentClickCount;
-        browser.mouseInteracted(browserPoint.x, browserPoint.y, 0, mouseButtonEvent.button(), true, currentClickCount);
+        inputController.onMouseClicked(mouseButtonEvent.button(), isDoubleClick, toBrowserPoint(mouseButtonEvent.x(), mouseButtonEvent.y()));
         return true;
     }
 
@@ -173,44 +162,17 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
     public void setFocused(boolean focused) {
         super.setFocused(focused);
         browser.setFocus(focused);
-        if (!focused) {
-            pointerButtonDown = false;
-            pressedButton = -1;
-            pressedClickCount = 1;
-        }
+        inputController.onFocusChanged(focused);
     }
 
     @Override
     public boolean mouseReleased(@NonNull MouseButtonEvent mouseButtonEvent) {
-        if (mouseButtonEvent.button() == 0) {
-            pointerButtonDown = false;
-        }
-
-        if (!isFocused()) {
-            return false;
-        }
-
-        Point browserPoint = toBrowserPoint(mouseButtonEvent.x(), mouseButtonEvent.y());
-        int releaseClickCount = mouseButtonEvent.button() == pressedButton ? pressedClickCount : 1;
-        browser.mouseInteracted(browserPoint.x, browserPoint.y, 0, mouseButtonEvent.button(), false, releaseClickCount);
-        if (mouseButtonEvent.button() == pressedButton) {
-            pressedButton = -1;
-            pressedClickCount = 1;
-        }
-        return true;
+        return inputController.onMouseReleased(mouseButtonEvent.button(), toBrowserPoint(mouseButtonEvent.x(), mouseButtonEvent.y()), isFocused());
     }
 
     @Override
     public boolean mouseDragged(@NonNull MouseButtonEvent mouseButtonEvent, double dragX, double dragY) {
-        if (!isFocused()) {
-            return false;
-        }
-
-        Point browserPoint = toBrowserPoint(mouseButtonEvent.x(), mouseButtonEvent.y());
-        lastBrowserMouseX = browserPoint.x;
-        lastBrowserMouseY = browserPoint.y;
-        browser.mouseDragged(browserPoint.x, browserPoint.y, mouseButtonEvent.button());
-        return true;
+        return inputController.onMouseDragged(mouseButtonEvent.button(), toBrowserPoint(mouseButtonEvent.x(), mouseButtonEvent.y()), isFocused());
     }
 
     @Override
@@ -221,7 +183,7 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
 
         Point browserPoint = toBrowserPoint(mouseX, mouseY);
         int delta = (int) (scrollY * 120);
-        browser.mouseScrolled(browserPoint.x, browserPoint.y, 0, delta, 1);
+        inputController.onMouseScrolled(browserPoint, delta, 1);
         return true;
     }
 
@@ -231,7 +193,7 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
             return false;
         }
 
-        browser.keyEventByKeyCode(keyEvent.key(), keyEvent.scancode(), keyEvent.modifiers(), true);
+        inputController.onKeyPressed(keyEvent);
         return true;
     }
 
@@ -241,7 +203,7 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
             return false;
         }
 
-        browser.keyEventByKeyCode(keyEvent.key(), keyEvent.scancode(), keyEvent.modifiers(), false);
+        inputController.onKeyReleased(keyEvent);
         return true;
     }
 
@@ -251,7 +213,7 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
             return false;
         }
 
-        browser.keyTyped((char) characterEvent.codepoint(), characterEvent.modifiers());
+        inputController.onCharacterTyped(characterEvent);
         return true;
     }
 
@@ -286,31 +248,9 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
         GrapheneCore.surfaces().closeOwner(this);
     }
 
-    private void updateBrowserMousePosition(double mouseX, double mouseY) {
-        Point browserPoint = toBrowserPoint(mouseX, mouseY);
-        if (browserPoint.x == lastBrowserMouseX && browserPoint.y == lastBrowserMouseY) {
-            return;
-        }
-
-        lastBrowserMouseX = browserPoint.x;
-        lastBrowserMouseY = browserPoint.y;
-        browser.mouseMoved(browserPoint.x, browserPoint.y, 0);
-    }
-
     private Point toBrowserPoint(double mouseX, double mouseY) {
         double localX = mouseX - getX();
         double localY = mouseY - getY();
         return surface.toBrowserPoint(localX, localY, getWidth(), getHeight());
-    }
-
-    private int resolveClickCount(int button, boolean isDoubleClick) {
-        if (!isDoubleClick || button != lastClickButton) {
-            clickCount = 1;
-        } else {
-            clickCount = Math.min(clickCount + 1, MAX_CLICK_COUNT);
-        }
-
-        lastClickButton = button;
-        return clickCount;
     }
 }

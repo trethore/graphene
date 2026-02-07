@@ -3,14 +3,9 @@ package tytoo.grapheneui.browser;
 import net.minecraft.client.gui.GuiGraphics;
 import org.cef.CefBrowserSettings;
 import org.cef.CefClient;
-import org.cef.browser.CefBrowser;
-import org.cef.browser.CefFrame;
 import org.cef.browser.CefRequestContext;
-import org.cef.handler.CefLoadHandler;
-import org.cef.network.CefRequest;
 import tytoo.grapheneui.GrapheneCore;
 import tytoo.grapheneui.bridge.GrapheneBridge;
-import tytoo.grapheneui.cef.GrapheneCefRuntime;
 import tytoo.grapheneui.event.GrapheneLoadListener;
 import tytoo.grapheneui.mc.McWindowScale;
 import tytoo.grapheneui.render.GrapheneLwjglRenderer;
@@ -18,8 +13,7 @@ import tytoo.grapheneui.render.GrapheneRenderTarget;
 import tytoo.grapheneui.render.GrapheneRenderer;
 
 import java.awt.*;
-import java.util.*;
-import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 @SuppressWarnings("unused") // Public API
@@ -29,39 +23,26 @@ public final class BrowserSurface implements AutoCloseable {
     private static final String SURFACE_HEIGHT_NAME = "surfaceHeight";
     private static final Consumer<CefRequestContext> NO_OP_REQUEST_CONTEXT_CUSTOMIZER = ignoredRequestContext -> {
     };
-    private static final String LOAD_LISTENER_NAME = "loadListener";
 
     private final GrapheneBrowser browser;
     private final GrapheneBridge bridge;
-    private final Map<GrapheneLoadListener, GrapheneLoadListener> loadListenerWrappers = new IdentityHashMap<>();
-    private final Rectangle viewBox = new Rectangle(0, 0, 1, 1);
-    private int surfaceWidth;
-    private int surfaceHeight;
-    private int resolutionWidth;
-    private int resolutionHeight;
-    private boolean autoResolution;
-    private boolean customViewBox;
+    private final BrowserSurfaceSizingState sizingState;
+    private final BrowserSurfaceLoadListenerScope loadListenerScope;
     private boolean closed;
 
     private BrowserSurface(Builder builder) {
-        this.surfaceWidth = requirePositive(builder.surfaceWidth, SURFACE_WIDTH_NAME);
-        this.surfaceHeight = requirePositive(builder.surfaceHeight, SURFACE_HEIGHT_NAME);
-        this.autoResolution = builder.autoResolution;
+        this.sizingState = new BrowserSurfaceSizingState(
+                builder.surfaceWidth,
+                builder.surfaceHeight,
+                builder.autoResolution,
+                builder.resolutionWidth,
+                builder.resolutionHeight,
+                builder.viewBox,
+                McWindowScale.getScaleX(),
+                McWindowScale.getScaleY()
+        );
 
-        if (autoResolution) {
-            updateResolutionFromSurface();
-        } else {
-            setResolutionInternal(builder.resolutionWidth, builder.resolutionHeight);
-        }
-
-        if (builder.viewBox != null) {
-            customViewBox = true;
-            setViewBoxInternal(builder.viewBox);
-        } else {
-            syncViewBoxToResolution();
-        }
-
-        CefClient cefClient = builder.client != null ? builder.client : GrapheneCefRuntime.requireClient();
+        CefClient cefClient = builder.client != null ? builder.client : GrapheneCore.runtime().requireClient();
         CefRequestContext requestContext = builder.requestContext != null ? builder.requestContext : CefRequestContext.getGlobalContext();
         builder.requestContextCustomizer.accept(requestContext);
         GrapheneRenderer renderer = builder.renderer != null ? builder.renderer : new GrapheneLwjglRenderer(builder.transparent);
@@ -76,28 +57,13 @@ public final class BrowserSurface implements AutoCloseable {
                 config.toCefBrowserSettings()
         );
         this.browser.createImmediately();
-        this.bridge = GrapheneCefRuntime.attachBridge(this.browser);
-        this.browser.wasResizedTo(resolutionWidth, resolutionHeight);
+        this.bridge = GrapheneCore.runtime().attachBridge(this.browser);
+        this.loadListenerScope = new BrowserSurfaceLoadListenerScope(this.browser, GrapheneCore.runtime().getLoadEventBus());
+        this.browser.wasResizedTo(sizingState.resolutionWidth(), sizingState.resolutionHeight());
     }
 
     public static Builder builder() {
         return new Builder();
-    }
-
-    private static int mapCoordinate(double coordinate, int renderedSize, int sourceStart, int sourceSize) {
-        if (renderedSize <= 0 || sourceSize <= 0) {
-            return sourceStart;
-        }
-
-        double scaledCoordinate = coordinate * sourceSize / renderedSize;
-        return sourceStart + (int) scaledCoordinate;
-    }
-
-    private static int requirePositive(int value, String name) {
-        if (value <= 0) {
-            throw new IllegalArgumentException(name + " must be > 0");
-        }
-        return value;
     }
 
     public GrapheneBrowser browser() {
@@ -109,29 +75,30 @@ public final class BrowserSurface implements AutoCloseable {
     }
 
     public int getSurfaceWidth() {
-        return surfaceWidth;
+        return sizingState.surfaceWidth();
     }
 
     public int getSurfaceHeight() {
-        return surfaceHeight;
+        return sizingState.surfaceHeight();
     }
 
     public int getResolutionWidth() {
-        return resolutionWidth;
+        return sizingState.resolutionWidth();
     }
 
     public int getResolutionHeight() {
-        return resolutionHeight;
+        return sizingState.resolutionHeight();
     }
 
     public Rectangle getViewBox() {
-        return new Rectangle(viewBox);
+        return sizingState.viewBox();
     }
 
     public boolean isAutoResolution() {
-        return autoResolution;
+        return sizingState.isAutoResolution();
     }
 
+    @SuppressWarnings({"UnusedReturnValue", "java:S2201"}) // Could be useful.
     public BrowserSurface registerTo(Object owner) {
         return GrapheneCore.surfaces().register(owner, this);
     }
@@ -141,91 +108,58 @@ public final class BrowserSurface implements AutoCloseable {
     }
 
     public Subscription subscribeLoadListener(GrapheneLoadListener loadListener) {
-        Objects.requireNonNull(loadListener, LOAD_LISTENER_NAME);
-        addLoadListener(loadListener);
-        return () -> removeLoadListener(loadListener);
+        return loadListenerScope.subscribe(loadListener);
     }
 
     public void addLoadListener(GrapheneLoadListener loadListener) {
-        Objects.requireNonNull(loadListener, LOAD_LISTENER_NAME);
-
-        if (closed) {
-            throw new IllegalStateException("Cannot add load listener to a closed BrowserSurface");
-        }
-
-        GrapheneLoadListener wrappedListener = createScopedLoadListener(loadListener);
-        GrapheneLoadListener previousWrappedListener;
-        synchronized (loadListenerWrappers) {
-            previousWrappedListener = loadListenerWrappers.put(loadListener, wrappedListener);
-        }
-
-        if (previousWrappedListener != null) {
-            GrapheneCefRuntime.getLoadEventBus().unregister(previousWrappedListener);
-        }
-
-        GrapheneCefRuntime.getLoadEventBus().register(wrappedListener);
+        loadListenerScope.add(loadListener);
     }
 
     public void removeLoadListener(GrapheneLoadListener loadListener) {
-        Objects.requireNonNull(loadListener, LOAD_LISTENER_NAME);
-
-        GrapheneLoadListener wrappedListener;
-        synchronized (loadListenerWrappers) {
-            wrappedListener = loadListenerWrappers.remove(loadListener);
-        }
-
-        if (wrappedListener != null) {
-            GrapheneCefRuntime.getLoadEventBus().unregister(wrappedListener);
-        }
+        loadListenerScope.remove(loadListener);
     }
 
     public void setSurfaceSize(int width, int height) {
-        int validatedWidth = requirePositive(width, SURFACE_WIDTH_NAME);
-        int validatedHeight = requirePositive(height, SURFACE_HEIGHT_NAME);
-
-        surfaceWidth = validatedWidth;
-        surfaceHeight = validatedHeight;
-
-        if (autoResolution) {
-            updateResolutionFromSurface();
-            browser.wasResizedTo(resolutionWidth, resolutionHeight);
-        }
+        BrowserSurfaceSizingState.ResizeInstruction resizeInstruction = sizingState.setSurfaceSize(
+                width,
+                height,
+                McWindowScale.getScaleX(),
+                McWindowScale.getScaleY()
+        );
+        applyResizeInstruction(resizeInstruction);
     }
 
     public void setResolution(int width, int height) {
-        autoResolution = false;
-        setResolutionInternal(width, height);
-        browser.wasResizedTo(resolutionWidth, resolutionHeight);
+        BrowserSurfaceSizingState.ResizeInstruction resizeInstruction = sizingState.setResolution(width, height);
+        applyResizeInstruction(resizeInstruction);
     }
 
     public void useAutoResolution() {
-        autoResolution = true;
-        updateResolutionFromSurface();
-        browser.wasResizedTo(resolutionWidth, resolutionHeight);
+        BrowserSurfaceSizingState.ResizeInstruction resizeInstruction = sizingState.useAutoResolution(
+                McWindowScale.getScaleX(),
+                McWindowScale.getScaleY()
+        );
+        applyResizeInstruction(resizeInstruction);
     }
 
     public void setViewBox(int x, int y, int width, int height) {
-        customViewBox = true;
-        setViewBoxInternal(new Rectangle(x, y, width, height));
+        sizingState.setViewBox(x, y, width, height);
     }
 
     public void resetViewBox() {
-        customViewBox = false;
-        syncViewBoxToResolution();
+        sizingState.resetViewBox();
     }
 
     public Point toBrowserPoint(double surfaceX, double surfaceY, int renderedWidth, int renderedHeight) {
-        int browserX = toBrowserX(surfaceX, renderedWidth);
-        int browserY = toBrowserY(surfaceY, renderedHeight);
-        return new Point(browserX, browserY);
+        return sizingState.toBrowserPoint(surfaceX, surfaceY, renderedWidth, renderedHeight);
     }
 
     public int toBrowserX(double surfaceX, int renderedWidth) {
-        return mapCoordinate(surfaceX, renderedWidth, viewBox.x, viewBox.width);
+        return sizingState.toBrowserX(surfaceX, renderedWidth);
     }
 
     public int toBrowserY(double surfaceY, int renderedHeight) {
-        return mapCoordinate(surfaceY, renderedHeight, viewBox.y, viewBox.height);
+        return sizingState.toBrowserY(surfaceY, renderedHeight);
     }
 
     public void updateFrame() {
@@ -233,19 +167,39 @@ public final class BrowserSurface implements AutoCloseable {
     }
 
     public void render(GuiGraphics guiGraphics, int x, int y) {
-        render(guiGraphics, x, y, surfaceWidth, surfaceHeight);
+        render(guiGraphics, x, y, sizingState.surfaceWidth(), sizingState.surfaceHeight());
     }
 
     public void render(GrapheneRenderTarget renderTarget, int x, int y) {
-        render(renderTarget, x, y, surfaceWidth, surfaceHeight);
+        render(renderTarget, x, y, sizingState.surfaceWidth(), sizingState.surfaceHeight());
     }
 
     public void render(GuiGraphics guiGraphics, int x, int y, int width, int height) {
-        browser.renderTo(x, y, width, height, viewBox.x, viewBox.y, viewBox.width, viewBox.height, guiGraphics);
+        browser.renderTo(
+                x,
+                y,
+                width,
+                height,
+                sizingState.viewBoxX(),
+                sizingState.viewBoxY(),
+                sizingState.viewBoxWidth(),
+                sizingState.viewBoxHeight(),
+                guiGraphics
+        );
     }
 
     public void render(GrapheneRenderTarget renderTarget, int x, int y, int width, int height) {
-        browser.renderTo(x, y, width, height, viewBox.x, viewBox.y, viewBox.width, viewBox.height, renderTarget);
+        browser.renderTo(
+                x,
+                y,
+                width,
+                height,
+                sizingState.viewBoxX(),
+                sizingState.viewBoxY(),
+                sizingState.viewBoxWidth(),
+                sizingState.viewBoxHeight(),
+                renderTarget
+        );
     }
 
     @Override
@@ -255,104 +209,17 @@ public final class BrowserSurface implements AutoCloseable {
         }
 
         closed = true;
-        clearLoadListeners();
-        GrapheneCefRuntime.detachBridge(browser);
+        loadListenerScope.close();
+        GrapheneCore.runtime().detachBridge(browser);
         browser.close();
     }
 
-    private GrapheneLoadListener createScopedLoadListener(GrapheneLoadListener loadListener) {
-        return new GrapheneLoadListener() {
-            @Override
-            public void onLoadingStateChange(
-                    CefBrowser eventBrowser,
-                    boolean isLoading,
-                    boolean canGoBack,
-                    boolean canGoForward
-            ) {
-                if (eventBrowser == browser) {
-                    loadListener.onLoadingStateChange(eventBrowser, isLoading, canGoBack, canGoForward);
-                }
-            }
-
-            @Override
-            public void onLoadStart(
-                    CefBrowser eventBrowser,
-                    CefFrame frame,
-                    CefRequest.TransitionType transitionType
-            ) {
-                if (eventBrowser == browser) {
-                    loadListener.onLoadStart(eventBrowser, frame, transitionType);
-                }
-            }
-
-            @Override
-            public void onLoadEnd(CefBrowser eventBrowser, CefFrame frame, int httpStatusCode) {
-                if (eventBrowser == browser) {
-                    loadListener.onLoadEnd(eventBrowser, frame, httpStatusCode);
-                }
-            }
-
-            @Override
-            public void onLoadError(
-                    CefBrowser eventBrowser,
-                    CefFrame frame,
-                    CefLoadHandler.ErrorCode errorCode,
-                    String errorText,
-                    String failedUrl
-            ) {
-                if (eventBrowser == browser) {
-                    loadListener.onLoadError(eventBrowser, frame, errorCode, errorText, failedUrl);
-                }
-            }
-        };
-    }
-
-    private void clearLoadListeners() {
-        List<GrapheneLoadListener> wrappedListeners;
-        synchronized (loadListenerWrappers) {
-            wrappedListeners = new ArrayList<>(loadListenerWrappers.values());
-            loadListenerWrappers.clear();
+    private void applyResizeInstruction(BrowserSurfaceSizingState.ResizeInstruction resizeInstruction) {
+        if (!resizeInstruction.shouldResizeBrowser()) {
+            return;
         }
 
-        for (GrapheneLoadListener wrappedListener : wrappedListeners) {
-            GrapheneCefRuntime.getLoadEventBus().unregister(wrappedListener);
-        }
-    }
-
-    private void setResolutionInternal(int width, int height) {
-        this.resolutionWidth = requirePositive(width, "resolutionWidth");
-        this.resolutionHeight = requirePositive(height, "resolutionHeight");
-
-        if (customViewBox) {
-            clampViewBoxToResolution();
-        } else {
-            syncViewBoxToResolution();
-        }
-    }
-
-    private void updateResolutionFromSurface() {
-        int calculatedWidth = (int) Math.max(MIN_SIZE, Math.round(surfaceWidth * McWindowScale.getScaleX()));
-        int calculatedHeight = (int) Math.max(MIN_SIZE, Math.round(surfaceHeight * McWindowScale.getScaleY()));
-        setResolutionInternal(calculatedWidth, calculatedHeight);
-    }
-
-    private void syncViewBoxToResolution() {
-        viewBox.setBounds(0, 0, resolutionWidth, resolutionHeight);
-    }
-
-    private void setViewBoxInternal(Rectangle requestedViewBox) {
-        int validatedWidth = requirePositive(requestedViewBox.width, "viewBoxWidth");
-        int validatedHeight = requirePositive(requestedViewBox.height, "viewBoxHeight");
-
-        int clampedX = Math.clamp(requestedViewBox.x, 0, Math.max(0, resolutionWidth - 1));
-        int clampedY = Math.clamp(requestedViewBox.y, 0, Math.max(0, resolutionHeight - 1));
-        int clampedWidth = Math.clamp(validatedWidth, MIN_SIZE, resolutionWidth - clampedX);
-        int clampedHeight = Math.clamp(validatedHeight, MIN_SIZE, resolutionHeight - clampedY);
-        viewBox.setBounds(clampedX, clampedY, clampedWidth, clampedHeight);
-    }
-
-    private void clampViewBoxToResolution() {
-        setViewBoxInternal(viewBox);
+        browser.wasResizedTo(resizeInstruction.width(), resizeInstruction.height());
     }
 
     @FunctionalInterface
@@ -379,9 +246,16 @@ public final class BrowserSurface implements AutoCloseable {
         private Consumer<CefRequestContext> requestContextCustomizer = NO_OP_REQUEST_CONTEXT_CUSTOMIZER;
         private GrapheneRenderer renderer;
         private BrowserSurfaceConfig config = BrowserSurfaceConfig.defaults();
-        private Object owner;
 
         private Builder() {
+        }
+
+        private static int requirePositive(int value, String name) {
+            if (value <= 0) {
+                throw new IllegalArgumentException(name + " must be > 0");
+            }
+
+            return value;
         }
 
         public Builder url(String url) {
@@ -454,18 +328,8 @@ public final class BrowserSurface implements AutoCloseable {
             return this;
         }
 
-        public Builder owner(Object owner) {
-            this.owner = Objects.requireNonNull(owner, "owner");
-            return this;
-        }
-
         public BrowserSurface build() {
-            BrowserSurface surface = new BrowserSurface(this);
-            if (owner != null) {
-                GrapheneCore.surfaces().register(owner, surface);
-            }
-
-            return surface;
+            return new BrowserSurface(this);
         }
     }
 }
