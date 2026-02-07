@@ -1,34 +1,54 @@
 package tytoo.grapheneui.mc;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.Identifier;
 
+import java.util.Objects;
+
+@SuppressWarnings({"resource", "java:S2095"})
 public final class McClient {
     private McClient() {
     }
 
+    public static Minecraft mc() {
+        return Minecraft.getInstance();
+    }
+
+    public static void execute(Runnable runnable) {
+        mc().execute(Objects.requireNonNull(runnable, "runnable"));
+    }
+
+    public static Screen currentScreen() {
+        return mc().screen;
+    }
+
+    public static void setScreen(Screen screen) {
+        mc().setScreen(screen);
+    }
+
     public static int windowWidth() {
-        return Minecraft.getInstance().getWindow().getWidth();
+        return mc().getWindow().getWidth();
     }
 
     public static int windowHeight() {
-        return Minecraft.getInstance().getWindow().getHeight();
+        return mc().getWindow().getHeight();
     }
 
     public static int guiScaledWidth() {
-        return Minecraft.getInstance().getWindow().getGuiScaledWidth();
+        return mc().getWindow().getGuiScaledWidth();
     }
 
     public static int guiScaledHeight() {
-        return Minecraft.getInstance().getWindow().getGuiScaledHeight();
+        return mc().getWindow().getGuiScaledHeight();
     }
 
     public static void registerTexture(Identifier textureId, DynamicTexture dynamicTexture) {
-        Minecraft.getInstance().getTextureManager().register(textureId, dynamicTexture);
+        mc().getTextureManager().register(textureId, dynamicTexture);
     }
 
     public static void releaseTexture(Identifier textureId) {
-        Minecraft.getInstance().getTextureManager().release(textureId);
+        mc().getTextureManager().release(textureId);
     }
 }

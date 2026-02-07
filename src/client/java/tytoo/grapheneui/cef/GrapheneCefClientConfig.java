@@ -4,17 +4,20 @@ import org.cef.CefClient;
 import org.cef.browser.CefBrowser;
 import org.cef.browser.CefFrame;
 import org.cef.browser.CefMessageRouter;
+import org.cef.callback.CefJSDialogCallback;
 import org.cef.callback.CefQueryCallback;
-import org.cef.handler.CefDisplayHandlerAdapter;
-import org.cef.handler.CefLoadHandler;
-import org.cef.handler.CefLoadHandlerAdapter;
-import org.cef.handler.CefMessageRouterHandlerAdapter;
+import org.cef.handler.*;
+import org.cef.misc.BoolRef;
 import org.cef.network.CefRequest;
+import tytoo.grapheneui.GrapheneCore;
 import tytoo.grapheneui.bridge.internal.GrapheneBridgeRuntime;
 import tytoo.grapheneui.browser.GrapheneBrowser;
+import tytoo.grapheneui.cef.alert.GrapheneJsDialogManager;
 import tytoo.grapheneui.event.GrapheneLoadEventBus;
 
 public final class GrapheneCefClientConfig {
+    private static final GrapheneJsDialogManager JS_DIALOG_MANAGER = new GrapheneJsDialogManager();
+
     private GrapheneCefClientConfig() {
     }
 
@@ -49,6 +52,32 @@ public final class GrapheneCefClientConfig {
                 if (browser instanceof GrapheneBrowser grapheneBrowser) {
                     grapheneBrowser.onTitleChange(title);
                 }
+            }
+        });
+
+        cefClient.addJSDialogHandler(new CefJSDialogHandlerAdapter() {
+            @Override
+            public boolean onJSDialog(
+                    CefBrowser browser,
+                    String originUrl,
+                    CefJSDialogHandler.JSDialogType dialogType,
+                    String messageText,
+                    String defaultPromptText,
+                    CefJSDialogCallback callback,
+                    BoolRef suppressMessage
+            ) {
+                if (callback == null) {
+                    suppressMessage.set(true);
+                    GrapheneCore.LOGGER.warn(
+                            "Suppressed JavaScript dialog without callback (type={}, origin={})",
+                            dialogType,
+                            originUrl
+                    );
+                    return false;
+                }
+
+                JS_DIALOG_MANAGER.enqueueDialog(browser, originUrl, dialogType, messageText, defaultPromptText, callback);
+                return true;
             }
         });
 
