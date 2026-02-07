@@ -6,6 +6,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
+import org.jspecify.annotations.NonNull;
 import tytoo.grapheneui.browser.GrapheneWebViewWidget;
 import tytoo.grapheneui.cef.GrapheneCefRuntime;
 
@@ -18,7 +19,6 @@ public final class GrapheneBrowserDebugScreen extends Screen {
     private GrapheneWebViewWidget webViewWidget;
     private EditBox urlBox;
     private Button backButton;
-    private Button reloadButton;
     private Button forwardButton;
 
     public GrapheneBrowserDebugScreen() {
@@ -28,8 +28,12 @@ public final class GrapheneBrowserDebugScreen extends Screen {
     private static void openRemoteDevTools() {
         int debugPort = GrapheneCefRuntime.getRemoteDebuggingPort();
         if (debugPort > 0) {
-            Util.getPlatform().openUri(URI.create("http://127.0.0.1:" + debugPort));
+            Util.getPlatform().openUri(URI.create("http://127.0.0.1:" + debugPort + "/json"));
         }
+    }
+
+    private static void rememberLastUrl(String url) {
+        lastUrl = url;
     }
 
     @Override
@@ -52,25 +56,25 @@ public final class GrapheneBrowserDebugScreen extends Screen {
         addRenderableWidget(webViewWidget);
 
         backButton = addRenderableWidget(
-                Button.builder(Component.translatable("screen.graphene-ui-debug.back"), button -> webViewWidget.goBack())
+                Button.builder(Component.translatable("screen.graphene-ui-debug.back"), _ -> webViewWidget.goBack())
                         .bounds(8, controlsY, 26, controlHeight)
                         .build()
         );
 
-        reloadButton = addRenderableWidget(
-                Button.builder(Component.translatable("screen.graphene-ui-debug.reload"), button -> webViewWidget.reload())
+        addRenderableWidget(
+                Button.builder(Component.translatable("screen.graphene-ui-debug.reload"), _ -> webViewWidget.reload())
                         .bounds(38, controlsY, 26, controlHeight)
                         .build()
         );
 
         forwardButton = addRenderableWidget(
-                Button.builder(Component.translatable("screen.graphene-ui-debug.forward"), button -> webViewWidget.goForward())
+                Button.builder(Component.translatable("screen.graphene-ui-debug.forward"), _ -> webViewWidget.goForward())
                         .bounds(68, controlsY, 26, controlHeight)
                         .build()
         );
 
         addRenderableWidget(
-                Button.builder(Component.translatable("screen.graphene-ui-debug.devtools"), button -> openRemoteDevTools())
+                Button.builder(Component.translatable("screen.graphene-ui-debug.devtools"), _ -> openRemoteDevTools())
                         .bounds(98, controlsY, 66, controlHeight)
                         .build()
         );
@@ -100,7 +104,7 @@ public final class GrapheneBrowserDebugScreen extends Screen {
     }
 
     @Override
-    public boolean keyPressed(KeyEvent keyEvent) {
+    public boolean keyPressed(@NonNull KeyEvent keyEvent) {
         if (urlBox != null && urlBox.isFocused() && keyEvent.isConfirmation()) {
             webViewWidget.loadUrl(urlBox.getValue());
             return true;
@@ -112,7 +116,7 @@ public final class GrapheneBrowserDebugScreen extends Screen {
     @Override
     public void onClose() {
         if (webViewWidget != null) {
-            lastUrl = webViewWidget.getBrowser().getURL();
+            rememberLastUrl(webViewWidget.getBrowser().getURL());
         }
 
         super.onClose();

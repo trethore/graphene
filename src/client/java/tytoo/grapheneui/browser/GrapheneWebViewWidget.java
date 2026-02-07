@@ -8,19 +8,13 @@ import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
-import org.cef.browser.CefBrowser;
-import org.cef.browser.CefFrame;
-import org.cef.handler.CefLoadHandler;
 import org.jspecify.annotations.NonNull;
 import tytoo.grapheneui.GrapheneCore;
-import tytoo.grapheneui.cef.GrapheneCefRuntime;
 import tytoo.grapheneui.event.GrapheneLoadListener;
 import tytoo.grapheneui.screen.GrapheneScreenBridge;
 
 import java.awt.*;
 import java.io.Closeable;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 
 public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
@@ -29,7 +23,6 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
     private final Screen screen;
     private final BrowserSurface surface;
     private final GrapheneBrowser browser;
-    private final Map<GrapheneLoadListener, GrapheneLoadListener> loadListenerWrappers = new HashMap<>();
     private int lastBrowserMouseX = Integer.MIN_VALUE;
     private int lastBrowserMouseY = Integer.MIN_VALUE;
     private boolean pointerButtonDown = false;
@@ -40,6 +33,19 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
     }
 
     public GrapheneWebViewWidget(Screen screen, int x, int y, int width, int height, Component message, String url) {
+        this(screen, x, y, width, height, message, url, BrowserSurfaceConfig.defaults());
+    }
+
+    public GrapheneWebViewWidget(
+            Screen screen,
+            int x,
+            int y,
+            int width,
+            int height,
+            Component message,
+            String url,
+            BrowserSurfaceConfig config
+    ) {
         this(
                 screen,
                 x,
@@ -50,6 +56,7 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
                 BrowserSurface.builder()
                         .url(url)
                         .surfaceSize(width, height)
+                        .config(Objects.requireNonNull(config, "config"))
                         .build()
         );
     }
@@ -80,53 +87,15 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
 
     @SuppressWarnings("unused")
     public void addLoadListener(GrapheneLoadListener loadListener) {
-        removeLoadListener(loadListener);
+        surface.addLoadListener(loadListener);
+    }
 
-        GrapheneLoadListener wrappedListener = new GrapheneLoadListener() {
-            @Override
-            public void onLoadingStateChange(org.cef.browser.CefBrowser browser, boolean isLoading, boolean canGoBack, boolean canGoForward) {
-                if (browser == GrapheneWebViewWidget.this.browser) {
-                    loadListener.onLoadingStateChange(browser, isLoading, canGoBack, canGoForward);
-                }
-            }
-
-            @Override
-            public void onLoadStart(org.cef.browser.CefBrowser browser, org.cef.browser.CefFrame frame, org.cef.network.CefRequest.TransitionType transitionType) {
-                if (browser == GrapheneWebViewWidget.this.browser) {
-                    loadListener.onLoadStart(browser, frame, transitionType);
-                }
-            }
-
-            @Override
-            public void onLoadEnd(org.cef.browser.CefBrowser browser, org.cef.browser.CefFrame frame, int httpStatusCode) {
-                if (browser == GrapheneWebViewWidget.this.browser) {
-                    loadListener.onLoadEnd(browser, frame, httpStatusCode);
-                }
-            }
-
-            @Override
-            public void onLoadError(
-                    CefBrowser browser,
-                    CefFrame frame,
-                    CefLoadHandler.ErrorCode errorCode,
-                    String errorText,
-                    String failedUrl
-            ) {
-                if (browser == GrapheneWebViewWidget.this.browser) {
-                    loadListener.onLoadError(browser, frame, errorCode, errorText, failedUrl);
-                }
-            }
-        };
-
-        loadListenerWrappers.put(loadListener, wrappedListener);
-        GrapheneCefRuntime.getLoadEventBus().register(wrappedListener);
+    public BrowserSurface.Subscription subscribeLoadListener(GrapheneLoadListener loadListener) {
+        return surface.subscribeLoadListener(loadListener);
     }
 
     public void removeLoadListener(GrapheneLoadListener loadListener) {
-        GrapheneLoadListener wrappedListener = loadListenerWrappers.remove(loadListener);
-        if (wrappedListener != null) {
-            GrapheneCefRuntime.getLoadEventBus().unregister(wrappedListener);
-        }
+        surface.removeLoadListener(loadListener);
     }
 
     public void loadUrl(String url) {
@@ -290,11 +259,6 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
 
     @Override
     public void close() {
-        for (GrapheneLoadListener wrappedListener : loadListenerWrappers.values()) {
-            GrapheneCefRuntime.getLoadEventBus().unregister(wrappedListener);
-        }
-        loadListenerWrappers.clear();
-
         if (screen instanceof GrapheneScreenBridge screenBridge) {
             screenBridge.grapheneui$removeWebViewWidget(this);
         }

@@ -12,11 +12,14 @@ import org.cef.browser.CefRequestContext;
 import org.cef.callback.CefDragData;
 import org.cef.handler.CefRenderHandler;
 import org.cef.handler.CefScreenInfo;
+import tytoo.grapheneui.render.GrapheneGuiRenderTarget;
+import tytoo.grapheneui.render.GrapheneRenderTarget;
 import tytoo.grapheneui.render.GrapheneRenderer;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.nio.ByteBuffer;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
@@ -32,7 +35,18 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
     private boolean closed = false;
 
     public GrapheneBrowser(CefClient client, String url, boolean transparent, CefRequestContext context, GrapheneRenderer renderer) {
-        this(client, url, transparent, context, renderer, null, null);
+        this(client, url, transparent, context, renderer, new CefBrowserSettings());
+    }
+
+    public GrapheneBrowser(
+            CefClient client,
+            String url,
+            boolean transparent,
+            CefRequestContext context,
+            GrapheneRenderer renderer,
+            CefBrowserSettings browserSettings
+    ) {
+        this(client, url, transparent, context, renderer, browserSettings, null, null);
     }
 
     private GrapheneBrowser(
@@ -41,10 +55,11 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
             boolean transparent,
             CefRequestContext context,
             GrapheneRenderer renderer,
+            CefBrowserSettings browserSettings,
             CefBrowserNAccessor parent,
             Point inspectAt
     ) {
-        super(client, url, context, parent, inspectAt, new CefBrowserSettings());
+        super(client, url, context, parent, inspectAt, Objects.requireNonNull(browserSettings, "browserSettings"));
         this.transparent = transparent;
         this.renderer = renderer;
     }
@@ -167,7 +182,16 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
             CefBrowserNAccessor parent,
             Point inspectAt
     ) {
-        return new GrapheneBrowser(client, url == null ? "about:blank" : url, false, context, new NoopRenderer(), parent, inspectAt);
+        return new GrapheneBrowser(
+                client,
+                url == null ? "about:blank" : url,
+                false,
+                context,
+                new NoopRenderer(),
+                new CefBrowserSettings(),
+                parent,
+                inspectAt
+        );
     }
 
     public void updateRendererFrame() {
@@ -175,7 +199,11 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
     }
 
     public void renderTo(int x, int y, int width, int height, GuiGraphics guiGraphics) {
-        renderer.render(guiGraphics, x, y, width, height);
+        renderer.render(GrapheneGuiRenderTarget.of(guiGraphics), x, y, width, height);
+    }
+
+    public void renderTo(int x, int y, int width, int height, GrapheneRenderTarget renderTarget) {
+        renderer.render(renderTarget, x, y, width, height);
     }
 
     public void renderTo(
@@ -189,7 +217,31 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
             int sourceHeight,
             GuiGraphics guiGraphics
     ) {
-        renderer.renderRegion(guiGraphics, x, y, width, height, sourceX, sourceY, sourceWidth, sourceHeight);
+        renderer.renderRegion(
+                GrapheneGuiRenderTarget.of(guiGraphics),
+                x,
+                y,
+                width,
+                height,
+                sourceX,
+                sourceY,
+                sourceWidth,
+                sourceHeight
+        );
+    }
+
+    public void renderTo(
+            int x,
+            int y,
+            int width,
+            int height,
+            int sourceX,
+            int sourceY,
+            int sourceWidth,
+            int sourceHeight,
+            GrapheneRenderTarget renderTarget
+    ) {
+        renderer.renderRegion(renderTarget, x, y, width, height, sourceX, sourceY, sourceWidth, sourceHeight);
     }
 
     public void wasResizedTo(int width, int height) {
@@ -267,7 +319,7 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
 
     private static final class NoopRenderer implements GrapheneRenderer {
         @Override
-        public void render(GuiGraphics guiGraphics, int x, int y, int width, int height) {
+        public void render(GrapheneRenderTarget renderTarget, int x, int y, int width, int height) {
             // Intentionally empty: DevTools helper browser is not rendered in-game.
         }
 

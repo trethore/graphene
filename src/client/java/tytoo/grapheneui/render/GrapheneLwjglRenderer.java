@@ -1,9 +1,7 @@
 package tytoo.grapheneui.render;
 
 import com.mojang.blaze3d.platform.NativeImage;
-import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.util.ARGB;
-import tytoo.grapheneui.mc.McGuiRender;
 import tytoo.grapheneui.mc.McIdentifiers;
 
 import java.awt.*;
@@ -31,13 +29,13 @@ public final class GrapheneLwjglRenderer implements GrapheneRenderer {
     }
 
     @Override
-    public void render(GuiGraphics guiGraphics, int x, int y, int width, int height) {
-        renderRegion(guiGraphics, x, y, width, height, 0, 0, viewWidth, viewHeight);
+    public void render(GrapheneRenderTarget renderTarget, int x, int y, int width, int height) {
+        renderRegion(renderTarget, x, y, width, height, 0, 0, viewWidth, viewHeight);
     }
 
     @Override
     public void renderRegion(
-            GuiGraphics guiGraphics,
+            GrapheneRenderTarget renderTarget,
             int x,
             int y,
             int width,
@@ -63,8 +61,7 @@ public final class GrapheneLwjglRenderer implements GrapheneRenderer {
         int clampedSourceWidth = Math.clamp(sourceWidth, 1, maxSourceWidth);
         int clampedSourceHeight = Math.clamp(sourceHeight, 1, maxSourceHeight);
 
-        McGuiRender.blitTextureRegion(
-                guiGraphics,
+        renderTarget.blitTextureRegion(
                 texture.textureId(),
                 x,
                 y,

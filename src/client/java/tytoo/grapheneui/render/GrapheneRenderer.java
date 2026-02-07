@@ -8,7 +8,25 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 
 public interface GrapheneRenderer {
-    void render(GuiGraphics guiGraphics, int x, int y, int width, int height);
+    void render(GrapheneRenderTarget renderTarget, int x, int y, int width, int height);
+
+    default void render(GuiGraphics guiGraphics, int x, int y, int width, int height) {
+        render(GrapheneGuiRenderTarget.of(guiGraphics), x, y, width, height);
+    }
+
+    default void renderRegion(
+            GrapheneRenderTarget renderTarget,
+            int x,
+            int y,
+            int width,
+            int height,
+            int sourceX,
+            int sourceY,
+            int sourceWidth,
+            int sourceHeight
+    ) {
+        render(renderTarget, x, y, width, height);
+    }
 
     default void renderRegion(
             GuiGraphics guiGraphics,
@@ -21,7 +39,7 @@ public interface GrapheneRenderer {
             int sourceWidth,
             int sourceHeight
     ) {
-        render(guiGraphics, x, y, width, height);
+        renderRegion(GrapheneGuiRenderTarget.of(guiGraphics), x, y, width, height, sourceX, sourceY, sourceWidth, sourceHeight);
     }
 
     void destroy();

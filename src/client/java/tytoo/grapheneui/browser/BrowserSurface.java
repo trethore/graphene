@@ -1,24 +1,37 @@
 package tytoo.grapheneui.browser;
 
 import net.minecraft.client.gui.GuiGraphics;
+import org.cef.CefBrowserSettings;
 import org.cef.CefClient;
+import org.cef.browser.CefBrowser;
+import org.cef.browser.CefFrame;
 import org.cef.browser.CefRequestContext;
+import org.cef.handler.CefLoadHandler;
+import org.cef.network.CefRequest;
 import tytoo.grapheneui.GrapheneCore;
 import tytoo.grapheneui.cef.GrapheneCefRuntime;
+import tytoo.grapheneui.event.GrapheneLoadListener;
 import tytoo.grapheneui.mc.McWindowScale;
 import tytoo.grapheneui.render.GrapheneLwjglRenderer;
+import tytoo.grapheneui.render.GrapheneRenderTarget;
 import tytoo.grapheneui.render.GrapheneRenderer;
 
 import java.awt.*;
-import java.util.Objects;
+import java.util.*;
+import java.util.List;
+import java.util.function.Consumer;
 
 @SuppressWarnings("unused") // Public API
 public final class BrowserSurface implements AutoCloseable {
     private static final int MIN_SIZE = 1;
     private static final String SURFACE_WIDTH_NAME = "surfaceWidth";
     private static final String SURFACE_HEIGHT_NAME = "surfaceHeight";
+    private static final Consumer<CefRequestContext> NO_OP_REQUEST_CONTEXT_CUSTOMIZER = ignoredRequestContext -> {
+    };
+    private static final String LOAD_LISTENER_NAME = "loadListener";
 
     private final GrapheneBrowser browser;
+    private final Map<GrapheneLoadListener, GrapheneLoadListener> loadListenerWrappers = new IdentityHashMap<>();
     private final Rectangle viewBox = new Rectangle(0, 0, 1, 1);
     private int surfaceWidth;
     private int surfaceHeight;
@@ -48,9 +61,18 @@ public final class BrowserSurface implements AutoCloseable {
 
         CefClient cefClient = builder.client != null ? builder.client : GrapheneCefRuntime.requireClient();
         CefRequestContext requestContext = builder.requestContext != null ? builder.requestContext : CefRequestContext.getGlobalContext();
+        builder.requestContextCustomizer.accept(requestContext);
         GrapheneRenderer renderer = builder.renderer != null ? builder.renderer : new GrapheneLwjglRenderer(builder.transparent);
+        BrowserSurfaceConfig config = builder.config != null ? builder.config : BrowserSurfaceConfig.defaults();
 
-        this.browser = new GrapheneBrowser(cefClient, builder.url, builder.transparent, requestContext, renderer);
+        this.browser = new GrapheneBrowser(
+                cefClient,
+                builder.url,
+                builder.transparent,
+                requestContext,
+                renderer,
+                config.toCefBrowserSettings()
+        );
         this.browser.createImmediately();
         this.browser.wasResizedTo(resolutionWidth, resolutionHeight);
     }
@@ -111,6 +133,45 @@ public final class BrowserSurface implements AutoCloseable {
         GrapheneCore.surfaces().unregister(owner, this);
     }
 
+    public Subscription subscribeLoadListener(GrapheneLoadListener loadListener) {
+        Objects.requireNonNull(loadListener, LOAD_LISTENER_NAME);
+        addLoadListener(loadListener);
+        return () -> removeLoadListener(loadListener);
+    }
+
+    public void addLoadListener(GrapheneLoadListener loadListener) {
+        Objects.requireNonNull(loadListener, LOAD_LISTENER_NAME);
+
+        if (closed) {
+            throw new IllegalStateException("Cannot add load listener to a closed BrowserSurface");
+        }
+
+        GrapheneLoadListener wrappedListener = createScopedLoadListener(loadListener);
+        GrapheneLoadListener previousWrappedListener;
+        synchronized (loadListenerWrappers) {
+            previousWrappedListener = loadListenerWrappers.put(loadListener, wrappedListener);
+        }
+
+        if (previousWrappedListener != null) {
+            GrapheneCefRuntime.getLoadEventBus().unregister(previousWrappedListener);
+        }
+
+        GrapheneCefRuntime.getLoadEventBus().register(wrappedListener);
+    }
+
+    public void removeLoadListener(GrapheneLoadListener loadListener) {
+        Objects.requireNonNull(loadListener, LOAD_LISTENER_NAME);
+
+        GrapheneLoadListener wrappedListener;
+        synchronized (loadListenerWrappers) {
+            wrappedListener = loadListenerWrappers.remove(loadListener);
+        }
+
+        if (wrappedListener != null) {
+            GrapheneCefRuntime.getLoadEventBus().unregister(wrappedListener);
+        }
+    }
+
     public void setSurfaceSize(int width, int height) {
         int validatedWidth = requirePositive(width, SURFACE_WIDTH_NAME);
         int validatedHeight = requirePositive(height, SURFACE_HEIGHT_NAME);
@@ -168,8 +229,16 @@ public final class BrowserSurface implements AutoCloseable {
         render(guiGraphics, x, y, surfaceWidth, surfaceHeight);
     }
 
+    public void render(GrapheneRenderTarget renderTarget, int x, int y) {
+        render(renderTarget, x, y, surfaceWidth, surfaceHeight);
+    }
+
     public void render(GuiGraphics guiGraphics, int x, int y, int width, int height) {
         browser.renderTo(x, y, width, height, viewBox.x, viewBox.y, viewBox.width, viewBox.height, guiGraphics);
+    }
+
+    public void render(GrapheneRenderTarget renderTarget, int x, int y, int width, int height) {
+        browser.renderTo(x, y, width, height, viewBox.x, viewBox.y, viewBox.width, viewBox.height, renderTarget);
     }
 
     @Override
@@ -179,7 +248,67 @@ public final class BrowserSurface implements AutoCloseable {
         }
 
         closed = true;
+        clearLoadListeners();
         browser.close();
+    }
+
+    private GrapheneLoadListener createScopedLoadListener(GrapheneLoadListener loadListener) {
+        return new GrapheneLoadListener() {
+            @Override
+            public void onLoadingStateChange(
+                    CefBrowser eventBrowser,
+                    boolean isLoading,
+                    boolean canGoBack,
+                    boolean canGoForward
+            ) {
+                if (eventBrowser == browser) {
+                    loadListener.onLoadingStateChange(eventBrowser, isLoading, canGoBack, canGoForward);
+                }
+            }
+
+            @Override
+            public void onLoadStart(
+                    CefBrowser eventBrowser,
+                    CefFrame frame,
+                    CefRequest.TransitionType transitionType
+            ) {
+                if (eventBrowser == browser) {
+                    loadListener.onLoadStart(eventBrowser, frame, transitionType);
+                }
+            }
+
+            @Override
+            public void onLoadEnd(CefBrowser eventBrowser, CefFrame frame, int httpStatusCode) {
+                if (eventBrowser == browser) {
+                    loadListener.onLoadEnd(eventBrowser, frame, httpStatusCode);
+                }
+            }
+
+            @Override
+            public void onLoadError(
+                    CefBrowser eventBrowser,
+                    CefFrame frame,
+                    CefLoadHandler.ErrorCode errorCode,
+                    String errorText,
+                    String failedUrl
+            ) {
+                if (eventBrowser == browser) {
+                    loadListener.onLoadError(eventBrowser, frame, errorCode, errorText, failedUrl);
+                }
+            }
+        };
+    }
+
+    private void clearLoadListeners() {
+        List<GrapheneLoadListener> wrappedListeners;
+        synchronized (loadListenerWrappers) {
+            wrappedListeners = new ArrayList<>(loadListenerWrappers.values());
+            loadListenerWrappers.clear();
+        }
+
+        for (GrapheneLoadListener wrappedListener : wrappedListeners) {
+            GrapheneCefRuntime.getLoadEventBus().unregister(wrappedListener);
+        }
     }
 
     private void setResolutionInternal(int width, int height) {
@@ -218,6 +347,16 @@ public final class BrowserSurface implements AutoCloseable {
         setViewBoxInternal(viewBox);
     }
 
+    @FunctionalInterface
+    public interface Subscription extends AutoCloseable {
+        void unsubscribe();
+
+        @Override
+        default void close() {
+            unsubscribe();
+        }
+    }
+
     public static final class Builder {
         private String url = "about:blank";
         private boolean transparent = true;
@@ -229,7 +368,9 @@ public final class BrowserSurface implements AutoCloseable {
         private Rectangle viewBox;
         private CefClient client;
         private CefRequestContext requestContext;
+        private Consumer<CefRequestContext> requestContextCustomizer = NO_OP_REQUEST_CONTEXT_CUSTOMIZER;
         private GrapheneRenderer renderer;
+        private BrowserSurfaceConfig config = BrowserSurfaceConfig.defaults();
         private Object owner;
 
         private Builder() {
@@ -278,8 +419,30 @@ public final class BrowserSurface implements AutoCloseable {
             return this;
         }
 
+        public Builder requestContextCustomizer(Consumer<CefRequestContext> requestContextCustomizer) {
+            this.requestContextCustomizer = this.requestContextCustomizer.andThen(
+                    Objects.requireNonNull(requestContextCustomizer, "requestContextCustomizer")
+            );
+            return this;
+        }
+
         public Builder renderer(GrapheneRenderer renderer) {
             this.renderer = Objects.requireNonNull(renderer, "renderer");
+            return this;
+        }
+
+        public Builder config(BrowserSurfaceConfig config) {
+            this.config = Objects.requireNonNull(config, "config");
+            return this;
+        }
+
+        public Builder maxFps(int maxFps) {
+            this.config = this.config.withMaxFps(maxFps);
+            return this;
+        }
+
+        public Builder settingsCustomizer(Consumer<CefBrowserSettings> settingsCustomizer) {
+            this.config = this.config.withSettingsCustomizer(settingsCustomizer);
             return this;
         }
 
