@@ -11,6 +11,7 @@ public final class GrapheneKeyCodeUtil {
     private GrapheneKeyCodeUtil() {
     }
 
+    @SuppressWarnings("java:S1479") // Sonar complains about this being too long.
     public static int toAwtKeyCode(int keyCode) {
         return switch (keyCode) {
             case GLFW.GLFW_KEY_BACKSPACE -> KeyEvent.VK_BACK_SPACE;
@@ -30,7 +31,95 @@ public final class GrapheneKeyCodeUtil {
             case GLFW.GLFW_KEY_END -> KeyEvent.VK_END;
             case GLFW.GLFW_KEY_PAGE_UP -> KeyEvent.VK_PAGE_UP;
             case GLFW.GLFW_KEY_PAGE_DOWN -> KeyEvent.VK_PAGE_DOWN;
+            case GLFW.GLFW_KEY_KP_0 -> KeyEvent.VK_NUMPAD0;
+            case GLFW.GLFW_KEY_KP_1 -> KeyEvent.VK_NUMPAD1;
+            case GLFW.GLFW_KEY_KP_2 -> KeyEvent.VK_NUMPAD2;
+            case GLFW.GLFW_KEY_KP_3 -> KeyEvent.VK_NUMPAD3;
+            case GLFW.GLFW_KEY_KP_4 -> KeyEvent.VK_NUMPAD4;
+            case GLFW.GLFW_KEY_KP_5 -> KeyEvent.VK_NUMPAD5;
+            case GLFW.GLFW_KEY_KP_6 -> KeyEvent.VK_NUMPAD6;
+            case GLFW.GLFW_KEY_KP_7 -> KeyEvent.VK_NUMPAD7;
+            case GLFW.GLFW_KEY_KP_8 -> KeyEvent.VK_NUMPAD8;
+            case GLFW.GLFW_KEY_KP_9 -> KeyEvent.VK_NUMPAD9;
+            case GLFW.GLFW_KEY_KP_DECIMAL -> KeyEvent.VK_DECIMAL;
+            case GLFW.GLFW_KEY_KP_DIVIDE -> KeyEvent.VK_DIVIDE;
+            case GLFW.GLFW_KEY_KP_MULTIPLY -> KeyEvent.VK_MULTIPLY;
+            case GLFW.GLFW_KEY_KP_SUBTRACT -> KeyEvent.VK_SUBTRACT;
+            case GLFW.GLFW_KEY_KP_ADD -> KeyEvent.VK_ADD;
+            case GLFW.GLFW_KEY_KP_EQUAL -> KeyEvent.VK_EQUALS;
             default -> keyCode;
+        };
+    }
+
+    public static boolean isNumpadKey(int keyCode) {
+        return switch (keyCode) {
+            case GLFW.GLFW_KEY_KP_0,
+                 GLFW.GLFW_KEY_KP_1,
+                 GLFW.GLFW_KEY_KP_2,
+                 GLFW.GLFW_KEY_KP_3,
+                 GLFW.GLFW_KEY_KP_4,
+                 GLFW.GLFW_KEY_KP_5,
+                 GLFW.GLFW_KEY_KP_6,
+                 GLFW.GLFW_KEY_KP_7,
+                 GLFW.GLFW_KEY_KP_8,
+                 GLFW.GLFW_KEY_KP_9,
+                 GLFW.GLFW_KEY_KP_DECIMAL,
+                 GLFW.GLFW_KEY_KP_DIVIDE,
+                 GLFW.GLFW_KEY_KP_MULTIPLY,
+                 GLFW.GLFW_KEY_KP_SUBTRACT,
+                 GLFW.GLFW_KEY_KP_ADD,
+                 GLFW.GLFW_KEY_KP_ENTER,
+                 GLFW.GLFW_KEY_KP_EQUAL -> true;
+            default -> false;
+        };
+    }
+
+    public static boolean isNumpadTextKey(int keyCode) {
+        return switch (keyCode) {
+            case GLFW.GLFW_KEY_KP_0,
+                 GLFW.GLFW_KEY_KP_1,
+                 GLFW.GLFW_KEY_KP_2,
+                 GLFW.GLFW_KEY_KP_3,
+                 GLFW.GLFW_KEY_KP_4,
+                 GLFW.GLFW_KEY_KP_5,
+                 GLFW.GLFW_KEY_KP_6,
+                 GLFW.GLFW_KEY_KP_7,
+                 GLFW.GLFW_KEY_KP_8,
+                 GLFW.GLFW_KEY_KP_9,
+                 GLFW.GLFW_KEY_KP_DECIMAL,
+                 GLFW.GLFW_KEY_KP_DIVIDE,
+                 GLFW.GLFW_KEY_KP_MULTIPLY,
+                 GLFW.GLFW_KEY_KP_SUBTRACT,
+                 GLFW.GLFW_KEY_KP_ADD,
+                 GLFW.GLFW_KEY_KP_EQUAL -> true;
+            default -> false;
+        };
+    }
+
+    public static boolean isNumpadOperatorKey(int keyCode) {
+        return switch (keyCode) {
+            case GLFW.GLFW_KEY_KP_DIVIDE,
+                 GLFW.GLFW_KEY_KP_MULTIPLY,
+                 GLFW.GLFW_KEY_KP_SUBTRACT,
+                 GLFW.GLFW_KEY_KP_ADD -> true;
+            default -> false;
+        };
+    }
+
+    public static boolean requiresNumLockForText(int keyCode) {
+        return switch (keyCode) {
+            case GLFW.GLFW_KEY_KP_0,
+                 GLFW.GLFW_KEY_KP_1,
+                 GLFW.GLFW_KEY_KP_2,
+                 GLFW.GLFW_KEY_KP_3,
+                 GLFW.GLFW_KEY_KP_4,
+                 GLFW.GLFW_KEY_KP_5,
+                 GLFW.GLFW_KEY_KP_6,
+                 GLFW.GLFW_KEY_KP_7,
+                 GLFW.GLFW_KEY_KP_8,
+                 GLFW.GLFW_KEY_KP_9,
+                 GLFW.GLFW_KEY_KP_DECIMAL -> true;
+            default -> false;
         };
     }
 
@@ -41,6 +130,10 @@ public final class GrapheneKeyCodeUtil {
 
         if (isDigitKey(keyCode)) {
             return toDigitCharacter(keyCode, shift);
+        }
+
+        if (isNumpadDigitKey(keyCode)) {
+            return toNumpadDigitCharacter(keyCode);
         }
 
         return toSpecialCharacter(keyCode, shift);
@@ -68,10 +161,24 @@ public final class GrapheneKeyCodeUtil {
         return (char) ('0' + digitIndex);
     }
 
+    private static boolean isNumpadDigitKey(int keyCode) {
+        return keyCode >= GLFW.GLFW_KEY_KP_0 && keyCode <= GLFW.GLFW_KEY_KP_9;
+    }
+
+    private static char toNumpadDigitCharacter(int keyCode) {
+        return (char) ('0' + (keyCode - GLFW.GLFW_KEY_KP_0));
+    }
+
     private static char toSpecialCharacter(int keyCode, boolean shift) {
         return switch (keyCode) {
             case GLFW.GLFW_KEY_MINUS -> shift ? '_' : '-';
             case GLFW.GLFW_KEY_EQUAL -> shift ? '+' : '=';
+            case GLFW.GLFW_KEY_KP_DECIMAL -> '.';
+            case GLFW.GLFW_KEY_KP_DIVIDE -> '/';
+            case GLFW.GLFW_KEY_KP_MULTIPLY -> '*';
+            case GLFW.GLFW_KEY_KP_SUBTRACT -> '-';
+            case GLFW.GLFW_KEY_KP_ADD -> '+';
+            case GLFW.GLFW_KEY_KP_EQUAL -> '=';
             case GLFW.GLFW_KEY_BACKSLASH -> shift ? '|' : '\\';
             case GLFW.GLFW_KEY_SLASH -> shift ? '?' : '/';
             case GLFW.GLFW_KEY_SEMICOLON -> shift ? ':' : ';';
