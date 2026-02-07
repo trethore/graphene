@@ -19,6 +19,7 @@ import java.util.Objects;
 
 public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
     private static final String DEFAULT_URL = "classpath://assets/graphene-ui/graphene_test/welcome.html";
+    private static final int MAX_CLICK_COUNT = 3;
 
     private final Screen screen;
     private final BrowserSurface surface;
@@ -26,6 +27,10 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
     private int lastBrowserMouseX = Integer.MIN_VALUE;
     private int lastBrowserMouseY = Integer.MIN_VALUE;
     private boolean pointerButtonDown = false;
+    private int lastClickButton = -1;
+    private int clickCount = 0;
+    private int pressedButton = -1;
+    private int pressedClickCount = 1;
 
     @SuppressWarnings("unused")
     public GrapheneWebViewWidget(Screen screen, int x, int y, int width, int height, Component message) {
@@ -152,7 +157,10 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
         setFocused(true);
         pointerButtonDown = mouseButtonEvent.button() == 0;
         Point browserPoint = toBrowserPoint(mouseButtonEvent.x(), mouseButtonEvent.y());
-        browser.mouseInteracted(browserPoint.x, browserPoint.y, 0, mouseButtonEvent.button(), true, isDoubleClick ? 2 : 1);
+        int currentClickCount = resolveClickCount(mouseButtonEvent.button(), isDoubleClick);
+        pressedButton = mouseButtonEvent.button();
+        pressedClickCount = currentClickCount;
+        browser.mouseInteracted(browserPoint.x, browserPoint.y, 0, mouseButtonEvent.button(), true, currentClickCount);
         return true;
     }
 
@@ -162,6 +170,8 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
         browser.setFocus(focused);
         if (!focused) {
             pointerButtonDown = false;
+            pressedButton = -1;
+            pressedClickCount = 1;
         }
     }
 
@@ -176,7 +186,12 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
         }
 
         Point browserPoint = toBrowserPoint(mouseButtonEvent.x(), mouseButtonEvent.y());
-        browser.mouseInteracted(browserPoint.x, browserPoint.y, 0, mouseButtonEvent.button(), false, 1);
+        int releaseClickCount = mouseButtonEvent.button() == pressedButton ? pressedClickCount : 1;
+        browser.mouseInteracted(browserPoint.x, browserPoint.y, 0, mouseButtonEvent.button(), false, releaseClickCount);
+        if (mouseButtonEvent.button() == pressedButton) {
+            pressedButton = -1;
+            pressedClickCount = 1;
+        }
         return true;
     }
 
@@ -281,5 +296,16 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
         double localX = mouseX - getX();
         double localY = mouseY - getY();
         return surface.toBrowserPoint(localX, localY, getWidth(), getHeight());
+    }
+
+    private int resolveClickCount(int button, boolean isDoubleClick) {
+        if (!isDoubleClick || button != lastClickButton) {
+            clickCount = 1;
+        } else {
+            clickCount = Math.min(clickCount + 1, MAX_CLICK_COUNT);
+        }
+
+        lastClickButton = button;
+        return clickCount;
     }
 }

@@ -34,6 +34,8 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
     private volatile int cursorType = Cursor.DEFAULT_CURSOR;
     private boolean closed = false;
 
+
+    @SuppressWarnings("unused") // Util constructor for simple browser creation with default settings.
     public GrapheneBrowser(CefClient client, String url, boolean transparent, CefRequestContext context, GrapheneRenderer renderer) {
         this(client, url, transparent, context, renderer, new CefBrowserSettings());
     }

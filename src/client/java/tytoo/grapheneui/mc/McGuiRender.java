@@ -4,6 +4,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
 
+@SuppressWarnings("unused") // util
 public final class McGuiRender {
     private McGuiRender() {
     }

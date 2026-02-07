@@ -140,8 +140,12 @@ final class GrapheneInputBridge {
 
         if (pressed && keyCode == GLFW.GLFW_KEY_BACKSPACE) {
             KeyEvent typedBackspace = new KeyEvent(uiComponent, KeyEvent.KEY_TYPED, System.currentTimeMillis(), awtModifiers, 0, '\b');
-            scancodeInjector.inject(typedBackspace, scanCode);
             browser.dispatchKeyEvent(typedBackspace);
+        }
+
+        if (pressed && (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER)) {
+            KeyEvent typedEnter = new KeyEvent(uiComponent, KeyEvent.KEY_TYPED, System.currentTimeMillis(), awtModifiers, 0, '\r');
+            browser.dispatchKeyEvent(typedEnter);
         }
     }
 }

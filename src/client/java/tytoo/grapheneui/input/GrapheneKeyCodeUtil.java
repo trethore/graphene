@@ -6,6 +6,7 @@ import java.awt.event.KeyEvent;
 
 public final class GrapheneKeyCodeUtil {
     private static final String SHIFTED_DIGITS = ")!@#$%^&*(";
+    private static final int AWT_VK_RETURN = 0x0D;
 
     private GrapheneKeyCodeUtil() {
     }
@@ -14,7 +15,7 @@ public final class GrapheneKeyCodeUtil {
         return switch (keyCode) {
             case GLFW.GLFW_KEY_BACKSPACE -> KeyEvent.VK_BACK_SPACE;
             case GLFW.GLFW_KEY_TAB -> KeyEvent.VK_TAB;
-            case GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> KeyEvent.VK_ENTER;
+            case GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> AWT_VK_RETURN;
             case GLFW.GLFW_KEY_LEFT_SHIFT, GLFW.GLFW_KEY_RIGHT_SHIFT -> KeyEvent.VK_SHIFT;
             case GLFW.GLFW_KEY_LEFT_CONTROL, GLFW.GLFW_KEY_RIGHT_CONTROL -> KeyEvent.VK_CONTROL;
             case GLFW.GLFW_KEY_LEFT_ALT, GLFW.GLFW_KEY_RIGHT_ALT -> KeyEvent.VK_ALT;
@@ -80,7 +81,7 @@ public final class GrapheneKeyCodeUtil {
             case GLFW.GLFW_KEY_LEFT_BRACKET -> shift ? '{' : '[';
             case GLFW.GLFW_KEY_RIGHT_BRACKET -> shift ? '}' : ']';
             case GLFW.GLFW_KEY_TAB -> '\t';
-            case GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> '\n';
+            case GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> '\r';
             case GLFW.GLFW_KEY_BACKSPACE -> '\b';
             case GLFW.GLFW_KEY_SPACE -> ' ';
             default -> KeyEvent.CHAR_UNDEFINED;
