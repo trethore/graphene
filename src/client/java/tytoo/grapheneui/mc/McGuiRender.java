@@ -18,17 +18,34 @@ public final class McGuiRender {
             int textureWidth,
             int textureHeight
     ) {
+        blitTextureRegion(guiGraphics, textureId, x, y, width, height, 0, 0, textureWidth, textureHeight, textureWidth, textureHeight);
+    }
+
+    public static void blitTextureRegion(
+            GuiGraphics guiGraphics,
+            Identifier textureId,
+            int x,
+            int y,
+            int width,
+            int height,
+            int sourceX,
+            int sourceY,
+            int sourceWidth,
+            int sourceHeight,
+            int textureWidth,
+            int textureHeight
+    ) {
         guiGraphics.blit(
                 RenderPipelines.GUI_TEXTURED,
                 textureId,
                 x,
                 y,
-                0.0F,
-                0.0F,
+                sourceX,
+                sourceY,
                 width,
                 height,
-                textureWidth,
-                textureHeight,
+                sourceWidth,
+                sourceHeight,
                 textureWidth,
                 textureHeight
         );

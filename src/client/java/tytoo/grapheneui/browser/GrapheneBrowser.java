@@ -178,6 +178,20 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
         renderer.render(guiGraphics, x, y, width, height);
     }
 
+    public void renderTo(
+            int x,
+            int y,
+            int width,
+            int height,
+            int sourceX,
+            int sourceY,
+            int sourceWidth,
+            int sourceHeight,
+            GuiGraphics guiGraphics
+    ) {
+        renderer.renderRegion(guiGraphics, x, y, width, height, sourceX, sourceY, sourceWidth, sourceHeight);
+    }
+
     public void wasResizedTo(int width, int height) {
         browserRect.setBounds(0, 0, width, height);
         super.wasResized(width, height);

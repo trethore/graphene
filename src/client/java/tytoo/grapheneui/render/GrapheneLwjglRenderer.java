@@ -32,11 +32,51 @@ public final class GrapheneLwjglRenderer implements GrapheneRenderer {
 
     @Override
     public void render(GuiGraphics guiGraphics, int x, int y, int width, int height) {
+        renderRegion(guiGraphics, x, y, width, height, 0, 0, viewWidth, viewHeight);
+    }
+
+    @Override
+    public void renderRegion(
+            GuiGraphics guiGraphics,
+            int x,
+            int y,
+            int width,
+            int height,
+            int sourceX,
+            int sourceY,
+            int sourceWidth,
+            int sourceHeight
+    ) {
         if (viewWidth <= 0 || viewHeight <= 0) {
             return;
         }
 
-        McGuiRender.blitTexture(guiGraphics, texture.textureId(), x, y, width, height, viewWidth, viewHeight);
+        int clampedSourceX = Math.clamp(sourceX, 0, Math.max(0, viewWidth - 1));
+        int clampedSourceY = Math.clamp(sourceY, 0, Math.max(0, viewHeight - 1));
+        int maxSourceWidth = viewWidth - clampedSourceX;
+        int maxSourceHeight = viewHeight - clampedSourceY;
+
+        if (sourceWidth <= 0 || sourceHeight <= 0 || maxSourceWidth <= 0 || maxSourceHeight <= 0) {
+            return;
+        }
+
+        int clampedSourceWidth = Math.clamp(sourceWidth, 1, maxSourceWidth);
+        int clampedSourceHeight = Math.clamp(sourceHeight, 1, maxSourceHeight);
+
+        McGuiRender.blitTextureRegion(
+                guiGraphics,
+                texture.textureId(),
+                x,
+                y,
+                width,
+                height,
+                clampedSourceX,
+                clampedSourceY,
+                clampedSourceWidth,
+                clampedSourceHeight,
+                viewWidth,
+                viewHeight
+        );
     }
 
     @Override

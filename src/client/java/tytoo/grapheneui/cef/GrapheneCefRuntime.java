@@ -84,6 +84,8 @@ public final class GrapheneCefRuntime {
                 return;
             }
 
+            GrapheneCore.surfaces().closeAll();
+
             if (cefApp != null) {
                 cefApp.dispose();
             }

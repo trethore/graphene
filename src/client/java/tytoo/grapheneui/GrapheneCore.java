@@ -2,6 +2,7 @@ package tytoo.grapheneui;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tytoo.grapheneui.browser.GrapheneBrowserSurfaceManager;
 import tytoo.grapheneui.cef.GrapheneCefRuntime;
 
 /**
@@ -11,6 +12,7 @@ import tytoo.grapheneui.cef.GrapheneCefRuntime;
 public final class GrapheneCore {
     public static final String ID = "graphene-ui";
     public static final Logger LOGGER = LoggerFactory.getLogger(ID);
+    private static final GrapheneBrowserSurfaceManager SURFACE_MANAGER = new GrapheneBrowserSurfaceManager();
 
     private GrapheneCore() {
     }
@@ -29,5 +31,9 @@ public final class GrapheneCore {
     @SuppressWarnings("unused")
     public static synchronized boolean isInitialized() {
         return GrapheneCefRuntime.isInitialized();
+    }
+
+    public static GrapheneBrowserSurfaceManager surfaces() {
+        return SURFACE_MANAGER;
     }
 }

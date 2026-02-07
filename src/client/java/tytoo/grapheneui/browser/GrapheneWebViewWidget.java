@@ -10,21 +10,24 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import org.cef.browser.CefBrowser;
 import org.cef.browser.CefFrame;
-import org.cef.browser.CefRequestContext;
 import org.cef.handler.CefLoadHandler;
 import org.jspecify.annotations.NonNull;
+import tytoo.grapheneui.GrapheneCore;
 import tytoo.grapheneui.cef.GrapheneCefRuntime;
 import tytoo.grapheneui.event.GrapheneLoadListener;
-import tytoo.grapheneui.mc.McWindowScale;
-import tytoo.grapheneui.render.GrapheneLwjglRenderer;
 import tytoo.grapheneui.screen.GrapheneScreenBridge;
 
+import java.awt.*;
 import java.io.Closeable;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
+    private static final String DEFAULT_URL = "classpath://assets/graphene-ui/graphene_test/welcome.html";
+
     private final Screen screen;
+    private final BrowserSurface surface;
     private final GrapheneBrowser browser;
     private final Map<GrapheneLoadListener, GrapheneLoadListener> loadListenerWrappers = new HashMap<>();
     private int lastBrowserMouseX = Integer.MIN_VALUE;
@@ -33,34 +36,46 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
 
     @SuppressWarnings("unused")
     public GrapheneWebViewWidget(Screen screen, int x, int y, int width, int height, Component message) {
-        this(screen, x, y, width, height, message, "classpath://assets/graphene-ui/graphene_test/welcome.html");
+        this(screen, x, y, width, height, message, DEFAULT_URL);
     }
 
     public GrapheneWebViewWidget(Screen screen, int x, int y, int width, int height, Component message, String url) {
+        this(
+                screen,
+                x,
+                y,
+                width,
+                height,
+                message,
+                BrowserSurface.builder()
+                        .url(url)
+                        .surfaceSize(width, height)
+                        .build()
+        );
+    }
+
+    public GrapheneWebViewWidget(Screen screen, int x, int y, int width, int height, Component message, BrowserSurface surface) {
         super(x, y, width, height, message);
         this.screen = screen;
-        GrapheneLwjglRenderer renderer = new GrapheneLwjglRenderer(true);
-        this.browser = new GrapheneBrowser(
-                GrapheneCefRuntime.requireClient(),
-                url,
-                true,
-                CefRequestContext.getGlobalContext(),
-                renderer
-        );
+        this.surface = Objects.requireNonNull(surface, "surface");
+        this.browser = this.surface.browser();
 
         if (!(screen instanceof GrapheneScreenBridge screenBridge)) {
             throw new IllegalStateException("Screen does not implement GrapheneScreenBridge: " + screen.getClass().getName());
         }
 
         screenBridge.grapheneui$addWebViewWidget(this);
-        browser.createImmediately();
+        GrapheneCore.surfaces().register(this, this.surface);
         browser.setFocus(true);
-        browser.setCloseAllowed();
-        resizeBrowser(width, height);
+        this.surface.setSurfaceSize(width, height);
     }
 
     public GrapheneBrowser getBrowser() {
         return browser;
+    }
+
+    public BrowserSurface getSurface() {
+        return surface;
     }
 
     @SuppressWarnings("unused")
@@ -140,8 +155,8 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
             guiGraphics.fill(getX(), getY(), getX() + getWidth(), getY() + getHeight(), 0x66333333);
         }
 
-        browser.updateRendererFrame();
-        browser.renderTo(getX(), getY(), getWidth(), getHeight(), guiGraphics);
+        surface.updateFrame();
+        surface.render(guiGraphics, getX(), getY(), getWidth(), getHeight());
 
         if (isMouseOver(mouseX, mouseY)) {
             guiGraphics.requestCursor(browser.getRequestedCursor());
@@ -167,9 +182,8 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
 
         setFocused(true);
         pointerButtonDown = mouseButtonEvent.button() == 0;
-        int localX = (int) ((mouseButtonEvent.x() - getX()) * getScaleX());
-        int localY = (int) ((mouseButtonEvent.y() - getY()) * getScaleY());
-        browser.mouseInteracted(localX, localY, 0, mouseButtonEvent.button(), true, isDoubleClick ? 2 : 1);
+        Point browserPoint = toBrowserPoint(mouseButtonEvent.x(), mouseButtonEvent.y());
+        browser.mouseInteracted(browserPoint.x, browserPoint.y, 0, mouseButtonEvent.button(), true, isDoubleClick ? 2 : 1);
         return true;
     }
 
@@ -192,9 +206,8 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
             return false;
         }
 
-        int localX = (int) ((mouseButtonEvent.x() - getX()) * getScaleX());
-        int localY = (int) ((mouseButtonEvent.y() - getY()) * getScaleY());
-        browser.mouseInteracted(localX, localY, 0, mouseButtonEvent.button(), false, 1);
+        Point browserPoint = toBrowserPoint(mouseButtonEvent.x(), mouseButtonEvent.y());
+        browser.mouseInteracted(browserPoint.x, browserPoint.y, 0, mouseButtonEvent.button(), false, 1);
         return true;
     }
 
@@ -204,11 +217,10 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
             return false;
         }
 
-        int localX = (int) ((mouseButtonEvent.x() - getX()) * getScaleX());
-        int localY = (int) ((mouseButtonEvent.y() - getY()) * getScaleY());
-        lastBrowserMouseX = localX;
-        lastBrowserMouseY = localY;
-        browser.mouseDragged(localX, localY, mouseButtonEvent.button());
+        Point browserPoint = toBrowserPoint(mouseButtonEvent.x(), mouseButtonEvent.y());
+        lastBrowserMouseX = browserPoint.x;
+        lastBrowserMouseY = browserPoint.y;
+        browser.mouseDragged(browserPoint.x, browserPoint.y, mouseButtonEvent.button());
         return true;
     }
 
@@ -218,10 +230,9 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
             return false;
         }
 
-        int localX = (int) ((mouseX - getX()) * getScaleX());
-        int localY = (int) ((mouseY - getY()) * getScaleY());
+        Point browserPoint = toBrowserPoint(mouseX, mouseY);
         int delta = (int) (scrollY * 120);
-        browser.mouseScrolled(localX, localY, 0, delta, 1);
+        browser.mouseScrolled(browserPoint.x, browserPoint.y, 0, delta, 1);
         return true;
     }
 
@@ -258,23 +269,23 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
     @Override
     public void setSize(int width, int height) {
         super.setSize(width, height);
-        resizeBrowser(width, height);
+        surface.setSurfaceSize(width, height);
     }
 
     @Override
     public void setWidth(int width) {
         super.setWidth(width);
-        resizeBrowser(width, getHeight());
+        surface.setSurfaceSize(width, getHeight());
     }
 
     @Override
     public void setHeight(int height) {
         super.setHeight(height);
-        resizeBrowser(getWidth(), height);
+        surface.setSurfaceSize(getWidth(), height);
     }
 
     public void handleScreenResize() {
-        resizeBrowser(getWidth(), getHeight());
+        surface.setSurfaceSize(getWidth(), getHeight());
     }
 
     @Override
@@ -288,32 +299,23 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
             screenBridge.grapheneui$removeWebViewWidget(this);
         }
 
-        browser.close();
-    }
-
-    private void resizeBrowser(int width, int height) {
-        int realPixelWidth = (int) Math.max(1.0, width * McWindowScale.getScaleX());
-        int realPixelHeight = (int) Math.max(1.0, height * McWindowScale.getScaleY());
-        browser.wasResizedTo(realPixelWidth, realPixelHeight);
-    }
-
-    private double getScaleX() {
-        return McWindowScale.getScaleX();
-    }
-
-    private double getScaleY() {
-        return McWindowScale.getScaleY();
+        GrapheneCore.surfaces().closeOwner(this);
     }
 
     private void updateBrowserMousePosition(double mouseX, double mouseY) {
-        int localX = (int) ((mouseX - getX()) * getScaleX());
-        int localY = (int) ((mouseY - getY()) * getScaleY());
-        if (localX == lastBrowserMouseX && localY == lastBrowserMouseY) {
+        Point browserPoint = toBrowserPoint(mouseX, mouseY);
+        if (browserPoint.x == lastBrowserMouseX && browserPoint.y == lastBrowserMouseY) {
             return;
         }
 
-        lastBrowserMouseX = localX;
-        lastBrowserMouseY = localY;
-        browser.mouseMoved(localX, localY, 0);
+        lastBrowserMouseX = browserPoint.x;
+        lastBrowserMouseY = browserPoint.y;
+        browser.mouseMoved(browserPoint.x, browserPoint.y, 0);
+    }
+
+    private Point toBrowserPoint(double mouseX, double mouseY) {
+        double localX = mouseX - getX();
+        double localY = mouseY - getY();
+        return surface.toBrowserPoint(localX, localY, getWidth(), getHeight());
     }
 }
