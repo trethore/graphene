@@ -9,6 +9,7 @@ import org.cef.browser.CefRequestContext;
 import org.cef.handler.CefLoadHandler;
 import org.cef.network.CefRequest;
 import tytoo.grapheneui.GrapheneCore;
+import tytoo.grapheneui.bridge.GrapheneBridge;
 import tytoo.grapheneui.cef.GrapheneCefRuntime;
 import tytoo.grapheneui.event.GrapheneLoadListener;
 import tytoo.grapheneui.mc.McWindowScale;
@@ -31,6 +32,7 @@ public final class BrowserSurface implements AutoCloseable {
     private static final String LOAD_LISTENER_NAME = "loadListener";
 
     private final GrapheneBrowser browser;
+    private final GrapheneBridge bridge;
     private final Map<GrapheneLoadListener, GrapheneLoadListener> loadListenerWrappers = new IdentityHashMap<>();
     private final Rectangle viewBox = new Rectangle(0, 0, 1, 1);
     private int surfaceWidth;
@@ -74,6 +76,7 @@ public final class BrowserSurface implements AutoCloseable {
                 config.toCefBrowserSettings()
         );
         this.browser.createImmediately();
+        this.bridge = GrapheneCefRuntime.attachBridge(this.browser);
         this.browser.wasResizedTo(resolutionWidth, resolutionHeight);
     }
 
@@ -99,6 +102,10 @@ public final class BrowserSurface implements AutoCloseable {
 
     public GrapheneBrowser browser() {
         return browser;
+    }
+
+    public GrapheneBridge bridge() {
+        return bridge;
     }
 
     public int getSurfaceWidth() {
@@ -249,6 +256,7 @@ public final class BrowserSurface implements AutoCloseable {
 
         closed = true;
         clearLoadListeners();
+        GrapheneCefRuntime.detachBridge(browser);
         browser.close();
     }
 

@@ -309,6 +309,26 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
         };
     }
 
+    public void executeScript(String script) {
+        Objects.requireNonNull(script, "script");
+        executeJavaScript(script, currentUrl(), 0);
+    }
+
+    public void executeScript(String script, String url) {
+        Objects.requireNonNull(script, "script");
+        Objects.requireNonNull(url, "url");
+        executeJavaScript(script, url, 0);
+    }
+
+    public String currentUrl() {
+        String currentUrl = getURL();
+        if (currentUrl == null || currentUrl.isBlank()) {
+            return "about:blank";
+        }
+
+        return currentUrl;
+    }
+
     private void createBrowserIfRequired() {
         if (getNativeRef("CefBrowser") != 0L) {
             return;

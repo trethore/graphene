@@ -7,6 +7,9 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import org.cef.CefApp;
 import org.cef.CefClient;
 import tytoo.grapheneui.GrapheneCore;
+import tytoo.grapheneui.bridge.GrapheneBridge;
+import tytoo.grapheneui.bridge.internal.GrapheneBridgeRuntime;
+import tytoo.grapheneui.browser.GrapheneBrowser;
 import tytoo.grapheneui.event.GrapheneLoadEventBus;
 
 import java.io.IOException;
@@ -14,6 +17,7 @@ import java.io.IOException;
 public final class GrapheneCefRuntime {
     private static final Object LOCK = new Object();
     private static final GrapheneLoadEventBus LOAD_EVENT_BUS = new GrapheneLoadEventBus();
+    private static final GrapheneBridgeRuntime BRIDGE_RUNTIME = new GrapheneBridgeRuntime();
     private static boolean initialized = false;
     private static boolean shutdownHookRegistered = false;
     private static CefApp cefApp;
@@ -43,7 +47,7 @@ public final class GrapheneCefRuntime {
             }
 
             cefClient = cefApp.createClient();
-            GrapheneCefClientConfig.configure(cefClient, LOAD_EVENT_BUS);
+            GrapheneCefClientConfig.configure(cefClient, LOAD_EVENT_BUS, BRIDGE_RUNTIME);
             remoteDebuggingPort = cefAppBuilder.getCefSettings().remote_debugging_port;
             initialized = true;
 
@@ -66,6 +70,22 @@ public final class GrapheneCefRuntime {
         return LOAD_EVENT_BUS;
     }
 
+    public static GrapheneBridge attachBridge(GrapheneBrowser browser) {
+        synchronized (LOCK) {
+            if (!initialized) {
+                throw new IllegalStateException("Graphene is not initialized. Call GrapheneCore.init() first.");
+            }
+
+            return BRIDGE_RUNTIME.attach(browser);
+        }
+    }
+
+    public static void detachBridge(GrapheneBrowser browser) {
+        synchronized (LOCK) {
+            BRIDGE_RUNTIME.detach(browser);
+        }
+    }
+
     public static int getRemoteDebuggingPort() {
         synchronized (LOCK) {
             return remoteDebuggingPort;
@@ -85,6 +105,7 @@ public final class GrapheneCefRuntime {
             }
 
             GrapheneCore.surfaces().closeAll();
+            BRIDGE_RUNTIME.shutdown();
 
             if (cefApp != null) {
                 cefApp.dispose();

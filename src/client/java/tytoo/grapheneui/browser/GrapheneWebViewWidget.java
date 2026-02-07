@@ -10,6 +10,7 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.NonNull;
 import tytoo.grapheneui.GrapheneCore;
+import tytoo.grapheneui.bridge.GrapheneBridge;
 import tytoo.grapheneui.event.GrapheneLoadListener;
 import tytoo.grapheneui.screen.GrapheneScreenBridge;
 
@@ -88,6 +89,10 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
 
     public BrowserSurface getSurface() {
         return surface;
+    }
+
+    public GrapheneBridge bridge() {
+        return surface.bridge();
     }
 
     @SuppressWarnings("unused")
