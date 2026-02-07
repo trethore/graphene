@@ -1,5 +1,9 @@
 package tytoo.grapheneuidebug.screen;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -7,15 +11,22 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
 import org.jspecify.annotations.NonNull;
+import tytoo.grapheneui.bridge.GrapheneBridge;
+import tytoo.grapheneui.bridge.GrapheneBridgeSubscription;
 import tytoo.grapheneui.browser.GrapheneWebViewWidget;
 import tytoo.grapheneui.cef.GrapheneCefRuntime;
+import tytoo.grapheneuidebug.GrapheneDebugClient;
 
 import java.net.URI;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 public final class GrapheneBrowserDebugScreen extends Screen {
     private static final String DEFAULT_URL = "classpath://assets/graphene-ui/graphene_test/welcome.html";
     private static String lastUrl = DEFAULT_URL;
-
+    private final List<GrapheneBridgeSubscription> bridgeSubscriptions = new ArrayList<>();
     private GrapheneWebViewWidget webViewWidget;
     private EditBox urlBox;
     private Button backButton;
@@ -25,15 +36,59 @@ public final class GrapheneBrowserDebugScreen extends Screen {
         super(Component.translatable("screen.graphene-ui-debug.title"));
     }
 
-    private static void openRemoteDevTools() {
-        int debugPort = GrapheneCefRuntime.getRemoteDebuggingPort();
-        if (debugPort > 0) {
-            Util.getPlatform().openUri(URI.create("http://127.0.0.1:" + debugPort + "/json"));
+    private static void rememberLastUrl(String url) {
+        lastUrl = url;
+    }
+
+    private static String buildEchoResponse(String payloadJson) {
+        JsonObject response = new JsonObject();
+        response.addProperty("ok", true);
+        response.addProperty("kind", "echo");
+        response.addProperty("receivedAt", Instant.now().toString());
+        response.add("received", parsePayload(payloadJson));
+        return response.toString();
+    }
+
+    private static String buildSumResponse(String payloadJson) {
+        JsonObject response = new JsonObject();
+        response.addProperty("kind", "sum");
+        response.addProperty("receivedAt", Instant.now().toString());
+
+        try {
+            JsonObject payload = parsePayload(payloadJson).getAsJsonObject();
+            double left = payload.get("a").getAsDouble();
+            double right = payload.get("b").getAsDouble();
+            response.addProperty("ok", true);
+            response.addProperty("a", left);
+            response.addProperty("b", right);
+            response.addProperty("result", left + right);
+            return response.toString();
+        } catch (RuntimeException _) {
+            response.addProperty("ok", false);
+            response.addProperty("error", "Payload must be a JSON object with numeric fields 'a' and 'b'.");
+            return response.toString();
         }
     }
 
-    private static void rememberLastUrl(String url) {
-        lastUrl = url;
+    private static JsonElement parsePayload(String payloadJson) {
+        String value = payloadJson == null ? "null" : payloadJson;
+        try {
+            return JsonParser.parseString(value);
+        } catch (RuntimeException _) {
+            // Ignore malformed payloads and treat them as null in debug helpers.
+            return JsonNull.INSTANCE;
+        }
+    }
+
+    private void openRemoteDevTools() {
+        int debugPort = GrapheneCefRuntime.getRemoteDebuggingPort();
+        if (debugPort > 0) {
+            Util.getPlatform().openUri(URI.create("http://127.0.0.1:" + debugPort + "/json"));
+            emitDevToolsStatus(true, debugPort);
+            return;
+        }
+
+        emitDevToolsStatus(false, debugPort);
     }
 
     @Override
@@ -52,6 +107,8 @@ public final class GrapheneBrowserDebugScreen extends Screen {
             webViewWidget.setPosition(8, webViewY);
             webViewWidget.setSize(webViewWidth, webViewHeight);
         }
+
+        configureBridgeHandlers();
 
         addRenderableWidget(webViewWidget);
 
@@ -119,6 +176,43 @@ public final class GrapheneBrowserDebugScreen extends Screen {
             rememberLastUrl(webViewWidget.getBrowser().getURL());
         }
 
+        clearBridgeSubscriptions();
+
         super.onClose();
+    }
+
+    private void configureBridgeHandlers() {
+        clearBridgeSubscriptions();
+
+        GrapheneBridge bridge = webViewWidget.bridge();
+        bridgeSubscriptions.add(bridge.onEvent("debug:event", (channel, payloadJson) ->
+                GrapheneDebugClient.LOGGER.info("Received bridge event on {}: {}", channel, payloadJson)
+        ));
+        bridgeSubscriptions.add(bridge.onRequest("debug:echo", (_, payloadJson) ->
+                CompletableFuture.completedFuture(buildEchoResponse(payloadJson))
+        ));
+        bridgeSubscriptions.add(bridge.onRequest("debug:sum", (_, payloadJson) ->
+                CompletableFuture.completedFuture(buildSumResponse(payloadJson))
+        ));
+    }
+
+    private void clearBridgeSubscriptions() {
+        for (GrapheneBridgeSubscription bridgeSubscription : bridgeSubscriptions) {
+            bridgeSubscription.unsubscribe();
+        }
+
+        bridgeSubscriptions.clear();
+    }
+
+    private void emitDevToolsStatus(boolean opened, int debugPort) {
+        if (webViewWidget == null) {
+            return;
+        }
+
+        JsonObject payload = new JsonObject();
+        payload.addProperty("opened", opened);
+        payload.addProperty("debugPort", debugPort);
+        payload.addProperty("openedAt", Instant.now().toString());
+        webViewWidget.bridge().emit("debug:devtools-status", payload.toString());
     }
 }
