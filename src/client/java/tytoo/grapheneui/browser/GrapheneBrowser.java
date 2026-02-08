@@ -12,6 +12,7 @@ import org.cef.browser.CefRequestContext;
 import org.cef.callback.CefDragData;
 import org.cef.handler.CefRenderHandler;
 import org.cef.handler.CefScreenInfo;
+import tytoo.grapheneui.platform.GraphenePlatform;
 import tytoo.grapheneui.render.GrapheneGuiRenderTarget;
 import tytoo.grapheneui.render.GrapheneRenderTarget;
 import tytoo.grapheneui.render.GrapheneRenderer;
@@ -24,6 +25,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHandler, AutoCloseable {
+    private static final boolean REENTRANT_FOCUS_GUARD_ENABLED = GraphenePlatform.isLinux();
+
     private final long windowHandle = this.hashCode();
     private final GrapheneRenderer renderer;
     private final boolean transparent;
@@ -32,6 +35,8 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
     private final Rectangle browserRect = new Rectangle(0, 0, 1, 1);
     private final Point screenPoint = new Point(0, 0);
     private volatile int cursorType = Cursor.DEFAULT_CURSOR;
+    private boolean focusUpdateInProgress;
+    private boolean focusUpdateTarget;
     private boolean closed = false;
 
 
@@ -174,6 +179,29 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
         closed = true;
         renderer.destroy();
         super.close(force);
+    }
+
+    @Override
+    public synchronized void setFocus(boolean enable) {
+        if (!REENTRANT_FOCUS_GUARD_ENABLED) {
+            super.setFocus(enable);
+            return;
+        }
+
+        if (focusUpdateInProgress && focusUpdateTarget == enable) {
+            return;
+        }
+
+        boolean previousInProgress = focusUpdateInProgress;
+        boolean previousTarget = focusUpdateTarget;
+        focusUpdateInProgress = true;
+        focusUpdateTarget = enable;
+        try {
+            super.setFocus(enable);
+        } finally {
+            focusUpdateInProgress = previousInProgress;
+            focusUpdateTarget = previousTarget;
+        }
     }
 
     @Override

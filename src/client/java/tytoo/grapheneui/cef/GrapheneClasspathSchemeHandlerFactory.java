@@ -15,14 +15,11 @@ import tytoo.grapheneui.GrapheneCore;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Locale;
 
 public final class GrapheneClasspathSchemeHandlerFactory implements CefSchemeHandlerFactory {
     private static final String MIME_TEXT_PLAIN = "text/plain";
-    private static final String CLASS_PATH_URL_PREFIX = "classpath://";
     private static final String PATH_DELIMITER = "/";
     private static final String ASSETS_PREFIX = "assets" + PATH_DELIMITER;
 
@@ -72,18 +69,7 @@ public final class GrapheneClasspathSchemeHandlerFactory implements CefSchemeHan
         }
 
         private static String normalizeResourcePath(String url) {
-            String path = url.substring(CLASS_PATH_URL_PREFIX.length());
-            int queryIndex = path.indexOf('?');
-            if (queryIndex >= 0) {
-                path = path.substring(0, queryIndex);
-            }
-
-            String normalizedPath = path;
-            if (normalizedPath.startsWith(PATH_DELIMITER)) {
-                normalizedPath = normalizedPath.substring(1);
-            }
-
-            return URLDecoder.decode(normalizedPath, StandardCharsets.UTF_8);
+            return GrapheneClasspathUrls.normalizeResourcePath(url);
         }
 
         private static InputStream openResource(String path) {

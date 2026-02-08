@@ -15,6 +15,7 @@ import tytoo.grapheneui.GrapheneCore;
 import tytoo.grapheneui.bridge.GrapheneBridge;
 import tytoo.grapheneui.bridge.GrapheneBridgeSubscription;
 import tytoo.grapheneui.browser.GrapheneWebViewWidget;
+import tytoo.grapheneui.cef.GrapheneClasspathUrls;
 import tytoo.grapheneuidebug.GrapheneDebugClient;
 
 import java.net.URI;
@@ -24,7 +25,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public final class GrapheneBrowserDebugScreen extends Screen {
-    private static final String DEFAULT_URL = "classpath://assets/graphene-ui/graphene_test/welcome.html";
+    private static final String DEFAULT_URL = GrapheneClasspathUrls.asset("graphene_test/welcome.html");
     private static String lastUrl = DEFAULT_URL;
     private final List<GrapheneBridgeSubscription> bridgeSubscriptions = new ArrayList<>();
     private GrapheneWebViewWidget webViewWidget;

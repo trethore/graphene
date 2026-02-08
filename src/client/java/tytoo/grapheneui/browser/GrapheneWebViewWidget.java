@@ -11,6 +11,7 @@ import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.NonNull;
 import tytoo.grapheneui.GrapheneCore;
 import tytoo.grapheneui.bridge.GrapheneBridge;
+import tytoo.grapheneui.cef.GrapheneClasspathUrls;
 import tytoo.grapheneui.event.GrapheneLoadListener;
 import tytoo.grapheneui.screen.GrapheneScreenBridge;
 
@@ -19,7 +20,7 @@ import java.io.Closeable;
 import java.util.Objects;
 
 public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
-    private static final String DEFAULT_URL = "classpath://assets/graphene-ui/graphene_test/welcome.html";
+    private static final String DEFAULT_URL = GrapheneClasspathUrls.asset("graphene_test/welcome.html");
 
     private final Screen screen;
     private final BrowserSurface surface;

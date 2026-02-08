@@ -12,6 +12,7 @@ import tytoo.grapheneui.bridge.internal.GrapheneBridgeRuntime;
 import tytoo.grapheneui.browser.GrapheneBrowser;
 import tytoo.grapheneui.browser.GrapheneBrowserSurfaceManager;
 import tytoo.grapheneui.event.GrapheneLoadEventBus;
+import tytoo.grapheneui.platform.GraphenePlatform;
 
 import java.io.IOException;
 import java.util.Objects;
@@ -38,6 +39,7 @@ public final class GrapheneCefRuntime {
             }
 
             CefAppBuilder cefAppBuilder = GrapheneCefInstaller.createBuilder();
+            logStartupConfiguration(cefAppBuilder);
             GrapheneCefAppHandler appHandler = new GrapheneCefAppHandler();
             cefAppBuilder.setAppHandler(appHandler);
 
@@ -131,5 +133,15 @@ public final class GrapheneCefRuntime {
 
         ClientLifecycleEvents.CLIENT_STOPPING.register(_ -> shutdown());
         shutdownHookRegistered = true;
+    }
+
+    private static void logStartupConfiguration(CefAppBuilder cefAppBuilder) {
+        GrapheneCore.LOGGER.info(
+                "Initializing CEF on platform linux={}, wayland={}, subprocess={}, args={}",
+                GraphenePlatform.isLinux(),
+                GraphenePlatform.isWaylandSession(),
+                cefAppBuilder.getCefSettings().browser_subprocess_path,
+                cefAppBuilder.getJcefArgs()
+        );
     }
 }
