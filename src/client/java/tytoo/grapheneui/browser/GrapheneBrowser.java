@@ -12,6 +12,7 @@ import org.cef.browser.CefRequestContext;
 import org.cef.callback.CefDragData;
 import org.cef.handler.CefRenderHandler;
 import org.cef.handler.CefScreenInfo;
+import org.cef.input.CefKeyEvent;
 import tytoo.grapheneui.platform.GraphenePlatform;
 import tytoo.grapheneui.render.GrapheneGuiRenderTarget;
 import tytoo.grapheneui.render.GrapheneRenderTarget;
@@ -311,8 +312,8 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
         sendMouseWheelEvent(event);
     }
 
-    void dispatchKeyEvent(java.awt.event.KeyEvent event) {
-        sendKeyEvent(event);
+    void dispatchCefKeyEvent(CefKeyEvent event) {
+        sendCefKeyEvent(event);
     }
 
     public void onTitleChange(String title) {

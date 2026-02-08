@@ -12,7 +12,7 @@ public final class GrapheneKeyCodeUtil {
     }
 
     @SuppressWarnings("java:S1479") // Sonar complains about this being too long.
-    public static int toAwtKeyCode(int keyCode) {
+    public static int toWindowsKeyCode(int keyCode) {
         return switch (keyCode) {
             case GLFW.GLFW_KEY_BACKSPACE -> KeyEvent.VK_BACK_SPACE;
             case GLFW.GLFW_KEY_TAB -> KeyEvent.VK_TAB;
@@ -20,17 +20,36 @@ public final class GrapheneKeyCodeUtil {
             case GLFW.GLFW_KEY_LEFT_SHIFT, GLFW.GLFW_KEY_RIGHT_SHIFT -> KeyEvent.VK_SHIFT;
             case GLFW.GLFW_KEY_LEFT_CONTROL, GLFW.GLFW_KEY_RIGHT_CONTROL -> KeyEvent.VK_CONTROL;
             case GLFW.GLFW_KEY_LEFT_ALT, GLFW.GLFW_KEY_RIGHT_ALT -> KeyEvent.VK_ALT;
+            case GLFW.GLFW_KEY_LEFT_SUPER, GLFW.GLFW_KEY_RIGHT_SUPER -> KeyEvent.VK_WINDOWS;
             case GLFW.GLFW_KEY_ESCAPE -> KeyEvent.VK_ESCAPE;
             case GLFW.GLFW_KEY_SPACE -> KeyEvent.VK_SPACE;
+            case GLFW.GLFW_KEY_INSERT -> KeyEvent.VK_INSERT;
             case GLFW.GLFW_KEY_LEFT -> KeyEvent.VK_LEFT;
             case GLFW.GLFW_KEY_RIGHT -> KeyEvent.VK_RIGHT;
             case GLFW.GLFW_KEY_UP -> KeyEvent.VK_UP;
             case GLFW.GLFW_KEY_DOWN -> KeyEvent.VK_DOWN;
+            case GLFW.GLFW_KEY_CAPS_LOCK -> KeyEvent.VK_CAPS_LOCK;
+            case GLFW.GLFW_KEY_SCROLL_LOCK -> KeyEvent.VK_SCROLL_LOCK;
+            case GLFW.GLFW_KEY_NUM_LOCK -> KeyEvent.VK_NUM_LOCK;
+            case GLFW.GLFW_KEY_PRINT_SCREEN -> KeyEvent.VK_PRINTSCREEN;
+            case GLFW.GLFW_KEY_PAUSE -> KeyEvent.VK_PAUSE;
             case GLFW.GLFW_KEY_DELETE -> KeyEvent.VK_DELETE;
             case GLFW.GLFW_KEY_HOME -> KeyEvent.VK_HOME;
             case GLFW.GLFW_KEY_END -> KeyEvent.VK_END;
             case GLFW.GLFW_KEY_PAGE_UP -> KeyEvent.VK_PAGE_UP;
             case GLFW.GLFW_KEY_PAGE_DOWN -> KeyEvent.VK_PAGE_DOWN;
+            case GLFW.GLFW_KEY_F1 -> KeyEvent.VK_F1;
+            case GLFW.GLFW_KEY_F2 -> KeyEvent.VK_F2;
+            case GLFW.GLFW_KEY_F3 -> KeyEvent.VK_F3;
+            case GLFW.GLFW_KEY_F4 -> KeyEvent.VK_F4;
+            case GLFW.GLFW_KEY_F5 -> KeyEvent.VK_F5;
+            case GLFW.GLFW_KEY_F6 -> KeyEvent.VK_F6;
+            case GLFW.GLFW_KEY_F7 -> KeyEvent.VK_F7;
+            case GLFW.GLFW_KEY_F8 -> KeyEvent.VK_F8;
+            case GLFW.GLFW_KEY_F9 -> KeyEvent.VK_F9;
+            case GLFW.GLFW_KEY_F10 -> KeyEvent.VK_F10;
+            case GLFW.GLFW_KEY_F11 -> KeyEvent.VK_F11;
+            case GLFW.GLFW_KEY_F12 -> KeyEvent.VK_F12;
             case GLFW.GLFW_KEY_KP_0 -> KeyEvent.VK_NUMPAD0;
             case GLFW.GLFW_KEY_KP_1 -> KeyEvent.VK_NUMPAD1;
             case GLFW.GLFW_KEY_KP_2 -> KeyEvent.VK_NUMPAD2;
@@ -47,8 +66,12 @@ public final class GrapheneKeyCodeUtil {
             case GLFW.GLFW_KEY_KP_SUBTRACT -> KeyEvent.VK_SUBTRACT;
             case GLFW.GLFW_KEY_KP_ADD -> KeyEvent.VK_ADD;
             case GLFW.GLFW_KEY_KP_EQUAL -> KeyEvent.VK_EQUALS;
-            default -> keyCode;
+            default -> 0;
         };
+    }
+
+    public static int toAwtKeyCode(int keyCode) {
+        return toWindowsKeyCode(keyCode);
     }
 
     public static boolean isNumpadKey(int keyCode) {

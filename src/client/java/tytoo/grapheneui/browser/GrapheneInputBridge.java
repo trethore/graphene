@@ -1,8 +1,12 @@
 package tytoo.grapheneui.browser;
 
+import org.cef.input.CefKeyEvent;
+import org.cef.misc.EventFlags;
 import org.lwjgl.glfw.GLFW;
+import tytoo.grapheneui.GrapheneCore;
 import tytoo.grapheneui.input.GrapheneKeyCodeUtil;
 import tytoo.grapheneui.mc.McClient;
+import tytoo.grapheneui.platform.GraphenePlatform;
 
 import java.awt.*;
 import java.awt.event.InputEvent;
@@ -16,17 +20,19 @@ final class GrapheneInputBridge {
     private static final int MOUSE_RIGHT_BUTTON = 1;
     private static final int MOUSE_MIDDLE_BUTTON = 2;
     private static final long SYNTHETIC_TYPED_DUPLICATE_WINDOW_MS = 250L;
+    private static final char CEF_CHAR_UNDEFINED = 0;
 
-    private final GrapheneScancodeInjector scancodeInjector = GrapheneScancodeInjector.create();
     private final Component uiComponent = new Component() {
     };
-    private char pendingSyntheticCharacter = KeyEvent.CHAR_UNDEFINED;
+    private char pendingSyntheticCharacter = CEF_CHAR_UNDEFINED;
     private long pendingSyntheticCharacterTimestamp;
+    private boolean lockKeyModifiersEnabled;
+    private boolean rightAltPressed;
     private boolean fallbackNumLockState;
     private boolean fallbackNumLockStateKnown;
 
     GrapheneInputBridge() {
-        enableLockKeyModifiers();
+        ensureLockKeyModifiersEnabled();
         Optional<Boolean> toolkitNumLockState = readToolkitNumLockState();
         if (toolkitNumLockState.isPresent()) {
             fallbackNumLockState = toolkitNumLockState.get();
@@ -73,18 +79,244 @@ final class GrapheneInputBridge {
         };
     }
 
-    private static int toAwtKeyLocation(int keyCode) {
+    private static int toCefModifiers(int modifiers, int keyCode, boolean numLockEnabled) {
+        int cefModifiers = EventFlags.EVENTFLAG_NONE;
+        if ((modifiers & GLFW.GLFW_MOD_SHIFT) != 0) {
+            cefModifiers |= EventFlags.EVENTFLAG_SHIFT_DOWN;
+        }
+
+        if ((modifiers & GLFW.GLFW_MOD_CONTROL) != 0) {
+            cefModifiers |= EventFlags.EVENTFLAG_CONTROL_DOWN;
+        }
+
+        if ((modifiers & GLFW.GLFW_MOD_ALT) != 0) {
+            cefModifiers |= EventFlags.EVENTFLAG_ALT_DOWN;
+        }
+
+        if ((modifiers & GLFW.GLFW_MOD_SUPER) != 0) {
+            cefModifiers |= EventFlags.EVENTFLAG_COMMAND_DOWN;
+        }
+
+        if ((modifiers & GLFW.GLFW_MOD_CAPS_LOCK) != 0) {
+            cefModifiers |= EventFlags.EVENTFLAG_CAPS_LOCK_ON;
+        }
+
+        if (numLockEnabled) {
+            cefModifiers |= EventFlags.EVENTFLAG_NUM_LOCK_ON;
+        }
+
+        if (GrapheneKeyCodeUtil.isNumpadKey(keyCode)) {
+            cefModifiers |= EventFlags.EVENTFLAG_IS_KEY_PAD;
+        }
+
+        if (isLeftModifierKey(keyCode)) {
+            cefModifiers |= EventFlags.EVENTFLAG_IS_LEFT;
+        } else if (isRightModifierKey(keyCode)) {
+            cefModifiers |= EventFlags.EVENTFLAG_IS_RIGHT;
+        }
+
+        return cefModifiers;
+    }
+
+    private static boolean isLeftModifierKey(int keyCode) {
         return switch (keyCode) {
             case GLFW.GLFW_KEY_LEFT_SHIFT,
                  GLFW.GLFW_KEY_LEFT_CONTROL,
                  GLFW.GLFW_KEY_LEFT_ALT,
-                 GLFW.GLFW_KEY_LEFT_SUPER -> KeyEvent.KEY_LOCATION_LEFT;
+                 GLFW.GLFW_KEY_LEFT_SUPER -> true;
+            default -> false;
+        };
+    }
+
+    private static boolean isRightModifierKey(int keyCode) {
+        return switch (keyCode) {
             case GLFW.GLFW_KEY_RIGHT_SHIFT,
                  GLFW.GLFW_KEY_RIGHT_CONTROL,
                  GLFW.GLFW_KEY_RIGHT_ALT,
-                 GLFW.GLFW_KEY_RIGHT_SUPER -> KeyEvent.KEY_LOCATION_RIGHT;
-            default -> GrapheneKeyCodeUtil.isNumpadKey(keyCode) ? KeyEvent.KEY_LOCATION_NUMPAD : KeyEvent.KEY_LOCATION_STANDARD;
+                 GLFW.GLFW_KEY_RIGHT_SUPER -> true;
+            default -> false;
         };
+    }
+
+    private static char normalizeCharacter(char character) {
+        return character == KeyEvent.CHAR_UNDEFINED ? CEF_CHAR_UNDEFINED : character;
+    }
+
+    private static boolean isSystemKey(int modifiers) {
+        if (GraphenePlatform.isLinux()) {
+            return (modifiers & GLFW.GLFW_MOD_ALT) != 0;
+        }
+
+        return false;
+    }
+
+    private static int resolveWindowsKeyCode(int keyCode, int scanCode, char character, boolean numLockEnabled) {
+        int mappedKeyCode = GrapheneKeyCodeUtil.toWindowsKeyCode(keyCode);
+        if (!GraphenePlatform.isWindows() || scanCode <= 0) {
+            if (mappedKeyCode != 0) {
+                return mappedKeyCode;
+            }
+
+            return character;
+        }
+
+        if (GrapheneKeyCodeUtil.isNumpadKey(keyCode)) {
+            if (GrapheneKeyCodeUtil.requiresNumLockForText(keyCode) && !numLockEnabled) {
+                return 0;
+            }
+
+            return mappedKeyCode;
+        }
+
+        if (isLayoutDependentKey(keyCode)) {
+            return 0;
+        }
+
+        return mappedKeyCode;
+    }
+
+    private static int resolveNativeKeyCode(int keyCode, int scanCode, char character, boolean pressed) {
+        if (GraphenePlatform.isWindows()) {
+            if (scanCode <= 0) {
+                return 0;
+            }
+
+            return CefKeyEvent.buildWindowsNativeKeyCode(scanCode, isWindowsExtendedKey(keyCode), !pressed);
+        }
+
+        if (scanCode > 0) {
+            return scanCode;
+        }
+
+        int mappedKeyCode = GrapheneKeyCodeUtil.toWindowsKeyCode(keyCode);
+        if (mappedKeyCode != 0) {
+            return mappedKeyCode;
+        }
+
+        return character;
+    }
+
+    private static long resolveScanCode(int scanCode) {
+        if (scanCode <= 0) {
+            return 0L;
+        }
+
+        if (GraphenePlatform.isWindows()) {
+            return scanCode & 0xFFL;
+        }
+
+        return scanCode;
+    }
+
+    private static boolean isLayoutDependentKey(int keyCode) {
+        return switch (keyCode) {
+            case GLFW.GLFW_KEY_A,
+                 GLFW.GLFW_KEY_B,
+                 GLFW.GLFW_KEY_C,
+                 GLFW.GLFW_KEY_D,
+                 GLFW.GLFW_KEY_E,
+                 GLFW.GLFW_KEY_F,
+                 GLFW.GLFW_KEY_G,
+                 GLFW.GLFW_KEY_H,
+                 GLFW.GLFW_KEY_I,
+                 GLFW.GLFW_KEY_J,
+                 GLFW.GLFW_KEY_K,
+                 GLFW.GLFW_KEY_L,
+                 GLFW.GLFW_KEY_M,
+                 GLFW.GLFW_KEY_N,
+                 GLFW.GLFW_KEY_O,
+                 GLFW.GLFW_KEY_P,
+                 GLFW.GLFW_KEY_Q,
+                 GLFW.GLFW_KEY_R,
+                 GLFW.GLFW_KEY_S,
+                 GLFW.GLFW_KEY_T,
+                 GLFW.GLFW_KEY_U,
+                 GLFW.GLFW_KEY_V,
+                 GLFW.GLFW_KEY_W,
+                 GLFW.GLFW_KEY_X,
+                 GLFW.GLFW_KEY_Y,
+                 GLFW.GLFW_KEY_Z,
+                 GLFW.GLFW_KEY_0,
+                 GLFW.GLFW_KEY_1,
+                 GLFW.GLFW_KEY_2,
+                 GLFW.GLFW_KEY_3,
+                 GLFW.GLFW_KEY_4,
+                 GLFW.GLFW_KEY_5,
+                 GLFW.GLFW_KEY_6,
+                 GLFW.GLFW_KEY_7,
+                 GLFW.GLFW_KEY_8,
+                 GLFW.GLFW_KEY_9,
+                 GLFW.GLFW_KEY_GRAVE_ACCENT,
+                 GLFW.GLFW_KEY_MINUS,
+                 GLFW.GLFW_KEY_EQUAL,
+                 GLFW.GLFW_KEY_LEFT_BRACKET,
+                 GLFW.GLFW_KEY_RIGHT_BRACKET,
+                 GLFW.GLFW_KEY_BACKSLASH,
+                 GLFW.GLFW_KEY_SEMICOLON,
+                 GLFW.GLFW_KEY_APOSTROPHE,
+                 GLFW.GLFW_KEY_COMMA,
+                 GLFW.GLFW_KEY_PERIOD,
+                 GLFW.GLFW_KEY_SLASH,
+                 GLFW.GLFW_KEY_WORLD_1,
+                 GLFW.GLFW_KEY_WORLD_2 -> true;
+            default -> false;
+        };
+    }
+
+    private static boolean isWindowsExtendedKey(int keyCode) {
+        return switch (keyCode) {
+            case GLFW.GLFW_KEY_RIGHT_ALT,
+                 GLFW.GLFW_KEY_RIGHT_CONTROL,
+                 GLFW.GLFW_KEY_INSERT,
+                 GLFW.GLFW_KEY_DELETE,
+                 GLFW.GLFW_KEY_HOME,
+                 GLFW.GLFW_KEY_END,
+                 GLFW.GLFW_KEY_PAGE_UP,
+                 GLFW.GLFW_KEY_PAGE_DOWN,
+                 GLFW.GLFW_KEY_UP,
+                 GLFW.GLFW_KEY_DOWN,
+                 GLFW.GLFW_KEY_LEFT,
+                 GLFW.GLFW_KEY_RIGHT,
+                 GLFW.GLFW_KEY_KP_ENTER,
+                 GLFW.GLFW_KEY_KP_DIVIDE,
+                 GLFW.GLFW_KEY_NUM_LOCK,
+                 GLFW.GLFW_KEY_PRINT_SCREEN -> true;
+            default -> false;
+        };
+    }
+
+    private static CefKeyEvent createCefRawKeyEvent(
+            int keyCode,
+            int scanCode,
+            int modifiers,
+            boolean pressed,
+            char character,
+            boolean numLockEnabled
+    ) {
+        char normalizedCharacter = normalizeCharacter(character);
+        return new CefKeyEvent(
+                pressed ? CefKeyEvent.KEYEVENT_RAWKEYDOWN : CefKeyEvent.KEYEVENT_KEYUP,
+                toCefModifiers(modifiers, keyCode, numLockEnabled),
+                resolveWindowsKeyCode(keyCode, scanCode, normalizedCharacter, numLockEnabled),
+                resolveNativeKeyCode(keyCode, scanCode, normalizedCharacter, pressed),
+                isSystemKey(modifiers),
+                normalizedCharacter,
+                normalizedCharacter,
+                resolveScanCode(scanCode)
+        );
+    }
+
+    private static CefKeyEvent createCefCharEvent(int keyCode, char character, int modifiers, boolean numLockEnabled) {
+        char normalizedCharacter = normalizeCharacter(character);
+        return new CefKeyEvent(
+                CefKeyEvent.KEYEVENT_CHAR,
+                toCefModifiers(modifiers, keyCode, numLockEnabled),
+                normalizedCharacter,
+                GraphenePlatform.isWindows() ? 0 : normalizedCharacter,
+                isSystemKey(modifiers),
+                normalizedCharacter,
+                normalizedCharacter
+        );
     }
 
     Component uiComponent() {
@@ -144,59 +376,68 @@ final class GrapheneInputBridge {
 
     @SuppressWarnings("MagicConstant")
     void keyTyped(GrapheneBrowser browser, char character, int modifiers) {
+        ensureLockKeyModifiersEnabled();
+
         if (isDuplicateSyntheticTypedCharacter(character)) {
+            GrapheneCore.LOGGER.info("[graphene-key] type-ignored duplicate char={} modifiers={} numLockKnown={} numLockFallback={}",
+                    formatCharacter(character), modifiers, fallbackNumLockStateKnown, fallbackNumLockState);
             return;
         }
 
-        int awtModifiers = toAwtModifiers(modifiers);
-        KeyEvent event = new KeyEvent(uiComponent, KeyEvent.KEY_TYPED, System.currentTimeMillis(), awtModifiers, 0, character);
-        browser.dispatchKeyEvent(event);
+        if (character == KeyEvent.CHAR_UNDEFINED) {
+            GrapheneCore.LOGGER.info("[graphene-key] type-ignored undefined modifiers={}", modifiers);
+            return;
+        }
+
+        int charEventModifiers = sanitizeCharEventModifiers(modifiers);
+        boolean numLockEnabled = isNumLockEnabled(modifiers);
+        CefKeyEvent cefEvent = createCefCharEvent(GLFW.GLFW_KEY_UNKNOWN, character, charEventModifiers, numLockEnabled);
+        logKeyInput("type", GLFW.GLFW_KEY_UNKNOWN, 0, charEventModifiers, character, numLockEnabled, false);
+        logCefKeyEvent("dispatch-type", cefEvent);
+        browser.dispatchCefKeyEvent(cefEvent);
     }
 
     @SuppressWarnings("MagicConstant")
     void keyEventByKeyCode(GrapheneBrowser browser, int keyCode, int scanCode, int modifiers, boolean pressed) {
+        ensureLockKeyModifiersEnabled();
+        if (keyCode == GLFW.GLFW_KEY_RIGHT_ALT) {
+            rightAltPressed = pressed;
+        }
+
         updateFallbackNumLockState(keyCode, pressed);
 
-        int awtModifiers = toAwtModifiers(modifiers);
-        int awtKeyCode = GrapheneKeyCodeUtil.toAwtKeyCode(keyCode);
         char character = GrapheneKeyCodeUtil.toCharacter(keyCode, (modifiers & GLFW.GLFW_MOD_SHIFT) != 0);
-        int keyLocation = toAwtKeyLocation(keyCode);
         boolean numLockEnabled = isNumLockEnabled(modifiers);
+        boolean treatNumpadAsText = GrapheneKeyCodeUtil.isNumpadTextKey(keyCode)
+                && shouldTreatNumpadAsText(keyCode, numLockEnabled);
+        logKeyInput("key", keyCode, scanCode, modifiers, character, numLockEnabled, treatNumpadAsText);
 
-        if (GrapheneKeyCodeUtil.isNumpadTextKey(keyCode) && isNumpadTextModeEnabled(keyCode, numLockEnabled)) {
-            dispatchNumpadTextKeyEvent(browser, keyCode, pressed, awtModifiers, character, scanCode);
+        if (treatNumpadAsText) {
+            dispatchNumpadTextKeyEvent(browser, keyCode, pressed, modifiers, scanCode, numLockEnabled);
             if (pressed) {
-                dispatchSyntheticTypedFromNumpad(browser, character, awtModifiers);
+                dispatchSyntheticTypedCharacter(browser, keyCode, character, modifiers, numLockEnabled);
             }
 
             return;
         }
 
-        if (GrapheneKeyCodeUtil.requiresNumLockForText(keyCode) && !numLockEnabled) {
-            character = KeyEvent.CHAR_UNDEFINED;
-        }
-
-        KeyEvent event = new KeyEvent(
-                uiComponent,
-                pressed ? KeyEvent.KEY_PRESSED : KeyEvent.KEY_RELEASED,
-                System.currentTimeMillis(),
-                awtModifiers,
-                awtKeyCode,
-                character == KeyEvent.CHAR_UNDEFINED ? 0 : character,
-                keyLocation
+        CefKeyEvent cefEvent = createCefRawKeyEvent(
+                keyCode,
+                scanCode,
+                modifiers,
+                pressed,
+                KeyEvent.CHAR_UNDEFINED,
+                numLockEnabled
         );
-
-        scancodeInjector.inject(event, scanCode);
-        browser.dispatchKeyEvent(event);
+        logCefKeyEvent("dispatch-raw", cefEvent);
+        browser.dispatchCefKeyEvent(cefEvent);
 
         if (pressed && keyCode == GLFW.GLFW_KEY_BACKSPACE) {
-            KeyEvent typedBackspace = new KeyEvent(uiComponent, KeyEvent.KEY_TYPED, System.currentTimeMillis(), awtModifiers, 0, '\b');
-            browser.dispatchKeyEvent(typedBackspace);
+            dispatchSyntheticTypedCharacter(browser, keyCode, '\b', modifiers, numLockEnabled);
         }
 
         if (pressed && (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER)) {
-            KeyEvent typedEnter = new KeyEvent(uiComponent, KeyEvent.KEY_TYPED, System.currentTimeMillis(), awtModifiers, 0, '\r');
-            browser.dispatchKeyEvent(typedEnter);
+            dispatchSyntheticTypedCharacter(browser, keyCode, '\r', modifiers, numLockEnabled);
         }
     }
 
@@ -205,37 +446,37 @@ final class GrapheneInputBridge {
             GrapheneBrowser browser,
             int glfwKeyCode,
             boolean pressed,
-            int awtModifiers,
-            char character,
-            int scanCode
+            int modifiers,
+            int scanCode,
+            boolean numLockEnabled
     ) {
-        int awtKeyCode = GrapheneKeyCodeUtil.toAwtKeyCode(glfwKeyCode);
-        char eventCharacter = pressed ? character : KeyEvent.CHAR_UNDEFINED;
-        KeyEvent event = new KeyEvent(
-                uiComponent,
-                pressed ? KeyEvent.KEY_PRESSED : KeyEvent.KEY_RELEASED,
-                System.currentTimeMillis(),
-                awtModifiers,
-                awtKeyCode,
-                eventCharacter == KeyEvent.CHAR_UNDEFINED ? 0 : eventCharacter,
-                KeyEvent.KEY_LOCATION_NUMPAD
+        CefKeyEvent cefEvent = createCefRawKeyEvent(
+                glfwKeyCode,
+                scanCode,
+                modifiers,
+                pressed,
+                KeyEvent.CHAR_UNDEFINED,
+                numLockEnabled
         );
-
-        if (GrapheneKeyCodeUtil.isNumpadOperatorKey(glfwKeyCode)) {
-            scancodeInjector.inject(event, scanCode);
-        }
-
-        browser.dispatchKeyEvent(event);
+        logCefKeyEvent("dispatch-numpad", cefEvent);
+        browser.dispatchCefKeyEvent(cefEvent);
     }
 
-    private void dispatchSyntheticTypedFromNumpad(GrapheneBrowser browser, char character, int awtModifiers) {
-        if (character == KeyEvent.CHAR_UNDEFINED) {
+    private void dispatchSyntheticTypedCharacter(
+            GrapheneBrowser browser,
+            int keyCode,
+            char character,
+            int modifiers,
+            boolean numLockEnabled
+    ) {
+        if (character == KeyEvent.CHAR_UNDEFINED || character == CEF_CHAR_UNDEFINED) {
             return;
         }
 
         rememberSyntheticTypedCharacter(character);
-        KeyEvent typed = new KeyEvent(uiComponent, KeyEvent.KEY_TYPED, System.currentTimeMillis(), awtModifiers, 0, character);
-        browser.dispatchKeyEvent(typed);
+        CefKeyEvent cefEvent = createCefCharEvent(keyCode, character, modifiers, numLockEnabled);
+        logCefKeyEvent("dispatch-synthetic-char", cefEvent);
+        browser.dispatchCefKeyEvent(cefEvent);
     }
 
     private void rememberSyntheticTypedCharacter(char character) {
@@ -244,14 +485,14 @@ final class GrapheneInputBridge {
     }
 
     private boolean isDuplicateSyntheticTypedCharacter(char character) {
-        if (pendingSyntheticCharacter == KeyEvent.CHAR_UNDEFINED) {
+        if (pendingSyntheticCharacter == CEF_CHAR_UNDEFINED) {
             return false;
         }
 
         long now = System.currentTimeMillis();
         boolean duplicate = now - pendingSyntheticCharacterTimestamp <= SYNTHETIC_TYPED_DUPLICATE_WINDOW_MS
                 && pendingSyntheticCharacter == character;
-        pendingSyntheticCharacter = KeyEvent.CHAR_UNDEFINED;
+        pendingSyntheticCharacter = CEF_CHAR_UNDEFINED;
         pendingSyntheticCharacterTimestamp = 0L;
         return duplicate;
     }
@@ -260,10 +501,16 @@ final class GrapheneInputBridge {
         return !GrapheneKeyCodeUtil.requiresNumLockForText(keyCode) || numLockEnabled;
     }
 
+    private boolean shouldTreatNumpadAsText(int keyCode, boolean numLockEnabled) {
+        return isNumpadTextModeEnabled(keyCode, numLockEnabled);
+    }
+
     private boolean isNumLockEnabled(int modifiers) {
-        if ((modifiers & GLFW.GLFW_MOD_NUM_LOCK) != 0) {
+        boolean numLockModifierSet = (modifiers & GLFW.GLFW_MOD_NUM_LOCK) != 0;
+        if (numLockModifierSet) {
             fallbackNumLockState = true;
             fallbackNumLockStateKnown = true;
+            GrapheneCore.LOGGER.info("[graphene-key] numlock source=glfw-modifier value=true modifiers={}", modifiers);
             return true;
         }
 
@@ -271,10 +518,23 @@ final class GrapheneInputBridge {
         if (toolkitNumLockState.isPresent()) {
             fallbackNumLockState = toolkitNumLockState.get();
             fallbackNumLockStateKnown = true;
+            GrapheneCore.LOGGER.info("[graphene-key] numlock source=toolkit value={} modifiers={}", fallbackNumLockState, modifiers);
             return fallbackNumLockState;
         }
 
-        return fallbackNumLockStateKnown && fallbackNumLockState;
+        if (fallbackNumLockStateKnown) {
+            GrapheneCore.LOGGER.info("[graphene-key] numlock source=state-fallback value={} known=true modifiers={}",
+                    fallbackNumLockState, modifiers);
+            return fallbackNumLockState;
+        }
+
+        if (lockKeyModifiersEnabled) {
+            GrapheneCore.LOGGER.info("[graphene-key] numlock source=glfw-lock-mods-fallback value=false modifiers={}", modifiers);
+            return false;
+        }
+
+        GrapheneCore.LOGGER.info("[graphene-key] numlock source=unknown-default value=false modifiers={}", modifiers);
+        return false;
     }
 
     private void updateFallbackNumLockState(int keyCode, boolean pressed) {
@@ -284,12 +544,18 @@ final class GrapheneInputBridge {
 
         fallbackNumLockState = !fallbackNumLockState;
         fallbackNumLockStateKnown = true;
+        GrapheneCore.LOGGER.info("[graphene-key] numlock toggled by key event newValue={}", fallbackNumLockState);
     }
 
-    private static void enableLockKeyModifiers() {
+    private void ensureLockKeyModifiersEnabled() {
+        if (lockKeyModifiersEnabled) {
+            return;
+        }
+
         try {
             long windowHandle = McClient.mc().getWindow().handle();
             GLFW.glfwSetInputMode(windowHandle, GLFW.GLFW_LOCK_KEY_MODS, GLFW.GLFW_TRUE);
+            lockKeyModifiersEnabled = true;
         } catch (Exception _) {
             // Lock key modifiers are optional at runtime.
         }
@@ -302,5 +568,57 @@ final class GrapheneInputBridge {
             // Toolkit lock state is not available on all platforms/toolkits.
             return Optional.empty();
         }
+    }
+
+    private int sanitizeCharEventModifiers(int modifiers) {
+        boolean hasControlModifier = (modifiers & GLFW.GLFW_MOD_CONTROL) != 0;
+        boolean hasAltModifier = (modifiers & GLFW.GLFW_MOD_ALT) != 0;
+        if (GraphenePlatform.isWindows() && rightAltPressed && hasControlModifier && hasAltModifier) {
+            return modifiers & ~(GLFW.GLFW_MOD_CONTROL | GLFW.GLFW_MOD_ALT);
+        }
+
+        return modifiers;
+    }
+
+    private void logKeyInput(
+            String phase,
+            int keyCode,
+            int scanCode,
+            int modifiers,
+            char character,
+            boolean numLockEnabled,
+            boolean treatNumpadAsText
+    ) {
+        GrapheneCore.LOGGER.info(
+                "[graphene-key] {} keyCode={} scanCode={} modifiers={} char={} numLockEnabled={} numLockKnown={} numLockFallback={} treatNumpadAsText={}",
+                phase,
+                keyCode,
+                scanCode,
+                modifiers,
+                formatCharacter(character),
+                numLockEnabled,
+                fallbackNumLockStateKnown,
+                fallbackNumLockState,
+                treatNumpadAsText
+        );
+    }
+
+    private static void logCefKeyEvent(String phase, CefKeyEvent event) {
+        GrapheneCore.LOGGER.info(
+                "[graphene-key] {} type={} modifiers={} windowsKey={} nativeKey={} systemKey={} char={} unmodifiedChar={} scanCode={}",
+                phase,
+                event.type,
+                event.modifiers,
+                event.windows_key_code,
+                event.native_key_code,
+                event.is_system_key,
+                formatCharacter(event.character),
+                formatCharacter(event.unmodified_character),
+                event.scan_code
+        );
+    }
+
+    private static String formatCharacter(char character) {
+        return "'" + character + "'(U+" + String.format("%04X", (int) character) + ")";
     }
 }
