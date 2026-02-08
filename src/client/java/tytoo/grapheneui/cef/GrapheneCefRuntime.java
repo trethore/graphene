@@ -16,8 +16,12 @@ import tytoo.grapheneui.platform.GraphenePlatform;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 public final class GrapheneCefRuntime {
+    private static final long CEF_SHUTDOWN_TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(5);
+    private static final long CEF_SHUTDOWN_POLL_INTERVAL_MILLIS = 25;
+
     private final Object lock = new Object();
     private final GrapheneBrowserSurfaceManager surfaceManager;
     private final GrapheneLoadEventBus loadEventBus = new GrapheneLoadEventBus();
@@ -114,8 +118,13 @@ public final class GrapheneCefRuntime {
             bridgeRuntime.shutdown();
             loadEventBus.clear();
 
+            if (cefClient != null) {
+                cefClient.dispose();
+            }
+
             if (cefApp != null) {
                 cefApp.dispose();
+                awaitCefTermination();
             }
 
             cefClient = null;
@@ -132,7 +141,26 @@ public final class GrapheneCefRuntime {
         }
 
         ClientLifecycleEvents.CLIENT_STOPPING.register(_ -> shutdown());
+        Runtime.getRuntime().addShutdownHook(new Thread(this::shutdown, "graphene-cef-shutdown"));
         shutdownHookRegistered = true;
+    }
+
+    private static void awaitCefTermination() {
+        long deadlineNanos = System.nanoTime() + CEF_SHUTDOWN_TIMEOUT_NANOS;
+
+        while (CefApp.getState() != CefApp.CefAppState.TERMINATED && System.nanoTime() < deadlineNanos) {
+            try {
+                Thread.sleep(CEF_SHUTDOWN_POLL_INTERVAL_MILLIS);
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                GrapheneCore.LOGGER.warn("Interrupted while waiting for CEF termination", exception);
+                return;
+            }
+        }
+
+        if (CefApp.getState() != CefApp.CefAppState.TERMINATED) {
+            GrapheneCore.LOGGER.warn("Timed out while waiting for CEF termination; process may remain alive");
+        }
     }
 
     private static void logStartupConfiguration(CefAppBuilder cefAppBuilder) {

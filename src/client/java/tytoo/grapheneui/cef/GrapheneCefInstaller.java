@@ -78,7 +78,7 @@ public final class GrapheneCefInstaller {
             return;
         }
 
-        cefAppBuilder.addJcefArgs("--ozone-platform=x11", "--disable-gpu", "--disable-gpu-compositing");
+        cefAppBuilder.addJcefArgs("--ozone-platform=x11");
         GrapheneCore.LOGGER.info("Detected Wayland session, forcing CEF to X11 compatibility mode");
     }
 
