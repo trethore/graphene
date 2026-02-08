@@ -43,10 +43,6 @@ val sourceDeps: Configuration by configurations.creating {
 		attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.DOCUMENTATION))
 		attribute(DocsType.DOCS_TYPE_ATTRIBUTE, objects.named(DocsType.SOURCES))
 	}
-	extendsFrom(
-		configurations.named("implementation").get(),
-		configurations.named("modImplementation").get()
-	)
 }
 
 loom {
@@ -98,6 +94,7 @@ dependencies {
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation("net.fabricmc.fabric-api:fabric-api:${fabricApiVersion}")
+	sourceDeps("me.tytoo:jcefgithub:${jcefGithubVersion}")
 }
 
 tasks.withType<ProcessResources>().configureEach {
@@ -159,9 +156,14 @@ val cleanSources by tasks.registering(Delete::class) {
 
 val unpackSources by tasks.registering(UnpackSourcesTask::class) {
 	group = "help"
-	description = "Unpacks library, Minecraft, and Fabric sources into libs-src/"
+	description = "Unpacks dependency sources and clones git repos into libs-src/"
 	dependsOn(cleanSources)
 	sourceDeps.from(configurations.named("sourceDeps"))
+	gitRepos.set(
+		listOf(
+			"https://github.com/trethore/jcef"
+		)
+	)
 	outputDir.set(unpackedSourcesDir)
 	minecraftCacheDir.set(minecraftCacheDirProvider)
 	fabricCacheDir.set(fabricCacheDirProvider)
