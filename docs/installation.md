@@ -76,8 +76,20 @@ Current Graphene baseline:
 - Fabric Loader: `0.18.4`
 - Fabric API: `0.141.3+1.21.11`
 - Java: `25`
+- GPU: `NVIDIA GeForce GT 720` or better
 
-## 6) Quick verification
+## 6) Supported platforms
+
+- macOS: `arm64`, `amd64`
+- Linux: `arm64`, `amd64`
+- Windows: `amd64`
+
+## 7) Tested platforms
+
+- Windows 11 with `AZERTY` and `QWERTY` keyboard layouts
+- Linux (Wayland) with `AZERTY` and `QWERTY` keyboard layouts
+
+## 8) Quick verification
 
 After wiring the dependency and initializer:
 

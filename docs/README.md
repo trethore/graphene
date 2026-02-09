@@ -3,6 +3,8 @@
 Welcome. This documentation is organized as a guided path from core concepts to advanced integration and debugging.
 If you are new to Graphene, start with Overview, then follow the pages in order.
 
+Requirements baseline: Java `25` and an `NVIDIA GeForce GT 720` (or better) GPU.
+
 - [Overview](overview.md)
 - [Installation](installation.md)
 - [Quickstart](quickstart.md)

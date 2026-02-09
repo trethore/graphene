@@ -18,6 +18,22 @@ Instead of writing every screen directly with Minecraft rendering primitives, yo
 
 In short: Graphene gives Fabric mods a practical way to use web-powered interfaces without reinventing a full UI stack inside the game.
 
+## Requirements
+
+- Java: `25`
+- GPU: `NVIDIA GeForce GT 720` or better
+
+## Supported Platforms
+
+- macOS: `arm64`, `amd64`
+- Linux: `arm64`, `amd64`
+- Windows: `amd64`
+
+## Tested Platforms
+
+- Windows 11 with `AZERTY` and `QWERTY` keyboard layouts
+- Linux (Wayland) with `AZERTY` and `QWERTY` keyboard layouts
+
 ## Installation
 
 Graphene is published on GitHub Packages. Check the latest available version here:

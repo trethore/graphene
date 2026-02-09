@@ -17,10 +17,11 @@ import tytoo.grapheneui.platform.GraphenePlatform;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 
 public final class GrapheneCefRuntime {
     private static final long CEF_SHUTDOWN_TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(5);
-    private static final long CEF_SHUTDOWN_POLL_INTERVAL_MILLIS = 25;
+    private static final long CEF_SHUTDOWN_POLL_INTERVAL_NANOS = TimeUnit.MILLISECONDS.toNanos(25);
 
     private final Object lock = new Object();
     private final GrapheneBrowserSurfaceManager surfaceManager;
@@ -44,6 +45,22 @@ public final class GrapheneCefRuntime {
                 cefAppBuilder.getCefSettings().browser_subprocess_path,
                 cefAppBuilder.getJcefArgs()
         );
+    }
+
+    private static void awaitCefTermination() {
+        long deadlineNanos = System.nanoTime() + CEF_SHUTDOWN_TIMEOUT_NANOS;
+
+        while (CefApp.getState() != CefApp.CefAppState.TERMINATED && System.nanoTime() < deadlineNanos) {
+            LockSupport.parkNanos(CEF_SHUTDOWN_POLL_INTERVAL_NANOS);
+            if (Thread.currentThread().isInterrupted()) {
+                GrapheneCore.LOGGER.warn("Interrupted while waiting for CEF termination");
+                return;
+            }
+        }
+
+        if (CefApp.getState() != CefApp.CefAppState.TERMINATED) {
+            GrapheneCore.LOGGER.warn("Timed out while waiting for CEF termination; process may remain alive");
+        }
     }
 
     public void initialize() {
@@ -153,22 +170,5 @@ public final class GrapheneCefRuntime {
         ClientLifecycleEvents.CLIENT_STOPPING.register(ignoredClient -> shutdown());
         Runtime.getRuntime().addShutdownHook(new Thread(this::shutdown, "graphene-cef-shutdown"));
         shutdownHookRegistered = true;
-    }
-    private static void awaitCefTermination() {
-        long deadlineNanos = System.nanoTime() + CEF_SHUTDOWN_TIMEOUT_NANOS;
-
-        while (CefApp.getState() != CefApp.CefAppState.TERMINATED && System.nanoTime() < deadlineNanos) {
-            try {
-                Thread.sleep(CEF_SHUTDOWN_POLL_INTERVAL_MILLIS);
-            } catch (InterruptedException exception) {
-                Thread.currentThread().interrupt();
-                GrapheneCore.LOGGER.warn("Interrupted while waiting for CEF termination", exception);
-                return;
-            }
-        }
-
-        if (CefApp.getState() != CefApp.CefAppState.TERMINATED) {
-            GrapheneCore.LOGGER.warn("Timed out while waiting for CEF termination; process may remain alive");
-        }
     }
 }
