@@ -24,7 +24,7 @@ WIP
 
 ## Documentation
 
-[Checkout docs here!](docs/)
+Start [HERE](docs/README.md)!
 
 ## Contributing
 
