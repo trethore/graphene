@@ -1,5 +1,6 @@
 package tytoo.grapheneui.cef;
 
+import net.minecraft.resources.Identifier;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -10,6 +11,21 @@ final class GrapheneClasspathUrlsTest {
         String url = GrapheneClasspathUrls.asset("graphene_test/welcome.html");
 
         assertEquals("classpath:///assets/graphene-ui/graphene_test/welcome.html", url);
+    }
+
+    @Test
+    void assetBuildsExpectedClasspathUrlForCustomNamespace() {
+        String url = GrapheneClasspathUrls.asset("my-mod-id", "/web/index.html");
+
+        assertEquals("classpath:///assets/my-mod-id/web/index.html", url);
+    }
+
+    @Test
+    void assetBuildsExpectedClasspathUrlFromIdentifier() {
+        Identifier assetId = Identifier.fromNamespaceAndPath("my-mod-id", "web/index.html");
+        String url = GrapheneClasspathUrls.asset(assetId);
+
+        assertEquals("classpath:///assets/my-mod-id/web/index.html", url);
     }
 
     @Test

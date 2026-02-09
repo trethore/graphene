@@ -1,5 +1,6 @@
 package tytoo.grapheneui.cef;
 
+import net.minecraft.resources.Identifier;
 import tytoo.grapheneui.GrapheneCore;
 
 import java.net.URLDecoder;
@@ -16,8 +17,18 @@ public final class GrapheneClasspathUrls {
     }
 
     public static String asset(String path) {
+        return asset(GrapheneCore.ID, path);
+    }
+
+    public static String asset(String namespace, String path) {
+        String normalizedNamespace = normalizeNamespace(namespace);
         String normalizedPath = normalizePath(path);
-        return ROOT_PREFIX + "assets/" + GrapheneCore.ID + "/" + normalizedPath;
+        return ROOT_PREFIX + "assets/" + normalizedNamespace + "/" + normalizedPath;
+    }
+
+    public static String asset(Identifier assetId) {
+        Identifier identifier = Objects.requireNonNull(assetId, "assetId");
+        return asset(identifier.getNamespace(), identifier.getPath());
     }
 
     public static String normalizeResourcePath(String url) {
@@ -52,5 +63,18 @@ public final class GrapheneClasspathUrls {
         }
 
         return normalizedPath;
+    }
+
+    private static String normalizeNamespace(String namespace) {
+        String normalizedNamespace = Objects.requireNonNull(namespace, "namespace").trim();
+        while (normalizedNamespace.startsWith("/")) {
+            normalizedNamespace = normalizedNamespace.substring(1);
+        }
+
+        while (normalizedNamespace.endsWith("/")) {
+            normalizedNamespace = normalizedNamespace.substring(0, normalizedNamespace.length() - 1);
+        }
+
+        return normalizedNamespace;
     }
 }

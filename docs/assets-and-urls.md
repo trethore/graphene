@@ -7,7 +7,8 @@ Graphene registers a custom `classpath` scheme so browser pages can load resourc
 Recommended:
 
 - `classpath:///assets/<mod-id>/...`
-- `GrapheneClasspathUrls.asset("...")` for Graphene-owned assets under `assets/graphene-ui/...`
+- `GrapheneClasspathUrls.asset("<mod-id>", "...")` for mod-owned assets under `assets/<mod-id>/...`
+- `GrapheneClasspathUrls.asset("...")` as a shortcut for Graphene-owned assets under `assets/graphene-ui/...`
 
 Examples:
 
@@ -15,7 +16,8 @@ Examples:
 String grapheneAsset = GrapheneClasspathUrls.asset("graphene_test/welcome.html");
 // classpath:///assets/graphene-ui/graphene_test/welcome.html
 
-String myModAsset = "classpath:///assets/my-mod-id/web/index.html";
+String myModAsset = GrapheneClasspathUrls.asset("my-mod-id", "web/index.html");
+// classpath:///assets/my-mod-id/web/index.html
 ```
 
 ## Where To Put Files
@@ -37,7 +39,7 @@ src/client/resources/
 Then load with:
 
 ```java
-String url = "classpath:///assets/my-mod-id/web/index.html";
+String url = GrapheneClasspathUrls.asset("my-mod-id", "web/index.html");
 ```
 
 ## Relative Resource Loading
@@ -81,8 +83,8 @@ Unknown extensions default to `text/plain`.
 
 - Keep all web resources under one folder (`assets/<mod-id>/web/...`).
 - Prefer lowercase file names and explicit extensions.
-- Use `GrapheneClasspathUrls.asset(...)` only for Graphene namespace resources.
-- For your mod namespace, build explicit `classpath:///assets/<mod-id>/...` URLs.
+- Prefer `GrapheneClasspathUrls.asset("<mod-id>", "...")` for your mod namespace.
+- Keep `GrapheneClasspathUrls.asset(...)` for Graphene namespace resources.
 
 ---
 Next: [Lifecycle](lifecycle.md)

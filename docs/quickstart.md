@@ -67,10 +67,10 @@ Notes:
 
 ## 3) Load Your Own HTML
 
-For your own mod assets, use a direct classpath URL:
+For your own mod assets, use the namespace-aware helper:
 
 ```java
-String url = "classpath:///assets/my-mod-id/web/index.html";
+String url = GrapheneClasspathUrls.asset("my-mod-id", "web/index.html");
 ```
 
 Or keep using Graphene test assets while integrating:
