@@ -15,6 +15,9 @@ val minecraftVersion = property("minecraft_version") as String
 val loaderVersion = property("loader_version") as String
 val fabricApiVersion = property("fabric_api_version") as String
 val jcefGithubVersion = property("jcefgithub_version") as String
+val githubUsername: String? = (findProperty("gpr.user") as String?) ?: System.getenv("GITHUB_ACTOR")
+val githubToken: String? = (findProperty("gpr.key") as String?) ?: System.getenv("GITHUB_TOKEN")
+val githubRepository = (findProperty("gpr.repo") as String?) ?: System.getenv("GITHUB_REPOSITORY") ?: "trethore/graphene"
 
 version = modVersion
 group = mavenGroup
@@ -29,8 +32,8 @@ repositories {
 		name = "GitHubPackages"
 		url = uri("https://maven.pkg.github.com/trethore/jcefgithub")
 		credentials {
-			username = (findProperty("gpr.user") as String?) ?: System.getenv("GITHUB_ACTOR")
-			password = (findProperty("gpr.key") as String?) ?: System.getenv("GITHUB_TOKEN")
+			username = githubUsername
+			password = githubToken
 		}
 	}
 	mavenCentral()
@@ -153,7 +156,14 @@ publishing {
 
 	// See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
 	repositories {
-		// Add repositories to publish to here.
+		maven {
+			name = "GitHubPackages"
+			url = uri("https://maven.pkg.github.com/$githubRepository")
+			credentials {
+				username = githubUsername
+				password = githubToken
+			}
+		}
 	}
 }
 
