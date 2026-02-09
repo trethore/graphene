@@ -4,6 +4,7 @@ import net.fabricmc.api.ClientModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tytoo.grapheneui.GrapheneCore;
+import tytoo.grapheneuidebug.command.GrapheneDebugCommands;
 import tytoo.grapheneuidebug.key.GrapheneDebugKeyBindings;
 
 public class GrapheneDebugClient implements ClientModInitializer {
@@ -15,6 +16,7 @@ public class GrapheneDebugClient implements ClientModInitializer {
     public void onInitializeClient() {
         GrapheneCore.init();
         GrapheneDebugKeyBindings.register();
+        GrapheneDebugCommands.register();
         LOGGER.info("Graphene debug client initialized");
     }
 }

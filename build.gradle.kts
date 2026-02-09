@@ -1,5 +1,6 @@
 import org.gradle.api.attributes.Category
 import org.gradle.api.attributes.DocsType
+import org.gradle.api.tasks.testing.Test
 import tytoo.graphene.UnpackSourcesTask
 
 plugins {
@@ -58,6 +59,11 @@ sourceSets {
 		compileClasspath += clientSS.get().compileClasspath + clientSS.get().output
 		runtimeClasspath += clientSS.get().runtimeClasspath + clientSS.get().output
 	}
+
+	named("test") {
+		compileClasspath += clientSS.get().compileClasspath + clientSS.get().output
+		runtimeClasspath += clientSS.get().runtimeClasspath + clientSS.get().output
+	}
 }
 
 loom {
@@ -95,6 +101,15 @@ dependencies {
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation("net.fabricmc.fabric-api:fabric-api:${fabricApiVersion}")
 	sourceDeps("me.tytoo:jcefgithub:${jcefGithubVersion}")
+
+	testImplementation(platform("org.junit:junit-bom:6.0.0"))
+	testImplementation("org.junit.jupiter:junit-jupiter")
+	testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
+	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.withType<Test>().configureEach {
+	useJUnitPlatform()
 }
 
 tasks.withType<ProcessResources>().configureEach {
