@@ -1,0 +1,73 @@
+# Testing
+
+Graphene currently has two useful testing layers:
+
+- unit tests (`src/test/java/...`) for protocol and mapping behavior
+- in-game debug smoke tests (debug module command)
+
+## Unit Tests In This Repository
+
+Current coverage includes:
+
+- `GrapheneBridgeMessageCodecTest`
+  - packet parse behavior
+  - payload parse validation
+  - success response shape
+- `GrapheneBridgeInboundRouterTest`
+  - ready/version handling
+  - event routing
+  - request dispatch and response completion
+- `GrapheneBridgeOutboundQueueTest`
+  - pre-ready queue buffering
+  - flush ordering
+  - clear behavior
+- `GrapheneClasspathUrlsTest`
+  - URL build and normalization semantics
+- `BrowserSurfaceViewportMapperTest`
+  - coordinate scaling/truncation behavior
+
+## In-Game Debug Smoke Tests (This Repository)
+
+The debug module provides `/graphene test`, which runs:
+
+- runtime initialization smoke test
+- browser surface smoke test
+- bridge round-trip (JS handler request + Java handler request + event ack flow)
+
+This is useful before/after larger bridge or lifecycle changes.
+
+## Commands To Run
+
+Use the following from repository root:
+
+```bash
+./gradlew test
+./gradlew compileJava
+./gradlew build
+./gradlew runDebugClient
+```
+
+`runDebugClient` is the fastest way to validate full UI + bridge behavior manually.
+
+## How To Extend Tests
+
+When adding features, prefer small focused tests:
+
+- protocol changes: add/extend codec + router tests first
+- sizing/input math: add deterministic mapper/state tests
+- lifecycle changes: add queue/pending-request edge case tests
+
+For each new bridge behavior, try to include both:
+
+- unit test for core logic
+- debug smoke assertion for end-to-end confirmation
+
+## Suggested Future Test Additions
+
+- `BrowserSurfaceSizingState` edge cases (viewBox clamping and resize mode transitions)
+- JS dialog manager queue sequencing
+- load listener scope isolation across multiple surfaces
+- bridge timeout behavior and cancellation edge cases
+
+---
+Next: [Overview](overview.md)

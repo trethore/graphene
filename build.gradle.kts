@@ -1,5 +1,6 @@
 import org.gradle.api.attributes.Category
 import org.gradle.api.attributes.DocsType
+import org.gradle.api.tasks.testing.Test
 import tytoo.graphene.UnpackSourcesTask
 
 plugins {
@@ -14,6 +15,9 @@ val minecraftVersion = property("minecraft_version") as String
 val loaderVersion = property("loader_version") as String
 val fabricApiVersion = property("fabric_api_version") as String
 val jcefGithubVersion = property("jcefgithub_version") as String
+val githubUsername: String? = (findProperty("gpr.user") as String?) ?: System.getenv("GITHUB_ACTOR")
+val githubToken: String? = (findProperty("gpr.key") as String?) ?: System.getenv("GITHUB_TOKEN")
+val githubRepository = (findProperty("gpr.repo") as String?) ?: System.getenv("GITHUB_REPOSITORY") ?: "trethore/graphene"
 
 version = modVersion
 group = mavenGroup
@@ -28,8 +32,8 @@ repositories {
 		name = "GitHubPackages"
 		url = uri("https://maven.pkg.github.com/trethore/jcefgithub")
 		credentials {
-			username = (findProperty("gpr.user") as String?) ?: System.getenv("GITHUB_ACTOR")
-			password = (findProperty("gpr.key") as String?) ?: System.getenv("GITHUB_TOKEN")
+			username = githubUsername
+			password = githubToken
 		}
 	}
 	mavenCentral()
@@ -43,10 +47,6 @@ val sourceDeps: Configuration by configurations.creating {
 		attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.DOCUMENTATION))
 		attribute(DocsType.DOCS_TYPE_ATTRIBUTE, objects.named(DocsType.SOURCES))
 	}
-	extendsFrom(
-		configurations.named("implementation").get(),
-		configurations.named("modImplementation").get()
-	)
 }
 
 loom {
@@ -59,6 +59,11 @@ sourceSets {
 		java.setSrcDirs(listOf("src/debug/java"))
 		resources.setSrcDirs(listOf("src/debug/resources"))
 		// Inherit classpaths + compiled output from client
+		compileClasspath += clientSS.get().compileClasspath + clientSS.get().output
+		runtimeClasspath += clientSS.get().runtimeClasspath + clientSS.get().output
+	}
+
+	named("test") {
 		compileClasspath += clientSS.get().compileClasspath + clientSS.get().output
 		runtimeClasspath += clientSS.get().runtimeClasspath + clientSS.get().output
 	}
@@ -98,6 +103,16 @@ dependencies {
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation("net.fabricmc.fabric-api:fabric-api:${fabricApiVersion}")
+	sourceDeps("me.tytoo:jcefgithub:${jcefGithubVersion}")
+
+	testImplementation(platform("org.junit:junit-bom:6.0.0"))
+	testImplementation("org.junit.jupiter:junit-jupiter")
+	testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
+	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.withType<Test>().configureEach {
+	useJUnitPlatform()
 }
 
 tasks.withType<ProcessResources>().configureEach {
@@ -141,7 +156,14 @@ publishing {
 
 	// See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
 	repositories {
-		// Add repositories to publish to here.
+		maven {
+			name = "GitHubPackages"
+			url = uri("https://maven.pkg.github.com/$githubRepository")
+			credentials {
+				username = githubUsername
+				password = githubToken
+			}
+		}
 	}
 }
 
@@ -159,9 +181,14 @@ val cleanSources by tasks.registering(Delete::class) {
 
 val unpackSources by tasks.registering(UnpackSourcesTask::class) {
 	group = "help"
-	description = "Unpacks library, Minecraft, and Fabric sources into libs-src/"
+	description = "Unpacks dependency sources and clones git repos into libs-src/"
 	dependsOn(cleanSources)
 	sourceDeps.from(configurations.named("sourceDeps"))
+	gitRepos.set(
+		listOf(
+			"https://github.com/trethore/jcef"
+		)
+	)
 	outputDir.set(unpackedSourcesDir)
 	minecraftCacheDir.set(minecraftCacheDirProvider)
 	fabricCacheDir.set(fabricCacheDirProvider)

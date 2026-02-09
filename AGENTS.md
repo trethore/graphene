@@ -42,6 +42,8 @@ Here is the structure of the repository:
 
 - Assume Java 25 at runtime; use only stable features and avoid preview or incubator APIs.
 - Use modern Java 25 standard-library utilities (Streams, Optional, records) when they improve clarity.
+- Prefer unnamed variables (`_`) for intentionally unused variables, parameters, and caught exceptions.
+- When intentionally ignoring a caught exception, keep a short explanatory comment in the catch block.
 - Maintain explicit, readable control flow; avoid clever constructs that harm comprehension.
 
 ## Minecraft Integration Rules

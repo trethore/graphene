@@ -1,10 +1,14 @@
 package tytoo.graphene
 
 import org.gradle.api.DefaultTask
+import org.gradle.api.GradleException
 import org.gradle.api.file.ArchiveOperations
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.FileSystemOperations
+import org.gradle.api.provider.ListProperty
+import org.gradle.process.ExecOperations
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Optional
@@ -20,6 +24,10 @@ abstract class UnpackSourcesTask : DefaultTask() {
 	@get:InputFiles
 	@get:PathSensitive(PathSensitivity.RELATIVE)
 	abstract val sourceDeps: ConfigurableFileCollection
+
+	@get:Input
+	@get:Optional
+	abstract val gitRepos: ListProperty<String>
 
 	@get:InputDirectory
 	@get:Optional
@@ -40,12 +48,16 @@ abstract class UnpackSourcesTask : DefaultTask() {
 	@get:Inject
 	protected abstract val archiveOperations: ArchiveOperations
 
+	@get:Inject
+	protected abstract val execOperations: ExecOperations
+
 	@TaskAction
 	fun runTask() {
 		val outputDirFile = outputDir.get().asFile
 		outputDirFile.mkdirs()
 
 		unpackSourceDependencies(outputDirFile)
+		cloneGitRepositories(outputDirFile)
 		unpackMinecraftSources(outputDirFile)
 		unpackFabricSources(outputDirFile)
 	}
@@ -61,6 +73,18 @@ abstract class UnpackSourcesTask : DefaultTask() {
 			fileSystemOperations.copy {
 				from(archiveOperations.zipTree(srcJar))
 				into(targetDir)
+			}
+		}
+	}
+
+	private fun cloneGitRepositories(outputDirFile: File) {
+		val repositories = gitRepos.orNull.orEmpty()
+		repositories.forEach { repoUrl ->
+			val targetDir = File(outputDirFile, deriveRepoDirectoryName(repoUrl))
+
+			fileSystemOperations.delete { delete(targetDir) }
+			execOperations.exec {
+				commandLine("git", "clone", "--depth", "1", repoUrl, targetDir.absolutePath)
 			}
 		}
 	}
@@ -114,6 +138,15 @@ abstract class UnpackSourcesTask : DefaultTask() {
 					!file.name.endsWith(".backup.jar")
 			}
 			.maxByOrNull { it.lastModified() }
+	}
+
+	private fun deriveRepoDirectoryName(repoUrl: String): String {
+		val trimmedUrl = repoUrl.trim().removeSuffix("/")
+		val repoName = trimmedUrl.substringAfterLast('/').substringBeforeLast(".git")
+		if (repoName.isBlank()) {
+			throw GradleException("Unable to derive repository name from URL: $repoUrl")
+		}
+		return repoName
 	}
 
 	private fun unpackFabricSources(outputDirFile: File) {
