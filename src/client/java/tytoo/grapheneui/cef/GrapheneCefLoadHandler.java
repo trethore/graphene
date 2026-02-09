@@ -19,6 +19,10 @@ final class GrapheneCefLoadHandler extends CefLoadHandlerAdapter {
         this.bridgeRuntime = Objects.requireNonNull(bridgeRuntime, "bridgeRuntime");
     }
 
+    private static boolean isMainFrame(CefFrame frame) {
+        return frame == null || frame.isMain();
+    }
+
     @Override
     public void onLoadingStateChange(CefBrowser browser, boolean isLoading, boolean canGoBack, boolean canGoForward) {
         loadEventBus.onLoadingStateChange(browser, isLoading, canGoBack, canGoForward);
@@ -27,13 +31,17 @@ final class GrapheneCefLoadHandler extends CefLoadHandlerAdapter {
     @Override
     public void onLoadStart(CefBrowser browser, CefFrame frame, CefRequest.TransitionType transitionType) {
         loadEventBus.onLoadStart(browser, frame, transitionType);
-        bridgeRuntime.onLoadStart(browser);
+        if (isMainFrame(frame)) {
+            bridgeRuntime.onLoadStart(browser);
+        }
     }
 
     @Override
     public void onLoadEnd(CefBrowser browser, CefFrame frame, int httpStatusCode) {
         loadEventBus.onLoadEnd(browser, frame, httpStatusCode);
-        bridgeRuntime.onLoadEnd(browser);
+        if (isMainFrame(frame)) {
+            bridgeRuntime.onLoadEnd(browser);
+        }
     }
 
     @Override

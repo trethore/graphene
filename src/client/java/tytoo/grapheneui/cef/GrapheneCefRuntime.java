@@ -36,6 +36,16 @@ public final class GrapheneCefRuntime {
         this.surfaceManager = Objects.requireNonNull(surfaceManager, "surfaceManager");
     }
 
+    private static void logStartupConfiguration(CefAppBuilder cefAppBuilder) {
+        GrapheneCore.LOGGER.info(
+                "Initializing CEF on platform linux={}, wayland={}, subprocess={}, args={}",
+                GraphenePlatform.isLinux(),
+                GraphenePlatform.isWaylandSession(),
+                cefAppBuilder.getCefSettings().browser_subprocess_path,
+                cefAppBuilder.getJcefArgs()
+        );
+    }
+
     public void initialize() {
         synchronized (lock) {
             if (initialized) {
@@ -140,11 +150,10 @@ public final class GrapheneCefRuntime {
             return;
         }
 
-        ClientLifecycleEvents.CLIENT_STOPPING.register(_ -> shutdown());
+        ClientLifecycleEvents.CLIENT_STOPPING.register(ignoredClient -> shutdown());
         Runtime.getRuntime().addShutdownHook(new Thread(this::shutdown, "graphene-cef-shutdown"));
         shutdownHookRegistered = true;
     }
-
     private static void awaitCefTermination() {
         long deadlineNanos = System.nanoTime() + CEF_SHUTDOWN_TIMEOUT_NANOS;
 
@@ -161,15 +170,5 @@ public final class GrapheneCefRuntime {
         if (CefApp.getState() != CefApp.CefAppState.TERMINATED) {
             GrapheneCore.LOGGER.warn("Timed out while waiting for CEF termination; process may remain alive");
         }
-    }
-
-    private static void logStartupConfiguration(CefAppBuilder cefAppBuilder) {
-        GrapheneCore.LOGGER.info(
-                "Initializing CEF on platform linux={}, wayland={}, subprocess={}, args={}",
-                GraphenePlatform.isLinux(),
-                GraphenePlatform.isWaylandSession(),
-                cefAppBuilder.getCefSettings().browser_subprocess_path,
-                cefAppBuilder.getJcefArgs()
-        );
     }
 }
