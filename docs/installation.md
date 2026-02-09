@@ -1,46 +1,89 @@
 # Installation
 
-This page is intentionally a placeholder for now.
-Graphene is not publicly released yet, so official dependency coordinates and consumption steps are pending.
+Graphene is published on GitHub Packages and consumed as a normal Fabric mod dependency.
 
-## Status
+## 1) Get the latest version
 
-- Publishing target: GitHub Packages (planned)
-- Stable install instructions: pending first public release
-- Versioning policy docs: pending
+Check the package page for the newest release:
 
-## Placeholder Sections (To Be Filled)
+- https://github.com/trethore/graphene/packages
 
-### 1) Repository + Credentials
+Dependency coordinates:
 
-TODO: add exact Maven/Gradle repository block and authentication requirements.
+- Group: `tytoo.grapheneui`
+- Artifact: `graphene-ui`
+- Version: `<version>`
 
-### 2) Dependency Coordinates
+## 2) Configure GitHub Packages access
 
-TODO: add official `group:artifact:version` coordinates for Graphene.
+GitHub Packages Maven downloads require credentials. The simplest setup is to define them in your user Gradle properties (`~/.gradle/gradle.properties`):
 
-### 3) Fabric + Minecraft Compatibility Matrix
+```properties
+gpr.user=YOUR_GITHUB_USERNAME
+gpr.key=YOUR_GITHUB_TOKEN
+```
 
-TODO: add tested combinations (Minecraft, Fabric Loader, Fabric API, Java).
+Your token should have `read:packages` permission.
 
-### 4) Minimal Consumer Setup
+## 3) Add the repository and dependency (Fabric Loom)
 
-TODO: add a copy/paste `build.gradle(.kts)` sample and `fabric.mod.json` notes.
+In your mod `build.gradle.kts`:
 
-### 5) Verification Steps
+```kotlin
+repositories {
+    maven {
+        name = "GitHubPackagesGraphene"
+        url = uri("https://maven.pkg.github.com/trethore/graphene")
+        credentials {
+            username = (findProperty("gpr.user") as String?) ?: System.getenv("GITHUB_ACTOR")
+            password = (findProperty("gpr.key") as String?) ?: System.getenv("GITHUB_TOKEN")
+        }
+    }
+}
 
-TODO: add a simple runtime smoke checklist (`GrapheneCore.init()`, open a web view, verify bridge ready).
+dependencies {
+    modImplementation("tytoo.grapheneui:graphene-ui:<version>")
+}
+```
 
-## Current Repository Baseline
+Use `modImplementation` (not plain `implementation`) so Fabric Loom treats Graphene as a mod dependency.
 
-Until public release docs are published, this repository currently targets:
+## 4) Initialize Graphene in your client entrypoint
+
+Call `GrapheneCore.init()` once in your `ClientModInitializer`:
+
+```java
+package com.example.mymod;
+
+import net.fabricmc.api.ClientModInitializer;
+import tytoo.grapheneui.GrapheneCore;
+
+public final class MyModClient implements ClientModInitializer {
+    @Override
+    public void onInitializeClient() {
+        GrapheneCore.init();
+    }
+}
+```
+
+If this is missing, runtime calls that need Graphene will fail with an initialization error.
+
+## 5) Compatibility baseline
+
+Current Graphene baseline:
 
 - Minecraft: `1.21.11`
 - Fabric Loader: `0.18.4`
 - Fabric API: `0.141.3+1.21.11`
 - Java: `25`
 
-These values come from the project build configuration and may change before first public release.
+## 6) Quick verification
+
+After wiring the dependency and initializer:
+
+1. Run your client and confirm startup succeeds.
+2. Open a screen containing a `GrapheneWebViewWidget`.
+3. Confirm the page renders and no `Graphene is not initialized` error appears.
 
 ---
 Next: [Quickstart](quickstart.md)

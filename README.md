@@ -20,7 +20,55 @@ In short: Graphene gives Fabric mods a practical way to use web-powered interfac
 
 ## Installation
 
-WIP
+Graphene is published on GitHub Packages. Check the latest available version here:
+[https://github.com/trethore/graphene/packages](https://github.com/trethore/graphene/packages)
+
+### Maven coordinates
+
+```xml
+<dependency>
+  <groupId>tytoo.grapheneui</groupId>
+  <artifactId>graphene-ui</artifactId>
+  <version>&lt;version&gt;</version>
+</dependency>
+```
+
+### Add Graphene to a Fabric Minecraft Gradle project
+
+Use Fabric Loom's `modImplementation` configuration:
+
+```kotlin
+repositories {
+    maven {
+        name = "GitHubPackagesGraphene"
+        url = uri("https://maven.pkg.github.com/trethore/graphene")
+        credentials {
+            username = System.getenv("GITHUB_ACTOR")
+            password = System.getenv("GITHUB_TOKEN")
+        }
+    }
+}
+
+dependencies {
+    modImplementation("tytoo.grapheneui:graphene-ui:<version>")
+}
+```
+
+### Initialize Graphene in your mod
+
+Call `GrapheneCore.init()` once from your client mod initializer:
+
+```java
+import net.fabricmc.api.ClientModInitializer;
+import tytoo.grapheneui.GrapheneCore;
+
+public final class MyModClient implements ClientModInitializer {
+    @Override
+    public void onInitializeClient() {
+        GrapheneCore.init();
+    }
+}
+```
 
 ## Documentation
 
