@@ -28,7 +28,7 @@ Here is the structure of the repository:
 
 - Target Java 25, use 4-space indentation, and keep packages under `tytoo.grapheneui*`.
 - Use PascalCase for classes, camelCase for methods and fields, and UPPER_SNAKE_CASE for constants.
-- Use explicit types instead of `var`, and prefer descriptive names over one-letter identifiers.
+- Prefer explicit types instead of `var`, and use descriptive names rather than one-letter identifiers.
 - Keep member order consistent in Java classes: static constants, static fields, instance fields, constructors, overridden
   methods, public methods, protected and private helper methods, then getters and setters at the bottom.
 - Import types instead of using fully qualified names inside method bodies.
