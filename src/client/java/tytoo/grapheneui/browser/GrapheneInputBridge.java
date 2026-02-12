@@ -1,15 +1,14 @@
 package tytoo.grapheneui.browser;
 
 import org.cef.input.CefKeyEvent;
+import org.cef.input.CefMouseEvent;
+import org.cef.input.CefMouseWheelEvent;
 import org.cef.misc.EventFlags;
 import org.lwjgl.glfw.GLFW;
 import tytoo.grapheneui.input.GrapheneKeyCodeUtil;
 
 import java.awt.*;
-import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseWheelEvent;
 
 final class GrapheneInputBridge {
     private static final int MOUSE_LEFT_BUTTON = 0;
@@ -28,40 +27,40 @@ final class GrapheneInputBridge {
 
     private static int remapMouseCode(int button) {
         return switch (button) {
-            case MOUSE_LEFT_BUTTON -> MouseEvent.BUTTON1;
-            case MOUSE_RIGHT_BUTTON -> MouseEvent.BUTTON3;
-            case MOUSE_MIDDLE_BUTTON -> MouseEvent.BUTTON2;
-            default -> MouseEvent.NOBUTTON;
+            case MOUSE_LEFT_BUTTON -> CefMouseEvent.BUTTON_LEFT;
+            case MOUSE_RIGHT_BUTTON -> CefMouseEvent.BUTTON_RIGHT;
+            case MOUSE_MIDDLE_BUTTON -> CefMouseEvent.BUTTON_MIDDLE;
+            default -> CefMouseEvent.BUTTON_NONE;
         };
     }
 
-    private static int toAwtModifiers(int modifiers) {
-        int awtModifiers = 0;
+    private static int toCefMouseModifiers(int modifiers) {
+        int cefModifiers = EventFlags.EVENTFLAG_NONE;
         if ((modifiers & GLFW.GLFW_MOD_SHIFT) != 0) {
-            awtModifiers |= InputEvent.SHIFT_DOWN_MASK;
+            cefModifiers |= EventFlags.EVENTFLAG_SHIFT_DOWN;
         }
 
         if ((modifiers & GLFW.GLFW_MOD_CONTROL) != 0) {
-            awtModifiers |= InputEvent.CTRL_DOWN_MASK;
+            cefModifiers |= EventFlags.EVENTFLAG_CONTROL_DOWN;
         }
 
         if ((modifiers & GLFW.GLFW_MOD_ALT) != 0) {
-            awtModifiers |= InputEvent.ALT_DOWN_MASK;
+            cefModifiers |= EventFlags.EVENTFLAG_ALT_DOWN;
         }
 
         if ((modifiers & GLFW.GLFW_MOD_SUPER) != 0) {
-            awtModifiers |= InputEvent.META_DOWN_MASK;
+            cefModifiers |= EventFlags.EVENTFLAG_COMMAND_DOWN;
         }
 
-        return awtModifiers;
+        return cefModifiers;
     }
 
-    private static int toAwtButtonDownModifier(int button) {
+    private static int toCefButtonDownModifier(int button) {
         return switch (remapMouseCode(button)) {
-            case MouseEvent.BUTTON1 -> InputEvent.BUTTON1_DOWN_MASK;
-            case MouseEvent.BUTTON2 -> InputEvent.BUTTON2_DOWN_MASK;
-            case MouseEvent.BUTTON3 -> InputEvent.BUTTON3_DOWN_MASK;
-            default -> 0;
+            case CefMouseEvent.BUTTON_LEFT -> EventFlags.EVENTFLAG_LEFT_MOUSE_BUTTON;
+            case CefMouseEvent.BUTTON_MIDDLE -> EventFlags.EVENTFLAG_MIDDLE_MOUSE_BUTTON;
+            case CefMouseEvent.BUTTON_RIGHT -> EventFlags.EVENTFLAG_RIGHT_MOUSE_BUTTON;
+            default -> EventFlags.EVENTFLAG_NONE;
         };
     }
 
@@ -170,53 +169,69 @@ final class GrapheneInputBridge {
         return uiComponent;
     }
 
-    @SuppressWarnings("MagicConstant")
     void mouseMoved(GrapheneBrowser browser, int x, int y, int modifiers) {
-        int awtModifiers = toAwtModifiers(modifiers);
-        MouseEvent event = new MouseEvent(uiComponent, MouseEvent.MOUSE_MOVED, System.currentTimeMillis(), awtModifiers, x, y, 0, false);
-        browser.dispatchMouseEvent(event);
-    }
-
-    @SuppressWarnings("MagicConstant")
-    void mouseDragged(GrapheneBrowser browser, double x, double y, int button) {
-        int awtModifiers = toAwtButtonDownModifier(button);
-        MouseEvent event = new MouseEvent(uiComponent, MouseEvent.MOUSE_DRAGGED, System.currentTimeMillis(), awtModifiers, (int) x, (int) y, 1, true);
-        browser.dispatchMouseEvent(event);
-    }
-
-    @SuppressWarnings("MagicConstant")
-    void mouseInteracted(GrapheneBrowser browser, int x, int y, int modifiers, int button, boolean pressed, int clickCount) {
-        int awtButton = remapMouseCode(button);
-        int awtModifiers = toAwtModifiers(modifiers);
-        MouseEvent event = new MouseEvent(
-                uiComponent,
-                pressed ? MouseEvent.MOUSE_PRESSED : MouseEvent.MOUSE_RELEASED,
-                System.currentTimeMillis(),
-                awtModifiers,
+        int cefModifiers = toCefMouseModifiers(modifiers);
+        CefMouseEvent event = new CefMouseEvent(
+                CefMouseEvent.MOUSEEVENT_MOVED,
                 x,
                 y,
-                clickCount,
-                false,
-                awtButton
+                cefModifiers,
+                CefMouseEvent.BUTTON_NONE,
+                1
         );
         browser.dispatchMouseEvent(event);
     }
 
-    @SuppressWarnings("MagicConstant")
-    void mouseScrolled(GrapheneBrowser browser, int x, int y, int modifiers, int amount, int rotation) {
-        int awtModifiers = toAwtModifiers(modifiers);
-        MouseWheelEvent event = new MouseWheelEvent(
-                uiComponent,
-                MouseEvent.MOUSE_WHEEL,
-                System.currentTimeMillis(),
-                awtModifiers,
+    void mouseDragged(GrapheneBrowser browser, double x, double y, int button) {
+        int cefModifiers = toCefButtonDownModifier(button);
+        CefMouseEvent event = new CefMouseEvent(
+                CefMouseEvent.MOUSEEVENT_DRAGGED,
+                (int) x,
+                (int) y,
+                cefModifiers,
+                CefMouseEvent.BUTTON_NONE,
+                1
+        );
+        browser.dispatchMouseEvent(event);
+    }
+
+    void mouseInteracted(GrapheneBrowser browser, int x, int y, int modifiers, int button, boolean pressed, int clickCount) {
+        int cefButton = remapMouseCode(button);
+        int cefModifiers = toCefMouseModifiers(modifiers);
+        if (pressed) {
+            cefModifiers |= toCefButtonDownModifier(button);
+        }
+
+        CefMouseEvent event = new CefMouseEvent(
+                pressed ? CefMouseEvent.MOUSEEVENT_PRESSED : CefMouseEvent.MOUSEEVENT_RELEASED,
                 x,
                 y,
-                0,
-                false,
-                MouseWheelEvent.WHEEL_UNIT_SCROLL,
-                amount,
-                rotation
+                cefModifiers,
+                cefButton,
+                clickCount
+        );
+        browser.dispatchMouseEvent(event);
+    }
+
+    void mouseScrolled(GrapheneBrowser browser, int x, int y, int modifiers, int amount, int rotation) {
+        int cefModifiers = toCefMouseModifiers(modifiers);
+        int delta = amount * rotation;
+        int deltaX;
+        int deltaY;
+        if ((cefModifiers & EventFlags.EVENTFLAG_SHIFT_DOWN) != 0) {
+            deltaX = delta;
+            deltaY = 0;
+        } else {
+            deltaX = 0;
+            deltaY = delta;
+        }
+
+        CefMouseWheelEvent event = new CefMouseWheelEvent(
+                x,
+                y,
+                cefModifiers,
+                deltaX,
+                deltaY
         );
         browser.dispatchMouseWheelEvent(event);
     }

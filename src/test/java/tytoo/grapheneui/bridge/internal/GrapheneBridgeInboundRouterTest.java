@@ -134,10 +134,10 @@ final class GrapheneBridgeInboundRouterTest {
     private static final class RouterFixture {
         private final GrapheneBridgeMessageCodec codec = new GrapheneBridgeMessageCodec();
         private final GrapheneBridgeHandlerRegistry handlers = new GrapheneBridgeHandlerRegistry();
+        private final AtomicBoolean readySignal = new AtomicBoolean(false);
         private final List<String> dispatchedOutboundMessages = new ArrayList<>();
         private final GrapheneBridgeOutboundQueue outboundQueue = new GrapheneBridgeOutboundQueue(dispatchedOutboundMessages::add);
         private final GrapheneBridgeRequestLifecycle requestLifecycle = new GrapheneBridgeRequestLifecycle(codec, outboundQueue);
-        private final AtomicBoolean readySignal = new AtomicBoolean(false);
         private final GrapheneBridgeInboundRouter router = new GrapheneBridgeInboundRouter(
                 codec,
                 handlers,

@@ -21,6 +21,7 @@ public final class GrapheneCefClientConfig {
 
         validatedClient.addLoadHandler(new GrapheneCefLoadHandler(validatedLoadEventBus, validatedBridgeRuntime));
         validatedClient.addDisplayHandler(new GrapheneCefDisplayHandler());
+        validatedClient.addContextMenuHandler(new GrapheneCefContextMenuHandler());
         validatedClient.addJSDialogHandler(new GrapheneCefJsDialogHandler(JS_DIALOG_MANAGER));
 
         CefMessageRouter messageRouter = CefMessageRouter.create(new CefMessageRouter.CefMessageRouterConfig());

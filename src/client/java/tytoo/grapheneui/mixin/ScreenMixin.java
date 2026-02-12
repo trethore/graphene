@@ -2,7 +2,9 @@ package tytoo.grapheneui.mixin;
 
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.components.events.AbstractContainerEventHandler;
+import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.MouseButtonEvent;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -47,6 +49,25 @@ public abstract class ScreenMixin extends AbstractContainerEventHandler implemen
     @Override
     public void grapheneui$setAutoCloseWebViews(boolean autoClose) {
         grapheneui$autoCloseWebViews = autoClose;
+    }
+
+    @Override
+    public boolean mouseReleased(MouseButtonEvent mouseButtonEvent) {
+        GuiEventListener focused = this.getFocused();
+        if (mouseButtonEvent.button() == 0 && this.isDragging()) {
+            this.setDragging(false);
+            if (focused != null && focused != this) {
+                return focused.mouseReleased(mouseButtonEvent);
+            }
+
+            return false;
+        }
+
+        if (focused instanceof GrapheneWebViewWidget) {
+            return focused.mouseReleased(mouseButtonEvent);
+        }
+
+        return false;
     }
 
     @Inject(method = "onClose", at = @At("HEAD"))

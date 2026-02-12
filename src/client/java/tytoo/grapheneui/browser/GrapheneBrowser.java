@@ -13,6 +13,8 @@ import org.cef.callback.CefDragData;
 import org.cef.handler.CefRenderHandler;
 import org.cef.handler.CefScreenInfo;
 import org.cef.input.CefKeyEvent;
+import org.cef.input.CefMouseEvent;
+import org.cef.input.CefMouseWheelEvent;
 import tytoo.grapheneui.platform.GraphenePlatform;
 import tytoo.grapheneui.render.GrapheneGuiRenderTarget;
 import tytoo.grapheneui.render.GrapheneRenderTarget;
@@ -304,12 +306,12 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
         inputBridge.keyEventByKeyCode(this, keyCode, scanCode, modifiers, pressed);
     }
 
-    void dispatchMouseEvent(java.awt.event.MouseEvent event) {
-        sendMouseEvent(event);
+    void dispatchMouseEvent(CefMouseEvent event) {
+        sendCefMouseEvent(event);
     }
 
-    void dispatchMouseWheelEvent(java.awt.event.MouseWheelEvent event) {
-        sendMouseWheelEvent(event);
+    void dispatchMouseWheelEvent(CefMouseWheelEvent event) {
+        sendCefMouseWheelEvent(event);
     }
 
     void dispatchCefKeyEvent(CefKeyEvent event) {

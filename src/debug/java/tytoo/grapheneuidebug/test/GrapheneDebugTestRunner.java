@@ -289,12 +289,12 @@ public final class GrapheneDebugTestRunner {
         return throwable;
     }
 
-    private record TestCase(String name, TestExecution testExecution) {
-    }
-
     @FunctionalInterface
     private interface TestExecution {
         CompletableFuture<Void> run();
+    }
+
+    private record TestCase(String name, TestExecution testExecution) {
     }
 
     private record TestResult(String name, boolean passed, Duration duration, Throwable error) {
