@@ -4,6 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import org.cef.callback.CefQueryCallback;
 import tytoo.grapheneui.bridge.GrapheneBridgeRequestHandler;
+import tytoo.grapheneui.mc.McClient;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -46,13 +47,13 @@ final class GrapheneBridgeInboundRouter {
         switch (packet.kind) {
             case GrapheneBridgeProtocol.KIND_READY -> {
                 callback.success(GrapheneBridgeProtocol.EMPTY_RESPONSE_JSON);
-                onReady.run();
+                McClient.runOnMainThread(onReady);
             }
             case GrapheneBridgeProtocol.KIND_EVENT -> handleEvent(packet, callback);
             case GrapheneBridgeProtocol.KIND_REQUEST -> handleRequest(packet, callback);
             case GrapheneBridgeProtocol.KIND_RESPONSE -> {
                 callback.success(GrapheneBridgeProtocol.EMPTY_RESPONSE_JSON);
-                requestLifecycle.handleResponse(packet);
+                McClient.runOnMainThread(() -> requestLifecycle.handleResponse(packet));
             }
             default -> callback.failure(400, "Unknown bridge message kind: " + packet.kind);
         }
@@ -67,7 +68,8 @@ final class GrapheneBridgeInboundRouter {
         }
 
         callback.success(GrapheneBridgeProtocol.EMPTY_RESPONSE_JSON);
-        handlers.dispatchEvent(packet.channel, codec.payloadToJson(packet.payload));
+        String payloadJson = codec.payloadToJson(packet.payload);
+        McClient.runOnMainThread(() -> handlers.dispatchEvent(packet.channel, payloadJson));
     }
 
     private void handleRequest(GrapheneBridgePacket packet, CefQueryCallback callback) {
@@ -94,14 +96,21 @@ final class GrapheneBridgeInboundRouter {
             return;
         }
 
-        CompletableFuture<String> responseFuture;
-        try {
-            responseFuture = requestHandler.handle(packet.channel, codec.payloadToJson(packet.payload));
-        } catch (RuntimeException exception) {
-            callback.success(codec.createErrorResponseJson(packet.id, packet.channel, "java_handler_error", exception.getMessage()));
-            return;
-        }
+        String requestPayloadJson = codec.payloadToJson(packet.payload);
+        McClient
+                .supplyOnMainThread(() -> requestHandler.handle(packet.channel, requestPayloadJson))
+                .whenComplete((responseFuture, throwable) -> {
+                    if (throwable != null) {
+                        Throwable rootCause = unwrap(throwable);
+                        callback.success(codec.createErrorResponseJson(packet.id, packet.channel, "java_handler_error", rootCause.getMessage()));
+                        return;
+                    }
 
+                    handleRequestResponse(packet, callback, responseFuture);
+                });
+    }
+
+    private void handleRequestResponse(GrapheneBridgePacket packet, CefQueryCallback callback, CompletableFuture<String> responseFuture) {
         if (responseFuture == null) {
             callback.success(codec.createSuccessResponseJson(packet.id, packet.channel, JsonNull.INSTANCE));
             return;

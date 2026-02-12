@@ -6,6 +6,8 @@ import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.Identifier;
 
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
 @SuppressWarnings({"resource", "java:S2095"})
 public final class McClient {
@@ -13,11 +15,39 @@ public final class McClient {
     }
 
     public static Minecraft mc() {
-        return Minecraft.getInstance();
+        return Objects.requireNonNull(Minecraft.getInstance(), "Minecraft client is not available");
     }
 
     public static void execute(Runnable runnable) {
         mc().execute(Objects.requireNonNull(runnable, "runnable"));
+    }
+
+    public static boolean isOnMainThread() {
+        return mc().isSameThread();
+    }
+
+    public static void runOnMainThread(Runnable runnable) {
+        Runnable task = Objects.requireNonNull(runnable, "runnable");
+        Minecraft minecraft = mc();
+        if (minecraft.isSameThread()) {
+            task.run();
+            return;
+        }
+
+        minecraft.execute(task);
+    }
+
+    public static <T> CompletableFuture<T> supplyOnMainThread(Supplier<T> supplier) {
+        Supplier<T> task = Objects.requireNonNull(supplier, "supplier");
+        CompletableFuture<T> future = new CompletableFuture<>();
+        runOnMainThread(() -> {
+            try {
+                future.complete(task.get());
+            } catch (RuntimeException exception) {
+                future.completeExceptionally(exception);
+            }
+        });
+        return future;
     }
 
     public static Screen currentScreen() {

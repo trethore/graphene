@@ -7,6 +7,7 @@ import org.cef.handler.CefLoadHandlerAdapter;
 import org.cef.network.CefRequest;
 import tytoo.grapheneui.bridge.internal.GrapheneBridgeRuntime;
 import tytoo.grapheneui.event.GrapheneLoadEventBus;
+import tytoo.grapheneui.mc.McClient;
 
 import java.util.Objects;
 
@@ -25,27 +26,35 @@ final class GrapheneCefLoadHandler extends CefLoadHandlerAdapter {
 
     @Override
     public void onLoadingStateChange(CefBrowser browser, boolean isLoading, boolean canGoBack, boolean canGoForward) {
-        loadEventBus.onLoadingStateChange(browser, isLoading, canGoBack, canGoForward);
+        McClient.runOnMainThread(() ->
+                loadEventBus.onLoadingStateChange(browser, isLoading, canGoBack, canGoForward)
+        );
     }
 
     @Override
     public void onLoadStart(CefBrowser browser, CefFrame frame, CefRequest.TransitionType transitionType) {
-        loadEventBus.onLoadStart(browser, frame, transitionType);
-        if (isMainFrame(frame)) {
-            bridgeRuntime.onLoadStart(browser);
-        }
+        McClient.runOnMainThread(() -> {
+            loadEventBus.onLoadStart(browser, frame, transitionType);
+            if (isMainFrame(frame)) {
+                bridgeRuntime.onLoadStart(browser);
+            }
+        });
     }
 
     @Override
     public void onLoadEnd(CefBrowser browser, CefFrame frame, int httpStatusCode) {
-        loadEventBus.onLoadEnd(browser, frame, httpStatusCode);
-        if (isMainFrame(frame)) {
-            bridgeRuntime.onLoadEnd(browser);
-        }
+        McClient.runOnMainThread(() -> {
+            loadEventBus.onLoadEnd(browser, frame, httpStatusCode);
+            if (isMainFrame(frame)) {
+                bridgeRuntime.onLoadEnd(browser);
+            }
+        });
     }
 
     @Override
     public void onLoadError(CefBrowser browser, CefFrame frame, CefLoadHandler.ErrorCode errorCode, String errorText, String failedUrl) {
-        loadEventBus.onLoadError(browser, frame, errorCode, errorText, failedUrl);
+        McClient.runOnMainThread(() ->
+                loadEventBus.onLoadError(browser, frame, errorCode, errorText, failedUrl)
+        );
     }
 }
