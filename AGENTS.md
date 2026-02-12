@@ -16,6 +16,11 @@ Here is the structure of the repository:
 │   └── <lib-name>/
 ├── src/
 │   ├── client/                         # Client core API and resources (main library code).
+│   │   ├── java/
+│   │   │   └── tytoo/grapheneui/
+│   │   │       ├── api/                # Public, supported API surface for consumers.
+│   │   │       └── internal/           # Internal implementation details.
+│   │   └── resources/
 │   ├── debug/                          # Debug mod used for manual testing (for example, opening a UI).
 │   └── test/                           # Unit tests using JUnit 6 (currently a placeholder).
 ├── .gitignore
