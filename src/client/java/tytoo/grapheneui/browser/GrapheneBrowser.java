@@ -15,7 +15,6 @@ import org.cef.handler.CefScreenInfo;
 import org.cef.input.CefKeyEvent;
 import org.cef.input.CefMouseEvent;
 import org.cef.input.CefMouseWheelEvent;
-import tytoo.grapheneui.platform.GraphenePlatform;
 import tytoo.grapheneui.render.GrapheneGuiRenderTarget;
 import tytoo.grapheneui.render.GrapheneRenderTarget;
 import tytoo.grapheneui.render.GrapheneRenderer;
@@ -28,8 +27,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHandler, AutoCloseable {
-    private static final boolean REENTRANT_FOCUS_GUARD_ENABLED = GraphenePlatform.isLinux();
-
     private final long windowHandle = this.hashCode();
     private final GrapheneRenderer renderer;
     private final boolean transparent;
@@ -186,11 +183,6 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
 
     @Override
     public synchronized void setFocus(boolean enable) {
-        if (!REENTRANT_FOCUS_GUARD_ENABLED) {
-            super.setFocus(enable);
-            return;
-        }
-
         if (focusUpdateInProgress && focusUpdateTarget == enable) {
             return;
         }
