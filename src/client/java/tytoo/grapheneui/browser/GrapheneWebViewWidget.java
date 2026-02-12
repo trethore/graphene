@@ -25,6 +25,7 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
     private final Screen screen;
     private final BrowserSurface surface;
     private final GrapheneBrowser browser;
+    private final GrapheneFocusUtil focusUtil;
     private final GrapheneWebViewInputController inputController;
 
     @SuppressWarnings("unused")
@@ -66,7 +67,9 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
         this.screen = screen;
         this.surface = Objects.requireNonNull(surface, "surface");
         this.browser = this.surface.browser();
-        this.inputController = new GrapheneWebViewInputController(this.browser);
+        this.focusUtil = new GrapheneFocusUtil(this.browser::setFocus);
+        this.inputController = new GrapheneWebViewInputController(this.browser, this.focusUtil);
+        this.focusUtil.addFocusListener(this.inputController::onFocusChanged);
 
         if (!(screen instanceof GrapheneScreenBridge screenBridge)) {
             throw new IllegalStateException("Screen does not implement GrapheneScreenBridge: " + screen.getClass().getName());
@@ -74,7 +77,7 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
 
         screenBridge.grapheneui$addWebViewWidget(this);
         this.surface.registerTo(this);
-        browser.setFocus(true);
+        focusUtil.syncNativeFocus();
         this.surface.setSurfaceSize(width, height);
     }
 
@@ -162,18 +165,17 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
     @Override
     public void setFocused(boolean focused) {
         super.setFocused(focused);
-        browser.setFocus(focused);
-        inputController.onFocusChanged(focused);
+        focusUtil.setFocused(focused);
     }
 
     @Override
     public boolean mouseReleased(@NonNull MouseButtonEvent mouseButtonEvent) {
-        return inputController.onMouseReleased(mouseButtonEvent.button(), toBrowserPoint(mouseButtonEvent.x(), mouseButtonEvent.y()), isFocused());
+        return inputController.onMouseReleased(mouseButtonEvent.button(), toBrowserPoint(mouseButtonEvent.x(), mouseButtonEvent.y()));
     }
 
     @Override
     public boolean mouseDragged(@NonNull MouseButtonEvent mouseButtonEvent, double dragX, double dragY) {
-        return inputController.onMouseDragged(mouseButtonEvent.button(), toBrowserPoint(mouseButtonEvent.x(), mouseButtonEvent.y()), isFocused());
+        return inputController.onMouseDragged(mouseButtonEvent.button(), toBrowserPoint(mouseButtonEvent.x(), mouseButtonEvent.y()));
     }
 
     @Override

@@ -10,6 +10,7 @@ final class GrapheneWebViewInputController {
     private static final int MAX_CLICK_COUNT = 3;
 
     private final GrapheneBrowser browser;
+    private final GrapheneFocusUtil focusUtil;
     private int lastBrowserMouseX = Integer.MIN_VALUE;
     private int lastBrowserMouseY = Integer.MIN_VALUE;
     private boolean primaryPointerButtonDown;
@@ -18,8 +19,9 @@ final class GrapheneWebViewInputController {
     private int pressedButton = -1;
     private int pressedClickCount = 1;
 
-    GrapheneWebViewInputController(GrapheneBrowser browser) {
+    GrapheneWebViewInputController(GrapheneBrowser browser, GrapheneFocusUtil focusUtil) {
         this.browser = Objects.requireNonNull(browser, "browser");
+        this.focusUtil = Objects.requireNonNull(focusUtil, "focusUtil");
     }
 
     boolean isPrimaryPointerButtonDown() {
@@ -44,12 +46,12 @@ final class GrapheneWebViewInputController {
         browser.mouseInteracted(browserPoint.x, browserPoint.y, 0, button, true, currentClickCount);
     }
 
-    boolean onMouseReleased(int button, Point browserPoint, boolean focused) {
+    boolean onMouseReleased(int button, Point browserPoint) {
         if (button == 0) {
             primaryPointerButtonDown = false;
         }
 
-        if (!focused) {
+        if (!focusUtil.isFocused()) {
             return false;
         }
 
@@ -63,8 +65,8 @@ final class GrapheneWebViewInputController {
         return true;
     }
 
-    boolean onMouseDragged(int button, Point browserPoint, boolean focused) {
-        if (!focused) {
+    boolean onMouseDragged(int button, Point browserPoint) {
+        if (!focusUtil.isFocused()) {
             return false;
         }
 

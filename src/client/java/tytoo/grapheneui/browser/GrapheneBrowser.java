@@ -32,11 +32,10 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
     private final boolean transparent;
     private final GrapheneInputBridge inputBridge = new GrapheneInputBridge();
     private final GraphenePaintBuffer paintBuffer = new GraphenePaintBuffer();
+    private final GrapheneFocusUtil focusUtil = new GrapheneFocusUtil(this::setNativeFocus);
     private final Rectangle browserRect = new Rectangle(0, 0, 1, 1);
     private final Point screenPoint = new Point(0, 0);
     private volatile int cursorType = Cursor.DEFAULT_CURSOR;
-    private boolean focusUpdateInProgress;
-    private boolean focusUpdateTarget;
     private boolean closed = false;
 
 
@@ -182,21 +181,8 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
     }
 
     @Override
-    public synchronized void setFocus(boolean enable) {
-        if (focusUpdateInProgress && focusUpdateTarget == enable) {
-            return;
-        }
-
-        boolean previousInProgress = focusUpdateInProgress;
-        boolean previousTarget = focusUpdateTarget;
-        focusUpdateInProgress = true;
-        focusUpdateTarget = enable;
-        try {
-            super.setFocus(enable);
-        } finally {
-            focusUpdateInProgress = previousInProgress;
-            focusUpdateTarget = previousTarget;
-        }
+    public void setFocus(boolean enable) {
+        focusUtil.setFocused(enable);
     }
 
     @Override
@@ -350,6 +336,10 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
         }
 
         return currentUrl;
+    }
+
+    private void setNativeFocus(boolean enable) {
+        super.setFocus(enable);
     }
 
     private void createBrowserIfRequired() {
