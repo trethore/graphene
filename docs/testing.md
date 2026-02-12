@@ -28,7 +28,7 @@ The debug module provides `/graphene test`, which runs:
 
 - runtime initialization smoke test
 - browser surface smoke test
-- bridge inbound-router smoke (ready/event/request/response routing through `GrapheneBridgeEndpoint.handleQuery`)
+- bridge API smoke (subscription, emit, and request timeout behavior through public API)
 
 This is useful before/after larger bridge or lifecycle changes.
 

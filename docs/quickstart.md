@@ -10,7 +10,7 @@ Call `GrapheneCore.init()` in your client initializer.
 package com.example.mymod;
 
 import net.fabricmc.api.ClientModInitializer;
-import tytoo.grapheneui.GrapheneCore;
+import tytoo.grapheneui.api.GrapheneCore;
 
 public final class MyModClient implements ClientModInitializer {
     @Override
@@ -30,8 +30,8 @@ package com.example.mymod.client.screen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.NonNull;
-import tytoo.grapheneui.browser.GrapheneWebViewWidget;
-import tytoo.grapheneui.cef.GrapheneClasspathUrls;
+import tytoo.grapheneui.api.widget.GrapheneWebViewWidget;
+import tytoo.grapheneui.api.url.GrapheneClasspathUrls;
 
 public final class MyWebScreen extends Screen {
     private GrapheneWebViewWidget webView;

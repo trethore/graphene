@@ -1,6 +1,6 @@
 {
   "required": true,
-  "package": "tytoo.grapheneui.mixin",
+  "package": "tytoo.grapheneui.internal.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
     "ScreenMixin"

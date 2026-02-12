@@ -8,7 +8,7 @@ It embeds Chromium (via JCEF) so you can render HTML/CSS/JS interfaces in-game, 
 ## Core Concepts
 
 - `GrapheneCore`: static entry point (`init()`, runtime access, surface manager)
-- `GrapheneCefRuntime`: owns CEF app/client lifecycle and bridge runtime
+- `GrapheneRuntime`: runtime status/debug view exposed by `GrapheneCore.runtime()`
 - `BrowserSurface`: off-screen browser surface (size, resolution, viewBox, render APIs)
 - `GrapheneWebViewWidget`: Minecraft widget wrapper for a `BrowserSurface`
 - `GrapheneBridge`: Java <-> JS messaging API (events + request/response)
@@ -18,9 +18,9 @@ It embeds Chromium (via JCEF) so you can render HTML/CSS/JS interfaces in-game, 
 ```mermaid
 flowchart LR
     A[Your Fabric Client Mod] --> B[GrapheneCore.init]
-    B --> C[GrapheneCefRuntime]
+    B --> C[GrapheneRuntime]
     C --> D[BrowserSurface]
-    D --> E[GrapheneBrowser]
+    D --> E[Internal Browser Runtime]
     E --> F[HTML CSS JS UI]
     D --> G[GrapheneBridge]
     G <--> F

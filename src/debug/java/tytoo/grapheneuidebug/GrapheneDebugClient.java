@@ -3,7 +3,7 @@ package tytoo.grapheneuidebug;
 import net.fabricmc.api.ClientModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tytoo.grapheneui.GrapheneCore;
+import tytoo.grapheneui.api.GrapheneCore;
 import tytoo.grapheneuidebug.command.GrapheneDebugCommands;
 import tytoo.grapheneuidebug.key.GrapheneDebugKeyBindings;
 
