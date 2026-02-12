@@ -10,11 +10,11 @@ public final class GrapheneScreens {
     }
 
     public static boolean isWebViewAutoCloseEnabled(Screen screen) {
-        return requireBridge(screen).isGrapheneWebViewAutoCloseEnabled();
+        return requireBridge(screen).graphene$isWebViewAutoCloseEnabled();
     }
 
     public static void setWebViewAutoCloseEnabled(Screen screen, boolean autoClose) {
-        requireBridge(screen).setGrapheneWebViewAutoCloseEnabled(autoClose);
+        requireBridge(screen).graphene$setWebViewAutoCloseEnabled(autoClose);
     }
 
     private static GrapheneScreenBridge requireBridge(Screen screen) {

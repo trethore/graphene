@@ -7,13 +7,19 @@ import tytoo.grapheneui.api.bridge.GrapheneBridgeSubscription;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 final class GrapheneBridgeHandlerRegistry {
+    private final GrapheneBridgeDiagnostics diagnostics;
     private final Map<String, CopyOnWriteArrayList<GrapheneBridgeEventListener>> eventListenersByChannel = new ConcurrentHashMap<>();
     private final Map<String, GrapheneBridgeRequestHandler> requestHandlersByChannel = new ConcurrentHashMap<>();
     private final CopyOnWriteArrayList<Runnable> readyListeners = new CopyOnWriteArrayList<>();
+
+    GrapheneBridgeHandlerRegistry(GrapheneBridgeDiagnostics diagnostics) {
+        this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
+    }
 
     GrapheneBridgeSubscription onReady(Runnable listener, boolean ready) {
         readyListeners.add(listener);
@@ -34,7 +40,11 @@ final class GrapheneBridgeHandlerRegistry {
     }
 
     GrapheneBridgeSubscription onRequest(String channel, GrapheneBridgeRequestHandler handler) {
-        requestHandlersByChannel.put(channel, handler);
+        GrapheneBridgeRequestHandler previousHandler = requestHandlersByChannel.put(channel, handler);
+        if (previousHandler != null && previousHandler != handler) {
+            GrapheneCore.LOGGER.warn("Replacing existing Graphene bridge request handler for channel {}", channel);
+            diagnostics.onRequestHandlerReplaced(channel);
+        }
         return () -> requestHandlersByChannel.remove(channel, handler);
     }
 

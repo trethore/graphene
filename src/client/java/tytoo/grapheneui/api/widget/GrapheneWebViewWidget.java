@@ -72,7 +72,7 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
             throw new IllegalStateException("Screen does not implement GrapheneScreenBridge: " + screen.getClass().getName());
         }
 
-        screenBridge.addGrapheneWebViewWidget(this);
+        screenBridge.graphene$addWebViewWidget(this);
         this.surface.setOwner(this);
         this.surface.setSurfaceSize(width, height);
     }
@@ -250,7 +250,7 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
     @Override
     public void close() {
         if (screen instanceof GrapheneScreenBridge screenBridge) {
-            screenBridge.removeGrapheneWebViewWidget(this);
+            screenBridge.graphene$removeWebViewWidget(this);
         }
 
         GrapheneCore.closeOwnedSurfaces(this);

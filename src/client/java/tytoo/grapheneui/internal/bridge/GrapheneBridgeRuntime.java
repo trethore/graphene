@@ -11,13 +11,22 @@ public final class GrapheneBridgeRuntime {
     private static final String BROWSER_NAME = "browser";
 
     private final Object lock = new Object();
+    private final GrapheneBridgeOptions options;
     private final Map<CefBrowser, GrapheneBridgeEndpoint> endpointsByBrowser = new IdentityHashMap<>();
+
+    public GrapheneBridgeRuntime() {
+        this(GrapheneBridgeOptions.defaults());
+    }
+
+    public GrapheneBridgeRuntime(GrapheneBridgeOptions options) {
+        this.options = Objects.requireNonNull(options, "options");
+    }
 
     public GrapheneBridge attach(GrapheneBrowser browser) {
         Objects.requireNonNull(browser, BROWSER_NAME);
 
         GrapheneBridgeEndpoint previousEndpoint;
-        GrapheneBridgeEndpoint newEndpoint = new GrapheneBridgeEndpoint(browser);
+        GrapheneBridgeEndpoint newEndpoint = new GrapheneBridgeEndpoint(browser, options);
         synchronized (lock) {
             previousEndpoint = endpointsByBrowser.put(browser, newEndpoint);
         }

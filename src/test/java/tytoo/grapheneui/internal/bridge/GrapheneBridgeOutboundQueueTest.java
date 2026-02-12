@@ -12,7 +12,12 @@ final class GrapheneBridgeOutboundQueueTest {
     @Test
     void queuesBeforeReadyAndFlushesInOrder() {
         List<String> dispatchedMessages = new ArrayList<>();
-        GrapheneBridgeOutboundQueue queue = new GrapheneBridgeOutboundQueue(dispatchedMessages::add);
+        GrapheneBridgeOutboundQueue queue = new GrapheneBridgeOutboundQueue(
+                dispatchedMessages::add,
+                16,
+                GrapheneBridgeQueueOverflowPolicy.DROP_OLDEST,
+                GrapheneBridgeDiagnostics.noOp()
+        );
 
         queue.queueOrDispatch("first");
         queue.queueOrDispatch("second");
@@ -28,7 +33,12 @@ final class GrapheneBridgeOutboundQueueTest {
     @Test
     void clearDropsQueuedMessages() {
         List<String> dispatchedMessages = new ArrayList<>();
-        GrapheneBridgeOutboundQueue queue = new GrapheneBridgeOutboundQueue(dispatchedMessages::add);
+        GrapheneBridgeOutboundQueue queue = new GrapheneBridgeOutboundQueue(
+                dispatchedMessages::add,
+                16,
+                GrapheneBridgeQueueOverflowPolicy.DROP_OLDEST,
+                GrapheneBridgeDiagnostics.noOp()
+        );
 
         queue.queueOrDispatch("queued");
         queue.clear();

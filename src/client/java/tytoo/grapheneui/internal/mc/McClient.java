@@ -9,7 +9,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
-@SuppressWarnings({"resource", "java:S2095"})
+@SuppressWarnings({"resource", "java:S2095", "unused"})
 public final class McClient {
     private McClient() {
     }

@@ -1,5 +1,6 @@
 package tytoo.grapheneui.internal.bridge;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -10,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.*;
 final class GrapheneBridgeMessageCodecTest {
     @Test
     void parsePacketReturnsPacketForValidMessage() {
-        GrapheneBridgeMessageCodec codec = new GrapheneBridgeMessageCodec();
+        GrapheneBridgeMessageCodec codec = createCodec();
 
         GrapheneBridgePacket packet = codec.parsePacket(
                 """
@@ -34,7 +35,7 @@ final class GrapheneBridgeMessageCodecTest {
 
     @Test
     void parsePacketReturnsNullForBlankOrWrongBridge() {
-        GrapheneBridgeMessageCodec codec = new GrapheneBridgeMessageCodec();
+        GrapheneBridgeMessageCodec codec = createCodec();
 
         assertNull(codec.parsePacket(""));
         assertNull(codec.parsePacket("   "));
@@ -43,14 +44,14 @@ final class GrapheneBridgeMessageCodecTest {
 
     @Test
     void parsePayloadJsonThrowsForInvalidJson() {
-        GrapheneBridgeMessageCodec codec = new GrapheneBridgeMessageCodec();
+        GrapheneBridgeMessageCodec codec = createCodec();
 
         assertThrows(IllegalArgumentException.class, () -> codec.parsePayloadJson("{"));
     }
 
     @Test
     void createSuccessResponseJsonContainsExpectedFields() {
-        GrapheneBridgeMessageCodec codec = new GrapheneBridgeMessageCodec();
+        GrapheneBridgeMessageCodec codec = createCodec();
         JsonElement payload = codec.parsePayloadJson("{\"sum\":12}");
 
         String responseJson = codec.createSuccessResponseJson("id-1", "debug:sum", payload);
@@ -60,5 +61,9 @@ final class GrapheneBridgeMessageCodecTest {
         assertEquals(GrapheneBridgeProtocol.KIND_RESPONSE, response.get("kind").getAsString());
         assertTrue(response.get("ok").getAsBoolean());
         assertEquals(12, response.getAsJsonObject("payload").get("sum").getAsInt());
+    }
+
+    private static GrapheneBridgeMessageCodec createCodec() {
+        return new GrapheneBridgeMessageCodec(new Gson());
     }
 }

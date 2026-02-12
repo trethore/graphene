@@ -27,27 +27,27 @@ public abstract class ScreenMixin extends AbstractContainerEventHandler implemen
     private boolean grapheneui$autoCloseWebViews = true;
 
     @Override
-    public List<GrapheneWebViewWidget> grapheneWebViewWidgets() {
+    public List<GrapheneWebViewWidget> graphene$webViewWidgets() {
         return grapheneui$webViewWidgets;
     }
 
     @Override
-    public void addGrapheneWebViewWidget(GrapheneWebViewWidget webViewWidget) {
+    public void graphene$addWebViewWidget(GrapheneWebViewWidget webViewWidget) {
         grapheneui$webViewWidgets.add(webViewWidget);
     }
 
     @Override
-    public void removeGrapheneWebViewWidget(GrapheneWebViewWidget webViewWidget) {
+    public void graphene$removeWebViewWidget(GrapheneWebViewWidget webViewWidget) {
         grapheneui$webViewWidgets.remove(webViewWidget);
     }
 
     @Override
-    public boolean isGrapheneWebViewAutoCloseEnabled() {
+    public boolean graphene$isWebViewAutoCloseEnabled() {
         return grapheneui$autoCloseWebViews;
     }
 
     @Override
-    public void setGrapheneWebViewAutoCloseEnabled(boolean autoClose) {
+    public void graphene$setWebViewAutoCloseEnabled(boolean autoClose) {
         grapheneui$autoCloseWebViews = autoClose;
     }
 

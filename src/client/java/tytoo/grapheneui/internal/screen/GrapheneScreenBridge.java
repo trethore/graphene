@@ -4,14 +4,15 @@ import tytoo.grapheneui.api.widget.GrapheneWebViewWidget;
 
 import java.util.List;
 
+@SuppressWarnings("java:S100") // Yes, this is a mixin bridge.
 public interface GrapheneScreenBridge {
-    List<GrapheneWebViewWidget> grapheneWebViewWidgets();
+    List<GrapheneWebViewWidget> graphene$webViewWidgets();
 
-    void addGrapheneWebViewWidget(GrapheneWebViewWidget webViewWidget);
+    void graphene$addWebViewWidget(GrapheneWebViewWidget webViewWidget);
 
-    void removeGrapheneWebViewWidget(GrapheneWebViewWidget webViewWidget);
+    void graphene$removeWebViewWidget(GrapheneWebViewWidget webViewWidget);
 
-    boolean isGrapheneWebViewAutoCloseEnabled();
+    boolean graphene$isWebViewAutoCloseEnabled();
 
-    void setGrapheneWebViewAutoCloseEnabled(boolean autoClose);
+    void graphene$setWebViewAutoCloseEnabled(boolean autoClose);
 }

@@ -9,6 +9,7 @@ import org.cef.CefClient;
 import tytoo.grapheneui.api.GrapheneCore;
 import tytoo.grapheneui.api.bridge.GrapheneBridge;
 import tytoo.grapheneui.api.runtime.GrapheneRuntime;
+import tytoo.grapheneui.internal.bridge.GrapheneBridgeOptions;
 import tytoo.grapheneui.internal.bridge.GrapheneBridgeRuntime;
 import tytoo.grapheneui.internal.browser.GrapheneBrowser;
 import tytoo.grapheneui.internal.browser.GrapheneBrowserSurfaceManager;
@@ -27,7 +28,7 @@ public final class GrapheneCefRuntime implements GrapheneRuntime {
     private final Object lock = new Object();
     private final GrapheneBrowserSurfaceManager surfaceManager;
     private final GrapheneLoadEventBus loadEventBus = new GrapheneLoadEventBus();
-    private final GrapheneBridgeRuntime bridgeRuntime = new GrapheneBridgeRuntime();
+    private final GrapheneBridgeRuntime bridgeRuntime;
     private boolean initialized;
     private boolean shutdownHookRegistered;
     private CefApp cefApp;
@@ -35,7 +36,12 @@ public final class GrapheneCefRuntime implements GrapheneRuntime {
     private int remoteDebuggingPort = -1;
 
     public GrapheneCefRuntime(GrapheneBrowserSurfaceManager surfaceManager) {
+        this(surfaceManager, GrapheneBridgeOptions.defaults());
+    }
+
+    public GrapheneCefRuntime(GrapheneBrowserSurfaceManager surfaceManager, GrapheneBridgeOptions bridgeOptions) {
         this.surfaceManager = Objects.requireNonNull(surfaceManager, "surfaceManager");
+        this.bridgeRuntime = new GrapheneBridgeRuntime(Objects.requireNonNull(bridgeOptions, "bridgeOptions"));
     }
 
     private static void logStartupConfiguration(CefAppBuilder cefAppBuilder) {

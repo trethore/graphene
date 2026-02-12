@@ -1,51 +1,85 @@
 package tytoo.grapheneui.internal.bridge;
 
+import tytoo.grapheneui.api.GrapheneCore;
+
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 final class GrapheneBridgeOutboundQueue {
     private final Object lock = new Object();
     private final ArrayDeque<String> queuedMessages = new ArrayDeque<>();
-    private final AtomicBoolean ready = new AtomicBoolean(false);
     private final Consumer<String> dispatcher;
-
-    GrapheneBridgeOutboundQueue(Consumer<String> dispatcher) {
+    private final int maxQueuedMessages;
+    private final GrapheneBridgeQueueOverflowPolicy overflowPolicy;
+    private final GrapheneBridgeDiagnostics diagnostics;
+    private State state = State.NOT_READY;
+    GrapheneBridgeOutboundQueue(
+            Consumer<String> dispatcher,
+            int maxQueuedMessages,
+            GrapheneBridgeQueueOverflowPolicy overflowPolicy,
+            GrapheneBridgeDiagnostics diagnostics
+    ) {
         this.dispatcher = Objects.requireNonNull(dispatcher, "dispatcher");
+        if (maxQueuedMessages < 1) {
+            throw new IllegalArgumentException("maxQueuedMessages must be >= 1");
+        }
+        this.maxQueuedMessages = maxQueuedMessages;
+        this.overflowPolicy = Objects.requireNonNull(overflowPolicy, "overflowPolicy");
+        this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
     }
 
     boolean isReady() {
-        return ready.get();
+        synchronized (lock) {
+            return state == State.READY;
+        }
     }
 
     void markNotReady() {
-        ready.set(false);
+        synchronized (lock) {
+            state = State.NOT_READY;
+        }
     }
 
     void markReadyAndFlush() {
-        ready.set(true);
-        List<String> messagesToDispatch = drainQueuedMessages();
-        for (String message : messagesToDispatch) {
-            dispatcher.accept(message);
+        while (true) {
+            List<String> messagesToDispatch;
+            synchronized (lock) {
+                if (state == State.READY) {
+                    return;
+                }
+
+                state = State.FLUSHING;
+                if (queuedMessages.isEmpty()) {
+                    state = State.READY;
+                    return;
+                }
+
+                messagesToDispatch = drainQueuedMessagesLocked();
+            }
+
+            for (String message : messagesToDispatch) {
+                try {
+                    dispatcher.accept(message);
+                } catch (RuntimeException exception) {
+                    GrapheneCore.LOGGER.warn("Failed to dispatch queued Graphene bridge message", exception);
+                }
+            }
         }
     }
 
     void queueOrDispatch(String outboundPacketJson) {
-        if (ready.get()) {
-            dispatcher.accept(outboundPacketJson);
-            return;
-        }
+        Objects.requireNonNull(outboundPacketJson, "outboundPacketJson");
 
         synchronized (lock) {
-            if (ready.get()) {
+            if (state == State.READY) {
                 dispatcher.accept(outboundPacketJson);
                 return;
             }
 
-            queuedMessages.addLast(outboundPacketJson);
+            queueMessageLocked(outboundPacketJson);
         }
     }
 
@@ -55,14 +89,39 @@ final class GrapheneBridgeOutboundQueue {
         }
     }
 
-    private List<String> drainQueuedMessages() {
-        synchronized (lock) {
-            List<String> messages = new ArrayList<>(queuedMessages.size());
-            while (!queuedMessages.isEmpty()) {
-                messages.add(queuedMessages.removeFirst());
-            }
-
-            return messages;
+    private void queueMessageLocked(String outboundPacketJson) {
+        if (queuedMessages.size() < maxQueuedMessages) {
+            queuedMessages.addLast(outboundPacketJson);
+            return;
         }
+
+        if (overflowPolicy == GrapheneBridgeQueueOverflowPolicy.DROP_NEWEST) {
+            diagnostics.onOutboundMessageDropped(outboundPacketJson, overflowPolicy, maxQueuedMessages);
+            return;
+        }
+
+        if (overflowPolicy == GrapheneBridgeQueueOverflowPolicy.DROP_OLDEST) {
+            String droppedMessage = queuedMessages.removeFirst();
+            queuedMessages.addLast(outboundPacketJson);
+            diagnostics.onOutboundMessageDropped(droppedMessage, overflowPolicy, maxQueuedMessages);
+            return;
+        }
+
+        throw new IllegalStateException("Bridge outbound queue reached max size " + maxQueuedMessages);
+    }
+
+    private List<String> drainQueuedMessagesLocked() {
+        List<String> messages = new ArrayList<>(queuedMessages.size());
+        while (!queuedMessages.isEmpty()) {
+            messages.add(queuedMessages.removeFirst());
+        }
+
+        return messages;
+    }
+
+    private enum State {
+        NOT_READY,
+        FLUSHING,
+        READY
     }
 }

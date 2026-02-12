@@ -1,5 +1,7 @@
 package tytoo.grapheneui.internal.bridge;
 
+import tytoo.grapheneui.api.bridge.GrapheneBridgeRequestException;
+
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -51,7 +53,7 @@ final class GrapheneBridgeRequestLifecycle {
         if (Boolean.FALSE.equals(packet.ok)) {
             String errorCode = packet.error == null || packet.error.code == null ? "bridge_error" : packet.error.code;
             String errorMessage = packet.error == null || packet.error.message == null ? "Bridge request failed" : packet.error.message;
-            pendingRequests.completeFailure(packet.id, new IllegalStateException(errorCode + ": " + errorMessage));
+            pendingRequests.completeFailure(packet.id, new GrapheneBridgeRequestException(errorCode, errorMessage, packet.id, packet.channel));
             return;
         }
 

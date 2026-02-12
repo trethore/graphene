@@ -17,20 +17,33 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public final class GrapheneBridgeEndpoint implements GrapheneBridge {
     private static final String CHANNEL_NAME = "channel";
     private static final String TIMEOUT_NAME = "timeout";
-    private static final GrapheneBridgeMessageCodec CODEC = new GrapheneBridgeMessageCodec();
 
     private final GrapheneBrowser browser;
-    private final GrapheneBridgeHandlerRegistry handlers = new GrapheneBridgeHandlerRegistry();
+    private final GrapheneBridgeOptions options;
+    private final GrapheneBridgeMessageCodec codec;
+    private final GrapheneBridgeHandlerRegistry handlers;
     private final GrapheneBridgeOutboundQueue outboundQueue;
     private final GrapheneBridgeRequestLifecycle requestLifecycle;
     private final GrapheneBridgeInboundRouter inboundRouter;
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
     public GrapheneBridgeEndpoint(GrapheneBrowser browser) {
+        this(browser, GrapheneBridgeOptions.defaults());
+    }
+
+    GrapheneBridgeEndpoint(GrapheneBrowser browser, GrapheneBridgeOptions options) {
         this.browser = Objects.requireNonNull(browser, "browser");
-        this.outboundQueue = new GrapheneBridgeOutboundQueue(this::dispatchToDom);
-        this.requestLifecycle = new GrapheneBridgeRequestLifecycle(CODEC, outboundQueue);
-        this.inboundRouter = new GrapheneBridgeInboundRouter(CODEC, handlers, requestLifecycle, this::onBridgeReady);
+        this.options = Objects.requireNonNull(options, "options");
+        this.codec = new GrapheneBridgeMessageCodec(this.options.gson());
+        this.handlers = new GrapheneBridgeHandlerRegistry(this.options.diagnostics());
+        this.outboundQueue = new GrapheneBridgeOutboundQueue(
+                this::dispatchToDom,
+                this.options.maxQueuedOutboundMessages(),
+                this.options.queueOverflowPolicy(),
+                this.options.diagnostics()
+        );
+        this.requestLifecycle = new GrapheneBridgeRequestLifecycle(codec, outboundQueue);
+        this.inboundRouter = new GrapheneBridgeInboundRouter(codec, handlers, requestLifecycle, this::onBridgeReady);
     }
 
     @Override
@@ -64,11 +77,21 @@ public final class GrapheneBridgeEndpoint implements GrapheneBridge {
     @Override
     public void emit(String channel, String payloadJson) {
         String validatedChannel = validateChannel(channel);
-        JsonElement payload = CODEC.parsePayloadJson(payloadJson);
+        JsonElement payload = codec.parsePayloadJson(payloadJson);
         ensureOpen();
 
-        String outboundJson = CODEC.createOutboundPacketJson(GrapheneBridgeProtocol.KIND_EVENT, null, validatedChannel, payload);
+        String outboundJson = codec.createOutboundPacketJson(GrapheneBridgeProtocol.KIND_EVENT, null, validatedChannel, payload);
         queueOrDispatch(outboundJson);
+    }
+
+    @Override
+    public CompletableFuture<String> request(String channel, String payloadJson) {
+        return request(channel, payloadJson, options.defaultRequestTimeout());
+    }
+
+    @Override
+    public <T> CompletableFuture<T> requestJson(String channel, Object payload, Class<T> responseType) {
+        return requestJson(channel, payload, options.defaultRequestTimeout(), responseType);
     }
 
     @Override
@@ -138,7 +161,7 @@ public final class GrapheneBridgeEndpoint implements GrapheneBridge {
     }
 
     private void dispatchToDom(String outboundPacketJson) {
-        String script = "window.__grapheneBridgeReceiveFromJava(" + CODEC.quoteJsString(outboundPacketJson) + ");";
+        String script = "window.__grapheneBridgeReceiveFromJava(" + codec.quoteJsString(outboundPacketJson) + ");";
         browser.executeScript(script, currentUrl());
     }
 

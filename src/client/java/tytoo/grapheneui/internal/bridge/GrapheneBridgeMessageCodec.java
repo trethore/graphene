@@ -2,10 +2,16 @@ package tytoo.grapheneui.internal.bridge;
 
 import com.google.gson.*;
 
+import java.util.Objects;
+
 final class GrapheneBridgeMessageCodec {
-    private static final Gson GSON = new Gson();
     private static final String FIELD_BRIDGE = "bridge";
     private static final String FIELD_PAYLOAD = "payload";
+    private final Gson gson;
+
+    GrapheneBridgeMessageCodec(Gson gson) {
+        this.gson = Objects.requireNonNull(gson, "gson");
+    }
 
     GrapheneBridgePacket parsePacket(String requestJson) {
         if (requestJson == null || requestJson.isBlank()) {
@@ -19,7 +25,7 @@ final class GrapheneBridgeMessageCodec {
                 return null;
             }
 
-            GrapheneBridgePacket packet = GSON.fromJson(jsonObject, GrapheneBridgePacket.class);
+            GrapheneBridgePacket packet = gson.fromJson(jsonObject, GrapheneBridgePacket.class);
             if (!GrapheneBridgeProtocol.NAME.equals(packet.bridge)) {
                 return null;
             }
@@ -44,7 +50,7 @@ final class GrapheneBridgeMessageCodec {
             return "null";
         }
 
-        return GSON.toJson(payload);
+        return gson.toJson(payload);
     }
 
     String createOutboundPacketJson(String kind, String id, String channel, JsonElement payload) {
@@ -57,14 +63,14 @@ final class GrapheneBridgeMessageCodec {
         }
         packet.addProperty("channel", channel);
         packet.add(FIELD_PAYLOAD, payload == null ? JsonNull.INSTANCE : payload);
-        return GSON.toJson(packet);
+        return gson.toJson(packet);
     }
 
     String createSuccessResponseJson(String requestId, String channel, JsonElement payload) {
         JsonObject response = createResponseBase(requestId, channel);
         response.addProperty("ok", true);
         response.add(FIELD_PAYLOAD, payload == null ? JsonNull.INSTANCE : payload);
-        return GSON.toJson(response);
+        return gson.toJson(response);
     }
 
     String createErrorResponseJson(String requestId, String channel, String errorCode, String errorMessage) {
@@ -76,11 +82,11 @@ final class GrapheneBridgeMessageCodec {
         error.addProperty("code", errorCode == null ? "bridge_error" : errorCode);
         error.addProperty("message", errorMessage == null ? "Bridge request failed" : errorMessage);
         response.add("error", error);
-        return GSON.toJson(response);
+        return gson.toJson(response);
     }
 
     String quoteJsString(String value) {
-        return GSON.toJson(value);
+        return gson.toJson(value);
     }
 
     private JsonObject createResponseBase(String requestId, String channel) {
