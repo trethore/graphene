@@ -4,15 +4,14 @@ import tytoo.grapheneui.browser.GrapheneWebViewWidget;
 
 import java.util.List;
 
-@SuppressWarnings({"java:S100", "java:S116"}) // Sonar, this is a mixin scheme, don't complain about method names.
 public interface GrapheneScreenBridge {
-    List<GrapheneWebViewWidget> grapheneui$getWebViewWidgets();
+    List<GrapheneWebViewWidget> grapheneWebViewWidgets();
 
-    void grapheneui$addWebViewWidget(GrapheneWebViewWidget webViewWidget);
+    void addGrapheneWebViewWidget(GrapheneWebViewWidget webViewWidget);
 
-    void grapheneui$removeWebViewWidget(GrapheneWebViewWidget webViewWidget);
+    void removeGrapheneWebViewWidget(GrapheneWebViewWidget webViewWidget);
 
-    boolean grapheneui$isAutoCloseWebViews();
+    boolean isGrapheneWebViewAutoCloseEnabled();
 
-    void grapheneui$setAutoCloseWebViews(boolean autoClose);
+    void setGrapheneWebViewAutoCloseEnabled(boolean autoClose);
 }

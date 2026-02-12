@@ -4,11 +4,11 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.network.chat.Component;
+import org.cef.callback.CefQueryCallback;
 import tytoo.grapheneui.GrapheneCore;
 import tytoo.grapheneui.bridge.GrapheneBridge;
-import tytoo.grapheneui.bridge.GrapheneBridgeSubscription;
+import tytoo.grapheneui.bridge.internal.GrapheneBridgeEndpoint;
 import tytoo.grapheneui.browser.BrowserSurface;
-import tytoo.grapheneui.cef.GrapheneClasspathUrls;
 import tytoo.grapheneui.mc.McClient;
 import tytoo.grapheneuidebug.GrapheneDebugClient;
 
@@ -21,18 +21,14 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 public final class GrapheneDebugTestRunner {
     private static final Duration TEST_TIMEOUT = Duration.ofSeconds(10);
-    private static final String BRIDGE_TEST_URL = GrapheneClasspathUrls.asset("graphene_test/bridge-command-test.html");
-    private static final String CHANNEL_JS_HANDLER_REQUEST = "graphene:test:js-handler-request";
-    private static final String CHANNEL_JAVA_HANDLER_REQUEST = "graphene:test:java-handler-request";
-    private static final String CHANNEL_JAVA_EVENT = "graphene:test:java-event";
-    private static final String CHANNEL_JS_ACK_EVENT = "graphene:test:js-ack-event";
-    private static final String FIELD_STAGE = "stage";
-    private static final String STAGE_JS_READY = "js-ready";
-    private static final String STAGE_JAVA_REQUEST = "java-request";
-    private static final String STAGE_JAVA_EVENT = "java-event";
+    private static final String CHANNEL_EVENT = "graphene:test:event";
+    private static final String CHANNEL_HANDLER_REQUEST = "graphene:test:sum";
+    private static final String CHANNEL_PENDING_REQUEST = "graphene:test:pending";
 
     private GrapheneDebugTestRunner() {
     }
@@ -67,7 +63,7 @@ public final class GrapheneDebugTestRunner {
         List<TestCase> testCases = List.of(
                 new TestCase("runtime-smoke", GrapheneDebugTestRunner::runRuntimeSmoke),
                 new TestCase("browser-surface-smoke", GrapheneDebugTestRunner::runBrowserSurfaceSmoke),
-                new TestCase("bridge-round-trip", GrapheneDebugTestRunner::runBridgeRoundTrip)
+                new TestCase("bridge-inbound-router-smoke", GrapheneDebugTestRunner::runBridgeInboundRouterSmoke)
         );
 
         CompletableFuture<List<TestResult>> sequenceFuture = CompletableFuture.completedFuture(new ArrayList<>());
@@ -132,114 +128,149 @@ public final class GrapheneDebugTestRunner {
                     .url("about:blank")
                     .surfaceSize(8, 8)
                     .build()) {
-                surface.updateFrame();
+                surface.setSurfaceSize(16, 16);
             }
         });
     }
 
-    private static CompletableFuture<Void> runBridgeRoundTrip() {
-        CompletableFuture<Void> testFuture = new CompletableFuture<>();
-        McClient.execute(() -> startBridgeRoundTrip(testFuture));
-        return testFuture;
-    }
-
-    private static void startBridgeRoundTrip(CompletableFuture<Void> testFuture) {
-        BridgeRoundTripContext context = null;
-        try {
-            BrowserSurface surface = BrowserSurface.builder()
-                    .url(BRIDGE_TEST_URL)
+    private static CompletableFuture<Void> runBridgeInboundRouterSmoke() {
+        return runOnClientThread(() -> {
+            try (BrowserSurface surface = BrowserSurface.builder()
+                    .url("about:blank")
                     .surfaceSize(32, 32)
-                    .build();
-            context = new BridgeRoundTripContext(surface);
-            GrapheneBridge bridge = surface.bridge();
+                    .build()) {
+                GrapheneBridge bridge = surface.bridge();
+                GrapheneBridgeEndpoint endpoint = requireBridgeEndpoint(bridge);
 
-            CompletableFuture<Void> readyFuture = new CompletableFuture<>();
-            CompletableFuture<String> jsReadyFuture = new CompletableFuture<>();
-            CompletableFuture<String> javaRequestAckFuture = new CompletableFuture<>();
-            CompletableFuture<String> javaEventAckFuture = new CompletableFuture<>();
-
-            context.addSubscription(bridge.onReady(() -> readyFuture.complete(null)));
-            context.addSubscription(bridge.onEvent(CHANNEL_JS_ACK_EVENT, (_, payloadJson) -> {
-                JsonObject payload = parseJsonObject(payloadJson);
-                String stage = getRequiredString(payload, FIELD_STAGE);
-                if (STAGE_JAVA_REQUEST.equals(stage) && !javaRequestAckFuture.isDone()) {
-                    javaRequestAckFuture.complete(payloadJson);
-                    return;
-                }
-
-                if (STAGE_JS_READY.equals(stage) && !jsReadyFuture.isDone()) {
-                    jsReadyFuture.complete(payloadJson);
-                    return;
-                }
-
-                if (STAGE_JAVA_EVENT.equals(stage) && !javaEventAckFuture.isDone()) {
-                    javaEventAckFuture.complete(payloadJson);
-                }
-            }));
-            context.addSubscription(bridge.onRequest(CHANNEL_JAVA_HANDLER_REQUEST, (_, payloadJson) ->
-                    CompletableFuture.completedFuture(buildJavaHandlerResponse(payloadJson))
-            ));
-
-            CompletableFuture<Void> flowFuture = readyFuture
-                    .thenCompose(_ -> jsReadyFuture)
-                    .thenCompose(_ -> bridge.request(CHANNEL_JS_HANDLER_REQUEST, "{\"probe\":\"" + STAGE_JAVA_REQUEST + "\"}"))
-                    .thenAccept(GrapheneDebugTestRunner::verifyJsHandlerResponse)
-                    .thenCompose(_ -> javaRequestAckFuture)
-                    .thenAccept(GrapheneDebugTestRunner::verifyJavaRequestAck)
-                    .thenCompose(_ -> {
-                        bridge.emit(CHANNEL_JAVA_EVENT, "{\"kind\":\"java-event\"}");
-                        return javaEventAckFuture;
-                    })
-                    .thenAccept(GrapheneDebugTestRunner::verifyJavaEventAck)
-                    .thenApply(_ -> null);
-
-            BridgeRoundTripContext finalContext = context;
-            testFuture.whenComplete((_, _) -> finalContext.close());
-            flowFuture.whenComplete((_, throwable) -> completeBridgeRoundTrip(testFuture, throwable));
-        } catch (Exception exception) {
-            if (context != null) {
-                context.close();
+                assertReadyHandshake(endpoint, bridge);
+                assertInvalidVersionIsRejected(endpoint);
+                assertInboundEventRouting(endpoint, bridge);
+                assertInboundRequestRouting(endpoint, bridge);
+                assertInboundResponseRouting(endpoint, bridge);
             }
-            testFuture.completeExceptionally(exception);
+        });
+    }
+
+    private static GrapheneBridgeEndpoint requireBridgeEndpoint(GrapheneBridge bridge) {
+        if (bridge instanceof GrapheneBridgeEndpoint bridgeEndpoint) {
+            return bridgeEndpoint;
+        }
+
+        throw new IllegalStateException("Unexpected GrapheneBridge implementation: " + bridge.getClass().getName());
+    }
+
+    private static void assertReadyHandshake(GrapheneBridgeEndpoint endpoint, GrapheneBridge bridge) {
+        AtomicBoolean readySignal = new AtomicBoolean(false);
+        try (var _ = bridge.onReady(() -> readySignal.set(true))) {
+            CapturingQueryCallback callback = new CapturingQueryCallback();
+            boolean handled = endpoint.handleQuery(
+                    "{\"bridge\":\"graphene-ui\",\"version\":1,\"kind\":\"ready\"}",
+                    callback
+            );
+
+            requireState(handled, "Ready query was not handled");
+            requireState("{}".equals(callback.successResponse()), "Ready query did not return success response");
+            requireState(readySignal.get(), "Bridge onReady listener did not fire");
         }
     }
 
-    private static String buildJavaHandlerResponse(String payloadJson) {
-        JsonObject payload = parseJsonObject(payloadJson);
-        String nonce = getRequiredString(payload, "nonce");
-        JsonObject response = new JsonObject();
-        response.addProperty("kind", "java-handler-response");
-        response.addProperty("echoNonce", nonce);
-        return response.toString();
+    private static void assertInvalidVersionIsRejected(GrapheneBridgeEndpoint endpoint) {
+        CapturingQueryCallback callback = new CapturingQueryCallback();
+        boolean handled = endpoint.handleQuery(
+                "{\"bridge\":\"graphene-ui\",\"version\":99,\"kind\":\"ready\"}",
+                callback
+        );
+
+        requireState(handled, "Invalid version query was not handled");
+        requireState(Integer.valueOf(422).equals(callback.failureCode()), "Invalid version query did not return 422");
+        requireState(callback.failureMessage() != null, "Invalid version query did not return an error message");
     }
 
-    private static void verifyJsHandlerResponse(String payloadJson) {
-        JsonObject payload = parseJsonObject(payloadJson);
-        requireState("js-handler-response".equals(getRequiredString(payload, "kind")), "Unexpected JS handler response kind");
-        requireState(STAGE_JAVA_REQUEST.equals(getRequiredString(payload, "echoProbe")), "Unexpected JS handler response payload");
-    }
+    private static void assertInboundEventRouting(GrapheneBridgeEndpoint endpoint, GrapheneBridge bridge) {
+        AtomicReference<String> payloadCapture = new AtomicReference<>();
+        try (var _ = bridge.onEvent(CHANNEL_EVENT, (_, payloadJson) -> payloadCapture.set(payloadJson))) {
+            CapturingQueryCallback callback = new CapturingQueryCallback();
+            boolean handled = endpoint.handleQuery(
+                    """
+                            {
+                              "bridge":"graphene-ui",
+                              "version":1,
+                              "kind":"event",
+                              "channel":"graphene:test:event",
+                              "payload":{"value":7}
+                            }
+                            """,
+                    callback
+            );
 
-    private static void verifyJavaRequestAck(String payloadJson) {
-        JsonObject payload = parseJsonObject(payloadJson);
-        requireState(STAGE_JAVA_REQUEST.equals(getRequiredString(payload, FIELD_STAGE)), "Unexpected JS ack stage for Java request");
-        requireState(payload.get("ok") != null && payload.get("ok").getAsBoolean(), "JS to Java request did not report success");
-        requireState("java-handler-response".equals(getRequiredString(payload, "responseKind")), "Unexpected Java handler response kind in JS ack");
-        requireState("graphene-debug-test".equals(getRequiredString(payload, "echoNonce")), "Unexpected Java handler response nonce in JS ack");
-    }
-
-    private static void verifyJavaEventAck(String payloadJson) {
-        JsonObject payload = parseJsonObject(payloadJson);
-        requireState(STAGE_JAVA_EVENT.equals(getRequiredString(payload, FIELD_STAGE)), "Unexpected JS ack stage for Java event");
-        requireState(payload.get("ok") != null && payload.get("ok").getAsBoolean(), "Java event did not report success in JS ack");
-    }
-
-    private static void completeBridgeRoundTrip(CompletableFuture<Void> testFuture, Throwable throwable) {
-        if (throwable == null) {
-            testFuture.complete(null);
-            return;
+            requireState(handled, "Inbound event query was not handled");
+            requireState("{}".equals(callback.successResponse()), "Inbound event query did not return success response");
+            JsonObject payload = parseJsonObject(payloadCapture.get());
+            requireState(payload.get("value") != null && payload.get("value").getAsInt() == 7, "Inbound event payload mismatch");
         }
+    }
 
-        testFuture.completeExceptionally(unwrap(throwable));
+    private static void assertInboundRequestRouting(GrapheneBridgeEndpoint endpoint, GrapheneBridge bridge) {
+        try (var _ = bridge.onRequest(CHANNEL_HANDLER_REQUEST, (_, payloadJson) -> {
+            JsonObject payload = parseJsonObject(payloadJson);
+            int left = payload.get("a").getAsInt();
+            int right = payload.get("b").getAsInt();
+            JsonObject response = new JsonObject();
+            response.addProperty("result", left + right);
+            return CompletableFuture.completedFuture(response.toString());
+        })) {
+            CapturingQueryCallback callback = new CapturingQueryCallback();
+            boolean handled = endpoint.handleQuery(
+                    """
+                            {
+                              "bridge":"graphene-ui",
+                              "version":1,
+                              "kind":"request",
+                              "id":"js-1",
+                              "channel":"graphene:test:sum",
+                              "payload":{"a":4,"b":6}
+                            }
+                            """,
+                    callback
+            );
+
+            requireState(handled, "Inbound request query was not handled");
+            JsonObject response = parseJsonObject(callback.successResponse());
+            requireState(response.get("ok") != null && response.get("ok").getAsBoolean(), "Inbound request did not return ok=true");
+            requireState(
+                    response.getAsJsonObject("payload").get("result").getAsInt() == 10,
+                    "Inbound request did not return expected sum"
+            );
+        }
+    }
+
+    private static void assertInboundResponseRouting(GrapheneBridgeEndpoint endpoint, GrapheneBridge bridge) {
+        CompletableFuture<String> responseFuture = bridge.request(
+                CHANNEL_PENDING_REQUEST,
+                "{\"query\":true}",
+                Duration.ofSeconds(1)
+        );
+
+        CapturingQueryCallback callback = new CapturingQueryCallback();
+        boolean handled = endpoint.handleQuery(
+                """
+                        {
+                          "bridge":"graphene-ui",
+                          "version":1,
+                          "kind":"response",
+                          "id":"java-1",
+                          "channel":"graphene:test:pending",
+                          "ok":true,
+                          "payload":{"done":true}
+                        }
+                        """,
+                callback
+        );
+
+        requireState(handled, "Inbound response query was not handled");
+        requireState("{}".equals(callback.successResponse()), "Inbound response query did not return success response");
+        JsonObject payload = parseJsonObject(responseFuture.join());
+        requireState(payload.get("done") != null && payload.get("done").getAsBoolean(), "Inbound response payload mismatch");
     }
 
     private static CompletableFuture<Void> runOnClientThread(Runnable runnable) {
@@ -261,14 +292,6 @@ public final class GrapheneDebugTestRunner {
         } catch (RuntimeException exception) {
             throw new IllegalStateException("Expected JSON object payload but got: " + payloadJson, exception);
         }
-    }
-
-    private static String getRequiredString(JsonObject payload, String key) {
-        if (payload.get(key) == null || !payload.get(key).isJsonPrimitive()) {
-            throw new IllegalStateException("Missing string field: " + key);
-        }
-
-        return payload.get(key).getAsString();
     }
 
     private static void requireState(boolean condition, String message) {
@@ -307,38 +330,32 @@ public final class GrapheneDebugTestRunner {
         }
     }
 
-    private static final class BridgeRoundTripContext {
-        private final BrowserSurface surface;
-        private final List<GrapheneBridgeSubscription> subscriptions = new ArrayList<>();
-        private boolean closed;
+    private static final class CapturingQueryCallback implements CefQueryCallback {
+        private String successResponse;
+        private Integer failureCode;
+        private String failureMessage;
 
-        private BridgeRoundTripContext(BrowserSurface surface) {
-            this.surface = surface;
+        @Override
+        public void success(String response) {
+            this.successResponse = response;
         }
 
-        private void addSubscription(GrapheneBridgeSubscription subscription) {
-            subscriptions.add(subscription);
+        @Override
+        public void failure(int errorCode, String errorMessage) {
+            this.failureCode = errorCode;
+            this.failureMessage = errorMessage;
         }
 
-        private synchronized void close() {
-            if (closed) {
-                return;
-            }
+        private String successResponse() {
+            return successResponse;
+        }
 
-            closed = true;
-            for (GrapheneBridgeSubscription subscription : subscriptions) {
-                try {
-                    subscription.unsubscribe();
-                } catch (RuntimeException exception) {
-                    GrapheneDebugClient.LOGGER.warn("Failed to unsubscribe bridge test listener", exception);
-                }
-            }
-            subscriptions.clear();
-            try {
-                surface.close();
-            } catch (RuntimeException exception) {
-                GrapheneDebugClient.LOGGER.warn("Failed to close bridge test surface", exception);
-            }
+        private Integer failureCode() {
+            return failureCode;
+        }
+
+        private String failureMessage() {
+            return failureMessage;
         }
     }
 }

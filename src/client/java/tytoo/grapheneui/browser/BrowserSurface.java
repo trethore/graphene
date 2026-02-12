@@ -19,6 +19,7 @@ import java.util.function.Consumer;
 @SuppressWarnings("unused") // Public API
 public final class BrowserSurface implements AutoCloseable {
     private static final int MIN_SIZE = 1;
+    private static final String OWNER_NAME = "owner";
     private static final String SURFACE_WIDTH_NAME = "surfaceWidth";
     private static final String SURFACE_HEIGHT_NAME = "surfaceHeight";
     private static final Consumer<CefRequestContext> NO_OP_REQUEST_CONTEXT_CUSTOMIZER = ignoredRequestContext -> {
@@ -60,6 +61,9 @@ public final class BrowserSurface implements AutoCloseable {
         this.bridge = GrapheneCore.runtime().attachBridge(this.browser);
         this.loadListenerScope = new BrowserSurfaceLoadListenerScope(this.browser, GrapheneCore.runtime().getLoadEventBus());
         this.browser.wasResizedTo(sizingState.resolutionWidth(), sizingState.resolutionHeight());
+        if (builder.owner != null) {
+            GrapheneCore.surfaces().register(builder.owner, this);
+        }
     }
 
     public static Builder builder() {
@@ -98,13 +102,13 @@ public final class BrowserSurface implements AutoCloseable {
         return sizingState.isAutoResolution();
     }
 
-    @SuppressWarnings({"UnusedReturnValue", "java:S2201"}) // Could be useful.
-    public BrowserSurface registerTo(Object owner) {
-        return GrapheneCore.surfaces().register(owner, this);
+    public void setOwner(Object owner) {
+        ensureOpen();
+        GrapheneCore.surfaces().register(Objects.requireNonNull(owner, OWNER_NAME), this);
     }
 
-    public void unregisterFrom(Object owner) {
-        GrapheneCore.surfaces().unregister(owner, this);
+    public void clearOwner() {
+        GrapheneCore.surfaces().unregister(this);
     }
 
     public Subscription subscribeLoadListener(GrapheneLoadListener loadListener) {
@@ -162,10 +166,6 @@ public final class BrowserSurface implements AutoCloseable {
         return sizingState.toBrowserY(surfaceY, renderedHeight);
     }
 
-    public void updateFrame() {
-        browser.updateRendererFrame();
-    }
-
     public void render(GuiGraphics guiGraphics, int x, int y) {
         render(guiGraphics, x, y, sizingState.surfaceWidth(), sizingState.surfaceHeight());
     }
@@ -175,6 +175,7 @@ public final class BrowserSurface implements AutoCloseable {
     }
 
     public void render(GuiGraphics guiGraphics, int x, int y, int width, int height) {
+        browser.updateRendererFrame();
         browser.renderTo(
                 x,
                 y,
@@ -189,6 +190,7 @@ public final class BrowserSurface implements AutoCloseable {
     }
 
     public void render(GrapheneRenderTarget renderTarget, int x, int y, int width, int height) {
+        browser.updateRendererFrame();
         browser.renderTo(
                 x,
                 y,
@@ -209,6 +211,7 @@ public final class BrowserSurface implements AutoCloseable {
         }
 
         closed = true;
+        GrapheneCore.surfaces().unregister(this);
         loadListenerScope.close();
         GrapheneCore.runtime().detachBridge(browser);
         browser.close();
@@ -220,6 +223,12 @@ public final class BrowserSurface implements AutoCloseable {
         }
 
         browser.wasResizedTo(resizeInstruction.width(), resizeInstruction.height());
+    }
+
+    private void ensureOpen() {
+        if (closed) {
+            throw new IllegalStateException("BrowserSurface is closed");
+        }
     }
 
     @FunctionalInterface
@@ -246,6 +255,7 @@ public final class BrowserSurface implements AutoCloseable {
         private Consumer<CefRequestContext> requestContextCustomizer = NO_OP_REQUEST_CONTEXT_CUSTOMIZER;
         private GrapheneRenderer renderer;
         private BrowserSurfaceConfig config = BrowserSurfaceConfig.defaults();
+        private Object owner;
 
         private Builder() {
         }
@@ -310,6 +320,11 @@ public final class BrowserSurface implements AutoCloseable {
 
         public Builder renderer(GrapheneRenderer renderer) {
             this.renderer = Objects.requireNonNull(renderer, "renderer");
+            return this;
+        }
+
+        public Builder owner(Object owner) {
+            this.owner = Objects.requireNonNull(owner, OWNER_NAME);
             return this;
         }
 

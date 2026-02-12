@@ -31,7 +31,9 @@ This behavior prevents browser/surface leaks in normal UI flows.
 If you need to persist a surface across screen transitions:
 
 ```java
-((GrapheneScreenBridge) screen).grapheneui$setAutoCloseWebViews(false);
+import tytoo.grapheneui.screen.GrapheneScreens;
+
+GrapheneScreens.setWebViewAutoCloseEnabled(screen, false);
 ```
 
 When opting out, you must manually close widgets/surfaces.

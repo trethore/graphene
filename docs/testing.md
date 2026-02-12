@@ -13,10 +13,6 @@ Current coverage includes:
   - packet parse behavior
   - payload parse validation
   - success response shape
-- `GrapheneBridgeInboundRouterTest`
-  - ready/version handling
-  - event routing
-  - request dispatch and response completion
 - `GrapheneBridgeOutboundQueueTest`
   - pre-ready queue buffering
   - flush ordering
@@ -32,7 +28,7 @@ The debug module provides `/graphene test`, which runs:
 
 - runtime initialization smoke test
 - browser surface smoke test
-- bridge round-trip (JS handler request + Java handler request + event ack flow)
+- bridge inbound-router smoke (ready/event/request/response routing through `GrapheneBridgeEndpoint.handleQuery`)
 
 This is useful before/after larger bridge or lifecycle changes.
 

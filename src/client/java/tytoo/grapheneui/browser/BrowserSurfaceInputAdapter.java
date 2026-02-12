@@ -1,0 +1,122 @@
+package tytoo.grapheneui.browser;
+
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+
+import java.awt.Point;
+import java.util.Objects;
+
+public final class BrowserSurfaceInputAdapter {
+    private static final int WHEEL_AMOUNT_PER_STEP = 120;
+
+    private final BrowserSurface surface;
+    private final GrapheneFocusUtil focusUtil;
+    private final GrapheneWebViewInputController inputController;
+
+    public BrowserSurfaceInputAdapter(BrowserSurface surface) {
+        this.surface = Objects.requireNonNull(surface, "surface");
+        this.focusUtil = new GrapheneFocusUtil(this.surface.browser()::setFocus);
+        this.inputController = new GrapheneWebViewInputController(this.surface.browser(), this.focusUtil);
+        this.focusUtil.addFocusListener(this.inputController::onFocusChanged);
+        this.focusUtil.syncNativeFocus();
+    }
+
+    public boolean isFocused() {
+        return focusUtil.isFocused();
+    }
+
+    public void setFocused(boolean focused) {
+        focusUtil.setFocused(focused);
+    }
+
+    public boolean isPrimaryPointerButtonDown() {
+        return inputController.isPrimaryPointerButtonDown();
+    }
+
+    public void mouseMoved(double surfaceX, double surfaceY, int renderedWidth, int renderedHeight) {
+        inputController.updateMousePosition(toBrowserPoint(surfaceX, surfaceY, renderedWidth, renderedHeight));
+    }
+
+    public void mouseClicked(int button, boolean isDoubleClick, double surfaceX, double surfaceY, int renderedWidth, int renderedHeight) {
+        inputController.onMouseClicked(button, isDoubleClick, toBrowserPoint(surfaceX, surfaceY, renderedWidth, renderedHeight));
+    }
+
+    public boolean mouseReleased(int button, double surfaceX, double surfaceY, int renderedWidth, int renderedHeight) {
+        return inputController.onMouseReleased(button, toBrowserPoint(surfaceX, surfaceY, renderedWidth, renderedHeight));
+    }
+
+    public boolean mouseDragged(int button, double surfaceX, double surfaceY, int renderedWidth, int renderedHeight) {
+        return inputController.onMouseDragged(button, toBrowserPoint(surfaceX, surfaceY, renderedWidth, renderedHeight));
+    }
+
+    public void mouseScrolled(double surfaceX, double surfaceY, int amount, int rotation, int renderedWidth, int renderedHeight) {
+        inputController.onMouseScrolled(
+                toBrowserPoint(surfaceX, surfaceY, renderedWidth, renderedHeight),
+                amount,
+                rotation
+        );
+    }
+
+    public void mouseScrolled(double surfaceX, double surfaceY, double scrollY, int renderedWidth, int renderedHeight) {
+        int amount = (int) (scrollY * WHEEL_AMOUNT_PER_STEP);
+        mouseScrolled(surfaceX, surfaceY, amount, 1, renderedWidth, renderedHeight);
+    }
+
+    public boolean keyPressed(KeyEvent keyEvent) {
+        if (!focusUtil.isFocused()) {
+            return false;
+        }
+
+        inputController.onKeyPressed(keyEvent);
+        return true;
+    }
+
+    public boolean keyReleased(KeyEvent keyEvent) {
+        if (!focusUtil.isFocused()) {
+            return false;
+        }
+
+        inputController.onKeyReleased(keyEvent);
+        return true;
+    }
+
+    public boolean charTyped(CharacterEvent characterEvent) {
+        if (!focusUtil.isFocused()) {
+            return false;
+        }
+
+        inputController.onCharacterTyped(characterEvent);
+        return true;
+    }
+
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (!focusUtil.isFocused()) {
+            return false;
+        }
+
+        surface.browser().keyEventByKeyCode(keyCode, scanCode, modifiers, true);
+        return true;
+    }
+
+    public boolean keyReleased(int keyCode, int scanCode, int modifiers) {
+        if (!focusUtil.isFocused()) {
+            return false;
+        }
+
+        surface.browser().keyEventByKeyCode(keyCode, scanCode, modifiers, false);
+        return true;
+    }
+
+    public boolean charTyped(int codePoint, int modifiers) {
+        if (!focusUtil.isFocused()) {
+            return false;
+        }
+
+        surface.browser().keyTyped((char) codePoint, modifiers);
+        return true;
+    }
+
+    private Point toBrowserPoint(double surfaceX, double surfaceY, int renderedWidth, int renderedHeight) {
+        return surface.toBrowserPoint(surfaceX, surfaceY, renderedWidth, renderedHeight);
+    }
+}

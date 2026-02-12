@@ -59,7 +59,8 @@ Here is the structure of the repository:
 ## Testing & Verification
 
 - Do not run Gradle commands yourself; instead provide the exact command for the user to execute and state tooling limitations clearly.
-- Encourage running `./gradlew compileJava` and `./gradlew test` after changes, `./gradlew build` for full validation, and `./gradlew runDebugClient` to test UI flows.
+- Encourage running `./gradlew compileJava`, `./gradlew test` and `/graphene test` in-game to validate changes,
+  `./gradlew build` for full validation, and `./gradlew runDebugClient` to test UI flows.
 - Document manual validation steps and remaining risks before completing work.
 
 ## Dependencies & External Sources

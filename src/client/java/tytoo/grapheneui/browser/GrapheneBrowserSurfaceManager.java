@@ -51,6 +51,19 @@ public final class GrapheneBrowserSurfaceManager {
         }
     }
 
+    public void unregister(BrowserSurface surface) {
+        Objects.requireNonNull(surface, SURFACE_NAME);
+
+        synchronized (lock) {
+            Object owner = ownersBySurface.remove(surface);
+            if (owner == null) {
+                return;
+            }
+
+            removeSurfaceFromOwner(owner, surface);
+        }
+    }
+
     public void closeOwner(Object owner) {
         Objects.requireNonNull(owner, OWNER_NAME);
         closeSurfaces(extractSurfacesForOwner(owner));
