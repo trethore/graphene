@@ -105,10 +105,6 @@ public final class GrapheneKeyCodeUtil {
         };
     }
 
-    public static int toAwtKeyCode(int keyCode) {
-        return toWindowsKeyCode(keyCode);
-    }
-
     public static int toWindowsKeyCodeFromLinuxCharacter(char character, int keyCode) {
         return switch (character) {
             case ',' -> WINDOWS_VK_OEM_COMMA;
@@ -179,16 +175,6 @@ public final class GrapheneKeyCodeUtil {
                  GLFW.GLFW_KEY_KP_SUBTRACT,
                  GLFW.GLFW_KEY_KP_ADD,
                  GLFW.GLFW_KEY_KP_EQUAL -> true;
-            default -> false;
-        };
-    }
-
-    public static boolean isNumpadOperatorKey(int keyCode) {
-        return switch (keyCode) {
-            case GLFW.GLFW_KEY_KP_DIVIDE,
-                 GLFW.GLFW_KEY_KP_MULTIPLY,
-                 GLFW.GLFW_KEY_KP_SUBTRACT,
-                 GLFW.GLFW_KEY_KP_ADD -> true;
             default -> false;
         };
     }

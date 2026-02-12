@@ -16,6 +16,7 @@ final class GrapheneBridgeOutboundQueue {
     private final GrapheneBridgeQueueOverflowPolicy overflowPolicy;
     private final GrapheneBridgeDiagnostics diagnostics;
     private State state = State.NOT_READY;
+
     GrapheneBridgeOutboundQueue(
             Consumer<String> dispatcher,
             int maxQueuedMessages,

@@ -1,4 +1,4 @@
-package tytoo.grapheneui.internal.browser;
+package tytoo.grapheneui.internal.input.keyboard;
 
 import org.cef.input.CefKeyEvent;
 import org.lwjgl.glfw.GLFW;

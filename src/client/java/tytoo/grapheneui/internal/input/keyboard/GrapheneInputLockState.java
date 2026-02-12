@@ -1,4 +1,4 @@
-package tytoo.grapheneui.internal.browser;
+package tytoo.grapheneui.internal.input.keyboard;
 
 import org.lwjgl.glfw.GLFW;
 import tytoo.grapheneui.internal.mc.McClient;
