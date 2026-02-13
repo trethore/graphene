@@ -79,7 +79,7 @@ Fix:
 
 - Confirm resource exists at `src/client/resources/assets/<mod-id>/...`.
 - Use `classpath:///assets/<mod-id>/...` URLs.
-- For Graphene bundled samples, use `GrapheneClasspathUrls.asset("...")`.
+- For Graphene debug bundled samples in this repository, use `GrapheneClasspathUrls.asset("graphene-ui-debug", "graphene_test/welcome.html")`.
 
 ## Pending Requests Fail On Navigation
 

@@ -4,14 +4,54 @@
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1" name="viewport">
     <title>Graphene Bridge Command Test</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 16px;
+            line-height: 1.4;
+        }
+
+        #side-button-status {
+            margin-top: 12px;
+            padding: 10px;
+            border: 1px solid #888;
+            border-radius: 6px;
+            background: #f5f5f5;
+        }
+    </style>
 </head>
 <body>
+<h1>Bridge Command Test</h1>
+<div id="side-button-status">Side button status: waiting for grapheneMouse...</div>
+
 <script>
     const CHANNEL_JS_HANDLER_REQUEST = "graphene:test:js-handler-request";
     const CHANNEL_JAVA_HANDLER_REQUEST = "graphene:test:java-handler-request";
     const CHANNEL_JAVA_EVENT = "graphene:test:java-event";
     const CHANNEL_JS_ACK_EVENT = "graphene:test:js-ack-event";
     const TEST_NONCE = "graphene-debug-test";
+
+    function sideButtonStatusElement() {
+        return document.getElementById("side-button-status");
+    }
+
+    function renderSideButton(button, pressed) {
+        const action = pressed ? "pressed" : "released";
+        sideButtonStatusElement().textContent = "Side button status: button " + button + " " + action;
+    }
+
+    function connectMouseBridge() {
+        const mouse = globalThis.grapheneMouse;
+        if (!mouse || typeof mouse.on !== "function") {
+            setTimeout(connectMouseBridge, 50);
+            return;
+        }
+
+        sideButtonStatusElement().textContent = "Side button status: connected, press a side mouse button";
+        mouse.on(function (eventPayload) {
+            renderSideButton(Number(eventPayload.button), Boolean(eventPayload.pressed));
+        });
+    }
 
     function getBridge() {
         return globalThis.grapheneBridge;
@@ -65,6 +105,7 @@
         });
     }
 
+    connectMouseBridge();
     connectBridge();
 </script>
 </body>

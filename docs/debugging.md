@@ -25,8 +25,8 @@ In this repository's debug mod:
 
 Recommended sample pages:
 
-- `classpath:///assets/graphene-ui/graphene_test/welcome.html`
-- `classpath:///assets/graphene-ui/graphene_test/example-bridge.html`
+- `classpath:///assets/graphene-ui-debug/graphene_test/welcome.html`
+- `classpath:///assets/graphene-ui-debug/graphene_test/example-bridge.html`
 
 ![Debug screen overview](images/debug-screen-overview.png)
 

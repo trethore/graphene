@@ -1,7 +1,6 @@
 package tytoo.grapheneui.api.url;
 
 import net.minecraft.resources.Identifier;
-import tytoo.grapheneui.api.GrapheneCore;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -14,10 +13,6 @@ public final class GrapheneClasspathUrls {
     private static final String ROOT_PREFIX = SCHEME_PREFIX + "///";
 
     private GrapheneClasspathUrls() {
-    }
-
-    public static String asset(String path) {
-        return asset(GrapheneCore.ID, path);
     }
 
     public static String asset(String namespace, String path) {

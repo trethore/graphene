@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public final class GrapheneBrowserDebugScreen extends Screen {
-    private static final String DEFAULT_URL = GrapheneClasspathUrls.asset("graphene_test/welcome.html");
+    private static final String DEFAULT_URL = GrapheneClasspathUrls.asset(GrapheneDebugClient.ID, "graphene_test/welcome.html");
     private static String lastUrl = DEFAULT_URL;
     private final List<GrapheneBridgeSubscription> bridgeSubscriptions = new ArrayList<>();
     private GrapheneWebViewWidget webViewWidget;

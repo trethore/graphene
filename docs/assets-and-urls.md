@@ -8,13 +8,12 @@ Recommended:
 
 - `classpath:///assets/<mod-id>/...`
 - `GrapheneClasspathUrls.asset("<mod-id>", "...")` for mod-owned assets under `assets/<mod-id>/...`
-- `GrapheneClasspathUrls.asset("...")` as a shortcut for Graphene-owned assets under `assets/graphene-ui/...`
 
 Examples:
 
 ```java
-String grapheneAsset = GrapheneClasspathUrls.asset("graphene_test/welcome.html");
-// classpath:///assets/graphene-ui/graphene_test/welcome.html
+String grapheneDebugAsset = GrapheneClasspathUrls.asset("graphene-ui-debug", "graphene_test/welcome.html");
+// classpath:///assets/graphene-ui-debug/graphene_test/welcome.html
 
 String myModAsset = GrapheneClasspathUrls.asset("my-mod-id", "web/index.html");
 // classpath:///assets/my-mod-id/web/index.html
@@ -84,7 +83,7 @@ Unknown extensions default to `text/plain`.
 - Keep all web resources under one folder (`assets/<mod-id>/web/...`).
 - Prefer lowercase file names and explicit extensions.
 - Prefer `GrapheneClasspathUrls.asset("<mod-id>", "...")` for your mod namespace.
-- Keep `GrapheneClasspathUrls.asset(...)` for Graphene namespace resources.
+- Use an explicit namespace for bundled samples too (for example `graphene-ui-debug`).
 
 ---
 Next: [Lifecycle](lifecycle.md)

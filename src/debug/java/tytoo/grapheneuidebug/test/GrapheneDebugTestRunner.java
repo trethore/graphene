@@ -29,7 +29,7 @@ public final class GrapheneDebugTestRunner {
     private static final Duration TEST_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration MOUSE_STATE_REQUEST_TIMEOUT = Duration.ofSeconds(2);
     private static final String ABOUT_BLANK_URL = "about:blank";
-    private static final String MOUSE_BRIDGE_TEST_URL = GrapheneClasspathUrls.asset("graphene_test/welcome.html");
+    private static final String MOUSE_BRIDGE_TEST_URL = GrapheneClasspathUrls.asset(GrapheneDebugClient.ID, "graphene_test/welcome.html");
     private static final String CHANNEL_EVENT = "graphene:test:event";
     private static final String CHANNEL_HANDLER_REQUEST = "graphene:test:sum";
     private static final String CHANNEL_PENDING_REQUEST = "graphene:test:pending";

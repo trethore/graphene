@@ -15,14 +15,13 @@ import tytoo.grapheneui.api.surface.BrowserSurface;
 import tytoo.grapheneui.api.surface.BrowserSurfaceConfig;
 import tytoo.grapheneui.api.surface.BrowserSurfaceInputAdapter;
 import tytoo.grapheneui.api.surface.GrapheneLoadListener;
-import tytoo.grapheneui.api.url.GrapheneClasspathUrls;
 import tytoo.grapheneui.internal.screen.GrapheneScreenBridge;
 
 import java.io.Closeable;
 import java.util.Objects;
 
 public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
-    private static final String DEFAULT_URL = GrapheneClasspathUrls.asset("graphene_test/welcome.html");
+    private static final String DEFAULT_URL = "about:blank";
 
     private final Screen screen;
     private final BrowserSurface surface;

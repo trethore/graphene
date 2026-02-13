@@ -8,7 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 final class GrapheneClasspathUrlsTest {
     @Test
     void assetBuildsExpectedClasspathUrl() {
-        String url = GrapheneClasspathUrls.asset("graphene_test/welcome.html");
+        String url = GrapheneClasspathUrls.asset("graphene-ui", "graphene_test/welcome.html");
 
         assertEquals("classpath:///assets/graphene-ui/graphene_test/welcome.html", url);
     }
