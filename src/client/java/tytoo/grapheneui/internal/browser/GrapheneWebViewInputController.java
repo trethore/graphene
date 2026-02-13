@@ -2,12 +2,17 @@ package tytoo.grapheneui.internal.browser;
 
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
+import tytoo.grapheneui.internal.input.GrapheneGlfwModifierUtil;
 
 import java.awt.*;
 import java.util.Objects;
 
 public final class GrapheneWebViewInputController {
     private static final int MAX_CLICK_COUNT = 3;
+    private static final int WHEEL_DELTA_PER_STEP = 120;
+    private static final double ZOOM_LEVEL_STEP = 0.2D;
+    private static final double MIN_ZOOM_LEVEL = -10.0D;
+    private static final double MAX_ZOOM_LEVEL = 10.0D;
 
     private final GrapheneBrowser browser;
     private final GrapheneFocusUtil focusUtil;
@@ -77,7 +82,14 @@ public final class GrapheneWebViewInputController {
     }
 
     public void onMouseScrolled(Point browserPoint, int delta, int rotation) {
-        browser.mouseScrolled(browserPoint.x, browserPoint.y, 0, delta, rotation);
+        int modifiers = GrapheneGlfwModifierUtil.currentModifiers();
+        int wheelDelta = delta * rotation;
+        if (GrapheneGlfwModifierUtil.isEditShortcutModifierDown(modifiers) && wheelDelta != 0) {
+            applyZoomDelta(wheelDelta);
+            return;
+        }
+
+        browser.mouseScrolled(browserPoint.x, browserPoint.y, modifiers, delta, rotation);
     }
 
     public void onKeyPressed(KeyEvent keyEvent) {
@@ -111,5 +123,21 @@ public final class GrapheneWebViewInputController {
 
         lastClickButton = button;
         return clickCount;
+    }
+
+    private void applyZoomDelta(int wheelDelta) {
+        int stepCount = Math.max(1, Math.abs(wheelDelta) / WHEEL_DELTA_PER_STEP);
+        double direction = Math.signum(wheelDelta);
+        double currentZoomLevel = browser.getZoomLevel();
+        double nextZoomLevel = clampZoomLevel(currentZoomLevel + direction * ZOOM_LEVEL_STEP * stepCount);
+        if (Double.compare(nextZoomLevel, currentZoomLevel) == 0) {
+            return;
+        }
+
+        browser.setZoomLevel(nextZoomLevel);
+    }
+
+    private double clampZoomLevel(double zoomLevel) {
+        return Math.clamp(zoomLevel, MIN_ZOOM_LEVEL, MAX_ZOOM_LEVEL);
     }
 }
