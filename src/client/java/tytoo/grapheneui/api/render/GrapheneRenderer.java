@@ -51,7 +51,7 @@ public interface GrapheneRenderer {
 
     void onPopupClosed();
 
-    CompletableFuture<BufferedImage> createScreenshot(boolean nativeResolution);
+    CompletableFuture<BufferedImage> createScreenshot();
 
     default void onTitleChange(String title) {
     }

@@ -10,6 +10,8 @@ final class BrowserSurfaceViewportMapper {
         }
 
         double scaledCoordinate = coordinate * sourceSize / renderedSize;
-        return sourceStart + (int) scaledCoordinate;
+        int mappedCoordinate = sourceStart + (int) scaledCoordinate;
+        int maxCoordinate = sourceStart + sourceSize - 1;
+        return Math.clamp(mappedCoordinate, sourceStart, maxCoordinate);
     }
 }

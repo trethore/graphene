@@ -14,6 +14,7 @@ public final class BrowserSurfaceInputAdapter {
     private final BrowserSurface surface;
     private final GrapheneFocusUtil focusUtil;
     private final GrapheneWebViewInputController inputController;
+    private double pendingWheelAmount;
 
     public BrowserSurfaceInputAdapter(BrowserSurface surface) {
         this.surface = Objects.requireNonNull(surface, "surface");
@@ -60,7 +61,13 @@ public final class BrowserSurfaceInputAdapter {
     }
 
     public void mouseScrolled(double surfaceX, double surfaceY, double scrollY, int renderedWidth, int renderedHeight) {
-        int amount = (int) (scrollY * WHEEL_AMOUNT_PER_STEP);
+        double preciseAmount = scrollY * WHEEL_AMOUNT_PER_STEP + pendingWheelAmount;
+        int amount = (int) preciseAmount;
+        pendingWheelAmount = preciseAmount - amount;
+        if (amount == 0) {
+            return;
+        }
+
         mouseScrolled(surfaceX, surfaceY, amount, 1, renderedWidth, renderedHeight);
     }
 

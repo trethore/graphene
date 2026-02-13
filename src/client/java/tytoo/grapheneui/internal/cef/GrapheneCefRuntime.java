@@ -197,7 +197,7 @@ public final class GrapheneCefRuntime implements GrapheneRuntime {
             return;
         }
 
-        ClientLifecycleEvents.CLIENT_STOPPING.register(ignoredClient -> shutdown());
+        ClientLifecycleEvents.CLIENT_STOPPING.register(_ -> shutdown());
         Runtime.getRuntime().addShutdownHook(new Thread(this::shutdown, "graphene-cef-shutdown"));
         shutdownHookRegistered = true;
     }

@@ -159,9 +159,10 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
         // No-op: Minecraft cursor handling is managed outside CEF drag operations.
     }
 
+    // Note: in graphene we don't use nativeResolution
     @Override
     public CompletableFuture<BufferedImage> createScreenshot(boolean nativeResolution) {
-        return renderer.createScreenshot(nativeResolution);
+        return renderer.createScreenshot();
     }
 
     @Override
@@ -379,7 +380,7 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
         }
 
         @Override
-        public CompletableFuture<BufferedImage> createScreenshot(boolean nativeResolution) {
+        public CompletableFuture<BufferedImage> createScreenshot() {
             return CompletableFuture.failedFuture(new UnsupportedOperationException("Noop renderer"));
         }
     }

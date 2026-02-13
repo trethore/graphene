@@ -43,3 +43,4 @@ replay_*.log
 libs-src/
 .agent_frame/
 .ignore
+notes.md

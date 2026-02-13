@@ -127,7 +127,7 @@ public final class GrapheneLwjglRenderer implements GrapheneRenderer {
     }
 
     @Override
-    public CompletableFuture<BufferedImage> createScreenshot(boolean nativeResolution) {
+    public CompletableFuture<BufferedImage> createScreenshot() {
         NativeImage nativeImage = texture.getPixels();
         if (nativeImage == null) {
             return CompletableFuture.failedFuture(new IllegalStateException("No browser frame available"));

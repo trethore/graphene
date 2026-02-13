@@ -24,7 +24,7 @@ final class GrapheneBridgeHandlerRegistry {
     GrapheneBridgeSubscription onReady(Runnable listener, boolean ready) {
         readyListeners.add(listener);
         if (ready) {
-            listener.run();
+            runReadyListener(listener);
         }
 
         return () -> readyListeners.remove(listener);
@@ -69,11 +69,7 @@ final class GrapheneBridgeHandlerRegistry {
 
     void notifyReady() {
         for (Runnable listener : readyListeners) {
-            try {
-                listener.run();
-            } catch (RuntimeException exception) {
-                GrapheneCore.LOGGER.warn("Graphene bridge ready listener failed", exception);
-            }
+            runReadyListener(listener);
         }
     }
 
@@ -92,6 +88,14 @@ final class GrapheneBridgeHandlerRegistry {
         listeners.remove(listener);
         if (listeners.isEmpty()) {
             eventListenersByChannel.remove(channel, listeners);
+        }
+    }
+
+    private void runReadyListener(Runnable listener) {
+        try {
+            listener.run();
+        } catch (RuntimeException exception) {
+            GrapheneCore.LOGGER.warn("Graphene bridge ready listener failed", exception);
         }
     }
 }
