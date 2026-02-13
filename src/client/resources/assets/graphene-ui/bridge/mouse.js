@@ -13,8 +13,9 @@ let grapheneMouseEventCount = 0;
 let grapheneMouseLastEvent = null;
 
 function grapheneMouseReportSuppressedError(context, error) {
-    if (typeof globalThis.console?.debug === "function") {
-        globalThis.console.debug("[GrapheneMouse] " + context, error);
+    const consoleObject = globalThis.console;
+    if (consoleObject && typeof consoleObject.debug === "function") {
+        consoleObject.debug("[GrapheneMouse] " + context, error);
     }
 }
 

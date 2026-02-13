@@ -14,8 +14,8 @@ import org.jspecify.annotations.NonNull;
 import tytoo.grapheneui.api.GrapheneCore;
 import tytoo.grapheneui.api.bridge.GrapheneBridge;
 import tytoo.grapheneui.api.bridge.GrapheneBridgeSubscription;
-import tytoo.grapheneui.api.widget.GrapheneWebViewWidget;
 import tytoo.grapheneui.api.url.GrapheneClasspathUrls;
+import tytoo.grapheneui.api.widget.GrapheneWebViewWidget;
 import tytoo.grapheneuidebug.GrapheneDebugClient;
 
 import java.net.URI;

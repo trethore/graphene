@@ -18,8 +18,9 @@ function grapheneBridgeNoop() {
 }
 
 function grapheneBridgeReportSuppressedError(context, error) {
-    if (typeof globalThis.console?.debug === "function") {
-        globalThis.console.debug("[GrapheneBridge] " + context, error);
+    const consoleObject = globalThis.console;
+    if (consoleObject && typeof consoleObject.debug === "function") {
+        consoleObject.debug("[GrapheneBridge] " + context, error);
     }
 }
 
@@ -129,7 +130,11 @@ function grapheneBridgeSendToJava(message) {
 }
 
 function grapheneBridgeSendReady() {
-    grapheneBridgeSendToJava(grapheneBridgeCreateBaseMessage(GRAPHENE_KIND_READY)).catch(grapheneBridgeNoop);
+    grapheneBridgeSendToJava(grapheneBridgeCreateBaseMessage(GRAPHENE_KIND_READY))
+        .then(grapheneBridgeNoop)
+        .catch(function (error) {
+            grapheneBridgeReportSuppressedError("Ready handshake failed", error);
+        });
 }
 
 function grapheneBridgeAddEventListener(channel, listener) {

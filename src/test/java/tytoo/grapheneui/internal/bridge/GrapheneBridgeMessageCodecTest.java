@@ -9,6 +9,10 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 final class GrapheneBridgeMessageCodecTest {
+    private static GrapheneBridgeMessageCodec createCodec() {
+        return new GrapheneBridgeMessageCodec(new Gson());
+    }
+
     @Test
     void parsePacketReturnsPacketForValidMessage() {
         GrapheneBridgeMessageCodec codec = createCodec();
@@ -61,9 +65,5 @@ final class GrapheneBridgeMessageCodecTest {
         assertEquals(GrapheneBridgeProtocol.KIND_RESPONSE, response.get("kind").getAsString());
         assertTrue(response.get("ok").getAsBoolean());
         assertEquals(12, response.getAsJsonObject("payload").get("sum").getAsInt());
-    }
-
-    private static GrapheneBridgeMessageCodec createCodec() {
-        return new GrapheneBridgeMessageCodec(new Gson());
     }
 }

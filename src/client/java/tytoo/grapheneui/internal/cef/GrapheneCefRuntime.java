@@ -131,6 +131,26 @@ public final class GrapheneCefRuntime implements GrapheneRuntime {
         }
     }
 
+    public void onNavigationRequested(GrapheneBrowser browser) {
+        synchronized (lock) {
+            if (!initialized) {
+                return;
+            }
+
+            bridgeRuntime.onNavigationRequested(browser);
+        }
+    }
+
+    public void ensureBootstrap(GrapheneBrowser browser) {
+        synchronized (lock) {
+            if (!initialized) {
+                return;
+            }
+
+            bridgeRuntime.ensureBootstrap(browser);
+        }
+    }
+
     @Override
     public int getRemoteDebuggingPort() {
         synchronized (lock) {

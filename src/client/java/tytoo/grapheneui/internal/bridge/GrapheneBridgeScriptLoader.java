@@ -10,39 +10,23 @@ final class GrapheneBridgeScriptLoader {
             "assets/graphene-ui/bridge/bridge.js",
             "assets/graphene-ui/bridge/mouse.js"
     );
-    private static volatile String script;
+    private static final List<String> SCRIPTS = loadScripts();
 
     private GrapheneBridgeScriptLoader() {
     }
 
-    static String script() {
-        String cachedScript = script;
-        if (cachedScript != null) {
-            return cachedScript;
-        }
-
-        synchronized (GrapheneBridgeScriptLoader.class) {
-            if (script != null) {
-                return script;
-            }
-
-            script = loadScript();
-            return script;
-        }
+    static List<String> scripts() {
+        return SCRIPTS;
     }
 
-    private static String loadScript() {
+    private static List<String> loadScripts() {
         ClassLoader classLoader = GrapheneBridgeScriptLoader.class.getClassLoader();
-        StringBuilder scriptBuilder = new StringBuilder();
+        List<String> loadedScripts = new java.util.ArrayList<>(SCRIPT_RESOURCE_PATHS.size());
         for (String scriptResourcePath : SCRIPT_RESOURCE_PATHS) {
-            if (!scriptBuilder.isEmpty()) {
-                scriptBuilder.append("\n;\n");
-            }
-
-            scriptBuilder.append(loadSingleScript(classLoader, scriptResourcePath));
+            loadedScripts.add(loadSingleScript(classLoader, scriptResourcePath));
         }
 
-        return scriptBuilder.toString();
+        return List.copyOf(loadedScripts);
     }
 
     private static String loadSingleScript(ClassLoader classLoader, String scriptResourcePath) {

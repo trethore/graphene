@@ -62,8 +62,8 @@ public final class BrowserSurface implements AutoCloseable {
                 renderer,
                 config.toCefBrowserSettings()
         );
-        this.browser.createImmediately();
         this.bridge = services.runtimeInternal().attachBridge(this.browser);
+        this.browser.createImmediately();
         this.loadListenerScope = new BrowserSurfaceLoadListenerScope(this.browser, services.runtimeInternal().getLoadEventBus());
         this.browser.wasResizedTo(sizingState.resolutionWidth(), sizingState.resolutionHeight());
         if (builder.owner != null) {
@@ -104,18 +104,22 @@ public final class BrowserSurface implements AutoCloseable {
     }
 
     public void loadUrl(String url) {
+        services.runtimeInternal().onNavigationRequested(browser);
         browser.loadURL(url);
     }
 
     public void goBack() {
+        services.runtimeInternal().onNavigationRequested(browser);
         browser.goBack();
     }
 
     public void goForward() {
+        services.runtimeInternal().onNavigationRequested(browser);
         browser.goForward();
     }
 
     public void reload() {
+        services.runtimeInternal().onNavigationRequested(browser);
         browser.reload();
     }
 
@@ -216,6 +220,7 @@ public final class BrowserSurface implements AutoCloseable {
     }
 
     public void render(GuiGraphics guiGraphics, int x, int y, int width, int height) {
+        services.runtimeInternal().ensureBootstrap(browser);
         browser.updateRendererFrame();
         browser.renderTo(
                 x,
@@ -231,6 +236,7 @@ public final class BrowserSurface implements AutoCloseable {
     }
 
     public void render(GrapheneRenderTarget renderTarget, int x, int y, int width, int height) {
+        services.runtimeInternal().ensureBootstrap(browser);
         browser.updateRendererFrame();
         browser.renderTo(
                 x,
