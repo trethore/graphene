@@ -21,7 +21,7 @@ Graphene injects `ScreenMixin` with auto-close enabled by default.
 When a screen closes:
 
 1. tracked `GrapheneWebViewWidget`s are closed
-2. owned surfaces are closed from `GrapheneCore.surfaces()`
+2. owned surfaces are closed from internal ownership tracking
 3. internal widget tracking list is cleared
 
 This behavior prevents browser/surface leaks in normal UI flows.
@@ -31,7 +31,9 @@ This behavior prevents browser/surface leaks in normal UI flows.
 If you need to persist a surface across screen transitions:
 
 ```java
-((GrapheneScreenBridge) screen).grapheneui$setAutoCloseWebViews(false);
+import tytoo.grapheneui.api.screen.GrapheneScreens;
+
+GrapheneScreens.setWebViewAutoCloseEnabled(screen, false);
 ```
 
 When opting out, you must manually close widgets/surfaces.

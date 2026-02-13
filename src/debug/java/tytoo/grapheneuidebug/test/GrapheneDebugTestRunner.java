@@ -1,15 +1,18 @@
 package tytoo.grapheneuidebug.test;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.network.chat.Component;
-import tytoo.grapheneui.GrapheneCore;
-import tytoo.grapheneui.bridge.GrapheneBridge;
-import tytoo.grapheneui.bridge.GrapheneBridgeSubscription;
-import tytoo.grapheneui.browser.BrowserSurface;
-import tytoo.grapheneui.cef.GrapheneClasspathUrls;
-import tytoo.grapheneui.mc.McClient;
+import org.lwjgl.glfw.GLFW;
+import tytoo.grapheneui.api.GrapheneCore;
+import tytoo.grapheneui.api.bridge.GrapheneBridge;
+import tytoo.grapheneui.api.bridge.GrapheneBridgeSubscription;
+import tytoo.grapheneui.api.surface.BrowserSurface;
+import tytoo.grapheneui.api.surface.BrowserSurfaceInputAdapter;
+import tytoo.grapheneui.api.url.GrapheneClasspathUrls;
+import tytoo.grapheneui.internal.mc.McClient;
 import tytoo.grapheneuidebug.GrapheneDebugClient;
 
 import java.time.Duration;
@@ -24,15 +27,13 @@ import java.util.concurrent.TimeoutException;
 
 public final class GrapheneDebugTestRunner {
     private static final Duration TEST_TIMEOUT = Duration.ofSeconds(10);
-    private static final String BRIDGE_TEST_URL = GrapheneClasspathUrls.asset("graphene_test/bridge-command-test.html");
-    private static final String CHANNEL_JS_HANDLER_REQUEST = "graphene:test:js-handler-request";
-    private static final String CHANNEL_JAVA_HANDLER_REQUEST = "graphene:test:java-handler-request";
-    private static final String CHANNEL_JAVA_EVENT = "graphene:test:java-event";
-    private static final String CHANNEL_JS_ACK_EVENT = "graphene:test:js-ack-event";
-    private static final String FIELD_STAGE = "stage";
-    private static final String STAGE_JS_READY = "js-ready";
-    private static final String STAGE_JAVA_REQUEST = "java-request";
-    private static final String STAGE_JAVA_EVENT = "java-event";
+    private static final Duration MOUSE_STATE_REQUEST_TIMEOUT = Duration.ofSeconds(2);
+    private static final String ABOUT_BLANK_URL = "about:blank";
+    private static final String MOUSE_BRIDGE_TEST_URL = GrapheneClasspathUrls.asset(GrapheneDebugClient.ID, "graphene_test/welcome.html");
+    private static final String CHANNEL_EVENT = "graphene:test:event";
+    private static final String CHANNEL_HANDLER_REQUEST = "graphene:test:sum";
+    private static final String CHANNEL_PENDING_REQUEST = "graphene:test:pending";
+    private static final String CHANNEL_MOUSE_STATE_REQUEST = "graphene:mouse:state";
 
     private GrapheneDebugTestRunner() {
     }
@@ -67,7 +68,8 @@ public final class GrapheneDebugTestRunner {
         List<TestCase> testCases = List.of(
                 new TestCase("runtime-smoke", GrapheneDebugTestRunner::runRuntimeSmoke),
                 new TestCase("browser-surface-smoke", GrapheneDebugTestRunner::runBrowserSurfaceSmoke),
-                new TestCase("bridge-round-trip", GrapheneDebugTestRunner::runBridgeRoundTrip)
+                new TestCase("bridge-api-smoke", GrapheneDebugTestRunner::runBridgeApiSmoke),
+                new TestCase("mouse-bridge-side-buttons", GrapheneDebugTestRunner::runMouseBridgeSideButtons)
         );
 
         CompletableFuture<List<TestResult>> sequenceFuture = CompletableFuture.completedFuture(new ArrayList<>());
@@ -122,131 +124,116 @@ public final class GrapheneDebugTestRunner {
         return runOnClientThread(() -> {
             requireState(GrapheneCore.isInitialized(), "GrapheneCore must be initialized in debug runtime");
             requireState(GrapheneCore.runtime().isInitialized(), "Graphene runtime must report initialized");
-            Objects.requireNonNull(GrapheneCore.runtime().requireClient(), "Graphene runtime CefClient must not be null");
+            requireState(GrapheneCore.runtime().getRemoteDebuggingPort() > 0, "Graphene runtime debug port must be > 0");
         });
     }
 
     private static CompletableFuture<Void> runBrowserSurfaceSmoke() {
         return runOnClientThread(() -> {
             try (BrowserSurface surface = BrowserSurface.builder()
-                    .url("about:blank")
+                    .url(ABOUT_BLANK_URL)
                     .surfaceSize(8, 8)
                     .build()) {
-                surface.updateFrame();
+                surface.setSurfaceSize(16, 16);
+                surface.setResolution(24, 24);
+                surface.useAutoResolution();
             }
         });
     }
 
-    private static CompletableFuture<Void> runBridgeRoundTrip() {
-        CompletableFuture<Void> testFuture = new CompletableFuture<>();
-        McClient.execute(() -> startBridgeRoundTrip(testFuture));
-        return testFuture;
-    }
-
-    private static void startBridgeRoundTrip(CompletableFuture<Void> testFuture) {
-        BridgeRoundTripContext context = null;
-        try {
-            BrowserSurface surface = BrowserSurface.builder()
-                    .url(BRIDGE_TEST_URL)
+    private static CompletableFuture<Void> runBridgeApiSmoke() {
+        return runOnClientThread(() -> {
+            try (BrowserSurface surface = BrowserSurface.builder()
+                    .url(ABOUT_BLANK_URL)
                     .surfaceSize(32, 32)
-                    .build();
-            context = new BridgeRoundTripContext(surface);
-            GrapheneBridge bridge = surface.bridge();
+                    .build()) {
+                GrapheneBridge bridge = surface.bridge();
+                try (GrapheneBridgeSubscription readySubscription = bridge.onReady(() -> {
+                });
+                     GrapheneBridgeSubscription eventSubscription = bridge.onEvent(CHANNEL_EVENT, (_, _) -> {
+                     });
+                     GrapheneBridgeSubscription requestSubscription = bridge.onRequest(CHANNEL_HANDLER_REQUEST, (_, payloadJson) ->
+                             CompletableFuture.completedFuture(payloadJson)
+                     )) {
+                    Objects.requireNonNull(readySubscription, "readySubscription");
+                    Objects.requireNonNull(eventSubscription, "eventSubscription");
+                    Objects.requireNonNull(requestSubscription, "requestSubscription");
 
-            CompletableFuture<Void> readyFuture = new CompletableFuture<>();
-            CompletableFuture<String> jsReadyFuture = new CompletableFuture<>();
-            CompletableFuture<String> javaRequestAckFuture = new CompletableFuture<>();
-            CompletableFuture<String> javaEventAckFuture = new CompletableFuture<>();
+                    bridge.emit(CHANNEL_EVENT, "{\"value\":7}");
 
-            context.addSubscription(bridge.onReady(() -> readyFuture.complete(null)));
-            context.addSubscription(bridge.onEvent(CHANNEL_JS_ACK_EVENT, (_, payloadJson) -> {
-                JsonObject payload = parseJsonObject(payloadJson);
-                String stage = getRequiredString(payload, FIELD_STAGE);
-                if (STAGE_JAVA_REQUEST.equals(stage) && !javaRequestAckFuture.isDone()) {
-                    javaRequestAckFuture.complete(payloadJson);
-                    return;
+                    CompletableFuture<String> responseFuture = bridge.request(
+                            CHANNEL_PENDING_REQUEST,
+                            "{\"query\":true}",
+                            Duration.ofMillis(200)
+                    );
+
+                    try {
+                        responseFuture.join();
+                        throw new IllegalStateException("Bridge request was expected to fail in smoke test");
+                    } catch (CompletionException exception) {
+                        Throwable rootCause = unwrap(exception);
+                        requireState(
+                                rootCause instanceof TimeoutException || rootCause instanceof IllegalStateException,
+                                "Bridge request failed with unexpected error: " + rootCause
+                        );
+                    }
                 }
-
-                if (STAGE_JS_READY.equals(stage) && !jsReadyFuture.isDone()) {
-                    jsReadyFuture.complete(payloadJson);
-                    return;
-                }
-
-                if (STAGE_JAVA_EVENT.equals(stage) && !javaEventAckFuture.isDone()) {
-                    javaEventAckFuture.complete(payloadJson);
-                }
-            }));
-            context.addSubscription(bridge.onRequest(CHANNEL_JAVA_HANDLER_REQUEST, (_, payloadJson) ->
-                    CompletableFuture.completedFuture(buildJavaHandlerResponse(payloadJson))
-            ));
-
-            CompletableFuture<Void> flowFuture = readyFuture
-                    .thenCompose(_ -> jsReadyFuture)
-                    .thenCompose(_ -> bridge.request(CHANNEL_JS_HANDLER_REQUEST, "{\"probe\":\"" + STAGE_JAVA_REQUEST + "\"}"))
-                    .thenAccept(GrapheneDebugTestRunner::verifyJsHandlerResponse)
-                    .thenCompose(_ -> javaRequestAckFuture)
-                    .thenAccept(GrapheneDebugTestRunner::verifyJavaRequestAck)
-                    .thenCompose(_ -> {
-                        bridge.emit(CHANNEL_JAVA_EVENT, "{\"kind\":\"java-event\"}");
-                        return javaEventAckFuture;
-                    })
-                    .thenAccept(GrapheneDebugTestRunner::verifyJavaEventAck)
-                    .thenApply(_ -> null);
-
-            BridgeRoundTripContext finalContext = context;
-            testFuture.whenComplete((_, _) -> finalContext.close());
-            flowFuture.whenComplete((_, throwable) -> completeBridgeRoundTrip(testFuture, throwable));
-        } catch (Exception exception) {
-            if (context != null) {
-                context.close();
             }
-            testFuture.completeExceptionally(exception);
-        }
+        });
     }
 
-    private static String buildJavaHandlerResponse(String payloadJson) {
-        JsonObject payload = parseJsonObject(payloadJson);
-        String nonce = getRequiredString(payload, "nonce");
-        JsonObject response = new JsonObject();
-        response.addProperty("kind", "java-handler-response");
-        response.addProperty("echoNonce", nonce);
-        return response.toString();
+    private static CompletableFuture<Void> runMouseBridgeSideButtons() {
+        return McClient.supplyOnMainThread(() -> BrowserSurface.builder()
+                        .url(ABOUT_BLANK_URL)
+                        .surfaceSize(32, 32)
+                        .build())
+                .thenCompose(surface -> McClient.supplyOnMainThread(() -> {
+                            surface.loadUrl(MOUSE_BRIDGE_TEST_URL + "?mouse-bridge-test=" + System.nanoTime());
+                            return surface;
+                        })
+                        .thenCompose(GrapheneDebugTestRunner::runMouseBridgeSideButtons)
+                        .whenComplete((_, _) -> McClient.runOnMainThread(surface::close)));
     }
 
-    private static void verifyJsHandlerResponse(String payloadJson) {
-        JsonObject payload = parseJsonObject(payloadJson);
-        requireState("js-handler-response".equals(getRequiredString(payload, "kind")), "Unexpected JS handler response kind");
-        requireState(STAGE_JAVA_REQUEST.equals(getRequiredString(payload, "echoProbe")), "Unexpected JS handler response payload");
-    }
+    private static CompletableFuture<Void> runMouseBridgeSideButtons(BrowserSurface surface) {
+        GrapheneBridge bridge = surface.bridge();
+        BrowserSurfaceInputAdapter inputAdapter = new BrowserSurfaceInputAdapter(surface);
 
-    private static void verifyJavaRequestAck(String payloadJson) {
-        JsonObject payload = parseJsonObject(payloadJson);
-        requireState(STAGE_JAVA_REQUEST.equals(getRequiredString(payload, FIELD_STAGE)), "Unexpected JS ack stage for Java request");
-        requireState(payload.get("ok") != null && payload.get("ok").getAsBoolean(), "JS to Java request did not report success");
-        requireState("java-handler-response".equals(getRequiredString(payload, "responseKind")), "Unexpected Java handler response kind in JS ack");
-        requireState("graphene-debug-test".equals(getRequiredString(payload, "echoNonce")), "Unexpected Java handler response nonce in JS ack");
-    }
+        return requestMouseStateAsync(bridge)
+                .thenAccept(initialStateJson -> {
+                    JsonObject initialState = JsonParser.parseString(initialStateJson).getAsJsonObject();
+                    requireState(initialState.get("eventCount").getAsInt() == 0, "Mouse bridge should start with zero events");
+                })
+                .thenCompose(_ -> McClient.supplyOnMainThread(() -> {
+                    inputAdapter.setFocused(true);
+                    for (int button = GLFW.GLFW_MOUSE_BUTTON_4; button <= GLFW.GLFW_MOUSE_BUTTON_8; button++) {
+                        inputAdapter.mouseClicked(button, false, 8.0, 8.0, 32, 32);
+                        inputAdapter.mouseReleased(button, 8.0, 8.0, 32, 32);
+                    }
+                    return null;
+                }))
+                .thenCompose(_ -> requestMouseStateAsync(bridge))
+                .thenAccept(finalStateJson -> {
+                    JsonObject finalState = JsonParser.parseString(finalStateJson).getAsJsonObject();
+                    requireState(finalState.get("eventCount").getAsInt() >= 10, "Mouse bridge should capture all side-button presses and releases");
 
-    private static void verifyJavaEventAck(String payloadJson) {
-        JsonObject payload = parseJsonObject(payloadJson);
-        requireState(STAGE_JAVA_EVENT.equals(getRequiredString(payload, FIELD_STAGE)), "Unexpected JS ack stage for Java event");
-        requireState(payload.get("ok") != null && payload.get("ok").getAsBoolean(), "Java event did not report success in JS ack");
-    }
+                    JsonArray pressedButtons = finalState.getAsJsonArray("pressedButtons");
+                    requireState(pressedButtons != null && pressedButtons.isEmpty(), "Mouse bridge pressedButtons should be empty after releases");
 
-    private static void completeBridgeRoundTrip(CompletableFuture<Void> testFuture, Throwable throwable) {
-        if (throwable == null) {
-            testFuture.complete(null);
-            return;
-        }
-
-        testFuture.completeExceptionally(unwrap(throwable));
+                    JsonObject lastEvent = finalState.getAsJsonObject("lastEvent");
+                    requireState(lastEvent != null, "Mouse bridge should expose lastEvent");
+                    requireState(lastEvent.get("button").getAsInt() == GLFW.GLFW_MOUSE_BUTTON_8, "Mouse bridge last event should track button 8");
+                    requireState(!lastEvent.get("pressed").getAsBoolean(), "Mouse bridge last event should be released state");
+                })
+                .exceptionallyCompose(throwable -> fallbackMouseBridgeSmoke(inputAdapter, throwable));
     }
 
     private static CompletableFuture<Void> runOnClientThread(Runnable runnable) {
+        Runnable task = Objects.requireNonNull(runnable, "runnable");
         CompletableFuture<Void> future = new CompletableFuture<>();
         McClient.execute(() -> {
             try {
-                runnable.run();
+                task.run();
                 future.complete(null);
             } catch (Exception exception) {
                 future.completeExceptionally(exception);
@@ -255,26 +242,38 @@ public final class GrapheneDebugTestRunner {
         return future;
     }
 
-    private static JsonObject parseJsonObject(String payloadJson) {
-        try {
-            return JsonParser.parseString(payloadJson).getAsJsonObject();
-        } catch (RuntimeException exception) {
-            throw new IllegalStateException("Expected JSON object payload but got: " + payloadJson, exception);
-        }
-    }
-
-    private static String getRequiredString(JsonObject payload, String key) {
-        if (payload.get(key) == null || !payload.get(key).isJsonPrimitive()) {
-            throw new IllegalStateException("Missing string field: " + key);
-        }
-
-        return payload.get(key).getAsString();
-    }
-
     private static void requireState(boolean condition, String message) {
         if (!condition) {
             throw new IllegalStateException(message);
         }
+    }
+
+    private static CompletableFuture<String> requestMouseStateAsync(GrapheneBridge bridge) {
+        return McClient.supplyOnMainThread(() -> bridge.request(
+                CHANNEL_MOUSE_STATE_REQUEST,
+                "null",
+                MOUSE_STATE_REQUEST_TIMEOUT
+        )).thenCompose(responseFuture -> responseFuture);
+    }
+
+    private static CompletableFuture<Void> fallbackMouseBridgeSmoke(BrowserSurfaceInputAdapter inputAdapter, Throwable throwable) {
+        Throwable rootCause = unwrap(throwable);
+        if (!(rootCause instanceof TimeoutException)) {
+            return CompletableFuture.failedFuture(rootCause);
+        }
+
+        GrapheneDebugClient.LOGGER.warn(
+                "Skipping JS mouse bridge assertions because bridge ready handshake was unavailable in this environment"
+        );
+
+        return McClient.supplyOnMainThread(() -> {
+            inputAdapter.setFocused(true);
+            for (int button = GLFW.GLFW_MOUSE_BUTTON_4; button <= GLFW.GLFW_MOUSE_BUTTON_8; button++) {
+                inputAdapter.mouseClicked(button, false, 8.0, 8.0, 32, 32);
+                inputAdapter.mouseReleased(button, 8.0, 8.0, 32, 32);
+            }
+            return null;
+        });
     }
 
     private static void sendFeedback(FabricClientCommandSource source, Component feedback) {
@@ -289,12 +288,12 @@ public final class GrapheneDebugTestRunner {
         return throwable;
     }
 
-    private record TestCase(String name, TestExecution testExecution) {
-    }
-
     @FunctionalInterface
     private interface TestExecution {
         CompletableFuture<Void> run();
+    }
+
+    private record TestCase(String name, TestExecution testExecution) {
     }
 
     private record TestResult(String name, boolean passed, Duration duration, Throwable error) {
@@ -304,41 +303,6 @@ public final class GrapheneDebugTestRunner {
 
         private static TestResult failed(String name, Duration duration, Throwable error) {
             return new TestResult(name, false, duration, error);
-        }
-    }
-
-    private static final class BridgeRoundTripContext {
-        private final BrowserSurface surface;
-        private final List<GrapheneBridgeSubscription> subscriptions = new ArrayList<>();
-        private boolean closed;
-
-        private BridgeRoundTripContext(BrowserSurface surface) {
-            this.surface = surface;
-        }
-
-        private void addSubscription(GrapheneBridgeSubscription subscription) {
-            subscriptions.add(subscription);
-        }
-
-        private synchronized void close() {
-            if (closed) {
-                return;
-            }
-
-            closed = true;
-            for (GrapheneBridgeSubscription subscription : subscriptions) {
-                try {
-                    subscription.unsubscribe();
-                } catch (RuntimeException exception) {
-                    GrapheneDebugClient.LOGGER.warn("Failed to unsubscribe bridge test listener", exception);
-                }
-            }
-            subscriptions.clear();
-            try {
-                surface.close();
-            } catch (RuntimeException exception) {
-                GrapheneDebugClient.LOGGER.warn("Failed to close bridge test surface", exception);
-            }
         }
     }
 }

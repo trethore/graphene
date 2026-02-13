@@ -11,11 +11,11 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
 import org.jspecify.annotations.NonNull;
-import tytoo.grapheneui.GrapheneCore;
-import tytoo.grapheneui.bridge.GrapheneBridge;
-import tytoo.grapheneui.bridge.GrapheneBridgeSubscription;
-import tytoo.grapheneui.browser.GrapheneWebViewWidget;
-import tytoo.grapheneui.cef.GrapheneClasspathUrls;
+import tytoo.grapheneui.api.GrapheneCore;
+import tytoo.grapheneui.api.bridge.GrapheneBridge;
+import tytoo.grapheneui.api.bridge.GrapheneBridgeSubscription;
+import tytoo.grapheneui.api.url.GrapheneClasspathUrls;
+import tytoo.grapheneui.api.widget.GrapheneWebViewWidget;
 import tytoo.grapheneuidebug.GrapheneDebugClient;
 
 import java.net.URI;
@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public final class GrapheneBrowserDebugScreen extends Screen {
-    private static final String DEFAULT_URL = GrapheneClasspathUrls.asset("graphene_test/welcome.html");
+    private static final String DEFAULT_URL = GrapheneClasspathUrls.asset(GrapheneDebugClient.ID, "graphene_test/welcome.html");
     private static String lastUrl = DEFAULT_URL;
     private final List<GrapheneBridgeSubscription> bridgeSubscriptions = new ArrayList<>();
     private GrapheneWebViewWidget webViewWidget;
@@ -149,15 +149,15 @@ public final class GrapheneBrowserDebugScreen extends Screen {
         }
 
         if (urlBox != null && !urlBox.isFocused()) {
-            urlBox.setValue(webViewWidget.getBrowser().getURL());
+            urlBox.setValue(webViewWidget.currentUrl());
         }
 
         if (backButton != null) {
-            backButton.active = webViewWidget.getBrowser().canGoBack();
+            backButton.active = webViewWidget.canGoBack();
         }
 
         if (forwardButton != null) {
-            forwardButton.active = webViewWidget.getBrowser().canGoForward();
+            forwardButton.active = webViewWidget.canGoForward();
         }
     }
 
@@ -174,7 +174,7 @@ public final class GrapheneBrowserDebugScreen extends Screen {
     @Override
     public void onClose() {
         if (webViewWidget != null) {
-            rememberLastUrl(webViewWidget.getBrowser().getURL());
+            rememberLastUrl(webViewWidget.currentUrl());
         }
 
         clearBridgeSubscriptions();

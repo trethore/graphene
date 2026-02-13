@@ -25,8 +25,8 @@ In this repository's debug mod:
 
 Recommended sample pages:
 
-- `classpath:///assets/graphene-ui/graphene_test/welcome.html`
-- `classpath:///assets/graphene-ui/graphene_test/example-bridge.html`
+- `classpath:///assets/graphene-ui-debug/graphene_test/welcome.html`
+- `classpath:///assets/graphene-ui-debug/graphene_test/example-bridge.html`
 
 ![Debug screen overview](images/debug-screen-overview.png)
 
@@ -49,7 +49,7 @@ This runs runtime/surface/bridge smoke checks and reports pass/fail feedback.
 ## Quick Checks
 
 - `GrapheneCore.isInitialized()` should be `true` after startup.
-- `GrapheneCore.runtime().requireClient()` should not throw.
+- `GrapheneCore.runtime().getRemoteDebuggingPort()` should be `> 0`.
 - `bridge.onReady(...)` should fire after page load.
 - `globalThis.grapheneBridge` should exist in page console.
 

@@ -4,9 +4,9 @@ import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.minecraft.client.KeyMapping;
-import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
+import tytoo.grapheneui.internal.mc.McClient;
 import tytoo.grapheneuidebug.GrapheneDebugClient;
 import tytoo.grapheneuidebug.screen.GrapheneBrowserDebugScreen;
 
@@ -33,13 +33,13 @@ public final class GrapheneDebugKeyBindings {
         }
 
         KeyBindingHelper.registerKeyBinding(OPEN_BROWSER);
-        ClientTickEvents.END_CLIENT_TICK.register(GrapheneDebugKeyBindings::onClientTick);
+        ClientTickEvents.END_CLIENT_TICK.register(_ -> onClientTick());
         registered = true;
     }
 
-    private static void onClientTick(Minecraft minecraft) {
+    private static void onClientTick() {
         while (OPEN_BROWSER.consumeClick()) {
-            minecraft.setScreen(new GrapheneBrowserDebugScreen());
+            McClient.setScreen(new GrapheneBrowserDebugScreen());
         }
     }
 }

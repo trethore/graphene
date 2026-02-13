@@ -56,7 +56,7 @@ Call `GrapheneCore.init()` once in your `ClientModInitializer`:
 package com.example.mymod;
 
 import net.fabricmc.api.ClientModInitializer;
-import tytoo.grapheneui.GrapheneCore;
+import tytoo.grapheneui.api.GrapheneCore;
 
 public final class MyModClient implements ClientModInitializer {
     @Override

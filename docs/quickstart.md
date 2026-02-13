@@ -10,7 +10,7 @@ Call `GrapheneCore.init()` in your client initializer.
 package com.example.mymod;
 
 import net.fabricmc.api.ClientModInitializer;
-import tytoo.grapheneui.GrapheneCore;
+import tytoo.grapheneui.api.GrapheneCore;
 
 public final class MyModClient implements ClientModInitializer {
     @Override
@@ -30,8 +30,8 @@ package com.example.mymod.client.screen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.NonNull;
-import tytoo.grapheneui.browser.GrapheneWebViewWidget;
-import tytoo.grapheneui.cef.GrapheneClasspathUrls;
+import tytoo.grapheneui.api.widget.GrapheneWebViewWidget;
+import tytoo.grapheneui.api.url.GrapheneClasspathUrls;
 
 public final class MyWebScreen extends Screen {
     private GrapheneWebViewWidget webView;
@@ -48,7 +48,7 @@ public final class MyWebScreen extends Screen {
         int webWidth = width - margin * 2;
         int webHeight = height - margin * 2;
 
-        String url = GrapheneClasspathUrls.asset("graphene_test/welcome.html");
+        String url = GrapheneClasspathUrls.asset("my-mod-id", "web/index.html");
         webView = new GrapheneWebViewWidget(this, webX, webY, webWidth, webHeight, Component.empty(), url);
         addRenderableWidget(webView);
     }
@@ -73,10 +73,10 @@ For your own mod assets, use the namespace-aware helper:
 String url = GrapheneClasspathUrls.asset("my-mod-id", "web/index.html");
 ```
 
-Or keep using Graphene test assets while integrating:
+If you are working in this repository's debug module, you can also load debug sample assets:
 
 ```java
-String url = GrapheneClasspathUrls.asset("graphene_test/example-bridge.html");
+String url = GrapheneClasspathUrls.asset("graphene-ui-debug", "graphene_test/example-bridge.html");
 ```
 
 ## 4) Open The Screen

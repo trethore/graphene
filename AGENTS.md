@@ -16,6 +16,11 @@ Here is the structure of the repository:
 │   └── <lib-name>/
 ├── src/
 │   ├── client/                         # Client core API and resources (main library code).
+│   │   ├── java/
+│   │   │   └── tytoo/grapheneui/
+│   │   │       ├── api/                # Public, supported API surface for consumers.
+│   │   │       └── internal/           # Internal implementation details.
+│   │   └── resources/
 │   ├── debug/                          # Debug mod used for manual testing (for example, opening a UI).
 │   └── test/                           # Unit tests using JUnit 6 (currently a placeholder).
 ├── .gitignore
@@ -28,7 +33,7 @@ Here is the structure of the repository:
 
 - Target Java 25, use 4-space indentation, and keep packages under `tytoo.grapheneui*`.
 - Use PascalCase for classes, camelCase for methods and fields, and UPPER_SNAKE_CASE for constants.
-- Use explicit types instead of `var`, and prefer descriptive names over one-letter identifiers.
+- Prefer explicit types instead of `var`, and use descriptive names rather than one-letter identifiers.
 - Keep member order consistent in Java classes: static constants, static fields, instance fields, constructors, overridden
   methods, public methods, protected and private helper methods, then getters and setters at the bottom.
 - Import types instead of using fully qualified names inside method bodies.
@@ -51,6 +56,7 @@ Here is the structure of the repository:
 - The codebase targets Fabric for Minecraft 1.21.11 with official Mojang mappings; use APIs that exist in this combination.
 - Prefer modern Fabric/Minecraft methods such as `Identifier.fromNamespaceAndPath(String string, String string2)` and
   up-to-date rendering APIs; avoid deprecated signatures.
+- Route Minecraft client singleton access through `tytoo.grapheneui.internal.mc.McClient` helpers instead of calling `Minecraft.getInstance()` directly.
 - Place new assets, mixin configs, and JSON metadata within `src/client/resources/` or `src/debug/resources/`,
   keeping identifiers in the `GrapheneCore.ID` or `GrapheneDebugClient.ID` namespace as appropriate.
 - Integrate through established abstractions unless explicitly extending them.
@@ -59,7 +65,8 @@ Here is the structure of the repository:
 ## Testing & Verification
 
 - Do not run Gradle commands yourself; instead provide the exact command for the user to execute and state tooling limitations clearly.
-- Encourage running `./gradlew compileJava` after changes, `./gradlew build` for full validation, and `./gradlew runDebugClient` to test UI flows.
+- Encourage running `./gradlew compileJava`, `./gradlew test` and `/graphene test` in-game to validate changes,
+  `./gradlew build` for full validation, and `./gradlew runDebugClient` to test UI flows.
 - Document manual validation steps and remaining risks before completing work.
 
 ## Dependencies & External Sources

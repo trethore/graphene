@@ -76,11 +76,26 @@ BrowserSurfaceConfig config = BrowserSurfaceConfig.builder()
 
 ## Example: Manual Render Integration
 
-If you do not use `GrapheneWebViewWidget`, call both update + render yourself each frame:
+If you do not use `GrapheneWebViewWidget`, call `render(...)` each frame:
 
 ```java
-surface.updateFrame();
 surface.render(guiGraphics, x, y, width, height);
+```
+
+`BrowserSurface` now flushes pending paint updates automatically on each render call.
+
+## Input Forwarding Adapter
+
+For custom input pipelines, use `BrowserSurfaceInputAdapter`:
+
+```java
+BrowserSurfaceInputAdapter input = new BrowserSurfaceInputAdapter(surface);
+input.setFocused(true);
+
+input.mouseMoved(localMouseX, localMouseY, width, height);
+input.mouseClicked(button, isDoubleClick, localMouseX, localMouseY, width, height);
+input.mouseReleased(button, localMouseX, localMouseY, width, height);
+input.mouseScrolled(localMouseX, localMouseY, scrollY, width, height);
 ```
 
 ## Input Mapping Helpers
@@ -95,11 +110,17 @@ These account for current viewBox and rendered dimensions.
 
 ## Ownership And Cleanup
 
-If you build surfaces directly, register/unregister ownership explicitly when useful:
+Assign an owner once and rely on `close()` for cleanup:
 
 ```java
-surface.registerTo(owner);
-surface.unregisterFrom(owner);
+BrowserSurface surface = BrowserSurface.builder()
+        .owner(owner)
+        .build();
+
+// or later
+surface.setOwner(owner);
+surface.clearOwner();
+
 surface.close();
 ```
 
