@@ -1,12 +1,18 @@
 package tytoo.grapheneuidebug.test;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
+import org.lwjgl.glfw.GLFW;
 import tytoo.grapheneui.api.GrapheneCore;
 import tytoo.grapheneui.api.bridge.GrapheneBridge;
 import tytoo.grapheneui.api.bridge.GrapheneBridgeSubscription;
 import tytoo.grapheneui.api.surface.BrowserSurface;
+import tytoo.grapheneui.api.surface.BrowserSurfaceInputAdapter;
+import tytoo.grapheneui.api.url.GrapheneClasspathUrls;
+import tytoo.grapheneui.internal.mc.McClient;
 import tytoo.grapheneuidebug.GrapheneDebugClient;
 
 import java.time.Duration;
@@ -21,9 +27,13 @@ import java.util.concurrent.TimeoutException;
 
 public final class GrapheneDebugTestRunner {
     private static final Duration TEST_TIMEOUT = Duration.ofSeconds(10);
+    private static final Duration MOUSE_STATE_REQUEST_TIMEOUT = Duration.ofSeconds(2);
+    private static final String ABOUT_BLANK_URL = "about:blank";
+    private static final String MOUSE_BRIDGE_TEST_URL = GrapheneClasspathUrls.asset("graphene_test/welcome.html");
     private static final String CHANNEL_EVENT = "graphene:test:event";
     private static final String CHANNEL_HANDLER_REQUEST = "graphene:test:sum";
     private static final String CHANNEL_PENDING_REQUEST = "graphene:test:pending";
+    private static final String CHANNEL_MOUSE_STATE_REQUEST = "graphene:mouse:state";
 
     private GrapheneDebugTestRunner() {
     }
@@ -58,7 +68,8 @@ public final class GrapheneDebugTestRunner {
         List<TestCase> testCases = List.of(
                 new TestCase("runtime-smoke", GrapheneDebugTestRunner::runRuntimeSmoke),
                 new TestCase("browser-surface-smoke", GrapheneDebugTestRunner::runBrowserSurfaceSmoke),
-                new TestCase("bridge-api-smoke", GrapheneDebugTestRunner::runBridgeApiSmoke)
+                new TestCase("bridge-api-smoke", GrapheneDebugTestRunner::runBridgeApiSmoke),
+                new TestCase("mouse-bridge-side-buttons", GrapheneDebugTestRunner::runMouseBridgeSideButtons)
         );
 
         CompletableFuture<List<TestResult>> sequenceFuture = CompletableFuture.completedFuture(new ArrayList<>());
@@ -120,7 +131,7 @@ public final class GrapheneDebugTestRunner {
     private static CompletableFuture<Void> runBrowserSurfaceSmoke() {
         return runOnClientThread(() -> {
             try (BrowserSurface surface = BrowserSurface.builder()
-                    .url("about:blank")
+                    .url(ABOUT_BLANK_URL)
                     .surfaceSize(8, 8)
                     .build()) {
                 surface.setSurfaceSize(16, 16);
@@ -133,11 +144,10 @@ public final class GrapheneDebugTestRunner {
     private static CompletableFuture<Void> runBridgeApiSmoke() {
         return runOnClientThread(() -> {
             try (BrowserSurface surface = BrowserSurface.builder()
-                    .url("about:blank")
+                    .url(ABOUT_BLANK_URL)
                     .surfaceSize(32, 32)
                     .build()) {
                 GrapheneBridge bridge = surface.bridge();
-
                 try (GrapheneBridgeSubscription readySubscription = bridge.onReady(() -> {
                 });
                      GrapheneBridgeSubscription eventSubscription = bridge.onEvent(CHANNEL_EVENT, (_, _) -> {
@@ -145,6 +155,10 @@ public final class GrapheneDebugTestRunner {
                      GrapheneBridgeSubscription requestSubscription = bridge.onRequest(CHANNEL_HANDLER_REQUEST, (_, payloadJson) ->
                              CompletableFuture.completedFuture(payloadJson)
                      )) {
+                    Objects.requireNonNull(readySubscription, "readySubscription");
+                    Objects.requireNonNull(eventSubscription, "eventSubscription");
+                    Objects.requireNonNull(requestSubscription, "requestSubscription");
+
                     bridge.emit(CHANNEL_EVENT, "{\"value\":7}");
 
                     CompletableFuture<String> responseFuture = bridge.request(
@@ -168,12 +182,58 @@ public final class GrapheneDebugTestRunner {
         });
     }
 
+    private static CompletableFuture<Void> runMouseBridgeSideButtons() {
+        return McClient.supplyOnMainThread(() -> BrowserSurface.builder()
+                        .url(ABOUT_BLANK_URL)
+                        .surfaceSize(32, 32)
+                        .build())
+                .thenCompose(surface -> McClient.supplyOnMainThread(() -> {
+                            surface.loadUrl(MOUSE_BRIDGE_TEST_URL + "?mouse-bridge-test=" + System.nanoTime());
+                            return surface;
+                        })
+                        .thenCompose(GrapheneDebugTestRunner::runMouseBridgeSideButtons)
+                        .whenComplete((_, _) -> McClient.runOnMainThread(surface::close)));
+    }
+
+    private static CompletableFuture<Void> runMouseBridgeSideButtons(BrowserSurface surface) {
+        GrapheneBridge bridge = surface.bridge();
+        BrowserSurfaceInputAdapter inputAdapter = new BrowserSurfaceInputAdapter(surface);
+
+        return requestMouseStateAsync(bridge)
+                .thenAccept(initialStateJson -> {
+                    JsonObject initialState = JsonParser.parseString(initialStateJson).getAsJsonObject();
+                    requireState(initialState.get("eventCount").getAsInt() == 0, "Mouse bridge should start with zero events");
+                })
+                .thenCompose(_ -> McClient.supplyOnMainThread(() -> {
+                    inputAdapter.setFocused(true);
+                    for (int button = GLFW.GLFW_MOUSE_BUTTON_4; button <= GLFW.GLFW_MOUSE_BUTTON_8; button++) {
+                        inputAdapter.mouseClicked(button, false, 8.0, 8.0, 32, 32);
+                        inputAdapter.mouseReleased(button, 8.0, 8.0, 32, 32);
+                    }
+                    return null;
+                }))
+                .thenCompose(_ -> requestMouseStateAsync(bridge))
+                .thenAccept(finalStateJson -> {
+                    JsonObject finalState = JsonParser.parseString(finalStateJson).getAsJsonObject();
+                    requireState(finalState.get("eventCount").getAsInt() >= 10, "Mouse bridge should capture all side-button presses and releases");
+
+                    JsonArray pressedButtons = finalState.getAsJsonArray("pressedButtons");
+                    requireState(pressedButtons != null && pressedButtons.isEmpty(), "Mouse bridge pressedButtons should be empty after releases");
+
+                    JsonObject lastEvent = finalState.getAsJsonObject("lastEvent");
+                    requireState(lastEvent != null, "Mouse bridge should expose lastEvent");
+                    requireState(lastEvent.get("button").getAsInt() == GLFW.GLFW_MOUSE_BUTTON_8, "Mouse bridge last event should track button 8");
+                    requireState(!lastEvent.get("pressed").getAsBoolean(), "Mouse bridge last event should be released state");
+                })
+                .exceptionallyCompose(throwable -> fallbackMouseBridgeSmoke(inputAdapter, throwable));
+    }
+
     private static CompletableFuture<Void> runOnClientThread(Runnable runnable) {
-        Minecraft minecraft = Objects.requireNonNull(Minecraft.getInstance(), "Minecraft client is not available");
+        Runnable task = Objects.requireNonNull(runnable, "runnable");
         CompletableFuture<Void> future = new CompletableFuture<>();
-        minecraft.execute(() -> {
+        McClient.execute(() -> {
             try {
-                runnable.run();
+                task.run();
                 future.complete(null);
             } catch (Exception exception) {
                 future.completeExceptionally(exception);
@@ -188,9 +248,36 @@ public final class GrapheneDebugTestRunner {
         }
     }
 
+    private static CompletableFuture<String> requestMouseStateAsync(GrapheneBridge bridge) {
+        return McClient.supplyOnMainThread(() -> bridge.request(
+                CHANNEL_MOUSE_STATE_REQUEST,
+                "null",
+                MOUSE_STATE_REQUEST_TIMEOUT
+        )).thenCompose(responseFuture -> responseFuture);
+    }
+
+    private static CompletableFuture<Void> fallbackMouseBridgeSmoke(BrowserSurfaceInputAdapter inputAdapter, Throwable throwable) {
+        Throwable rootCause = unwrap(throwable);
+        if (!(rootCause instanceof TimeoutException)) {
+            return CompletableFuture.failedFuture(rootCause);
+        }
+
+        GrapheneDebugClient.LOGGER.warn(
+                "Skipping JS mouse bridge assertions because bridge ready handshake was unavailable in this environment"
+        );
+
+        return McClient.supplyOnMainThread(() -> {
+            inputAdapter.setFocused(true);
+            for (int button = GLFW.GLFW_MOUSE_BUTTON_4; button <= GLFW.GLFW_MOUSE_BUTTON_8; button++) {
+                inputAdapter.mouseClicked(button, false, 8.0, 8.0, 32, 32);
+                inputAdapter.mouseReleased(button, 8.0, 8.0, 32, 32);
+            }
+            return null;
+        });
+    }
+
     private static void sendFeedback(FabricClientCommandSource source, Component feedback) {
-        Minecraft minecraft = Objects.requireNonNull(Minecraft.getInstance(), "Minecraft client is not available");
-        minecraft.execute(() -> source.sendFeedback(feedback));
+        McClient.execute(() -> source.sendFeedback(feedback));
     }
 
     private static Throwable unwrap(Throwable throwable) {

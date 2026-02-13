@@ -18,7 +18,7 @@ public final class BrowserSurfaceInputAdapter {
     public BrowserSurfaceInputAdapter(BrowserSurface surface) {
         this.surface = Objects.requireNonNull(surface, "surface");
         this.focusUtil = new GrapheneFocusUtil(this.surface.internalBrowser()::setFocus);
-        this.inputController = new GrapheneWebViewInputController(this.surface.internalBrowser(), this.focusUtil);
+        this.inputController = new GrapheneWebViewInputController(this.surface.internalBrowser(), this.focusUtil, this.surface.bridge());
         this.focusUtil.addFocusListener(this.inputController::onFocusChanged);
         this.focusUtil.syncNativeFocus();
     }

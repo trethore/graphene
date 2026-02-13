@@ -24,6 +24,7 @@ import java.util.concurrent.locks.LockSupport;
 public final class GrapheneCefRuntime implements GrapheneRuntime {
     private static final long CEF_SHUTDOWN_TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(5);
     private static final long CEF_SHUTDOWN_POLL_INTERVAL_NANOS = TimeUnit.MILLISECONDS.toNanos(25);
+    private static final String FAILED_INITIALIZATION_MESSAGE = "Failed to initialize Graphene CEF runtime";
 
     private final Object lock = new Object();
     private final GrapheneBrowserSurfaceManager surfaceManager;
@@ -85,9 +86,9 @@ public final class GrapheneCefRuntime implements GrapheneRuntime {
                 cefApp = cefAppBuilder.build();
             } catch (InterruptedException exception) {
                 Thread.currentThread().interrupt();
-                throw new IllegalStateException("Failed to initialize Graphene CEF runtime", exception);
+                throw new IllegalStateException(FAILED_INITIALIZATION_MESSAGE, exception);
             } catch (IOException | UnsupportedPlatformException | CefInitializationException exception) {
-                throw new IllegalStateException("Failed to initialize Graphene CEF runtime", exception);
+                throw new IllegalStateException(FAILED_INITIALIZATION_MESSAGE, exception);
             }
 
             cefClient = cefApp.createClient();

@@ -9,9 +9,9 @@ import tytoo.grapheneui.internal.input.keyboard.GrapheneKeyboardInputBridge;
 import java.awt.*;
 
 final class GrapheneInputBridge {
-    private static final int MOUSE_LEFT_BUTTON = 0;
-    private static final int MOUSE_RIGHT_BUTTON = 1;
-    private static final int MOUSE_MIDDLE_BUTTON = 2;
+    private static final int MOUSE_LEFT_BUTTON = GLFW.GLFW_MOUSE_BUTTON_1;
+    private static final int MOUSE_RIGHT_BUTTON = GLFW.GLFW_MOUSE_BUTTON_2;
+    private static final int MOUSE_MIDDLE_BUTTON = GLFW.GLFW_MOUSE_BUTTON_3;
 
     private final Component uiComponent = new Component() {
     };

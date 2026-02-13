@@ -87,6 +87,35 @@ off();
 unhandle();
 ```
 
+## Side Mouse Button Bridge
+
+Graphene also injects `globalThis.grapheneMouse` for side mouse buttons that are not handled by default CEF click mapping.
+
+- Supported GLFW button ids: `3`, `4`, `5`, `6`, `7` (`GLFW_MOUSE_BUTTON_4` to `GLFW_MOUSE_BUTTON_8`)
+- Event channel from Java: `graphene:mouse:button`
+- Event payload: `{ button: number, pressed: boolean, released: boolean }`
+
+```js
+const mouse = globalThis.grapheneMouse;
+
+const unsubscribe = mouse.on((event) => {
+  if (event.button === mouse.BUTTON_4 && event.pressed) {
+    console.log("Side button 4 pressed");
+  }
+});
+
+const isButton8Down = mouse.isPressed(mouse.BUTTON_8);
+const snapshot = mouse.snapshot();
+
+unsubscribe();
+```
+
+`mouse.snapshot()` returns:
+
+- `eventCount`: number of side-button events received
+- `lastEvent`: latest event payload or `null`
+- `pressedButtons`: currently pressed side buttons
+
 ## Payload And Contract Rules
 
 - Channel must be non-null and non-blank.

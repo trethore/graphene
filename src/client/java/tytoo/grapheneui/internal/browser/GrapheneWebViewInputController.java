@@ -2,6 +2,8 @@ package tytoo.grapheneui.internal.browser;
 
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
+import org.lwjgl.glfw.GLFW;
+import tytoo.grapheneui.api.bridge.GrapheneBridge;
 import tytoo.grapheneui.internal.input.GrapheneGlfwModifierUtil;
 
 import java.awt.*;
@@ -13,9 +15,13 @@ public final class GrapheneWebViewInputController {
     private static final double ZOOM_LEVEL_STEP = 0.2D;
     private static final double MIN_ZOOM_LEVEL = -10.0D;
     private static final double MAX_ZOOM_LEVEL = 10.0D;
+    private static final int FIRST_SIDE_MOUSE_BUTTON = GLFW.GLFW_MOUSE_BUTTON_4;
+    private static final int LAST_SIDE_MOUSE_BUTTON = GLFW.GLFW_MOUSE_BUTTON_8;
+    private static final String MOUSE_SIDE_BUTTON_CHANNEL = "graphene:mouse:button";
 
     private final GrapheneBrowser browser;
     private final GrapheneFocusUtil focusUtil;
+    private final GrapheneBridge bridge;
     private int lastBrowserMouseX = Integer.MIN_VALUE;
     private int lastBrowserMouseY = Integer.MIN_VALUE;
     private boolean primaryPointerButtonDown;
@@ -24,9 +30,10 @@ public final class GrapheneWebViewInputController {
     private int pressedButton = -1;
     private int pressedClickCount = 1;
 
-    public GrapheneWebViewInputController(GrapheneBrowser browser, GrapheneFocusUtil focusUtil) {
+    public GrapheneWebViewInputController(GrapheneBrowser browser, GrapheneFocusUtil focusUtil, GrapheneBridge bridge) {
         this.browser = Objects.requireNonNull(browser, "browser");
         this.focusUtil = Objects.requireNonNull(focusUtil, "focusUtil");
+        this.bridge = Objects.requireNonNull(bridge, "bridge");
     }
 
     public boolean isPrimaryPointerButtonDown() {
@@ -49,6 +56,7 @@ public final class GrapheneWebViewInputController {
         pressedButton = button;
         pressedClickCount = currentClickCount;
         browser.mouseInteracted(browserPoint.x, browserPoint.y, 0, button, true, currentClickCount);
+        emitSideMouseButtonEvent(button, true);
     }
 
     public boolean onMouseReleased(int button, Point browserPoint) {
@@ -60,6 +68,7 @@ public final class GrapheneWebViewInputController {
             return false;
         }
 
+        emitSideMouseButtonEvent(button, false);
         int releaseClickCount = button == pressedButton ? pressedClickCount : 1;
         browser.mouseInteracted(browserPoint.x, browserPoint.y, 0, button, false, releaseClickCount);
         if (button == pressedButton) {
@@ -139,5 +148,25 @@ public final class GrapheneWebViewInputController {
 
     private double clampZoomLevel(double zoomLevel) {
         return Math.clamp(zoomLevel, MIN_ZOOM_LEVEL, MAX_ZOOM_LEVEL);
+    }
+
+    private void emitSideMouseButtonEvent(int button, boolean pressed) {
+        if (!isSideMouseButton(button)) {
+            return;
+        }
+
+        try {
+            bridge.emit(MOUSE_SIDE_BUTTON_CHANNEL, sideMouseButtonPayload(button, pressed));
+        } catch (IllegalStateException _) {
+            // Ignore events while the bridge is shutting down.
+        }
+    }
+
+    private boolean isSideMouseButton(int button) {
+        return button >= FIRST_SIDE_MOUSE_BUTTON && button <= LAST_SIDE_MOUSE_BUTTON;
+    }
+
+    private String sideMouseButtonPayload(int button, boolean pressed) {
+        return "{\"button\":" + button + ",\"pressed\":" + pressed + "}";
     }
 }

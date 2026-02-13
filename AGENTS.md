@@ -56,6 +56,7 @@ Here is the structure of the repository:
 - The codebase targets Fabric for Minecraft 1.21.11 with official Mojang mappings; use APIs that exist in this combination.
 - Prefer modern Fabric/Minecraft methods such as `Identifier.fromNamespaceAndPath(String string, String string2)` and
   up-to-date rendering APIs; avoid deprecated signatures.
+- Route Minecraft client singleton access through `tytoo.grapheneui.internal.mc.McClient` helpers instead of calling `Minecraft.getInstance()` directly.
 - Place new assets, mixin configs, and JSON metadata within `src/client/resources/` or `src/debug/resources/`,
   keeping identifiers in the `GrapheneCore.ID` or `GrapheneDebugClient.ID` namespace as appropriate.
 - Integrate through established abstractions unless explicitly extending them.
