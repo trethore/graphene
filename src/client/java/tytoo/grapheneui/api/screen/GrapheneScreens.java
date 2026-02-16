@@ -5,6 +5,12 @@ import tytoo.grapheneui.internal.screen.GrapheneScreenBridge;
 
 import java.util.Objects;
 
+/**
+ * Utility class for working with {@link Screen} instances in the context of Graphene UI.
+ * Provides methods to check and configure Graphene-specific features on screens that implement {@link GrapheneScreenBridge}.
+ */
+
+@SuppressWarnings("unused") // Public API
 public final class GrapheneScreens {
     private GrapheneScreens() {
     }

@@ -20,6 +20,10 @@ import tytoo.grapheneui.internal.screen.GrapheneScreenBridge;
 import java.io.Closeable;
 import java.util.Objects;
 
+/**
+ * A widget that displays a web view using a {@link BrowserSurface}.
+ * The widget handles rendering the surface and forwarding input events to it.
+ */
 public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
     private static final String DEFAULT_URL = "about:blank";
 

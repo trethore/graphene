@@ -4,6 +4,10 @@ import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * Interface for the Graphene Bridge, which facilitates communication between the Java client and the Graphene UI.
+ * It allows registering event listeners, handling requests, emitting events, and making requests with optional JSON serialization.
+ */
 @SuppressWarnings("unused")
 public interface GrapheneBridge {
     Duration DEFAULT_REQUEST_TIMEOUT = Duration.ofSeconds(10);

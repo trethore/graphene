@@ -5,6 +5,10 @@ import org.cef.browser.CefFrame;
 import org.cef.handler.CefLoadHandler;
 import org.cef.network.CefRequest;
 
+/**
+ * Interface for listening to loading events from a browser surface.
+ * Implementations can override the default methods to handle specific loading events such as start, end, and errors.
+ */
 public interface GrapheneLoadListener {
     default void onLoadingStateChange(CefBrowser browser, boolean isLoading, boolean canGoBack, boolean canGoForward) {
     }

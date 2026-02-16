@@ -6,6 +6,10 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
+/**
+ * Utility class for constructing and normalizing "classpath:" URLs for loading assets from the classpath.
+ * The URLs have the format "classpath:///assets/{namespace}/{path}".
+ */
 public final class GrapheneClasspathUrls {
     public static final String SCHEME = "classpath";
 

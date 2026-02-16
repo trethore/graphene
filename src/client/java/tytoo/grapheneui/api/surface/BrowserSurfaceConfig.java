@@ -5,6 +5,10 @@ import org.cef.CefBrowserSettings;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+/**
+ * Configuration class for browser surface settings, including frame rate and custom browser settings.
+ * Provides a builder for easy configuration and immutability.
+ */
 public final class BrowserSurfaceConfig {
     private static final int DEFAULT_MAX_FPS = 60;
     private static final Consumer<CefBrowserSettings> NO_OP_SETTINGS_CUSTOMIZER = ignoredSettings -> {

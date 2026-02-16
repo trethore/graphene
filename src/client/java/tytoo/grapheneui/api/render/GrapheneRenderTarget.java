@@ -2,6 +2,12 @@ package tytoo.grapheneui.api.render;
 
 import net.minecraft.resources.Identifier;
 
+/**
+ * Interface representing a render target for Graphene UI. This abstraction allows rendering web content onto various
+ * types of targets, such as Minecraft GUIs or off-screen buffers. Implementations of this interface are responsible
+ * for handling the actual drawing operations and managing resources associated with the render target.
+ */
+
 public interface GrapheneRenderTarget {
     default void blitTexture(
             Identifier textureId,
