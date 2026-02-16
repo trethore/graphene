@@ -6,7 +6,8 @@ import me.tytoo.jcefgithub.UnsupportedPlatformException;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import org.cef.CefApp;
 import org.cef.CefClient;
-import tytoo.grapheneui.api.GrapheneCore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tytoo.grapheneui.api.bridge.GrapheneBridge;
 import tytoo.grapheneui.api.runtime.GrapheneRuntime;
 import tytoo.grapheneui.internal.bridge.GrapheneBridgeOptions;
@@ -14,6 +15,7 @@ import tytoo.grapheneui.internal.bridge.GrapheneBridgeRuntime;
 import tytoo.grapheneui.internal.browser.GrapheneBrowser;
 import tytoo.grapheneui.internal.browser.GrapheneBrowserSurfaceManager;
 import tytoo.grapheneui.internal.event.GrapheneLoadEventBus;
+import tytoo.grapheneui.internal.logging.GrapheneDebugLogger;
 import tytoo.grapheneui.internal.platform.GraphenePlatform;
 
 import java.io.IOException;
@@ -22,6 +24,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 
 public final class GrapheneCefRuntime implements GrapheneRuntime {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneCefRuntime.class);
+    private static final GrapheneDebugLogger DEBUG_LOGGER = GrapheneDebugLogger.of(GrapheneCefRuntime.class);
+
     private static final long CEF_SHUTDOWN_TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(5);
     private static final long CEF_SHUTDOWN_POLL_INTERVAL_NANOS = TimeUnit.MILLISECONDS.toNanos(25);
     private static final String FAILED_INITIALIZATION_MESSAGE = "Failed to initialize Graphene CEF runtime";
@@ -46,7 +51,7 @@ public final class GrapheneCefRuntime implements GrapheneRuntime {
     }
 
     private static void logStartupConfiguration(CefAppBuilder cefAppBuilder) {
-        GrapheneCore.LOGGER.info(
+        LOGGER.info(
                 "Initializing CEF on platform linux={}, wayland={}, subprocess={}, args={}",
                 GraphenePlatform.isLinux(),
                 GraphenePlatform.isWaylandSession(),
@@ -61,19 +66,28 @@ public final class GrapheneCefRuntime implements GrapheneRuntime {
         while (CefApp.getState() != CefApp.CefAppState.TERMINATED && System.nanoTime() < deadlineNanos) {
             LockSupport.parkNanos(CEF_SHUTDOWN_POLL_INTERVAL_NANOS);
             if (Thread.currentThread().isInterrupted()) {
-                GrapheneCore.LOGGER.warn("Interrupted while waiting for CEF termination");
+                LOGGER.warn("Interrupted while waiting for CEF termination");
                 return;
             }
         }
 
         if (CefApp.getState() != CefApp.CefAppState.TERMINATED) {
-            GrapheneCore.LOGGER.warn("Timed out while waiting for CEF termination; process may remain alive");
+            LOGGER.warn("Timed out while waiting for CEF termination; process may remain alive");
+        }
+    }
+
+    private static int browserIdentifier(GrapheneBrowser browser) {
+        try {
+            return browser.getIdentifier();
+        } catch (RuntimeException _) {
+            return -1;
         }
     }
 
     public void initialize() {
         synchronized (lock) {
             if (initialized) {
+                DEBUG_LOGGER.debug("Skipping CEF initialize because runtime is already initialized");
                 return;
             }
 
@@ -97,7 +111,7 @@ public final class GrapheneCefRuntime implements GrapheneRuntime {
             initialized = true;
 
             registerShutdownHook();
-            GrapheneCore.LOGGER.info("CEF runtime initialized on debug port {}", remoteDebuggingPort);
+            LOGGER.info("CEF runtime initialized on debug port {}", remoteDebuggingPort);
         }
     }
 
@@ -121,13 +135,16 @@ public final class GrapheneCefRuntime implements GrapheneRuntime {
                 throw new IllegalStateException("Graphene is not initialized. Call GrapheneCore.init() first.");
             }
 
-            return bridgeRuntime.attach(browser);
+            GrapheneBridge bridge = bridgeRuntime.attach(browser);
+            DEBUG_LOGGER.debug("Attached bridge for browser identifier={}", browserIdentifier(browser));
+            return bridge;
         }
     }
 
     public void detachBridge(GrapheneBrowser browser) {
         synchronized (lock) {
             bridgeRuntime.detach(browser);
+            DEBUG_LOGGER.debug("Detached bridge for browser identifier={}", browserIdentifier(browser));
         }
     }
 
@@ -138,6 +155,7 @@ public final class GrapheneCefRuntime implements GrapheneRuntime {
             }
 
             bridgeRuntime.onNavigationRequested(browser);
+            DEBUG_LOGGER.debug("Bridge navigation requested for browser identifier={}", browserIdentifier(browser));
         }
     }
 
@@ -148,6 +166,7 @@ public final class GrapheneCefRuntime implements GrapheneRuntime {
             }
 
             bridgeRuntime.ensureBootstrap(browser);
+            DEBUG_LOGGER.debug("Requested bridge bootstrap check for browser identifier={}", browserIdentifier(browser));
         }
     }
 
@@ -168,6 +187,7 @@ public final class GrapheneCefRuntime implements GrapheneRuntime {
     public void shutdown() {
         synchronized (lock) {
             if (!initialized) {
+                DEBUG_LOGGER.debug("Skipping CEF shutdown because runtime is not initialized");
                 return;
             }
 
@@ -188,7 +208,7 @@ public final class GrapheneCefRuntime implements GrapheneRuntime {
             cefApp = null;
             remoteDebuggingPort = -1;
             initialized = false;
-            GrapheneCore.LOGGER.info("CEF runtime disposed");
+            LOGGER.info("CEF runtime disposed");
         }
     }
 
@@ -200,5 +220,6 @@ public final class GrapheneCefRuntime implements GrapheneRuntime {
         ClientLifecycleEvents.CLIENT_STOPPING.register(_ -> shutdown());
         Runtime.getRuntime().addShutdownHook(new Thread(this::shutdown, "graphene-cef-shutdown"));
         shutdownHookRegistered = true;
+        DEBUG_LOGGER.debug("Registered CEF shutdown hooks");
     }
 }

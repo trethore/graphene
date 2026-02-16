@@ -9,7 +9,7 @@ import tytoo.grapheneuidebug.key.GrapheneDebugKeyBindings;
 
 public class GrapheneDebugClient implements ClientModInitializer {
     public static final String ID = "graphene-ui-debug";
-    public static final Logger LOGGER = LoggerFactory.getLogger(ID);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneDebugClient.class);
 
     /* Debug entry point for testing purposes. */
     @Override
@@ -17,6 +17,10 @@ public class GrapheneDebugClient implements ClientModInitializer {
         GrapheneCore.init();
         GrapheneDebugKeyBindings.register();
         GrapheneDebugCommands.register();
+        String debugSelector = System.getProperty("graphene.debug");
+        if (debugSelector != null && !debugSelector.isBlank()) {
+            LOGGER.info("Graphene debug selector enabled: {}", debugSelector);
+        }
         LOGGER.info("Graphene debug client initialized");
     }
 }

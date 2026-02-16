@@ -1,7 +1,9 @@
 package tytoo.grapheneui.internal.cef;
 
 import me.tytoo.jcefgithub.CefAppBuilder;
-import tytoo.grapheneui.api.GrapheneCore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import tytoo.grapheneui.internal.logging.GrapheneDebugLogger;
 import tytoo.grapheneui.internal.platform.GraphenePlatform;
 
 import java.io.File;
@@ -12,6 +14,9 @@ import java.nio.file.Path;
 import java.util.List;
 
 public final class GrapheneCefInstaller {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneCefInstaller.class);
+    private static final GrapheneDebugLogger DEBUG_LOGGER = GrapheneDebugLogger.of(GrapheneCefInstaller.class);
+
     private static final File INSTALLATION_DIR = new File("./jcef");
     private static final List<String> MIRRORS = List.of(
             "https://github.com/trethore/jcefgithub/releases/download/{mvn_version}/jcef-natives-{platform}-{tag}.jar"
@@ -39,6 +44,13 @@ public final class GrapheneCefInstaller {
 
         cefAppBuilder.getCefSettings().windowless_rendering_enabled = true;
         cefAppBuilder.getCefSettings().remote_debugging_port = findRandomPort();
+
+        DEBUG_LOGGER.debug(
+                "Configured CEF installDir={} cachePath={} remoteDebugPort={}",
+                INSTALLATION_DIR.getAbsolutePath(),
+                cefAppBuilder.getCefSettings().cache_path,
+                cefAppBuilder.getCefSettings().remote_debugging_port
+        );
 
         return cefAppBuilder;
     }
@@ -79,7 +91,7 @@ public final class GrapheneCefInstaller {
         }
 
         cefAppBuilder.addJcefArgs("--ozone-platform=x11");
-        GrapheneCore.LOGGER.info("Detected Wayland session, forcing CEF to X11 compatibility mode");
+        LOGGER.info("Detected Wayland session, forcing CEF to X11 compatibility mode");
     }
 
     private static int findRandomPort() {

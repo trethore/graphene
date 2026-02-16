@@ -5,12 +5,15 @@ import org.cef.callback.CefJSDialogCallback;
 import org.cef.handler.CefJSDialogHandler;
 import org.cef.handler.CefJSDialogHandlerAdapter;
 import org.cef.misc.BoolRef;
-import tytoo.grapheneui.api.GrapheneCore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tytoo.grapheneui.internal.cef.alert.GrapheneJsDialogManager;
 
 import java.util.Objects;
 
 final class GrapheneCefJsDialogHandler extends CefJSDialogHandlerAdapter {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneCefJsDialogHandler.class);
+
     private final GrapheneJsDialogManager dialogManager;
 
     GrapheneCefJsDialogHandler(GrapheneJsDialogManager dialogManager) {
@@ -32,7 +35,7 @@ final class GrapheneCefJsDialogHandler extends CefJSDialogHandlerAdapter {
                 suppressMessage.set(true);
             }
 
-            GrapheneCore.LOGGER.warn(
+            LOGGER.warn(
                     "Suppressed JavaScript dialog without callback (type={}, origin={})",
                     dialogType,
                     originUrl

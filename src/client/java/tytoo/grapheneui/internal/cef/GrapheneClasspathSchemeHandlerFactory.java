@@ -13,6 +13,7 @@ import org.cef.network.CefResponse;
 import org.jspecify.annotations.NonNull;
 import tytoo.grapheneui.api.GrapheneCore;
 import tytoo.grapheneui.api.url.GrapheneClasspathUrls;
+import tytoo.grapheneui.internal.logging.GrapheneDebugLogger;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,6 +21,8 @@ import java.util.Arrays;
 import java.util.Locale;
 
 public final class GrapheneClasspathSchemeHandlerFactory implements CefSchemeHandlerFactory {
+    private static final GrapheneDebugLogger DEBUG_LOGGER = GrapheneDebugLogger.of(GrapheneClasspathSchemeHandlerFactory.class);
+
     private static final String MIME_TEXT_PLAIN = "text/plain";
     private static final String PATH_DELIMITER = "/";
     private static final String ASSETS_PREFIX = "assets" + PATH_DELIMITER;
@@ -91,7 +94,7 @@ public final class GrapheneClasspathSchemeHandlerFactory implements CefSchemeHan
 
                 return ResourceBytesResult.found(inputStream.readAllBytes());
             } catch (IOException exception) {
-                GrapheneCore.LOGGER.debug("Failed to read classpath resource {}", path, exception);
+                DEBUG_LOGGER.debug("Failed to read classpath resource {}", path, exception);
                 return ResourceBytesResult.notFound();
             }
         }
@@ -103,6 +106,9 @@ public final class GrapheneClasspathSchemeHandlerFactory implements CefSchemeHan
             responseBytes = resourceBytesResult.bytes();
             resourceFound = resourceBytesResult.found();
             readOffset = 0;
+            if (!resourceFound) {
+                DEBUG_LOGGER.debug("Classpath resource not found: {}", resourcePath);
+            }
             if (resourceFound) {
                 mimeType = resolveMimeType(resourcePath);
             } else {

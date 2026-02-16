@@ -5,10 +5,13 @@ import org.cef.browser.CefMessageRouter;
 import tytoo.grapheneui.internal.bridge.GrapheneBridgeRuntime;
 import tytoo.grapheneui.internal.cef.alert.GrapheneJsDialogManager;
 import tytoo.grapheneui.internal.event.GrapheneLoadEventBus;
+import tytoo.grapheneui.internal.logging.GrapheneDebugLogger;
 
 import java.util.Objects;
 
 public final class GrapheneCefClientConfig {
+    private static final GrapheneDebugLogger DEBUG_LOGGER = GrapheneDebugLogger.of(GrapheneCefClientConfig.class);
+
     private static final GrapheneJsDialogManager JS_DIALOG_MANAGER = new GrapheneJsDialogManager();
 
     private GrapheneCefClientConfig() {
@@ -27,5 +30,7 @@ public final class GrapheneCefClientConfig {
         CefMessageRouter messageRouter = CefMessageRouter.create(new CefMessageRouter.CefMessageRouterConfig());
         messageRouter.addHandler(new GrapheneCefMessageRouterHandler(validatedBridgeRuntime), true);
         validatedClient.addMessageRouter(messageRouter);
+
+        DEBUG_LOGGER.debug("Configured CEF client handlers and message router for Graphene bridge runtime");
     }
 }

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" name="graphene-debug">
+    <Loggers>
+        <Logger name="tytoo.grapheneui" level="debug"/>
+        <Logger name="tytoo.grapheneuidebug" level="debug"/>
+    </Loggers>
+</Configuration>

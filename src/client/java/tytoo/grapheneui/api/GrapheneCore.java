@@ -13,7 +13,7 @@ import java.util.Objects;
  */
 public final class GrapheneCore {
     public static final String ID = "graphene-ui";
-    public static final Logger LOGGER = LoggerFactory.getLogger(ID);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneCore.class);
     private static final GrapheneCoreServices SERVICES = GrapheneCoreServices.get();
 
     private GrapheneCore() {

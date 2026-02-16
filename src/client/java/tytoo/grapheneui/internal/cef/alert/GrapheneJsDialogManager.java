@@ -4,13 +4,18 @@ import net.minecraft.client.gui.screens.Screen;
 import org.cef.browser.CefBrowser;
 import org.cef.callback.CefJSDialogCallback;
 import org.cef.handler.CefJSDialogHandler;
-import tytoo.grapheneui.api.GrapheneCore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import tytoo.grapheneui.internal.logging.GrapheneDebugLogger;
 import tytoo.grapheneui.internal.mc.McClient;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
 
 public final class GrapheneJsDialogManager {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneJsDialogManager.class);
+    private static final GrapheneDebugLogger DEBUG_LOGGER = GrapheneDebugLogger.of(GrapheneJsDialogManager.class);
+
     private final Object lock = new Object();
     private final Deque<GrapheneJsDialogRequest> pendingDialogs = new ArrayDeque<>();
     private boolean dialogVisible;
@@ -39,6 +44,14 @@ public final class GrapheneJsDialogManager {
             if (shouldOpen) {
                 dialogVisible = true;
             }
+
+            DEBUG_LOGGER.debug(
+                    "Queued JS dialog type={} origin={} pending={} shouldOpen={}",
+                    dialogType,
+                    originUrl,
+                    pendingDialogs.size(),
+                    shouldOpen
+            );
         }
 
         if (!shouldOpen) {
@@ -83,7 +96,7 @@ public final class GrapheneJsDialogManager {
         try {
             request.callback().Continue(normalizedAccepted, normalizedValue);
         } catch (RuntimeException exception) {
-            GrapheneCore.LOGGER.error(
+            LOGGER.error(
                     "Failed to continue JavaScript dialog callback for {} ({})",
                     request.originUrl(),
                     request.browser(),
@@ -102,6 +115,14 @@ public final class GrapheneJsDialogManager {
 
             hasMore = !pendingDialogs.isEmpty();
             dialogVisible = hasMore;
+
+            DEBUG_LOGGER.debug(
+                    "Resolved JS dialog type={} accepted={} pending={} hasMore={}",
+                    request.dialogType(),
+                    normalizedAccepted,
+                    pendingDialogs.size(),
+                    hasMore
+            );
         }
 
         if (McClient.currentScreen() == screen) {

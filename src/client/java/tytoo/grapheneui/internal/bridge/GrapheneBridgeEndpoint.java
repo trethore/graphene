@@ -7,6 +7,7 @@ import tytoo.grapheneui.api.bridge.GrapheneBridgeEventListener;
 import tytoo.grapheneui.api.bridge.GrapheneBridgeRequestHandler;
 import tytoo.grapheneui.api.bridge.GrapheneBridgeSubscription;
 import tytoo.grapheneui.internal.browser.GrapheneBrowser;
+import tytoo.grapheneui.internal.logging.GrapheneDebugLogger;
 
 import java.time.Duration;
 import java.util.List;
@@ -16,6 +17,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class GrapheneBridgeEndpoint implements GrapheneBridge {
+    private static final GrapheneDebugLogger DEBUG_LOGGER = GrapheneDebugLogger.of(GrapheneBridgeEndpoint.class);
+
     private static final String CHANNEL_NAME = "channel";
     private static final String TIMEOUT_NAME = "timeout";
     private static final long BOOTSTRAP_FALLBACK_RETRY_NANOS = TimeUnit.MILLISECONDS.toNanos(500);
@@ -49,6 +52,14 @@ public final class GrapheneBridgeEndpoint implements GrapheneBridge {
         );
         this.requestLifecycle = new GrapheneBridgeRequestLifecycle(codec, outboundQueue);
         this.inboundRouter = new GrapheneBridgeInboundRouter(codec, handlers, requestLifecycle, this::onBridgeReady);
+
+        DEBUG_LOGGER.debug(
+                "Created bridge endpoint browserId={} maxQueuedMessages={} overflowPolicy={} defaultTimeoutMs={}",
+                browserIdentifier(),
+                this.options.maxQueuedOutboundMessages(),
+                this.options.queueOverflowPolicy(),
+                this.options.defaultRequestTimeout().toMillis()
+        );
     }
 
     @Override
@@ -87,6 +98,10 @@ public final class GrapheneBridgeEndpoint implements GrapheneBridge {
 
         String outboundJson = codec.createOutboundPacketJson(GrapheneBridgeProtocol.KIND_EVENT, null, validatedChannel, payload);
         queueOrDispatch(outboundJson);
+        DEBUG_LOGGER.debugIfEnabled(logger -> {
+            int payloadSize = payloadJson == null ? 0 : payloadJson.length();
+            logger.debug("Queued bridge event channel={} payloadSize={}", validatedChannel, payloadSize);
+        });
     }
 
     @Override
@@ -104,6 +119,15 @@ public final class GrapheneBridgeEndpoint implements GrapheneBridge {
         String validatedChannel = validateChannel(channel);
         Duration validatedTimeout = validateTimeout(timeout);
         ensureOpen();
+        DEBUG_LOGGER.debugIfEnabled(logger -> {
+            int payloadSize = payloadJson == null ? 0 : payloadJson.length();
+            logger.debug(
+                    "Queued bridge request channel={} timeoutMs={} payloadSize={}",
+                    validatedChannel,
+                    validatedTimeout.toMillis(),
+                    payloadSize
+            );
+        });
         return requestLifecycle.request(validatedChannel, payloadJson, validatedTimeout);
     }
 
@@ -121,6 +145,7 @@ public final class GrapheneBridgeEndpoint implements GrapheneBridge {
         lastBootstrapFallbackAttemptNanos = 0L;
         lastBootstrapFallbackUrl = null;
         readyUrl = null;
+        DEBUG_LOGGER.debug("Bridge endpoint marked not ready for navigation browserId={}", browserIdentifier());
     }
 
     public void onPageLoadEnd() {
@@ -130,6 +155,7 @@ public final class GrapheneBridgeEndpoint implements GrapheneBridge {
 
         try {
             injectBootstrapScript();
+            DEBUG_LOGGER.debug("Injected bridge bootstrap on load end browserId={} url={}", browserIdentifier(), currentUrl());
         } catch (RuntimeException _) {
             // Bridge bootstrap will be retried by the fallback path during rendering.
         }
@@ -140,7 +166,13 @@ public final class GrapheneBridgeEndpoint implements GrapheneBridge {
             return false;
         }
 
-        return inboundRouter.route(requestJson, callback);
+        boolean handled = inboundRouter.route(requestJson, callback);
+        DEBUG_LOGGER.debugIfEnabled(logger -> {
+            int requestSize = requestJson == null ? 0 : requestJson.length();
+            logger.debug("Bridge endpoint handled query browserId={} requestSize={} handled={}", browserIdentifier(), requestSize, handled);
+        });
+
+        return handled;
     }
 
     public void onQueryCanceled() {
@@ -156,6 +188,7 @@ public final class GrapheneBridgeEndpoint implements GrapheneBridge {
         outboundQueue.clear();
         requestLifecycle.failAllForClose();
         handlers.clear();
+        DEBUG_LOGGER.debug("Closed bridge endpoint browserId={}", browserIdentifier());
     }
 
     private void onBridgeReady() {
@@ -166,6 +199,7 @@ public final class GrapheneBridgeEndpoint implements GrapheneBridge {
         outboundQueue.markReadyAndFlush();
         readyUrl = currentUrl();
         handlers.notifyReady();
+        DEBUG_LOGGER.debug("Bridge endpoint ready browserId={} readyUrl={}", browserIdentifier(), readyUrl);
     }
 
     void tryBootstrapFallback() {
@@ -179,11 +213,18 @@ public final class GrapheneBridgeEndpoint implements GrapheneBridge {
                 return;
             }
 
+            String previousReadyUrl = readyUrl;
             outboundQueue.markNotReady();
             requestLifecycle.failAllForPageChange();
             readyUrl = null;
             lastBootstrapFallbackAttemptNanos = 0L;
             lastBootstrapFallbackUrl = null;
+            DEBUG_LOGGER.debug(
+                    "Bridge ready URL changed browserId={} previousUrl={} currentUrl={}",
+                    browserIdentifier(),
+                    previousReadyUrl,
+                    currentUrl
+            );
         }
 
         if (!browserHasDocument()) {
@@ -201,6 +242,7 @@ public final class GrapheneBridgeEndpoint implements GrapheneBridge {
 
         try {
             injectBootstrapScript();
+            DEBUG_LOGGER.debug("Injected bridge bootstrap fallback browserId={} url={}", browserIdentifier(), currentUrl);
         } catch (RuntimeException _) {
             // Bridge bootstrap will be retried by the fallback path during rendering.
         }
@@ -257,6 +299,14 @@ public final class GrapheneBridgeEndpoint implements GrapheneBridge {
         } catch (RuntimeException _) {
             // Browser state is transient while creating/navigating.
             return false;
+        }
+    }
+
+    private int browserIdentifier() {
+        try {
+            return browser.getIdentifier();
+        } catch (RuntimeException _) {
+            return -1;
         }
     }
 }

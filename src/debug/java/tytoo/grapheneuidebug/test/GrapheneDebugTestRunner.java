@@ -6,6 +6,8 @@ import com.google.gson.JsonParser;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tytoo.grapheneui.api.GrapheneCore;
 import tytoo.grapheneui.api.bridge.GrapheneBridge;
 import tytoo.grapheneui.api.bridge.GrapheneBridgeSubscription;
@@ -26,6 +28,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 public final class GrapheneDebugTestRunner {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneDebugTestRunner.class);
+
     private static final Duration TEST_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration MOUSE_STATE_REQUEST_TIMEOUT = Duration.ofSeconds(2);
     private static final String ABOUT_BLANK_URL = "about:blank";
@@ -42,7 +46,7 @@ public final class GrapheneDebugTestRunner {
         runAllTests().whenComplete((results, throwable) -> {
             if (throwable != null) {
                 Throwable rootCause = unwrap(throwable);
-                GrapheneDebugClient.LOGGER.error("Graphene debug tests crashed before completion", rootCause);
+                LOGGER.error("Graphene debug tests crashed before completion", rootCause);
                 sendFeedback(source, Component.translatable("command.graphene-ui-debug.test.fail", 0, 0));
                 return;
             }
@@ -86,7 +90,7 @@ public final class GrapheneDebugTestRunner {
 
     private static CompletableFuture<TestResult> runSingleTest(TestCase testCase) {
         Instant startedAt = Instant.now();
-        GrapheneDebugClient.LOGGER.info("Graphene debug test started: {}", testCase.name());
+        LOGGER.info("Graphene debug test started: {}", testCase.name());
 
         CompletableFuture<Void> testFuture;
         try {
@@ -94,27 +98,27 @@ public final class GrapheneDebugTestRunner {
             testFuture = Objects.requireNonNull(rawTestFuture, "testFuture").orTimeout(TEST_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
         } catch (Exception exception) {
             Duration duration = Duration.between(startedAt, Instant.now());
-            GrapheneDebugClient.LOGGER.error("Graphene debug test failed: {} ({} ms)", testCase.name(), duration.toMillis(), exception);
+            LOGGER.error("Graphene debug test failed: {} ({} ms)", testCase.name(), duration.toMillis(), exception);
             return CompletableFuture.completedFuture(TestResult.failed(testCase.name(), duration, exception));
         }
 
         return testFuture.handle((_, throwable) -> {
             Duration duration = Duration.between(startedAt, Instant.now());
             if (throwable == null) {
-                GrapheneDebugClient.LOGGER.info("Graphene debug test passed: {} ({} ms)", testCase.name(), duration.toMillis());
+                LOGGER.info("Graphene debug test passed: {} ({} ms)", testCase.name(), duration.toMillis());
                 return TestResult.passed(testCase.name(), duration);
             }
 
             Throwable rootCause = unwrap(throwable);
             if (rootCause instanceof TimeoutException) {
-                GrapheneDebugClient.LOGGER.error(
+                LOGGER.error(
                         "Graphene debug test timed out: {} after {} ms",
                         testCase.name(),
                         duration.toMillis(),
                         rootCause
                 );
             } else {
-                GrapheneDebugClient.LOGGER.error("Graphene debug test failed: {} ({} ms)", testCase.name(), duration.toMillis(), rootCause);
+                LOGGER.error("Graphene debug test failed: {} ({} ms)", testCase.name(), duration.toMillis(), rootCause);
             }
             return TestResult.failed(testCase.name(), duration, rootCause);
         });
@@ -262,7 +266,7 @@ public final class GrapheneDebugTestRunner {
             return CompletableFuture.failedFuture(rootCause);
         }
 
-        GrapheneDebugClient.LOGGER.warn(
+        LOGGER.warn(
                 "Skipping JS mouse bridge assertions because bridge ready handshake was unavailable in this environment"
         );
 

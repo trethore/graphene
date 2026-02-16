@@ -4,14 +4,19 @@ import org.cef.browser.CefBrowser;
 import org.cef.browser.CefFrame;
 import org.cef.handler.CefLoadHandler;
 import org.cef.network.CefRequest;
-import tytoo.grapheneui.api.GrapheneCore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tytoo.grapheneui.api.surface.GrapheneLoadListener;
+import tytoo.grapheneui.internal.logging.GrapheneDebugLogger;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public final class GrapheneLoadEventBus {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneLoadEventBus.class);
+    private static final GrapheneDebugLogger DEBUG_LOGGER = GrapheneDebugLogger.of(GrapheneLoadEventBus.class);
+
     private final List<GrapheneLoadListener> listeners = new CopyOnWriteArrayList<>();
 
     public void register(GrapheneLoadListener listener) {
@@ -43,11 +48,13 @@ public final class GrapheneLoadEventBus {
     }
 
     private void dispatch(String eventName, ListenerCallback callback) {
+        DEBUG_LOGGER.debug("Dispatching Graphene load event {} to {} listener(s)", eventName, listeners.size());
+
         for (GrapheneLoadListener listener : listeners) {
             try {
                 callback.dispatch(listener);
             } catch (RuntimeException exception) {
-                GrapheneCore.LOGGER.error("Unhandled GrapheneLoadListener exception during {}", eventName, exception);
+                LOGGER.error("Unhandled GrapheneLoadListener exception during {}", eventName, exception);
             }
         }
     }

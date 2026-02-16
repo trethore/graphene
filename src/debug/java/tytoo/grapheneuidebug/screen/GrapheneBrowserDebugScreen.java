@@ -11,6 +11,8 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
 import org.jspecify.annotations.NonNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tytoo.grapheneui.api.GrapheneCore;
 import tytoo.grapheneui.api.bridge.GrapheneBridge;
 import tytoo.grapheneui.api.bridge.GrapheneBridgeSubscription;
@@ -25,6 +27,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public final class GrapheneBrowserDebugScreen extends Screen {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneBrowserDebugScreen.class);
+
     private static final String DEFAULT_URL = GrapheneClasspathUrls.asset(GrapheneDebugClient.ID, "graphene_test/welcome.html");
     private static String lastUrl = DEFAULT_URL;
     private final List<GrapheneBridgeSubscription> bridgeSubscriptions = new ArrayList<>();
@@ -187,7 +191,7 @@ public final class GrapheneBrowserDebugScreen extends Screen {
 
         GrapheneBridge bridge = webViewWidget.bridge();
         bridgeSubscriptions.add(bridge.onEvent("debug:event", (channel, payloadJson) ->
-                GrapheneDebugClient.LOGGER.info("Received bridge event on {}: {}", channel, payloadJson)
+                LOGGER.info("Received bridge event on {}: {}", channel, payloadJson)
         ));
         bridgeSubscriptions.add(bridge.onRequest("debug:echo", (_, payloadJson) ->
                 CompletableFuture.completedFuture(buildEchoResponse(payloadJson))
