@@ -3,8 +3,6 @@ package tytoo.grapheneuidebug.test;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
-import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +31,10 @@ public final class GrapheneDebugTestRunner {
     private static final Duration TEST_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration MOUSE_STATE_REQUEST_TIMEOUT = Duration.ofSeconds(2);
     private static final String ABOUT_BLANK_URL = "about:blank";
-    private static final String MOUSE_BRIDGE_TEST_URL = GrapheneClasspathUrls.asset(GrapheneDebugClient.ID, "graphene_test/welcome.html");
+    private static final String MOUSE_BRIDGE_TEST_URL = GrapheneClasspathUrls.asset(
+            GrapheneDebugClient.ID,
+            "graphene_test/pages/mouse-bridge.html"
+    );
     private static final String CHANNEL_EVENT = "graphene:test:event";
     private static final String CHANNEL_HANDLER_REQUEST = "graphene:test:sum";
     private static final String CHANNEL_PENDING_REQUEST = "graphene:test:pending";
@@ -42,30 +43,10 @@ public final class GrapheneDebugTestRunner {
     private GrapheneDebugTestRunner() {
     }
 
-    public static void run(FabricClientCommandSource source) {
-        runAllTests().whenComplete((results, throwable) -> {
-            if (throwable != null) {
-                Throwable rootCause = unwrap(throwable);
-                LOGGER.error("Graphene debug tests crashed before completion", rootCause);
-                sendFeedback(source, Component.translatable("command.graphene-ui-debug.test.fail", 0, 0));
-                return;
-            }
-
-            int passedCount = 0;
-            for (TestResult result : results) {
-                if (result.passed()) {
-                    passedCount++;
-                }
-            }
-
-            int totalCount = results.size();
-            if (passedCount == totalCount) {
-                sendFeedback(source, Component.translatable("command.graphene-ui-debug.test.pass", passedCount, totalCount));
-                return;
-            }
-
-            sendFeedback(source, Component.translatable("command.graphene-ui-debug.test.fail", passedCount, totalCount));
-        });
+    public static CompletableFuture<String> runAllTestsAsJson() {
+        Instant startedAt = Instant.now();
+        return runAllTests()
+                .handle((results, throwable) -> buildRunReport(startedAt, results, throwable));
     }
 
     private static CompletableFuture<List<TestResult>> runAllTests() {
@@ -86,6 +67,64 @@ public final class GrapheneDebugTestRunner {
         }
 
         return sequenceFuture;
+    }
+
+    private static String buildRunReport(Instant startedAt, List<TestResult> results, Throwable throwable) {
+        Instant finishedAt = Instant.now();
+        JsonObject report = new JsonObject();
+        report.addProperty("startedAt", startedAt.toString());
+        report.addProperty("finishedAt", finishedAt.toString());
+        report.addProperty("durationMs", Duration.between(startedAt, finishedAt).toMillis());
+
+        if (throwable != null) {
+            Throwable rootCause = unwrap(throwable);
+            LOGGER.error("Graphene debug tests crashed before completion", rootCause);
+            report.addProperty("ok", false);
+            report.addProperty("totalCount", 0);
+            report.addProperty("passedCount", 0);
+            report.addProperty("failedCount", 0);
+            report.add("results", new JsonArray());
+            report.add("error", toErrorJson(rootCause));
+            return report.toString();
+        }
+
+        JsonArray resultArray = new JsonArray();
+        int passedCount = 0;
+        for (TestResult result : results) {
+            if (result.passed()) {
+                passedCount++;
+            }
+
+            resultArray.add(toResultJson(result));
+        }
+
+        int totalCount = results.size();
+        int failedCount = totalCount - passedCount;
+        report.addProperty("ok", failedCount == 0);
+        report.addProperty("totalCount", totalCount);
+        report.addProperty("passedCount", passedCount);
+        report.addProperty("failedCount", failedCount);
+        report.add("results", resultArray);
+        return report.toString();
+    }
+
+    private static JsonObject toResultJson(TestResult result) {
+        JsonObject resultJson = new JsonObject();
+        resultJson.addProperty("name", result.name());
+        resultJson.addProperty("passed", result.passed());
+        resultJson.addProperty("durationMs", result.duration().toMillis());
+        if (!result.passed() && result.error() != null) {
+            resultJson.add("error", toErrorJson(result.error()));
+        }
+
+        return resultJson;
+    }
+
+    private static JsonObject toErrorJson(Throwable throwable) {
+        JsonObject errorJson = new JsonObject();
+        errorJson.addProperty("type", throwable.getClass().getSimpleName());
+        errorJson.addProperty("message", throwable.getMessage() == null ? "No error message provided" : throwable.getMessage());
+        return errorJson;
     }
 
     private static CompletableFuture<TestResult> runSingleTest(TestCase testCase) {
@@ -278,10 +317,6 @@ public final class GrapheneDebugTestRunner {
             }
             return null;
         });
-    }
-
-    private static void sendFeedback(FabricClientCommandSource source, Component feedback) {
-        McClient.execute(() -> source.sendFeedback(feedback));
     }
 
     private static Throwable unwrap(Throwable throwable) {

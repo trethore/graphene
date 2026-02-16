@@ -5,8 +5,5 @@
   "screen.graphene-ui-debug.back": "<-",
   "screen.graphene-ui-debug.reload": "R",
   "screen.graphene-ui-debug.forward": "->",
-  "screen.graphene-ui-debug.devtools": "DevTools",
-  "command.graphene-ui-debug.test.started": "Graphene tests started...",
-  "command.graphene-ui-debug.test.pass": "Graphene tests: PASS (%s/%s)",
-  "command.graphene-ui-debug.test.fail": "Graphene tests: FAIL (%s/%s)"
+  "screen.graphene-ui-debug.devtools": "DevTools"
 }
