@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+    <title>Graphene Widget Example</title>
+    <style>
+        :root {
+            color-scheme: light;
+            --background: #f3f5f8;
+            --card: #ffffff;
+            --text: #1a2230;
+            --muted: #657084;
+            --border: #d6dce8;
+            --accent: #1f6feb;
+            --accent-hover: #1a5ec8;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: var(--background);
+            color: var(--text);
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.4;
+        }
+
+        main {
+            width: min(980px, 100%);
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        h1 {
+            margin: 0 0 8px;
+            font-size: 1.75rem;
+        }
+
+        .intro {
+            margin: 0 0 20px;
+            color: var(--muted);
+        }
+
+        .widget-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 14px;
+        }
+
+        .widget-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .widget-card h2 {
+            margin: 0;
+            font-size: 1.05rem;
+        }
+
+        label {
+            font-size: 0.92rem;
+            color: var(--muted);
+        }
+
+        input,
+        select,
+        button {
+            width: 100%;
+            padding: 9px 10px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: #fff;
+            color: var(--text);
+            font: inherit;
+        }
+
+        input[type="range"] {
+            padding: 0;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .button-row button {
+            flex: 1;
+            border-color: var(--accent);
+            background: var(--accent);
+            color: #fff;
+            cursor: pointer;
+        }
+
+        .button-row button:hover {
+            background: var(--accent-hover);
+        }
+
+        .button-row .secondary {
+            border-color: var(--border);
+            background: #fff;
+            color: var(--text);
+        }
+
+        .widget-image {
+            width: 100%;
+            max-width: 96px;
+            height: auto;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: #fff;
+            padding: 8px;
+        }
+
+        .widget-note {
+            margin: 0;
+            color: var(--muted);
+            font-size: 0.88rem;
+        }
+    </style>
+</head>
+<body>
+<main>
+    <h1>Graphene HTML Widget Example</h1>
+    <p class="intro">A compact sample page showing common controls you can embed in a Graphene UI.</p>
+
+    <section class="widget-grid">
+        <article class="widget-card">
+            <h2>Inputs</h2>
+            <label for="name-input">Name</label>
+            <input id="name-input" placeholder="Graphene User" type="text">
+            <label for="number-input">Quantity</label>
+            <input id="number-input" max="64" min="1" type="number" value="8">
+            <label for="date-input">Date</label>
+            <input id="date-input" type="date">
+        </article>
+
+        <article class="widget-card">
+            <h2>Sliders</h2>
+            <label for="volume-slider">Volume: <span id="volume-value">40</span>%</label>
+            <input id="volume-slider" max="100" min="0" oninput="document.getElementById('volume-value').textContent = this.value" type="range" value="40">
+            <label for="speed-slider">Animation Speed: <span id="speed-value">2</span>x</label>
+            <input id="speed-slider" max="5" min="1" oninput="document.getElementById('speed-value').textContent = this.value" type="range" value="2">
+        </article>
+
+        <article class="widget-card">
+            <h2>Selects</h2>
+            <label for="theme-select">Theme</label>
+            <select id="theme-select" name="theme">
+                <option>Light</option>
+                <option>Dark</option>
+                <option>Auto</option>
+            </select>
+            <label for="quality-select">Quality</label>
+            <select id="quality-select" name="quality">
+                <option>Low</option>
+                <option selected>Medium</option>
+                <option>High</option>
+            </select>
+        </article>
+
+        <article class="widget-card">
+            <h2>Buttons</h2>
+            <div class="button-row">
+                <button type="button">Apply</button>
+                <button class="secondary" type="button">Reset</button>
+            </div>
+            <button class="secondary" type="button">Open Details</button>
+            <p class="widget-note">Use regular HTML button events from your page scripts.</p>
+        </article>
+
+        <article class="widget-card">
+            <h2>Image</h2>
+            <img alt="Graphene icon" class="widget-image" src="icon.png">
+            <p class="widget-note">Images can be loaded with relative paths from classpath assets.</p>
+        </article>
+    </section>
+</main>
+</body>
+</html>
