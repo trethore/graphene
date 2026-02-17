@@ -22,6 +22,7 @@ In short: Graphene gives Fabric mods a practical way to use web-powered interfac
 
 - Java: `25`
 - GPU: `NVIDIA GeForce GT 720` or better
+- For mac users, macOS 12 (Monterey) or later.
 
 ## Supported Platforms
 
@@ -33,6 +34,7 @@ In short: Graphene gives Fabric mods a practical way to use web-powered interfac
 
 - Windows 11 with `AZERTY` and `QWERTY` keyboard layouts
 - Linux (Wayland) with `AZERTY` and `QWERTY` keyboard layouts
+- MacOS 26 with `QWERTY` keyboard layout. (Thx to @Thinkseal for testing on macOS!)
 
 ## Installation
 
