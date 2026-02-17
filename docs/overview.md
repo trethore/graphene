@@ -39,10 +39,11 @@ flowchart LR
 
 ## Where To Go Next
 
-- Setup and version constraints: `docs/installation.md`
-- First UI and screen integration: `docs/quickstart.md`
-- Java <-> JS messaging contracts: `docs/bridge.md`
-- Rendering and sizing controls: `docs/advanced-surface.md`
+- Setup and version constraints: [installation.md](./installation.md)
+- First UI and screen integration: [quickstart.md](./quickstart.md)
+- Java <-> JS messaging contracts: [bridge.md](./bridge.md)
+- Rendering and sizing controls: [advanced-surface.md](./advanced-surface.md)
 
 ---
+
 Next: [Installation](installation.md)

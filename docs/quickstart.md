@@ -94,7 +94,7 @@ minecraft.setScreen(new MyWebScreen());
 
 ## Next Step
 
-Once your page renders, wire Java <-> JS messaging with `GrapheneBridge`: `docs/bridge.md`.
+Once your page renders, wire Java <-> JS messaging with `GrapheneBridge`: [bridge.md](bridge.md).
 
 ---
 Next: [Bridge](bridge.md)
