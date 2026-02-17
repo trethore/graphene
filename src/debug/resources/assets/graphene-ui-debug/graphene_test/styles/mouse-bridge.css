@@ -1,0 +1,27 @@
+body {
+    font-family: sans-serif;
+    margin: 16px;
+    line-height: 1.4;
+}
+
+#status {
+    margin: 12px 0;
+    padding: 10px;
+    border: 1px solid #888;
+    border-radius: 6px;
+    background: #f5f5f5;
+}
+
+#details {
+    margin-top: 12px;
+    padding: 10px;
+    border: 1px solid #bbb;
+    border-radius: 6px;
+    background: #fafafa;
+    white-space: pre-wrap;
+}
+
+.ok {
+    color: #0a6f26;
+    font-weight: 700;
+}

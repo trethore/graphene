@@ -1,11 +1,16 @@
 package tytoo.grapheneui.api.url;
 
 import net.minecraft.resources.Identifier;
+import tytoo.grapheneui.api.GrapheneCore;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
+/**
+ * Utility class for constructing and normalizing "classpath:" URLs for loading assets from the classpath.
+ * The URLs have the format "classpath:///assets/{namespace}/{path}".
+ */
 public final class GrapheneClasspathUrls {
     public static final String SCHEME = "classpath";
 
@@ -15,6 +20,16 @@ public final class GrapheneClasspathUrls {
     private GrapheneClasspathUrls() {
     }
 
+    /**
+     * Constructs a classpath URL for an asset with the specified path in the default namespace.
+     */
+    public static String asset(String path) {
+        return asset(GrapheneCore.ID, path);
+    }
+
+    /**
+     * Constructs a classpath URL for an asset with the specified namespace and path.
+     */
     public static String asset(String namespace, String path) {
         String normalizedNamespace = normalizeNamespace(namespace);
         String normalizedPath = normalizePath(path);

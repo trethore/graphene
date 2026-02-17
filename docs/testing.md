@@ -21,6 +21,10 @@ Current coverage includes:
   - URL build and normalization semantics
 - `BrowserSurfaceViewportMapperTest`
   - coordinate scaling/truncation behavior
+- `GrapheneDebugLogSelectorTest`
+  - wildcard and prefix selector matching
+  - comma-separated selector parsing
+  - blank/non-matching selector behavior
 
 ## In-Game Debug Smoke Tests (This Repository)
 
@@ -44,9 +48,13 @@ Use the following from repository root:
 ./gradlew compileJava
 ./gradlew build
 ./gradlew runDebugClient
+./gradlew runDebugClient -PgrapheneDebug=*
+./gradlew runDebugClient -PgrapheneDebug=tytoo.grapheneui.internal.bridge
 ```
 
 `runDebugClient` is the fastest way to validate full UI + bridge behavior manually.
+
+For logging verification, run one pass without `-PgrapheneDebug` and one with a package selector to confirm debug output is gated correctly.
 
 ## How To Extend Tests
 

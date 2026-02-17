@@ -66,6 +66,27 @@ public final class MyModClient implements ClientModInitializer {
 }
 ```
 
+Optional: pass a `GrapheneConfig` if you want a custom JCEF download directory or to load unpacked extensions:
+
+```java
+import java.nio.file.Path;
+import net.fabricmc.api.ClientModInitializer;
+import tytoo.grapheneui.api.GrapheneConfig;
+import tytoo.grapheneui.api.GrapheneCore;
+
+public final class MyModClient implements ClientModInitializer {
+    @Override
+    public void onInitializeClient() {
+        GrapheneConfig config = GrapheneConfig.builder()
+                .jcefDownloadPath(Path.of("./graphene-jcef"))
+                .extensionFolder(Path.of("./config/my-mod/extensions"))
+                .build();
+
+        GrapheneCore.init(config);
+    }
+}
+```
+
 If this is missing, runtime calls that need Graphene will fail with an initialization error.
 
 ## 5) Compatibility baseline

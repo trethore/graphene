@@ -11,21 +11,38 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
 import org.jspecify.annotations.NonNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tytoo.grapheneui.api.GrapheneCore;
 import tytoo.grapheneui.api.bridge.GrapheneBridge;
 import tytoo.grapheneui.api.bridge.GrapheneBridgeSubscription;
 import tytoo.grapheneui.api.url.GrapheneClasspathUrls;
 import tytoo.grapheneui.api.widget.GrapheneWebViewWidget;
 import tytoo.grapheneuidebug.GrapheneDebugClient;
+import tytoo.grapheneuidebug.test.GrapheneDebugTestRunner;
 
 import java.net.URI;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 public final class GrapheneBrowserDebugScreen extends Screen {
-    private static final String DEFAULT_URL = GrapheneClasspathUrls.asset(GrapheneDebugClient.ID, "graphene_test/welcome.html");
+    private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneBrowserDebugScreen.class);
+
+    private static final String DEFAULT_URL = GrapheneClasspathUrls.asset(GrapheneDebugClient.ID, "graphene_test/pages/welcome.html");
+    private static final String DEBUG_EVENT_CHANNEL = "debug:event";
+    private static final String DEBUG_ECHO_CHANNEL = "debug:echo";
+    private static final String DEBUG_SUM_CHANNEL = "debug:sum";
+    private static final String DEBUG_DEVTOOLS_STATUS_CHANNEL = "debug:devtools-status";
+    private static final String DEBUG_TESTS_RUN_CHANNEL = "debug:tests:run";
+    private static final String DEBUG_JAVA_TO_JS_TRIGGER_CHANNEL = "debug:bridge:trigger-java-to-js";
+    private static final String DEBUG_JAVA_TO_JS_EVENT_CHANNEL = "debug:bridge:java-event";
+    private static final String DEBUG_JAVA_TO_JS_REQUEST_CHANNEL = "debug:bridge:java-request";
+    private static final Duration DEBUG_JAVA_TO_JS_REQUEST_TIMEOUT = Duration.ofSeconds(3);
+
     private static String lastUrl = DEFAULT_URL;
     private final List<GrapheneBridgeSubscription> bridgeSubscriptions = new ArrayList<>();
     private GrapheneWebViewWidget webViewWidget;
@@ -79,6 +96,62 @@ public final class GrapheneBrowserDebugScreen extends Screen {
             // Ignore malformed payloads and treat them as null in debug helpers.
             return JsonNull.INSTANCE;
         }
+    }
+
+    private static Throwable unwrap(Throwable throwable) {
+        if (throwable instanceof CompletionException completionException && completionException.getCause() != null) {
+            return completionException.getCause();
+        }
+
+        return throwable;
+    }
+
+    private CompletableFuture<String> runJavaToJsRoundTrip(String payloadJson) {
+        if (webViewWidget == null) {
+            JsonObject response = new JsonObject();
+            response.addProperty("ok", false);
+            response.addProperty("error", "Web view is unavailable");
+            return CompletableFuture.completedFuture(response.toString());
+        }
+
+        GrapheneBridge bridge = webViewWidget.bridge();
+
+        JsonObject eventPayload = new JsonObject();
+        eventPayload.addProperty("kind", "java-event");
+        eventPayload.addProperty("sentAt", Instant.now().toString());
+        eventPayload.add("fromJsPayload", parsePayload(payloadJson));
+        bridge.emit(DEBUG_JAVA_TO_JS_EVENT_CHANNEL, eventPayload.toString());
+
+        JsonObject requestPayload = new JsonObject();
+        requestPayload.addProperty("kind", "java-request");
+        requestPayload.addProperty("sentAt", Instant.now().toString());
+        requestPayload.add("fromJsPayload", parsePayload(payloadJson));
+
+        return bridge.request(
+                        DEBUG_JAVA_TO_JS_REQUEST_CHANNEL,
+                        requestPayload.toString(),
+                        DEBUG_JAVA_TO_JS_REQUEST_TIMEOUT
+                )
+                .thenApply(responsePayloadJson -> {
+                    JsonObject response = new JsonObject();
+                    response.addProperty("ok", true);
+                    response.addProperty("kind", "java-to-js-roundtrip");
+                    response.addProperty("completedAt", Instant.now().toString());
+                    response.add("requestResponse", parsePayload(responsePayloadJson));
+                    return response.toString();
+                })
+                .exceptionally(throwable -> {
+                    Throwable rootCause = unwrap(throwable);
+                    JsonObject response = new JsonObject();
+                    response.addProperty("ok", false);
+                    response.addProperty("kind", "java-to-js-roundtrip");
+                    response.addProperty("errorType", rootCause.getClass().getSimpleName());
+                    response.addProperty(
+                            "errorMessage",
+                            rootCause.getMessage() == null ? "No error message provided" : rootCause.getMessage()
+                    );
+                    return response.toString();
+                });
     }
 
     private void openRemoteDevTools() {
@@ -186,14 +259,20 @@ public final class GrapheneBrowserDebugScreen extends Screen {
         clearBridgeSubscriptions();
 
         GrapheneBridge bridge = webViewWidget.bridge();
-        bridgeSubscriptions.add(bridge.onEvent("debug:event", (channel, payloadJson) ->
-                GrapheneDebugClient.LOGGER.info("Received bridge event on {}: {}", channel, payloadJson)
+        bridgeSubscriptions.add(bridge.onEvent(DEBUG_EVENT_CHANNEL, (channel, payloadJson) ->
+                LOGGER.info("Received bridge event on {}: {}", channel, payloadJson)
         ));
-        bridgeSubscriptions.add(bridge.onRequest("debug:echo", (_, payloadJson) ->
+        bridgeSubscriptions.add(bridge.onRequest(DEBUG_ECHO_CHANNEL, (_, payloadJson) ->
                 CompletableFuture.completedFuture(buildEchoResponse(payloadJson))
         ));
-        bridgeSubscriptions.add(bridge.onRequest("debug:sum", (_, payloadJson) ->
+        bridgeSubscriptions.add(bridge.onRequest(DEBUG_SUM_CHANNEL, (_, payloadJson) ->
                 CompletableFuture.completedFuture(buildSumResponse(payloadJson))
+        ));
+        bridgeSubscriptions.add(bridge.onRequest(DEBUG_TESTS_RUN_CHANNEL, (_, _) ->
+                GrapheneDebugTestRunner.runAllTestsAsJson()
+        ));
+        bridgeSubscriptions.add(bridge.onRequest(DEBUG_JAVA_TO_JS_TRIGGER_CHANNEL, (_, payloadJson) ->
+                runJavaToJsRoundTrip(payloadJson)
         ));
     }
 
@@ -214,6 +293,6 @@ public final class GrapheneBrowserDebugScreen extends Screen {
         payload.addProperty("opened", opened);
         payload.addProperty("debugPort", debugPort);
         payload.addProperty("openedAt", Instant.now().toString());
-        webViewWidget.bridge().emit("debug:devtools-status", payload.toString());
+        webViewWidget.bridge().emit(DEBUG_DEVTOOLS_STATUS_CHANNEL, payload.toString());
     }
 }

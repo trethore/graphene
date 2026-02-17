@@ -20,6 +20,8 @@ public final class MyModClient implements ClientModInitializer {
 }
 ```
 
+For custom setup, use `GrapheneCore.init(GrapheneConfig)` with `jcefDownloadPath(...)` and `extensionFolder(...)`.
+
 ## 2) Create A Screen With A WebView
 
 `GrapheneWebViewWidget` wraps a browser surface and handles rendering + input forwarding.

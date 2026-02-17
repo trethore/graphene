@@ -8,6 +8,11 @@ import java.awt.image.BufferedImage;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * Interface for rendering web content onto a Minecraft GUI. Implementations of this interface are responsible for
+ * drawing the web view's content onto the screen, handling updates, and managing resources.
+ */
+
 public interface GrapheneRenderer {
     void render(GrapheneRenderTarget renderTarget, int x, int y, int width, int height);
 

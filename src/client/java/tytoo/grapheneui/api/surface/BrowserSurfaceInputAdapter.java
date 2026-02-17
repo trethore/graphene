@@ -8,6 +8,11 @@ import tytoo.grapheneui.internal.browser.GrapheneWebViewInputController;
 import java.awt.*;
 import java.util.Objects;
 
+/**
+ * Adapter class that translates input events from a {@link BrowserSurface} to the underlying browser instance.
+ * It handles mouse movement, clicks, scrolls, and keyboard events, ensuring they are correctly forwarded to the browser.
+ * The adapter also manages focus state to ensure input is only sent when the surface is focused.
+ */
 public final class BrowserSurfaceInputAdapter {
     private static final int WHEEL_AMOUNT_PER_STEP = 120;
 

@@ -42,9 +42,36 @@ This runs runtime/surface/bridge smoke checks and reports pass/fail feedback.
 
 - Watch Graphene logs for initialization status and CEF startup args.
 - Bridge and load listener exceptions are logged with context.
+- Enable package-scoped debug traces in this repository with `runDebugClient`:
+  - `./gradlew runDebugClient -PgrapheneDebug=*`
+  - `./gradlew runDebugClient -PgrapheneDebug=tytoo.grapheneui.internal.cef`
+  - `./gradlew runDebugClient -PgrapheneDebug=tytoo.grapheneui.internal.bridge,tytoo.grapheneuidebug`
+- `grapheneDebug` selector semantics:
+  - `*` enables all Graphene debug logs.
+  - comma-separated package prefixes enable matching namespaces only.
+  - prefixes match exact package or subpackages.
+- When `-PgrapheneDebug=...` is set for `runDebugClient`, the run config now also enables `fabric.log.level=debug` so SLF4J debug lines are visible in console output.
+- Best setup for Graphene consumers (non-repo mods):
+  - pass a startup JVM property such as `-Dgraphene.debug=tytoo.grapheneui.internal.bridge` (or another package prefix).
+  - configure your logger backend to DEBUG only for `tytoo.grapheneui` so you do not enable global debug noise.
+  - Log4j2 example (`log4j2.xml`):
+
+```xml
+<Loggers>
+    <Logger name="tytoo.grapheneui" level="debug"/>
+    <Root level="info"/>
+</Loggers>
+```
+
+  - restart the game after changing `graphene.debug` because selector parsing happens at startup.
 - If page interactions fail silently, inspect both:
   - Minecraft log output
   - browser console in DevTools
+
+## Migration Note
+
+- `GrapheneCore.LOGGER` has been removed as an intentional API break in this repository.
+- Use class-local SLF4J loggers (`LoggerFactory.getLogger(CurrentClass.class)`) in consumer code.
 
 ## Quick Checks
 

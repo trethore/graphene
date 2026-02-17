@@ -1,6 +1,8 @@
 package tytoo.grapheneui.internal.bridge;
 
-import tytoo.grapheneui.api.GrapheneCore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import tytoo.grapheneui.internal.logging.GrapheneDebugLogger;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -9,6 +11,9 @@ import java.util.Objects;
 import java.util.function.Consumer;
 
 final class GrapheneBridgeOutboundQueue {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneBridgeOutboundQueue.class);
+    private static final GrapheneDebugLogger DEBUG_LOGGER = GrapheneDebugLogger.of(GrapheneBridgeOutboundQueue.class);
+
     private final Object lock = new Object();
     private final ArrayDeque<String> queuedMessages = new ArrayDeque<>();
     private final Consumer<String> dispatcher;
@@ -41,6 +46,7 @@ final class GrapheneBridgeOutboundQueue {
     void markNotReady() {
         synchronized (lock) {
             state = State.NOT_READY;
+            DEBUG_LOGGER.debug("Bridge outbound queue marked NOT_READY queued={}", queuedMessages.size());
         }
     }
 
@@ -65,9 +71,11 @@ final class GrapheneBridgeOutboundQueue {
                 try {
                     dispatcher.accept(message);
                 } catch (RuntimeException exception) {
-                    GrapheneCore.LOGGER.warn("Failed to dispatch queued Graphene bridge message", exception);
+                    LOGGER.warn("Failed to dispatch queued Graphene bridge message", exception);
                 }
             }
+
+            DEBUG_LOGGER.debug("Flushed {} queued bridge outbound message(s)", messagesToDispatch.size());
         }
     }
 
@@ -77,10 +85,12 @@ final class GrapheneBridgeOutboundQueue {
         synchronized (lock) {
             if (state == State.READY) {
                 dispatcher.accept(outboundPacketJson);
+                DEBUG_LOGGER.debug("Dispatched bridge outbound message immediately size={}", outboundPacketJson.length());
                 return;
             }
 
             queueMessageLocked(outboundPacketJson);
+            DEBUG_LOGGER.debug("Queued bridge outbound message size={} queued={}", outboundPacketJson.length(), queuedMessages.size());
         }
     }
 
@@ -98,6 +108,12 @@ final class GrapheneBridgeOutboundQueue {
 
         if (overflowPolicy == GrapheneBridgeQueueOverflowPolicy.DROP_NEWEST) {
             diagnostics.onOutboundMessageDropped(outboundPacketJson, overflowPolicy, maxQueuedMessages);
+            DEBUG_LOGGER.debug(
+                    "Dropped newest bridge outbound message size={} policy={} maxQueued={}",
+                    outboundPacketJson.length(),
+                    overflowPolicy,
+                    maxQueuedMessages
+            );
             return;
         }
 
@@ -105,6 +121,12 @@ final class GrapheneBridgeOutboundQueue {
             String droppedMessage = queuedMessages.removeFirst();
             queuedMessages.addLast(outboundPacketJson);
             diagnostics.onOutboundMessageDropped(droppedMessage, overflowPolicy, maxQueuedMessages);
+            DEBUG_LOGGER.debug(
+                    "Dropped oldest bridge outbound message droppedSize={} newSize={} maxQueued={}",
+                    droppedMessage.length(),
+                    outboundPacketJson.length(),
+                    maxQueuedMessages
+            );
             return;
         }
 

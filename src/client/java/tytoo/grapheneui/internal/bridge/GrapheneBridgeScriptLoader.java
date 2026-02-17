@@ -1,11 +1,15 @@
 package tytoo.grapheneui.internal.bridge;
 
+import tytoo.grapheneui.internal.logging.GrapheneDebugLogger;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 final class GrapheneBridgeScriptLoader {
+    private static final GrapheneDebugLogger DEBUG_LOGGER = GrapheneDebugLogger.of(GrapheneBridgeScriptLoader.class);
+
     private static final List<String> SCRIPT_RESOURCE_PATHS = List.of(
             "assets/graphene-ui/bridge/bridge.js",
             "assets/graphene-ui/bridge/mouse.js"
@@ -26,6 +30,8 @@ final class GrapheneBridgeScriptLoader {
             loadedScripts.add(loadSingleScript(classLoader, scriptResourcePath));
         }
 
+        DEBUG_LOGGER.debug("Loaded {} Graphene bridge bootstrap script(s)", loadedScripts.size());
+
         return List.copyOf(loadedScripts);
     }
 
@@ -37,6 +43,7 @@ final class GrapheneBridgeScriptLoader {
 
             return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException exception) {
+            DEBUG_LOGGER.debug("Failed to read bridge script resource {}", scriptResourcePath, exception);
             throw new IllegalStateException("Failed to read bridge script resource: " + scriptResourcePath, exception);
         }
     }

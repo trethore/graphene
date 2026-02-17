@@ -1,5 +1,8 @@
 package tytoo.grapheneui.api.bridge;
 
+/**
+ * Exception thrown when a request made through the Graphene Bridge fails.
+ */
 public final class GrapheneBridgeRequestException extends RuntimeException {
     private final String code;
     private final String requestId;

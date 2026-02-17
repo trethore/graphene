@@ -19,6 +19,16 @@ import java.awt.*;
 import java.util.Objects;
 import java.util.function.Consumer;
 
+/**
+ * Represents a browser surface that can be rendered onto Minecraft's GUI.
+ * <p>
+ * The surface size and resolution can be configured independently, allowing for flexible rendering options.
+ * The surface can also have an optional view box to control the portion of the browser content that is rendered.
+ * <p>
+ * The browser surface provides methods for navigation, loading URLs, and subscribing to load events.
+ * It also manages its own lifecycle and should be closed when no longer needed to free resources.
+ */
+
 @SuppressWarnings("unused") // Public API
 public final class BrowserSurface implements AutoCloseable {
     private static final int MIN_SIZE = 1;

@@ -4,10 +4,13 @@ import org.cef.browser.CefBrowser;
 import org.cef.callback.CefQueryCallback;
 import tytoo.grapheneui.api.bridge.GrapheneBridge;
 import tytoo.grapheneui.internal.browser.GrapheneBrowser;
+import tytoo.grapheneui.internal.logging.GrapheneDebugLogger;
 
 import java.util.*;
 
 public final class GrapheneBridgeRuntime {
+    private static final GrapheneDebugLogger DEBUG_LOGGER = GrapheneDebugLogger.of(GrapheneBridgeRuntime.class);
+
     private static final String BROWSER_NAME = "browser";
     private static final int MIN_BROWSER_IDENTIFIER = 1;
 
@@ -43,6 +46,13 @@ public final class GrapheneBridgeRuntime {
                 removeEndpointMappingsLocked(previousEndpoint);
             }
             cacheEndpointByIdentifierLocked(browser, newEndpoint);
+
+            DEBUG_LOGGER.debug(
+                    "Attached bridge endpoint browserId={} replaced={} trackedBrowsers={}",
+                    browserIdentifier(browser),
+                    previousEndpoint != null,
+                    endpointsByBrowser.size()
+            );
         }
 
         if (previousEndpoint != null) {
@@ -61,6 +71,13 @@ public final class GrapheneBridgeRuntime {
             if (endpoint != null) {
                 removeEndpointMappingsLocked(endpoint);
             }
+
+            DEBUG_LOGGER.debug(
+                    "Detaching bridge endpoint browserId={} found={} trackedBrowsers={}",
+                    browserIdentifier(browser),
+                    endpoint != null,
+                    endpointsByBrowser.size()
+            );
         }
 
         if (endpoint != null) {
@@ -72,6 +89,7 @@ public final class GrapheneBridgeRuntime {
         GrapheneBridgeEndpoint endpoint = endpoint(browser);
         if (endpoint != null) {
             endpoint.onPageLoadStart();
+            DEBUG_LOGGER.debug("Bridge onLoadStart browserId={}", browserIdentifier(browser));
         }
     }
 
@@ -79,6 +97,7 @@ public final class GrapheneBridgeRuntime {
         GrapheneBridgeEndpoint endpoint = endpoint(browser);
         if (endpoint != null) {
             endpoint.onNavigationRequested();
+            DEBUG_LOGGER.debug("Bridge onNavigationRequested browserId={}", browserIdentifier(browser));
         }
     }
 
@@ -86,6 +105,7 @@ public final class GrapheneBridgeRuntime {
         GrapheneBridgeEndpoint endpoint = endpoint(browser);
         if (endpoint != null) {
             endpoint.onPageLoadEnd();
+            DEBUG_LOGGER.debug("Bridge onLoadEnd browserId={}", browserIdentifier(browser));
         }
     }
 
@@ -96,21 +116,35 @@ public final class GrapheneBridgeRuntime {
         }
 
         endpoint.tryBootstrapFallback();
+        DEBUG_LOGGER.debug("Bridge ensureBootstrap browserId={}", browserIdentifier(browser));
     }
 
     public boolean onQuery(CefBrowser browser, String request, CefQueryCallback callback) {
         GrapheneBridgeEndpoint endpoint = endpoint(browser);
         if (endpoint == null) {
+            DEBUG_LOGGER.debug("Bridge query ignored because endpoint is missing browserId={}", browserIdentifier(browser));
             return false;
         }
 
-        return endpoint.handleQuery(request, callback);
+        boolean handled = endpoint.handleQuery(request, callback);
+        DEBUG_LOGGER.debugIfEnabled(logger -> {
+            int requestSize = request == null ? 0 : request.length();
+            logger.debug(
+                    "Bridge query routed browserId={} requestSize={} handled={}",
+                    browserIdentifier(browser),
+                    requestSize,
+                    handled
+            );
+        });
+
+        return handled;
     }
 
     public void onQueryCanceled(CefBrowser browser) {
         GrapheneBridgeEndpoint endpoint = endpoint(browser);
         if (endpoint != null) {
             endpoint.onQueryCanceled();
+            DEBUG_LOGGER.debug("Bridge query canceled browserId={}", browserIdentifier(browser));
         }
     }
 
@@ -120,6 +154,8 @@ public final class GrapheneBridgeRuntime {
             endpoints = new ArrayList<>(endpointsByBrowser.values());
             endpointsByBrowser.clear();
             endpointsByBrowserId.clear();
+
+            DEBUG_LOGGER.debug("Shutting down bridge runtime endpointCount={}", endpoints.size());
         }
 
         for (GrapheneBridgeEndpoint endpoint : endpoints) {

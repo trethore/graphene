@@ -15,6 +15,9 @@ val minecraftVersion = property("minecraft_version") as String
 val loaderVersion = property("loader_version") as String
 val fabricApiVersion = property("fabric_api_version") as String
 val jcefGithubVersion = property("jcefgithub_version") as String
+val grapheneDebugSelector = (findProperty("grapheneDebug") as String?)
+	?.trim()
+	?.takeIf { it.isNotEmpty() }
 val githubUsername: String? = (findProperty("gpr.user") as String?) ?: System.getenv("GITHUB_ACTOR")
 val githubToken: String? = (findProperty("gpr.key") as String?) ?: System.getenv("GITHUB_TOKEN")
 val githubRepository = (findProperty("gpr.repo") as String?) ?: System.getenv("GITHUB_REPOSITORY") ?: "trethore/graphene"
@@ -51,6 +54,7 @@ val sourceDeps: Configuration by configurations.creating {
 
 loom {
 	splitEnvironmentSourceSets() // so client source set is created
+	log4jConfigs.from(file("config/log4j2.graphene-debug.xml"))
 }
 
 val clientSS: NamedDomainObjectProvider<SourceSet> = sourceSets.named("client")
@@ -89,6 +93,10 @@ loom {
 			client()
 			source(sourceSets.named("debug").get())
 			ideConfigGenerated(true)
+			if (grapheneDebugSelector != null) {
+				property("graphene.debug", grapheneDebugSelector)
+				property("fabric.log.level", "debug")
+			}
 		}
 	}
 }
