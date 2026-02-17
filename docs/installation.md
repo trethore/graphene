@@ -98,7 +98,7 @@ Current Graphene baseline:
 - Minecraft: `1.21.11`
 - Fabric Loader: `0.18.4`
 - Fabric API: `0.141.3+1.21.11`
-- Java: `25`
+- Java: `21`
 - GPU: `NVIDIA GeForce GT 720` or better
 
 ## 6) Supported platforms

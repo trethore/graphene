@@ -25,7 +25,7 @@ final class GrapheneBridgePendingRequests {
                 pendingById.size()
         );
         responseFuture.orTimeout(timeout.toMillis(), TimeUnit.MILLISECONDS);
-        responseFuture.whenComplete((_, _) -> pendingById.remove(requestId));
+        responseFuture.whenComplete((ignoredResult, ignoredError) -> pendingById.remove(requestId));
         return responseFuture;
     }
 

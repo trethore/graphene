@@ -80,7 +80,7 @@ public final class GrapheneCefRuntime implements GrapheneRuntime {
     private static int browserIdentifier(GrapheneBrowser browser) {
         try {
             return browser.getIdentifier();
-        } catch (RuntimeException _) {
+        } catch (RuntimeException ignored) {
             return -1;
         }
     }
@@ -223,7 +223,7 @@ public final class GrapheneCefRuntime implements GrapheneRuntime {
             return;
         }
 
-        ClientLifecycleEvents.CLIENT_STOPPING.register(_ -> shutdown());
+        ClientLifecycleEvents.CLIENT_STOPPING.register(ignoredClient -> shutdown());
         Runtime.getRuntime().addShutdownHook(new Thread(this::shutdown, "graphene-cef-shutdown"));
         shutdownHookRegistered = true;
         DEBUG_LOGGER.debug("Registered CEF shutdown hooks");

@@ -227,7 +227,7 @@ public final class GrapheneCefInstaller {
     private static int findRandomPort() {
         try (ServerSocket serverSocket = new ServerSocket(0)) {
             return serverSocket.getLocalPort();
-        } catch (IOException _) {
+        } catch (IOException ignored) {
             return 9222;
         }
     }

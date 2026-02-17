@@ -141,7 +141,7 @@ public final class GrapheneDebugTestRunner {
             return CompletableFuture.completedFuture(TestResult.failed(testCase.name(), duration, exception));
         }
 
-        return testFuture.handle((_, throwable) -> {
+        return testFuture.handle((ignoredResult, throwable) -> {
             Duration duration = Duration.between(startedAt, Instant.now());
             if (throwable == null) {
                 LOGGER.info("Graphene debug test passed: {} ({} ms)", testCase.name(), duration.toMillis());
@@ -193,9 +193,9 @@ public final class GrapheneDebugTestRunner {
                 GrapheneBridge bridge = surface.bridge();
                 try (GrapheneBridgeSubscription readySubscription = bridge.onReady(() -> {
                 });
-                     GrapheneBridgeSubscription eventSubscription = bridge.onEvent(CHANNEL_EVENT, (_, _) -> {
+                     GrapheneBridgeSubscription eventSubscription = bridge.onEvent(CHANNEL_EVENT, (ignoredChannel, ignoredPayloadJson) -> {
                      });
-                     GrapheneBridgeSubscription requestSubscription = bridge.onRequest(CHANNEL_HANDLER_REQUEST, (_, payloadJson) ->
+                     GrapheneBridgeSubscription requestSubscription = bridge.onRequest(CHANNEL_HANDLER_REQUEST, (ignoredChannel, payloadJson) ->
                              CompletableFuture.completedFuture(payloadJson)
                      )) {
                     Objects.requireNonNull(readySubscription, "readySubscription");
@@ -235,7 +235,7 @@ public final class GrapheneDebugTestRunner {
                             return surface;
                         })
                         .thenCompose(GrapheneDebugTestRunner::runMouseBridgeSideButtons)
-                        .whenComplete((_, _) -> McClient.runOnMainThread(surface::close)));
+                        .whenComplete((ignoredSurface, ignoredError) -> McClient.runOnMainThread(surface::close)));
     }
 
     private static CompletableFuture<Void> runMouseBridgeSideButtons(BrowserSurface surface) {
@@ -247,7 +247,7 @@ public final class GrapheneDebugTestRunner {
                     JsonObject initialState = JsonParser.parseString(initialStateJson).getAsJsonObject();
                     requireState(initialState.get("eventCount").getAsInt() == 0, "Mouse bridge should start with zero events");
                 })
-                .thenCompose(_ -> McClient.supplyOnMainThread(() -> {
+                .thenCompose(ignoredInitialState -> McClient.supplyOnMainThread(() -> {
                     inputAdapter.setFocused(true);
                     for (int button = GLFW.GLFW_MOUSE_BUTTON_4; button <= GLFW.GLFW_MOUSE_BUTTON_8; button++) {
                         inputAdapter.mouseClicked(button, false, 8.0, 8.0, 32, 32);
@@ -255,7 +255,7 @@ public final class GrapheneDebugTestRunner {
                     }
                     return null;
                 }))
-                .thenCompose(_ -> requestMouseStateAsync(bridge))
+                .thenCompose(ignoredInputDispatch -> requestMouseStateAsync(bridge))
                 .thenAccept(finalStateJson -> {
                     JsonObject finalState = JsonParser.parseString(finalStateJson).getAsJsonObject();
                     requireState(finalState.get("eventCount").getAsInt() >= 10, "Mouse bridge should capture all side-button presses and releases");

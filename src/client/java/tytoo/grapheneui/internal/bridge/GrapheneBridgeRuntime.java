@@ -30,7 +30,7 @@ public final class GrapheneBridgeRuntime {
     private static int browserIdentifier(CefBrowser browser) {
         try {
             return browser.getIdentifier();
-        } catch (RuntimeException _) {
+        } catch (RuntimeException ignored) {
             return -1;
         }
     }

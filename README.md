@@ -20,7 +20,7 @@ In short: Graphene gives Fabric mods a practical way to use web-powered interfac
 
 ## Requirements
 
-- Java: `25`
+- Java: `21`
 - GPU: `NVIDIA GeForce GT 720` or better
 - For mac users, macOS 12 (Monterey) or later.
 

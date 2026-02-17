@@ -138,7 +138,7 @@ final class GrapheneJsDialogScreen extends Screen {
         if (isAlertDialog()) {
             int x = (this.width - BUTTON_WIDTH) / 2;
             this.addRenderableWidget(
-                    Button.builder(CommonComponents.GUI_OK, _ -> complete(true, EMPTY_VALUE))
+                    Button.builder(CommonComponents.GUI_OK, ignored -> complete(true, EMPTY_VALUE))
                             .bounds(x, y, BUTTON_WIDTH, BUTTON_HEIGHT)
                             .build()
             );
@@ -152,12 +152,12 @@ final class GrapheneJsDialogScreen extends Screen {
         Component confirmLabel = isPromptDialog() ? CommonComponents.GUI_OK : CommonComponents.GUI_YES;
 
         this.addRenderableWidget(
-                Button.builder(CommonComponents.GUI_CANCEL, _ -> complete(false, defaultValueResult()))
+                Button.builder(CommonComponents.GUI_CANCEL, ignored -> complete(false, defaultValueResult()))
                         .bounds(leftX, y, BUTTON_WIDTH, BUTTON_HEIGHT)
                         .build()
         );
         this.addRenderableWidget(
-                Button.builder(confirmLabel, _ -> complete(true, valueForAcceptance()))
+                Button.builder(confirmLabel, ignored -> complete(true, valueForAcceptance()))
                         .bounds(rightX, y, BUTTON_WIDTH, BUTTON_HEIGHT)
                         .build()
         );

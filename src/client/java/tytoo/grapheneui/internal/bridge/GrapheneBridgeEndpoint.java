@@ -156,7 +156,7 @@ public final class GrapheneBridgeEndpoint implements GrapheneBridge {
         try {
             injectBootstrapScript();
             DEBUG_LOGGER.debug("Injected bridge bootstrap on load end browserId={} url={}", browserIdentifier(), currentUrl());
-        } catch (RuntimeException _) {
+        } catch (RuntimeException ignored) {
             // Bridge bootstrap will be retried by the fallback path during rendering.
         }
     }
@@ -243,7 +243,7 @@ public final class GrapheneBridgeEndpoint implements GrapheneBridge {
         try {
             injectBootstrapScript();
             DEBUG_LOGGER.debug("Injected bridge bootstrap fallback browserId={} url={}", browserIdentifier(), currentUrl);
-        } catch (RuntimeException _) {
+        } catch (RuntimeException ignored) {
             // Bridge bootstrap will be retried by the fallback path during rendering.
         }
     }
@@ -296,7 +296,7 @@ public final class GrapheneBridgeEndpoint implements GrapheneBridge {
     private boolean browserHasDocument() {
         try {
             return browser.hasDocument();
-        } catch (RuntimeException _) {
+        } catch (RuntimeException ignored) {
             // Browser state is transient while creating/navigating.
             return false;
         }
@@ -305,7 +305,7 @@ public final class GrapheneBridgeEndpoint implements GrapheneBridge {
     private int browserIdentifier() {
         try {
             return browser.getIdentifier();
-        } catch (RuntimeException _) {
+        } catch (RuntimeException ignored) {
             return -1;
         }
     }
