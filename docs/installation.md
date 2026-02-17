@@ -66,7 +66,9 @@ public final class MyModClient implements ClientModInitializer {
 }
 ```
 
-Optional: pass a `GrapheneConfig` if you want a custom JCEF download directory or to load unpacked extensions:
+Optional: pass a `GrapheneConfig` if you want a custom JCEF download directory or to load unpacked extensions.
+`jcefDownloadPath(...)` is treated as a base directory, and Graphene installs JCEF under
+`<jcef-mvn-version>/<platform>`:
 
 ```java
 import java.nio.file.Path;

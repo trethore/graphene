@@ -20,7 +20,8 @@ public final class MyModClient implements ClientModInitializer {
 }
 ```
 
-For custom setup, use `GrapheneCore.init(GrapheneConfig)` with `jcefDownloadPath(...)` and `extensionFolder(...)`.
+For custom setup, use `GrapheneCore.init(GrapheneConfig)` with `jcefDownloadPath(...)` and
+`extensionFolder(...)`. Graphene stores JCEF in `<jcef-mvn-version>/<platform>` under the configured base path.
 
 ## 2) Create A Screen With A WebView
 
