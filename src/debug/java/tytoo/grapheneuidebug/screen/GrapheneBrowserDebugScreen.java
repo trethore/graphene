@@ -81,7 +81,7 @@ public final class GrapheneBrowserDebugScreen extends Screen {
             response.addProperty("b", right);
             response.addProperty("result", left + right);
             return response.toString();
-        } catch (RuntimeException _) {
+        } catch (RuntimeException ignored) {
             response.addProperty("ok", false);
             response.addProperty("error", "Payload must be a JSON object with numeric fields 'a' and 'b'.");
             return response.toString();
@@ -92,7 +92,7 @@ public final class GrapheneBrowserDebugScreen extends Screen {
         String value = payloadJson == null ? "null" : payloadJson;
         try {
             return JsonParser.parseString(value);
-        } catch (RuntimeException _) {
+        } catch (RuntimeException ignored) {
             // Ignore malformed payloads and treat them as null in debug helpers.
             return JsonNull.INSTANCE;
         }
@@ -187,25 +187,25 @@ public final class GrapheneBrowserDebugScreen extends Screen {
         addRenderableWidget(webViewWidget);
 
         backButton = addRenderableWidget(
-                Button.builder(Component.translatable("screen.graphene-ui-debug.back"), _ -> webViewWidget.goBack())
+                Button.builder(Component.translatable("screen.graphene-ui-debug.back"), ignoredButton -> webViewWidget.goBack())
                         .bounds(8, controlsY, 26, controlHeight)
                         .build()
         );
 
         addRenderableWidget(
-                Button.builder(Component.translatable("screen.graphene-ui-debug.reload"), _ -> webViewWidget.reload())
+                Button.builder(Component.translatable("screen.graphene-ui-debug.reload"), ignoredButton -> webViewWidget.reload())
                         .bounds(38, controlsY, 26, controlHeight)
                         .build()
         );
 
         forwardButton = addRenderableWidget(
-                Button.builder(Component.translatable("screen.graphene-ui-debug.forward"), _ -> webViewWidget.goForward())
+                Button.builder(Component.translatable("screen.graphene-ui-debug.forward"), ignoredButton -> webViewWidget.goForward())
                         .bounds(68, controlsY, 26, controlHeight)
                         .build()
         );
 
         addRenderableWidget(
-                Button.builder(Component.translatable("screen.graphene-ui-debug.devtools"), _ -> openRemoteDevTools())
+                Button.builder(Component.translatable("screen.graphene-ui-debug.devtools"), ignoredButton -> openRemoteDevTools())
                         .bounds(98, controlsY, 66, controlHeight)
                         .build()
         );
@@ -262,16 +262,16 @@ public final class GrapheneBrowserDebugScreen extends Screen {
         bridgeSubscriptions.add(bridge.onEvent(DEBUG_EVENT_CHANNEL, (channel, payloadJson) ->
                 LOGGER.info("Received bridge event on {}: {}", channel, payloadJson)
         ));
-        bridgeSubscriptions.add(bridge.onRequest(DEBUG_ECHO_CHANNEL, (_, payloadJson) ->
+        bridgeSubscriptions.add(bridge.onRequest(DEBUG_ECHO_CHANNEL, (ignoredChannel, payloadJson) ->
                 CompletableFuture.completedFuture(buildEchoResponse(payloadJson))
         ));
-        bridgeSubscriptions.add(bridge.onRequest(DEBUG_SUM_CHANNEL, (_, payloadJson) ->
+        bridgeSubscriptions.add(bridge.onRequest(DEBUG_SUM_CHANNEL, (ignoredChannel, payloadJson) ->
                 CompletableFuture.completedFuture(buildSumResponse(payloadJson))
         ));
-        bridgeSubscriptions.add(bridge.onRequest(DEBUG_TESTS_RUN_CHANNEL, (_, _) ->
+        bridgeSubscriptions.add(bridge.onRequest(DEBUG_TESTS_RUN_CHANNEL, (ignoredChannel, ignoredPayloadJson) ->
                 GrapheneDebugTestRunner.runAllTestsAsJson()
         ));
-        bridgeSubscriptions.add(bridge.onRequest(DEBUG_JAVA_TO_JS_TRIGGER_CHANNEL, (_, payloadJson) ->
+        bridgeSubscriptions.add(bridge.onRequest(DEBUG_JAVA_TO_JS_TRIGGER_CHANNEL, (ignoredChannel, payloadJson) ->
                 runJavaToJsRoundTrip(payloadJson)
         ));
     }

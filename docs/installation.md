@@ -66,7 +66,9 @@ public final class MyModClient implements ClientModInitializer {
 }
 ```
 
-Optional: pass a `GrapheneConfig` if you want a custom JCEF download directory or to load unpacked extensions:
+Optional: pass a `GrapheneConfig` if you want a custom JCEF download directory or to load unpacked extensions.
+`jcefDownloadPath(...)` is treated as a base directory, and Graphene installs JCEF under
+`<jcef-mvn-version>/<platform>`:
 
 ```java
 import java.nio.file.Path;
@@ -96,8 +98,9 @@ Current Graphene baseline:
 - Minecraft: `1.21.11`
 - Fabric Loader: `0.18.4`
 - Fabric API: `0.141.3+1.21.11`
-- Java: `25`
+- Java: `21`
 - GPU: `NVIDIA GeForce GT 720` or better
+- For mac users, macOS 12 (Monterey) or later.
 
 ## 6) Supported platforms
 
@@ -109,6 +112,7 @@ Current Graphene baseline:
 
 - Windows 11 with `AZERTY` and `QWERTY` keyboard layouts
 - Linux (Wayland) with `AZERTY` and `QWERTY` keyboard layouts
+- MacOS 26 with `QWERTY` keyboard layout. (Thx to @Thinkseal for testing on macOS!)
 
 ## 8) Quick verification
 
@@ -119,4 +123,5 @@ After wiring the dependency and initializer:
 3. Confirm the page renders and no `Graphene is not initialized` error appears.
 
 ---
+
 Next: [Quickstart](quickstart.md)

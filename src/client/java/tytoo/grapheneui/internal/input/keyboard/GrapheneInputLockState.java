@@ -24,7 +24,7 @@ final class GrapheneInputLockState {
     private static Optional<Boolean> readToolkitNumLockState() {
         try {
             return Optional.of(Toolkit.getDefaultToolkit().getLockingKeyState(KeyEvent.VK_NUM_LOCK));
-        } catch (Exception _) {
+        } catch (Exception ignored) {
             // Toolkit lock state is not available on all platforms/toolkits.
             return Optional.empty();
         }
@@ -70,7 +70,7 @@ final class GrapheneInputLockState {
             long windowHandle = McClient.mc().getWindow().handle();
             GLFW.glfwSetInputMode(windowHandle, GLFW.GLFW_LOCK_KEY_MODS, GLFW.GLFW_TRUE);
             lockKeyModifiersEnabled = true;
-        } catch (Exception _) {
+        } catch (Exception ignored) {
             // Lock key modifiers are optional at runtime.
         }
     }

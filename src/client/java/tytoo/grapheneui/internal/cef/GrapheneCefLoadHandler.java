@@ -30,7 +30,7 @@ final class GrapheneCefLoadHandler extends CefLoadHandlerAdapter {
     private static int browserIdentifier(CefBrowser browser) {
         try {
             return browser.getIdentifier();
-        } catch (RuntimeException _) {
+        } catch (RuntimeException ignored) {
             return -1;
         }
     }

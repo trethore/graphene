@@ -25,18 +25,10 @@ In this repository's debug mod:
 
 Recommended sample pages:
 
-- `classpath:///assets/graphene-ui-debug/graphene_test/welcome.html`
-- `classpath:///assets/graphene-ui-debug/graphene_test/example-bridge.html`
+- `classpath:///assets/graphene-ui-debug/graphene_test/pages/welcome.html`
+- `classpath:///assets/graphene-ui-debug/graphene_test/pages/tests.html`
 
 ![Debug screen overview](images/debug-screen-overview.png)
-
-## Runtime Smoke Tests (This Repo)
-
-The debug module also provides a client command:
-
-- `/graphene test`
-
-This runs runtime/surface/bridge smoke checks and reports pass/fail feedback.
 
 ## Logging Tips
 
@@ -63,7 +55,7 @@ This runs runtime/surface/bridge smoke checks and reports pass/fail feedback.
 </Loggers>
 ```
 
-  - restart the game after changing `graphene.debug` because selector parsing happens at startup.
+- restart the game after changing `graphene.debug` because selector parsing happens at startup.
 - If page interactions fail silently, inspect both:
   - Minecraft log output
   - browser console in DevTools
@@ -83,4 +75,5 @@ This runs runtime/surface/bridge smoke checks and reports pass/fail feedback.
 If those image files do not exist yet, capture and add them under `docs/images/`.
 
 ---
+
 Next: [Advanced Surface](advanced-surface.md)

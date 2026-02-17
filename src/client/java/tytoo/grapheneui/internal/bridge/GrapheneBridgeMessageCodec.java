@@ -31,7 +31,7 @@ final class GrapheneBridgeMessageCodec {
             }
 
             return packet;
-        } catch (RuntimeException _) {
+        } catch (RuntimeException ignored) {
             return null;
         }
     }

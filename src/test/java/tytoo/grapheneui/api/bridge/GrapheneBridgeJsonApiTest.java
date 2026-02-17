@@ -45,7 +45,7 @@ final class GrapheneBridgeJsonApiTest {
         TestBridge bridge = new TestBridge();
         AtomicReference<BridgeEvent> payloadRef = new AtomicReference<>();
 
-        try (var _ = bridge.onEventJson("debug:event", BridgeEvent.class, (_, payload) -> payloadRef.set(payload))) {
+        try (var ignoredSubscription = bridge.onEventJson("debug:event", BridgeEvent.class, (ignoredChannel, payload) -> payloadRef.set(payload))) {
             bridge.dispatchEvent("debug:event", "{\"kind\":\"ready\",\"ok\":true}");
         }
 
@@ -58,10 +58,10 @@ final class GrapheneBridgeJsonApiTest {
     @Test
     void onRequestJsonParsesRequestAndSerializesResponse() {
         TestBridge bridge = new TestBridge();
-        try (var _ = bridge.onRequestJson(
+        try (var ignoredSubscription = bridge.onRequestJson(
                 "debug:sum",
                 SumRequest.class,
-                (_, payload) -> CompletableFuture.completedFuture(new SumResponse(payload.a() + payload.b()))
+                (ignoredChannel, payload) -> CompletableFuture.completedFuture(new SumResponse(payload.a() + payload.b()))
         )) {
             String responseJson = bridge.dispatchRequest("debug:sum", "{\"a\":2,\"b\":5}").join();
             SumResponse response = GrapheneBridgeJson.fromJson(responseJson, SumResponse.class);
@@ -73,7 +73,7 @@ final class GrapheneBridgeJsonApiTest {
     @Test
     void onEventJsonFailsFastForMalformedPayload() {
         TestBridge bridge = new TestBridge();
-        bridge.onEventJson("debug:event", BridgeEvent.class, (_, _) -> {
+        bridge.onEventJson("debug:event", BridgeEvent.class, (ignoredChannel, ignoredPayload) -> {
         });
 
         assertThrows(IllegalArgumentException.class, () -> bridge.dispatchEvent("debug:event", "{"));

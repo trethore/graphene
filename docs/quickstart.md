@@ -20,7 +20,8 @@ public final class MyModClient implements ClientModInitializer {
 }
 ```
 
-For custom setup, use `GrapheneCore.init(GrapheneConfig)` with `jcefDownloadPath(...)` and `extensionFolder(...)`.
+For custom setup, use `GrapheneCore.init(GrapheneConfig)` with `jcefDownloadPath(...)` and
+`extensionFolder(...)`. Graphene stores JCEF in `<jcef-mvn-version>/<platform>` under the configured base path.
 
 ## 2) Create A Screen With A WebView
 
@@ -93,7 +94,7 @@ minecraft.setScreen(new MyWebScreen());
 
 ## Next Step
 
-Once your page renders, wire Java <-> JS messaging with `GrapheneBridge`: `docs/bridge.md`.
+Once your page renders, wire Java <-> JS messaging with `GrapheneBridge`: [bridge.md](bridge.md).
 
 ---
 Next: [Bridge](bridge.md)

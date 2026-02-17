@@ -33,7 +33,7 @@ public final class GrapheneDebugKeyBindings {
         }
 
         KeyBindingHelper.registerKeyBinding(OPEN_BROWSER);
-        ClientTickEvents.END_CLIENT_TICK.register(_ -> onClientTick());
+        ClientTickEvents.END_CLIENT_TICK.register(ignored -> onClientTick());
         registered = true;
     }
 

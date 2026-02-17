@@ -21,7 +21,7 @@ final class GrapheneCefMessageRouterHandler extends CefMessageRouterHandlerAdapt
     private static int browserIdentifier(CefBrowser browser) {
         try {
             return browser.getIdentifier();
-        } catch (RuntimeException _) {
+        } catch (RuntimeException ignored) {
             return -1;
         }
     }

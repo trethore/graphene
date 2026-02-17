@@ -39,7 +39,7 @@ final class GrapheneBridgeHandlerRegistry {
     GrapheneBridgeSubscription onEvent(String channel, GrapheneBridgeEventListener listener) {
         CopyOnWriteArrayList<GrapheneBridgeEventListener> listeners = eventListenersByChannel.computeIfAbsent(
                 channel,
-                _ -> new CopyOnWriteArrayList<>()
+                ignored -> new CopyOnWriteArrayList<>()
         );
         listeners.add(listener);
         DEBUG_LOGGER.debug("Registered bridge event listener channel={} totalForChannel={}", channel, listeners.size());

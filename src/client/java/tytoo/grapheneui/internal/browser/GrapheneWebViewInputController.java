@@ -157,7 +157,7 @@ public final class GrapheneWebViewInputController {
 
         try {
             bridge.emit(MOUSE_SIDE_BUTTON_CHANNEL, sideMouseButtonPayload(button, pressed));
-        } catch (IllegalStateException _) {
+        } catch (IllegalStateException ignored) {
             // Ignore events while the bridge is shutting down.
         }
     }

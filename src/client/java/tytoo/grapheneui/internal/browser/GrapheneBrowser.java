@@ -27,7 +27,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHandler, AutoCloseable {
-    private final long windowHandle = this.hashCode();
+    private static final long NO_WINDOW_HANDLE = 0L;
     private final GrapheneRenderer renderer;
     private final boolean transparent;
     private final GrapheneInputBridge inputBridge = new GrapheneInputBridge();
@@ -349,7 +349,7 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
         }
 
         if (getParentBrowser() == null) {
-            createBrowser(getClient(), windowHandle, getUrl(), true, transparent, null, getRequestContext());
+            createBrowser(getClient(), NO_WINDOW_HANDLE, getUrl(), true, transparent, null, getRequestContext());
         }
     }
 
