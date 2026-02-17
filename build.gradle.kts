@@ -1,6 +1,12 @@
+import org.gradle.api.JavaVersion
 import org.gradle.api.attributes.Category
 import org.gradle.api.attributes.DocsType
+import org.gradle.api.provider.Provider
+import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.testing.Test
+import org.gradle.jvm.toolchain.JavaLauncher
+import org.gradle.jvm.toolchain.JavaLanguageVersion
+import org.gradle.jvm.toolchain.JavaToolchainService
 import tytoo.graphene.UnpackSourcesTask
 
 plugins {
@@ -15,6 +21,7 @@ val minecraftVersion = property("minecraft_version") as String
 val loaderVersion = property("loader_version") as String
 val fabricApiVersion = property("fabric_api_version") as String
 val jcefGithubVersion = property("jcefgithub_version") as String
+val javaLanguageVersion: JavaLanguageVersion = JavaLanguageVersion.of(21)
 val grapheneDebugSelector = (findProperty("grapheneDebug") as String?)
 	?.trim()
 	?.takeIf { it.isNotEmpty() }
@@ -119,10 +126,6 @@ dependencies {
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
-tasks.withType<Test>().configureEach {
-	useJUnitPlatform()
-}
-
 tasks.withType<ProcessResources>().configureEach {
 	inputs.property("version", project.version)
 	filesMatching("fabric.mod.json") {
@@ -131,11 +134,30 @@ tasks.withType<ProcessResources>().configureEach {
 }
 
 tasks.withType<JavaCompile>().configureEach {
-	options.release.set(21)
+	options.release.set(javaLanguageVersion.asInt())
 }
 
 java {
+	toolchain {
+		languageVersion.set(javaLanguageVersion)
+	}
+	sourceCompatibility = JavaVersion.toVersion(javaLanguageVersion.asInt())
+	targetCompatibility = JavaVersion.toVersion(javaLanguageVersion.asInt())
 	withSourcesJar()
+}
+
+val javaToolchainService: JavaToolchainService = extensions.getByType(JavaToolchainService::class.java)
+val javaLauncherProvider: Provider<JavaLauncher> = javaToolchainService.launcherFor {
+	languageVersion.set(javaLanguageVersion)
+}
+
+tasks.withType<Test>().configureEach {
+	useJUnitPlatform()
+	javaLauncher.set(javaLauncherProvider)
+}
+
+tasks.withType<JavaExec>().configureEach {
+	javaLauncher.set(javaLauncherProvider)
 }
 
 tasks.jar {
