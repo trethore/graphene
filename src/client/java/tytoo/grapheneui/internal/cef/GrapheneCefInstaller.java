@@ -65,6 +65,11 @@ public final class GrapheneCefInstaller {
 
     private static void configureRuntimePaths(CefAppBuilder cefAppBuilder, File installDir) {
         String installPath = installDir.getAbsolutePath();
+
+        if (GraphenePlatform.isMac()) {
+            return;
+        }
+
         cefAppBuilder.getCefSettings().resources_dir_path = installPath;
         cefAppBuilder.getCefSettings().locales_dir_path = installPath + File.separator + "locales";
 
