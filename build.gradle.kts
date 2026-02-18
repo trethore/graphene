@@ -21,6 +21,7 @@ val minecraftVersion = property("minecraft_version") as String
 val loaderVersion = property("loader_version") as String
 val fabricApiVersion = property("fabric_api_version") as String
 val jcefGithubVersion = property("jcefgithub_version") as String
+val junitVersion = property("junit_version") as String
 val javaLanguageVersion: JavaLanguageVersion = JavaLanguageVersion.of(21)
 val grapheneDebugSelector = (findProperty("grapheneDebug") as String?)
 	?.trim()
@@ -113,14 +114,17 @@ dependencies {
 	minecraft("com.mojang:minecraft:${minecraftVersion}")
 	mappings(loom.officialMojangMappings())
 	modImplementation("net.fabricmc:fabric-loader:${loaderVersion}")
-	implementation("me.tytoo:jcefgithub:${jcefGithubVersion}:all-relocated")
+	implementation("me.tytoo:jcefgithub:${jcefGithubVersion}:all-relocated") {
+		isTransitive = false
+	}
+
 	include("me.tytoo:jcefgithub:${jcefGithubVersion}:all-relocated")
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation("net.fabricmc.fabric-api:fabric-api:${fabricApiVersion}")
 	sourceDeps("me.tytoo:jcefgithub:${jcefGithubVersion}:all-relocated")
 
-	testImplementation(platform("org.junit:junit-bom:6.0.0"))
+	testImplementation(platform("org.junit:junit-bom:${junitVersion}"))
 	testImplementation("org.junit.jupiter:junit-jupiter")
 	testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
