@@ -113,12 +113,12 @@ dependencies {
 	minecraft("com.mojang:minecraft:${minecraftVersion}")
 	mappings(loom.officialMojangMappings())
 	modImplementation("net.fabricmc:fabric-loader:${loaderVersion}")
-	implementation("me.tytoo:jcefgithub:${jcefGithubVersion}")
-	include("me.tytoo:jcefgithub:${jcefGithubVersion}")
+	implementation("me.tytoo:jcefgithub:${jcefGithubVersion}:all-relocated")
+	include("me.tytoo:jcefgithub:${jcefGithubVersion}:all-relocated")
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation("net.fabricmc.fabric-api:fabric-api:${fabricApiVersion}")
-	sourceDeps("me.tytoo:jcefgithub:${jcefGithubVersion}")
+	sourceDeps("me.tytoo:jcefgithub:${jcefGithubVersion}:all-relocated")
 
 	testImplementation(platform("org.junit:junit-bom:6.0.0"))
 	testImplementation("org.junit.jupiter:junit-jupiter")
