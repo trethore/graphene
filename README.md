@@ -53,7 +53,7 @@ Graphene is published on GitHub Packages. Check the latest available version her
 
 ### Add Graphene to a Fabric Minecraft Gradle project
 
-Use Fabric Loom's `modImplementation` configuration:
+Primary model (recommended): keep Graphene as a separate mod dependency.
 
 ```kotlin
 repositories {
@@ -71,6 +71,20 @@ dependencies {
     modImplementation("tytoo.grapheneui:graphene-ui:<version>")
 }
 ```
+
+In your `fabric.mod.json`, declare:
+
+```json
+{
+  "depends": {
+    "graphene-ui": ">=<version>"
+  }
+}
+```
+
+At runtime, place both jars in `mods/`: your mod jar and `graphene-ui-<version>.jar`.
+
+Jar-in-jar embedding is also possible, but it is not the preferred default. See [docs/installation.md](docs/installation.md) for the trade-offs and setup.
 
 ### Initialize Graphene in your mod
 

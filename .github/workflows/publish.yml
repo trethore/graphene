@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 jobs:
@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: validate gradle wrapper
         uses: gradle/actions/wrapper-validation@v4
       - name: setup jdk
@@ -21,8 +23,52 @@ jobs:
           distribution: 'microsoft'
       - name: make gradle wrapper executable
         run: chmod +x ./gradlew
+      - name: resolve release metadata
+        id: metadata
+        run: |
+          mod_version="$(awk -F= '/^mod_version=/{print $2}' gradle.properties)"
+          archives_base_name="$(awk -F= '/^archives_base_name=/{print $2}' gradle.properties)"
+          tag="v${mod_version}"
+          release_jar="build/libs/${archives_base_name}-${mod_version}.jar"
+          sources_jar="build/libs/${archives_base_name}-${mod_version}-sources.jar"
+
+          echo "mod_version=${mod_version}" >> "$GITHUB_OUTPUT"
+          echo "archives_base_name=${archives_base_name}" >> "$GITHUB_OUTPUT"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "release_jar=${release_jar}" >> "$GITHUB_OUTPUT"
+          echo "sources_jar=${sources_jar}" >> "$GITHUB_OUTPUT"
       - name: publish to github packages
         env:
           GITHUB_ACTOR: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./gradlew publish
+      - name: build release notes
+        env:
+          RELEASE_TAG: ${{ steps.metadata.outputs.tag }}
+        run: |
+          previous_tag="$(git tag --sort=-creatordate | grep -v "^${RELEASE_TAG}$" | head -n 1 || true)"
+
+          if [ -n "${previous_tag}" ]; then
+            commit_list="$(git log --pretty=format:'- %s' "${previous_tag}..HEAD")"
+          else
+            commit_list="$(git log --pretty=format:'- %s')"
+          fi
+
+          if [ -z "${commit_list}" ]; then
+            commit_list="- No new commits since the previous release."
+          fi
+
+          {
+            echo "## Patch Notes"
+            echo
+            echo "${commit_list}"
+          } > release-notes.md
+      - name: create github release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.metadata.outputs.tag }}
+          name: Graphene ${{ steps.metadata.outputs.mod_version }}
+          body_path: release-notes.md
+          files: |
+            ${{ steps.metadata.outputs.release_jar }}
+            ${{ steps.metadata.outputs.sources_jar }}

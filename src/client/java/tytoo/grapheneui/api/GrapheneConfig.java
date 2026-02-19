@@ -29,14 +29,6 @@ public final class GrapheneConfig {
         return new Builder();
     }
 
-    public Path jcefDownloadPath() {
-        return jcefDownloadPath;
-    }
-
-    public Optional<Path> extensionFolder() {
-        return Optional.ofNullable(extensionFolder);
-    }
-
     private static Path normalizePath(Path path, String argumentName) {
         Path validatedPath = Objects.requireNonNull(path, argumentName).normalize();
         if (validatedPath.toString().isBlank()) {
@@ -44,6 +36,14 @@ public final class GrapheneConfig {
         }
 
         return validatedPath;
+    }
+
+    public Path jcefDownloadPath() {
+        return jcefDownloadPath;
+    }
+
+    public Optional<Path> extensionFolder() {
+        return Optional.ofNullable(extensionFolder);
     }
 
     public static final class Builder {
