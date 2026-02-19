@@ -1,12 +1,17 @@
 # Installation
 
-Graphene is published on GitHub Packages and consumed as a normal Fabric mod dependency.
+Graphene is published on GitHub Packages and released as a ready-to-use remapped Fabric mod jar.
+The primary integration model is to depend on Graphene as a separate mod in `mods/`.
 
 ## 1) Get the latest version
 
 Check the package page for the newest release:
 
 - https://github.com/trethore/graphene/packages
+
+Release artifacts (remapped jar + sources jar) are also published here:
+
+- https://github.com/trethore/graphene/releases
 
 Dependency coordinates:
 
@@ -25,7 +30,7 @@ gpr.key=YOUR_GITHUB_TOKEN
 
 Your token should have `read:packages` permission.
 
-## 3) Add the repository and dependency (Fabric Loom)
+## 3) Primary setup: separate Graphene mod dependency (recommended)
 
 In your mod `build.gradle.kts`:
 
@@ -46,9 +51,41 @@ dependencies {
 }
 ```
 
-Use `modImplementation` (not plain `implementation`) so Fabric Loom treats Graphene as a mod dependency.
+In your mod `fabric.mod.json`, declare Graphene as a runtime dependency:
 
-## 4) Initialize Graphene in your client entrypoint
+```json
+{
+  "depends": {
+    "graphene-ui": ">=<version>"
+  }
+}
+```
+
+Runtime distribution for this model:
+
+1. Ship your mod jar.
+2. Install `graphene-ui-<version>.jar` in the same `mods/` folder.
+
+This is the best option for compatibility across modpacks and avoids bundling duplicate Graphene copies.
+
+## 4) Alternative setup: jar-in-jar (possible, but not preferred)
+
+If you want a single distributable mod jar, you can embed Graphene with jar-in-jar:
+
+```kotlin
+dependencies {
+    modImplementation("tytoo.grapheneui:graphene-ui:<version>")
+    include("tytoo.grapheneui:graphene-ui:<version>")
+}
+```
+
+Important trade-offs:
+
+- If multiple mods embed different Graphene versions, dependency resolution can fail.
+- Users should not additionally install a standalone `graphene-ui` jar when already embedding one.
+- Prefer the recommended separate-mod model unless you explicitly need single-jar distribution.
+
+## 5) Initialize Graphene in your client entrypoint
 
 Call `GrapheneCore.init()` once in your `ClientModInitializer`:
 
@@ -91,7 +128,7 @@ public final class MyModClient implements ClientModInitializer {
 
 If this is missing, runtime calls that need Graphene will fail with an initialization error.
 
-## 5) Compatibility baseline
+## 6) Compatibility baseline
 
 Current Graphene baseline:
 
@@ -102,19 +139,19 @@ Current Graphene baseline:
 - GPU: `NVIDIA GeForce GT 720` or better
 - For mac users, macOS 12 (Monterey) or later.
 
-## 6) Supported platforms
+## 7) Supported platforms
 
 - macOS: `arm64`, `amd64`
 - Linux: `arm64`, `amd64`
 - Windows: `amd64`
 
-## 7) Tested platforms
+## 8) Tested platforms
 
 - Windows 11 with `AZERTY` and `QWERTY` keyboard layouts
 - Linux (Wayland) with `AZERTY` and `QWERTY` keyboard layouts
 - MacOS 26 with `QWERTY` keyboard layout. (Thx to @Thinkseal for testing on macOS!)
 
-## 8) Quick verification
+## 9) Quick verification
 
 After wiring the dependency and initializer:
 
