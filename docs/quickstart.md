@@ -34,7 +34,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.NonNull;
 import tytoo.grapheneui.api.widget.GrapheneWebViewWidget;
-import tytoo.grapheneui.api.url.GrapheneClasspathUrls;
+import tytoo.grapheneui.api.url.GrapheneAppUrls;
 
 public final class MyWebScreen extends Screen {
     private GrapheneWebViewWidget webView;
@@ -51,7 +51,7 @@ public final class MyWebScreen extends Screen {
         int webWidth = width - margin * 2;
         int webHeight = height - margin * 2;
 
-        String url = GrapheneClasspathUrls.asset("my-mod-id", "web/index.html");
+        String url = GrapheneAppUrls.asset("my-mod-id", "web/index.html");
         webView = new GrapheneWebViewWidget(this, webX, webY, webWidth, webHeight, Component.empty(), url);
         addRenderableWidget(webView);
     }
@@ -73,13 +73,13 @@ Notes:
 For your own mod assets, use the namespace-aware helper:
 
 ```java
-String url = GrapheneClasspathUrls.asset("my-mod-id", "web/index.html");
+String url = GrapheneAppUrls.asset("my-mod-id", "web/index.html");
 ```
 
 If you are working in this repository's debug module, you can also load debug sample assets:
 
 ```java
-String url = GrapheneClasspathUrls.asset("graphene-ui-debug", "graphene_test/example-bridge.html");
+String url = GrapheneAppUrls.asset("graphene-ui-debug", "graphene_test/example-bridge.html");
 ```
 
 ## 4) Open The Screen

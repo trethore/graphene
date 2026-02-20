@@ -1,22 +1,22 @@
 # Assets And URLs
 
-Graphene registers a custom `classpath` scheme so browser pages can load resources directly from mod jars.
+Graphene registers custom schemes so browser pages can load resources directly from mod jars.
 
 ## URL Forms
 
 Recommended:
 
-- `classpath:///assets/<mod-id>/...`
-- `GrapheneClasspathUrls.asset("<mod-id>", "...")` for mod-owned assets under `assets/<mod-id>/...`
+- `app://assets/<mod-id>/...`
+- `GrapheneAppUrls.asset("<mod-id>", "...")` for mod-owned assets under `assets/<mod-id>/...`
 
 Examples:
 
 ```java
-String grapheneDebugAsset = GrapheneClasspathUrls.asset("graphene-ui-debug", "graphene_test/welcome.html");
-// classpath:///assets/graphene-ui-debug/graphene_test/welcome.html
+String grapheneDebugAsset = GrapheneAppUrls.asset("graphene-ui-debug", "graphene_test/welcome.html");
+// app://assets/graphene-ui-debug/graphene_test/welcome.html
 
-String myModAsset = GrapheneClasspathUrls.asset("my-mod-id", "web/index.html");
-// classpath:///assets/my-mod-id/web/index.html
+String myModAsset = GrapheneAppUrls.asset("my-mod-id", "web/index.html");
+// app://assets/my-mod-id/web/index.html
 ```
 
 ## Where To Put Files
@@ -38,12 +38,12 @@ src/client/resources/
 Then load with:
 
 ```java
-String url = GrapheneClasspathUrls.asset("my-mod-id", "web/index.html");
+String url = GrapheneAppUrls.asset("my-mod-id", "web/index.html");
 ```
 
 ## Relative Resource Loading
 
-If your page is loaded from `classpath:///assets/my-mod-id/web/index.html`, then relative paths inside HTML work naturally:
+If your page is loaded from `app://assets/my-mod-id/web/index.html`, then relative paths inside HTML work naturally:
 
 ```html
 <link rel="stylesheet" href="styles.css">
@@ -53,7 +53,7 @@ If your page is loaded from `classpath:///assets/my-mod-id/web/index.html`, then
 
 ## Path Normalization Notes
 
-Graphene normalizes classpath URLs by:
+Graphene normalizes asset URLs by:
 
 - stripping query string and fragment
 - decoding URL-encoded segments
@@ -61,7 +61,7 @@ Graphene normalizes classpath URLs by:
 
 Example:
 
-`classpath:///assets/graphene-ui/a%20b.html?x=1#top`
+`app://assets/graphene-ui/a%20b.html?x=1#top`
 
 resolves to resource path:
 
@@ -82,8 +82,13 @@ Unknown extensions default to `text/plain`.
 
 - Keep all web resources under one folder (`assets/<mod-id>/web/...`).
 - Prefer lowercase file names and explicit extensions.
-- Prefer `GrapheneClasspathUrls.asset("<mod-id>", "...")` for your mod namespace.
+- Prefer `GrapheneAppUrls.asset("<mod-id>", "...")` for your mod namespace.
 - Use an explicit namespace for bundled samples too (for example `graphene-ui-debug`).
+
+## Two Schemes
+
+- `GrapheneAppUrls` (`app://assets/...`) targets framework-heavy pages that need browser-like origin behavior.
+- `GrapheneClasspathUrls` (`classpath:///assets/...`) stays available for simple classpath file loading.
 
 ---
 Next: [Lifecycle](lifecycle.md)

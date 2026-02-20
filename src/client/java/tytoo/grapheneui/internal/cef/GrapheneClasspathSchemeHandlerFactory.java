@@ -12,6 +12,7 @@ import org.cef.network.CefRequest;
 import org.cef.network.CefResponse;
 import org.jspecify.annotations.NonNull;
 import tytoo.grapheneui.api.GrapheneCore;
+import tytoo.grapheneui.api.url.GrapheneAppUrls;
 import tytoo.grapheneui.api.url.GrapheneClasspathUrls;
 import tytoo.grapheneui.internal.logging.GrapheneDebugLogger;
 
@@ -73,6 +74,11 @@ public final class GrapheneClasspathSchemeHandlerFactory implements CefSchemeHan
         }
 
         private static String normalizeResourcePath(String url) {
+            String resourcePath = GrapheneAppUrls.normalizeResourcePath(url);
+            if (!resourcePath.isBlank()) {
+                return resourcePath;
+            }
+
             return GrapheneClasspathUrls.normalizeResourcePath(url);
         }
 

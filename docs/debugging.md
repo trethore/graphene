@@ -25,6 +25,11 @@ In this repository's debug mod:
 
 Recommended sample pages:
 
+- `app://assets/graphene-ui-debug/graphene_test/pages/welcome.html`
+- `app://assets/graphene-ui-debug/graphene_test/pages/tests.html`
+
+Alternative classpath URLs are also supported:
+
 - `classpath:///assets/graphene-ui-debug/graphene_test/pages/welcome.html`
 - `classpath:///assets/graphene-ui-debug/graphene_test/pages/tests.html`
 

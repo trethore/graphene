@@ -19,6 +19,8 @@ Current coverage includes:
   - clear behavior
 - `GrapheneClasspathUrlsTest`
   - URL build and normalization semantics
+- `GrapheneAppUrlsTest`
+  - secure scheme URL build and normalization semantics
 - `BrowserSurfaceViewportMapperTest`
   - coordinate scaling/truncation behavior
 - `GrapheneDebugLogSelectorTest`

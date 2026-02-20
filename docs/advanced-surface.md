@@ -24,7 +24,7 @@ Useful when you want predictable pixel density regardless of window scale.
 
 ```java
 BrowserSurface surface = BrowserSurface.builder()
-        .url("classpath:///assets/my-mod-id/web/index.html")
+        .url("app://assets/my-mod-id/web/index.html")
         .surfaceSize(400, 240)
         .resolution(800, 480)
         .build();

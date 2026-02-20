@@ -32,7 +32,7 @@ flowchart LR
 
 1. Your mod calls `GrapheneCore.init()` once during client init.
 2. You create a `GrapheneWebViewWidget` or `BrowserSurface`.
-3. A page loads through `classpath:///...` or any normal URL.
+3. A page loads through `app://assets/...`, `classpath:///assets/...`, or any normal URL.
 4. Graphene injects the JS bridge bootstrap script.
 5. JS sends a `ready` handshake.
 6. Bridge messages start flowing both ways.
