@@ -12,13 +12,14 @@ import org.cef.network.CefRequest;
 import org.cef.network.CefResponse;
 import org.jspecify.annotations.NonNull;
 import tytoo.grapheneui.api.GrapheneCore;
+import tytoo.grapheneui.api.url.GrapheneAppUrls;
 import tytoo.grapheneui.api.url.GrapheneClasspathUrls;
 import tytoo.grapheneui.internal.logging.GrapheneDebugLogger;
+import tytoo.grapheneui.internal.resource.GrapheneMimeTypes;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
-import java.util.Locale;
 
 public final class GrapheneClasspathSchemeHandlerFactory implements CefSchemeHandlerFactory {
     private static final GrapheneDebugLogger DEBUG_LOGGER = GrapheneDebugLogger.of(GrapheneClasspathSchemeHandlerFactory.class);
@@ -35,44 +36,21 @@ public final class GrapheneClasspathSchemeHandlerFactory implements CefSchemeHan
     private static final class ClasspathResourceHandler extends CefResourceHandlerAdapter {
         private static final String ASSETS_FALLBACK_PREFIX = ASSETS_PREFIX + GrapheneCore.ID + PATH_DELIMITER;
         private static final byte[] EMPTY_RESPONSE_BYTES = new byte[0];
-        private static final MimeTypeRule[] MIME_TYPE_RULES = {
-                new MimeTypeRule(".html", "text/html"),
-                new MimeTypeRule(".htm", "text/html"),
-                new MimeTypeRule(".js", "application/javascript"),
-                new MimeTypeRule(".mjs", "text/javascript"),
-                new MimeTypeRule(".css", "text/css"),
-                new MimeTypeRule(".json", "application/json"),
-                new MimeTypeRule(".png", "image/png"),
-                new MimeTypeRule(".jpg", "image/jpeg"),
-                new MimeTypeRule(".jpeg", "image/jpeg"),
-                new MimeTypeRule(".gif", "image/gif"),
-                new MimeTypeRule(".webp", "image/webp"),
-                new MimeTypeRule(".ico", "image/x-icon"),
-                new MimeTypeRule(".svg", "image/svg+xml"),
-                new MimeTypeRule(".woff", "font/woff"),
-                new MimeTypeRule(".woff2", "font/woff2"),
-                new MimeTypeRule(".ttf", "font/ttf"),
-                new MimeTypeRule(".otf", "font/otf"),
-                new MimeTypeRule(".wasm", "application/wasm")
-        };
-
         private byte[] responseBytes = EMPTY_RESPONSE_BYTES;
         private int readOffset;
         private boolean resourceFound;
         private String mimeType = MIME_TEXT_PLAIN;
 
         private static String resolveMimeType(String path) {
-            String normalizedPath = path.toLowerCase(Locale.ROOT);
-            for (MimeTypeRule mimeTypeRule : MIME_TYPE_RULES) {
-                if (normalizedPath.endsWith(mimeTypeRule.extension())) {
-                    return mimeTypeRule.mimeType();
-                }
-            }
-
-            return MIME_TEXT_PLAIN;
+            return GrapheneMimeTypes.resolve(path);
         }
 
         private static String normalizeResourcePath(String url) {
+            String resourcePath = GrapheneAppUrls.normalizeResourcePath(url);
+            if (!resourcePath.isBlank()) {
+                return resourcePath;
+            }
+
             return GrapheneClasspathUrls.normalizeResourcePath(url);
         }
 
@@ -157,9 +135,6 @@ public final class GrapheneClasspathSchemeHandlerFactory implements CefSchemeHan
             responseBytes = EMPTY_RESPONSE_BYTES;
             readOffset = 0;
             resourceFound = false;
-        }
-
-        private record MimeTypeRule(String extension, String mimeType) {
         }
 
         private record ResourceBytesResult(boolean found, byte[] bytes) {

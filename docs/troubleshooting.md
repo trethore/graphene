@@ -65,11 +65,11 @@ Fix:
 - Re-check `setViewBox(...)` usage.
 - Use `toBrowserPoint(...)` when forwarding custom input.
 
-## Blank Page / 404 For Classpath Asset
+## Blank Page / 404 For Asset URL
 
 Symptom:
 
-- Page fails to load from `classpath:///...`.
+- Page fails to load from `app://assets/...`.
 
 Likely cause:
 
@@ -78,8 +78,9 @@ Likely cause:
 Fix:
 
 - Confirm resource exists at `src/client/resources/assets/<mod-id>/...`.
-- Use `classpath:///assets/<mod-id>/...` URLs.
-- For Graphene debug bundled samples in this repository, use `GrapheneClasspathUrls.asset("graphene-ui-debug", "graphene_test/welcome.html")`.
+- Use `app://assets/<mod-id>/...` URLs.
+- Prefer `GrapheneAppUrls.asset("graphene-ui-debug", "graphene_test/welcome.html")` for bundled samples.
+- `classpath:///assets/<mod-id>/...` URLs remain available for simple file loading.
 
 ## Pending Requests Fail On Navigation
 

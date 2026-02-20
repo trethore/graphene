@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 import tytoo.grapheneui.api.GrapheneCore;
 import tytoo.grapheneui.api.bridge.GrapheneBridge;
 import tytoo.grapheneui.api.bridge.GrapheneBridgeSubscription;
-import tytoo.grapheneui.api.url.GrapheneClasspathUrls;
+import tytoo.grapheneui.api.url.GrapheneAppUrls;
 import tytoo.grapheneui.api.widget.GrapheneWebViewWidget;
 import tytoo.grapheneuidebug.GrapheneDebugClient;
 import tytoo.grapheneuidebug.test.GrapheneDebugTestRunner;
@@ -32,7 +32,7 @@ import java.util.concurrent.CompletionException;
 public final class GrapheneBrowserDebugScreen extends Screen {
     private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneBrowserDebugScreen.class);
 
-    private static final String DEFAULT_URL = GrapheneClasspathUrls.asset(GrapheneDebugClient.ID, "graphene_test/pages/welcome.html");
+    private static final String DEFAULT_URL = GrapheneAppUrls.asset(GrapheneDebugClient.ID, "graphene_test/pages/welcome.html");
     private static final String DEBUG_EVENT_CHANNEL = "debug:event";
     private static final String DEBUG_ECHO_CHANNEL = "debug:echo";
     private static final String DEBUG_SUM_CHANNEL = "debug:sum";

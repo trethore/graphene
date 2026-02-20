@@ -5,6 +5,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import org.cef.CefBrowserSettings;
 import org.cef.CefClient;
 import org.cef.browser.CefRequestContext;
+import tytoo.grapheneui.api.GrapheneCore;
 import tytoo.grapheneui.api.bridge.GrapheneBridge;
 import tytoo.grapheneui.api.render.GrapheneRenderTarget;
 import tytoo.grapheneui.api.render.GrapheneRenderer;
@@ -57,6 +58,8 @@ public final class BrowserSurface implements AutoCloseable {
                 McWindowScale.getScaleX(),
                 McWindowScale.getScaleY()
         );
+
+        GrapheneCore.start();
 
         CefClient cefClient = builder.client != null ? builder.client : services.runtimeInternal().requireClient();
         CefRequestContext requestContext = builder.requestContext != null ? builder.requestContext : CefRequestContext.getGlobalContext();

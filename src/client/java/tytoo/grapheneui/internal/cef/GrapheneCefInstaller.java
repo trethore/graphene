@@ -20,9 +20,9 @@ import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 public final class GrapheneCefInstaller {
@@ -75,7 +75,7 @@ public final class GrapheneCefInstaller {
     }
 
     private static Path resolveInstallPath(GrapheneConfig config) {
-        Path basePath = config.jcefDownloadPath().toAbsolutePath().normalize();
+        Path basePath = config.resolvedJcefDownloadPath().toAbsolutePath().normalize();
         String jcefMavenVersion = resolveJcefMavenVersion();
         String platformIdentifier = resolvePlatformIdentifier();
         return basePath.resolve(jcefMavenVersion).resolve(platformIdentifier).normalize();
@@ -140,24 +140,32 @@ public final class GrapheneCefInstaller {
     }
 
     private static void configureExtensionLoading(CefAppBuilder cefAppBuilder, GrapheneConfig config) {
-        Optional<Path> configuredExtensionFolder = config.extensionFolder();
-        if (configuredExtensionFolder.isEmpty()) {
+        List<Path> configuredExtensionFolders = config.extensionFolders();
+        if (configuredExtensionFolders.isEmpty()) {
             cefAppBuilder.addJcefArgs("--disable-extensions");
             return;
         }
 
-        Path extensionFolder = configuredExtensionFolder.orElseThrow().toAbsolutePath().normalize();
-        List<Path> extensionDirectories = collectExtensionDirectories(extensionFolder);
+        LinkedHashSet<Path> extensionDirectories = new LinkedHashSet<>();
+        for (Path extensionFolder : configuredExtensionFolders) {
+            Path normalizedExtensionFolder = extensionFolder.toAbsolutePath().normalize();
+            extensionDirectories.addAll(collectExtensionDirectories(normalizedExtensionFolder));
+        }
+
         if (extensionDirectories.isEmpty()) {
-            LOGGER.warn("No unpacked extensions found in {}, disabling extensions", extensionFolder);
+            LOGGER.warn("No unpacked extensions found in configured extension folders {}, disabling extensions", configuredExtensionFolders);
             cefAppBuilder.addJcefArgs("--disable-extensions");
             return;
         }
 
-        String extensionPaths = toExtensionArgument(extensionDirectories);
+        String extensionPaths = toExtensionArgument(extensionDirectories.stream().toList());
         cefAppBuilder.addJcefArgs("--disable-extensions-except=" + extensionPaths);
         cefAppBuilder.addJcefArgs("--load-extension=" + extensionPaths);
-        LOGGER.info("Configured {} unpacked extension(s) from {}", extensionDirectories.size(), extensionFolder);
+        LOGGER.info(
+                "Configured {} unpacked extension(s) from {} extension folder(s)",
+                extensionDirectories.size(),
+                configuredExtensionFolders.size()
+        );
     }
 
     private static List<Path> collectExtensionDirectories(Path extensionFolder) {

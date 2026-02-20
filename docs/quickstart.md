@@ -2,9 +2,9 @@
 
 This guide shows the minimal path to render a web UI in a Minecraft screen.
 
-## 1) Initialize Graphene Once
+## 1) Register Your Mod Once
 
-Call `GrapheneCore.init()` in your client initializer.
+Call `GrapheneCore.init("your-mod-id")` in your client initializer.
 
 ```java
 package com.example.mymod;
@@ -15,13 +15,35 @@ import tytoo.grapheneui.api.GrapheneCore;
 public final class MyModClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
-        GrapheneCore.init();
+        GrapheneCore.init("my-mod-id");
     }
 }
 ```
 
-For custom setup, use `GrapheneCore.init(GrapheneConfig)` with `jcefDownloadPath(...)` and
+For custom setup, use `GrapheneCore.init("my-mod-id", GrapheneConfig)` with `jcefDownloadPath(...)` and
 `extensionFolder(...)`. Graphene stores JCEF in `<jcef-mvn-version>/<platform>` under the configured base path.
+
+If your framework prefers `http://` origins, enable Graphene's loopback HTTP server:
+
+```java
+GrapheneConfig config = GrapheneConfig.builder()
+        .http(GrapheneHttpConfig.builder()
+                .bindHost("127.0.0.1")
+                .randomPortInRange(20_000, 21_000)
+                .spaFallback("/assets/my-mod-id/web/index.html")
+                .build())
+        .build();
+
+GrapheneCore.init("my-mod-id", config);
+```
+
+Inspect runtime HTTP server state:
+
+```java
+GrapheneHttpServer server = GrapheneCore.runtime().httpServer();
+int port = server.port();
+String baseUrl = server.baseUrl();
+```
 
 ## 2) Create A Screen With A WebView
 
@@ -34,7 +56,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import org.jspecify.annotations.NonNull;
 import tytoo.grapheneui.api.widget.GrapheneWebViewWidget;
-import tytoo.grapheneui.api.url.GrapheneClasspathUrls;
+import tytoo.grapheneui.api.url.GrapheneAppUrls;
 
 public final class MyWebScreen extends Screen {
     private GrapheneWebViewWidget webView;
@@ -51,7 +73,7 @@ public final class MyWebScreen extends Screen {
         int webWidth = width - margin * 2;
         int webHeight = height - margin * 2;
 
-        String url = GrapheneClasspathUrls.asset("my-mod-id", "web/index.html");
+        String url = GrapheneAppUrls.asset("my-mod-id", "web/index.html");
         webView = new GrapheneWebViewWidget(this, webX, webY, webWidth, webHeight, Component.empty(), url);
         addRenderableWidget(webView);
     }
@@ -73,13 +95,19 @@ Notes:
 For your own mod assets, use the namespace-aware helper:
 
 ```java
-String url = GrapheneClasspathUrls.asset("my-mod-id", "web/index.html");
+String url = GrapheneAppUrls.asset("my-mod-id", "web/index.html");
 ```
 
 If you are working in this repository's debug module, you can also load debug sample assets:
 
 ```java
-String url = GrapheneClasspathUrls.asset("graphene-ui-debug", "graphene_test/example-bridge.html");
+String url = GrapheneAppUrls.asset("graphene-ui-debug", "graphene_test/example-bridge.html");
+```
+
+When HTTP mode is enabled, build URLs from classpath assets with:
+
+```java
+String url = GrapheneHttpUrls.asset("my-mod-id", "web/index.html");
 ```
 
 ## 4) Open The Screen
