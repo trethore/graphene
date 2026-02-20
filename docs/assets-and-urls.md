@@ -90,5 +90,24 @@ Unknown extensions default to `text/plain`.
 - `GrapheneAppUrls` (`app://assets/...`) targets framework-heavy pages that need browser-like origin behavior.
 - `GrapheneClasspathUrls` (`classpath:///assets/...`) stays available for simple classpath file loading.
 
+## Loopback HTTP URLs
+
+Enable HTTP mode with `GrapheneHttpConfig`, then build runtime HTTP URLs:
+
+```java
+GrapheneConfig config = GrapheneConfig.builder()
+        .http(GrapheneHttpConfig.builder()
+                .bindHost("127.0.0.1")
+                .randomPortInRange(20_000, 21_000)
+                .spaFallback("/assets/my-mod-id/web/index.html")
+                .build())
+        .build();
+
+GrapheneCore.init(config);
+
+String url = GrapheneHttpUrls.asset("my-mod-id", "web/index.html");
+// http://127.0.0.1:<port>/assets/my-mod-id/web/index.html
+```
+
 ---
 Next: [Lifecycle](lifecycle.md)

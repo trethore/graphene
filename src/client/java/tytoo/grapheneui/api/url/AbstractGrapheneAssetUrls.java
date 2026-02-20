@@ -9,9 +9,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 abstract class AbstractGrapheneAssetUrls {
-    private static final String PATH_DELIMITER = "/";
     protected static final String ASSET_HOST = "assets";
-
+    private static final String PATH_DELIMITER = "/";
     private final String rootPrefix;
     private final String schemePrefix;
     private final String assetsPrefix;
@@ -48,6 +47,7 @@ abstract class AbstractGrapheneAssetUrls {
         try {
             uri = URI.create(value);
         } catch (IllegalArgumentException ignored) {
+            // Invalid URL format cannot map to a classpath resource path.
             return "";
         }
 

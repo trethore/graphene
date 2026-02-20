@@ -5,4 +5,6 @@ public interface GrapheneRuntime {
     boolean isInitialized();
 
     int getRemoteDebuggingPort();
+
+    GrapheneHttpServer httpServer();
 }

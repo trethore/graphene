@@ -10,15 +10,18 @@ public final class GrapheneConfig {
     private static final GrapheneConfig DEFAULT = builder().build();
     private static final String JCEF_DOWNLOAD_PATH_NAME = "jcefDownloadPath";
     private static final String EXTENSION_FOLDER_NAME = "extensionFolder";
+    private static final String HTTP_CONFIG_NAME = "httpConfig";
 
     private final Path jcefDownloadPath;
     private final Path extensionFolder;
+    private final GrapheneHttpConfig httpConfig;
 
     private GrapheneConfig(Builder builder) {
         this.jcefDownloadPath = normalizePath(builder.jcefDownloadPath, JCEF_DOWNLOAD_PATH_NAME);
         this.extensionFolder = builder.extensionFolder == null
                 ? null
                 : normalizePath(builder.extensionFolder, EXTENSION_FOLDER_NAME);
+        this.httpConfig = builder.httpConfig;
     }
 
     public static GrapheneConfig defaults() {
@@ -46,9 +49,14 @@ public final class GrapheneConfig {
         return Optional.ofNullable(extensionFolder);
     }
 
+    public Optional<GrapheneHttpConfig> http() {
+        return Optional.ofNullable(httpConfig);
+    }
+
     public static final class Builder {
         private Path jcefDownloadPath = DEFAULT_JCEF_DOWNLOAD_PATH;
         private Path extensionFolder;
+        private GrapheneHttpConfig httpConfig;
 
         private Builder() {
         }
@@ -73,6 +81,16 @@ public final class GrapheneConfig {
 
         public Builder disableExtensions() {
             this.extensionFolder = null;
+            return this;
+        }
+
+        public Builder http(GrapheneHttpConfig httpConfig) {
+            this.httpConfig = Objects.requireNonNull(httpConfig, HTTP_CONFIG_NAME);
+            return this;
+        }
+
+        public Builder disableHttp() {
+            this.httpConfig = null;
             return this;
         }
 

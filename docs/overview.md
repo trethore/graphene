@@ -9,6 +9,7 @@ It embeds Chromium (via JCEF) so you can render HTML/CSS/JS interfaces in-game, 
 
 - `GrapheneCore`: static entry point (`init()`, runtime access, surface manager)
 - `GrapheneRuntime`: runtime status/debug view exposed by `GrapheneCore.runtime()`
+- `GrapheneHttpServer`: optional loopback HTTP server view exposed by `GrapheneRuntime.httpServer()`
 - `BrowserSurface`: off-screen browser surface (size, resolution, viewBox, render APIs)
 - `GrapheneWebViewWidget`: Minecraft widget wrapper for a `BrowserSurface`
 - `GrapheneBridge`: Java <-> JS messaging API (events + request/response)

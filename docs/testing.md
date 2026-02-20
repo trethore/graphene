@@ -21,6 +21,12 @@ Current coverage includes:
   - URL build and normalization semantics
 - `GrapheneAppUrlsTest`
   - secure scheme URL build and normalization semantics
+- `GrapheneHttpUrlsTest`
+  - runtime guard for HTTP URL generation when server is disabled
+- `GrapheneHttpConfigTest`
+  - loopback host defaults, port selection strategy, and SPA fallback normalization
+- `GrapheneConfigTest`
+  - HTTP server config wiring through `GrapheneConfig.Builder`
 - `BrowserSurfaceViewportMapperTest`
   - coordinate scaling/truncation behavior
 - `GrapheneDebugLogSelectorTest`

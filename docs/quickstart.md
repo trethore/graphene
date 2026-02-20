@@ -23,6 +23,28 @@ public final class MyModClient implements ClientModInitializer {
 For custom setup, use `GrapheneCore.init(GrapheneConfig)` with `jcefDownloadPath(...)` and
 `extensionFolder(...)`. Graphene stores JCEF in `<jcef-mvn-version>/<platform>` under the configured base path.
 
+If your framework prefers `http://` origins, enable Graphene's loopback HTTP server:
+
+```java
+GrapheneConfig config = GrapheneConfig.builder()
+        .http(GrapheneHttpConfig.builder()
+                .bindHost("127.0.0.1")
+                .randomPortInRange(20_000, 21_000)
+                .spaFallback("/assets/my-mod-id/web/index.html")
+                .build())
+        .build();
+
+GrapheneCore.init(config);
+```
+
+Inspect runtime HTTP server state:
+
+```java
+GrapheneHttpServer server = GrapheneCore.runtime().httpServer();
+int port = server.port();
+String baseUrl = server.baseUrl();
+```
+
 ## 2) Create A Screen With A WebView
 
 `GrapheneWebViewWidget` wraps a browser surface and handles rendering + input forwarding.
@@ -80,6 +102,12 @@ If you are working in this repository's debug module, you can also load debug sa
 
 ```java
 String url = GrapheneAppUrls.asset("graphene-ui-debug", "graphene_test/example-bridge.html");
+```
+
+When HTTP mode is enabled, build URLs from classpath assets with:
+
+```java
+String url = GrapheneHttpUrls.asset("my-mod-id", "web/index.html");
 ```
 
 ## 4) Open The Screen

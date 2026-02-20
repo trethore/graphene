@@ -8,7 +8,6 @@ import net.minecraft.resources.Identifier;
  */
 public final class GrapheneClasspathUrls {
     public static final String SCHEME = "classpath";
-    public static final String ASSET_HOST = AbstractGrapheneAssetUrls.ASSET_HOST;
 
     private static final GrapheneClasspathUrlsSupport SUPPORT = new GrapheneClasspathUrlsSupport();
 

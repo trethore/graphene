@@ -9,13 +9,16 @@ import org.cef.CefClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tytoo.grapheneui.api.GrapheneConfig;
+import tytoo.grapheneui.api.GrapheneHttpConfig;
 import tytoo.grapheneui.api.bridge.GrapheneBridge;
+import tytoo.grapheneui.api.runtime.GrapheneHttpServer;
 import tytoo.grapheneui.api.runtime.GrapheneRuntime;
 import tytoo.grapheneui.internal.bridge.GrapheneBridgeOptions;
 import tytoo.grapheneui.internal.bridge.GrapheneBridgeRuntime;
 import tytoo.grapheneui.internal.browser.GrapheneBrowser;
 import tytoo.grapheneui.internal.browser.GrapheneBrowserSurfaceManager;
 import tytoo.grapheneui.internal.event.GrapheneLoadEventBus;
+import tytoo.grapheneui.internal.http.GrapheneHttpServerRuntime;
 import tytoo.grapheneui.internal.logging.GrapheneDebugLogger;
 import tytoo.grapheneui.internal.platform.GraphenePlatform;
 
@@ -41,6 +44,7 @@ public final class GrapheneCefRuntime implements GrapheneRuntime {
     private CefApp cefApp;
     private CefClient cefClient;
     private int remoteDebuggingPort = -1;
+    private GrapheneHttpServerRuntime httpServer = GrapheneHttpServerRuntime.disabled();
 
     public GrapheneCefRuntime(GrapheneBrowserSurfaceManager surfaceManager) {
         this(surfaceManager, GrapheneBridgeOptions.defaults());
@@ -81,6 +85,7 @@ public final class GrapheneCefRuntime implements GrapheneRuntime {
         try {
             return browser.getIdentifier();
         } catch (RuntimeException ignored) {
+            // Browser may already be disposed while diagnostics are logged.
             return -1;
         }
     }
@@ -97,6 +102,8 @@ public final class GrapheneCefRuntime implements GrapheneRuntime {
                 return;
             }
 
+            GrapheneHttpServerRuntime startedHttpServer = createHttpServerIfConfigured(validatedConfig);
+
             CefAppBuilder cefAppBuilder = GrapheneCefInstaller.createBuilder(validatedConfig);
             logStartupConfiguration(cefAppBuilder);
             GrapheneCefAppHandler appHandler = new GrapheneCefAppHandler();
@@ -105,19 +112,45 @@ public final class GrapheneCefRuntime implements GrapheneRuntime {
             try {
                 cefApp = cefAppBuilder.build();
             } catch (InterruptedException exception) {
+                startedHttpServer.close();
                 Thread.currentThread().interrupt();
                 throw new IllegalStateException(FAILED_INITIALIZATION_MESSAGE, exception);
             } catch (IOException | UnsupportedPlatformException | CefInitializationException exception) {
+                startedHttpServer.close();
                 throw new IllegalStateException(FAILED_INITIALIZATION_MESSAGE, exception);
+            } catch (RuntimeException exception) {
+                startedHttpServer.close();
+                throw exception;
             }
 
-            cefClient = cefApp.createClient();
-            GrapheneCefClientConfig.configure(cefClient, loadEventBus, bridgeRuntime);
-            remoteDebuggingPort = cefAppBuilder.getCefSettings().remote_debugging_port;
-            initialized = true;
+            try {
+                cefClient = cefApp.createClient();
+                GrapheneCefClientConfig.configure(cefClient, loadEventBus, bridgeRuntime);
+                remoteDebuggingPort = cefAppBuilder.getCefSettings().remote_debugging_port;
+                httpServer = startedHttpServer;
+                initialized = true;
+            } catch (RuntimeException exception) {
+                startedHttpServer.close();
+                if (cefClient != null) {
+                    cefClient.dispose();
+                }
+
+                cefApp.dispose();
+                awaitCefTermination();
+
+                cefClient = null;
+                cefApp = null;
+                httpServer = GrapheneHttpServerRuntime.disabled();
+                remoteDebuggingPort = -1;
+                initialized = false;
+                throw exception;
+            }
 
             registerShutdownHook();
             LOGGER.info("CEF runtime initialized on debug port {}", remoteDebuggingPort);
+            if (httpServer.isRunning()) {
+                LOGGER.info("Graphene HTTP server initialized at {}", httpServer.baseUrl());
+            }
         }
     }
 
@@ -184,6 +217,13 @@ public final class GrapheneCefRuntime implements GrapheneRuntime {
     }
 
     @Override
+    public GrapheneHttpServer httpServer() {
+        synchronized (lock) {
+            return httpServer;
+        }
+    }
+
+    @Override
     public boolean isInitialized() {
         synchronized (lock) {
             return initialized;
@@ -212,10 +252,29 @@ public final class GrapheneCefRuntime implements GrapheneRuntime {
 
             cefClient = null;
             cefApp = null;
+            httpServer.close();
+            httpServer = GrapheneHttpServerRuntime.disabled();
             remoteDebuggingPort = -1;
             initialized = false;
             LOGGER.info("CEF runtime disposed");
         }
+    }
+
+    private GrapheneHttpServerRuntime createHttpServerIfConfigured(GrapheneConfig config) {
+        return config.http()
+                .map(this::createHttpServer)
+                .orElseGet(GrapheneHttpServerRuntime::disabled);
+    }
+
+    private GrapheneHttpServerRuntime createHttpServer(GrapheneHttpConfig httpConfig) {
+        GrapheneHttpServerRuntime startedHttpServer = GrapheneHttpServerRuntime.start(httpConfig);
+        DEBUG_LOGGER.debug(
+                "Graphene HTTP server started: host={}, port={}, fallback={}",
+                startedHttpServer.host(),
+                startedHttpServer.port(),
+                startedHttpServer.spaFallbackResourcePath()
+        );
+        return startedHttpServer;
     }
 
     private void registerShutdownHook() {
