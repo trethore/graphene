@@ -4,66 +4,44 @@ import net.minecraft.resources.Identifier;
 import tytoo.grapheneui.api.GrapheneCore;
 import tytoo.grapheneui.api.runtime.GrapheneHttpServer;
 
-import java.util.Objects;
-
 /**
  * Utility class for constructing runtime HTTP URLs for classpath assets.
  */
 public final class GrapheneHttpUrls {
-    private static final String PATH_DELIMITER = "/";
+    private static final GrapheneHttpUrlsSupport SUPPORT = new GrapheneHttpUrlsSupport();
 
     private GrapheneHttpUrls() {
     }
 
     public static String asset(String path) {
-        return asset(GrapheneCore.ID, path);
+        return SUPPORT.asset(path);
     }
 
     public static String asset(String namespace, String path) {
-        String normalizedNamespace = normalizeNamespace(namespace);
-        String normalizedPath = normalizePath(path);
-        return requireHttpBaseUrl()
-                + PATH_DELIMITER
-                + GrapheneAppUrls.ASSET_HOST
-                + PATH_DELIMITER
-                + normalizedNamespace
-                + PATH_DELIMITER
-                + normalizedPath;
+        return SUPPORT.asset(namespace, path);
     }
 
     public static String asset(Identifier assetId) {
-        Identifier identifier = Objects.requireNonNull(assetId, "assetId");
-        return asset(identifier.getNamespace(), identifier.getPath());
+        return SUPPORT.asset(assetId);
     }
 
-    private static String requireHttpBaseUrl() {
-        GrapheneHttpServer server = GrapheneCore.runtime().httpServer();
-        if (!server.isRunning()) {
-            throw new IllegalStateException("Graphene HTTP server is not running. Configure GrapheneHttpConfig and call GrapheneCore.init().");
-        }
-
-        return server.baseUrl();
+    public static GrapheneAssetUrls assets() {
+        return SUPPORT;
     }
 
-    private static String normalizePath(String path) {
-        String normalizedPath = Objects.requireNonNull(path, "path").trim();
-        while (normalizedPath.startsWith(PATH_DELIMITER)) {
-            normalizedPath = normalizedPath.substring(1);
+    private static final class GrapheneHttpUrlsSupport extends AbstractGrapheneAssetUrls {
+        private static String requireHttpBaseUrl() {
+            GrapheneHttpServer server = GrapheneCore.runtime().httpServer();
+            if (!server.isRunning()) {
+                throw new IllegalStateException("Graphene HTTP server is not running. Configure GrapheneHttpConfig and call GrapheneCore.init().");
+            }
+
+            return server.baseUrl();
         }
 
-        return normalizedPath;
-    }
-
-    private static String normalizeNamespace(String namespace) {
-        String normalizedNamespace = Objects.requireNonNull(namespace, "namespace").trim();
-        while (normalizedNamespace.startsWith(PATH_DELIMITER)) {
-            normalizedNamespace = normalizedNamespace.substring(1);
+        @Override
+        protected String rootPrefix() {
+            return requireHttpBaseUrl() + PATH_DELIMITER + ASSET_HOST + PATH_DELIMITER;
         }
-
-        while (normalizedNamespace.endsWith(PATH_DELIMITER)) {
-            normalizedNamespace = normalizedNamespace.substring(0, normalizedNamespace.length() - 1);
-        }
-
-        return normalizedNamespace;
     }
 }

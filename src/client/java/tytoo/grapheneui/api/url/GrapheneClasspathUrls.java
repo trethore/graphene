@@ -18,29 +18,38 @@ public final class GrapheneClasspathUrls {
      * Constructs a classpath URL for an asset with the specified path in the default namespace.
      */
     public static String asset(String path) {
-        return SUPPORT.buildAssetUrl(path);
+        return SUPPORT.asset(path);
     }
 
     /**
      * Constructs a classpath URL for an asset with the specified namespace and path.
      */
     public static String asset(String namespace, String path) {
-        return SUPPORT.buildAssetUrl(namespace, path);
+        return SUPPORT.asset(namespace, path);
     }
 
     public static String asset(Identifier assetId) {
-        return SUPPORT.buildAssetUrl(assetId);
+        return SUPPORT.asset(assetId);
+    }
+
+    public static GrapheneAssetUrls assets() {
+        return SUPPORT;
     }
 
     public static String normalizeResourcePath(String url) {
         return SUPPORT.normalizeAssetResourcePath(url);
     }
 
-    private static final class GrapheneClasspathUrlsSupport extends AbstractGrapheneAssetUrls {
+    private static final class GrapheneClasspathUrlsSupport extends AbstractGrapheneSchemedAssetUrls {
         private static final String ROOT_PREFIX = SCHEME + ":///" + ASSET_HOST + "/";
 
         private GrapheneClasspathUrlsSupport() {
-            super(SCHEME, ROOT_PREFIX);
+            super(SCHEME);
+        }
+
+        @Override
+        protected String rootPrefix() {
+            return ROOT_PREFIX;
         }
     }
 }
