@@ -1,6 +1,7 @@
 package tytoo.grapheneui.api.url;
 
 import net.minecraft.resources.Identifier;
+import tytoo.grapheneui.api.GrapheneCore;
 
 /**
  * Utility class for constructing and normalizing "classpath:" URLs for loading assets from the classpath.
@@ -9,7 +10,7 @@ import net.minecraft.resources.Identifier;
 public final class GrapheneClasspathUrls {
     public static final String SCHEME = "classpath";
 
-    private static final GrapheneClasspathUrlsSupport SUPPORT = new GrapheneClasspathUrlsSupport();
+    private static final GrapheneClasspathUrlsSupport SUPPORT = new GrapheneClasspathUrlsSupport(GrapheneCore.ID);
 
     private GrapheneClasspathUrls() {
     }
@@ -36,6 +37,10 @@ public final class GrapheneClasspathUrls {
         return SUPPORT;
     }
 
+    public static GrapheneAssetUrls assets(String namespace) {
+        return new GrapheneClasspathUrlsSupport(namespace);
+    }
+
     public static String normalizeResourcePath(String url) {
         return SUPPORT.normalizeAssetResourcePath(url);
     }
@@ -43,8 +48,8 @@ public final class GrapheneClasspathUrls {
     private static final class GrapheneClasspathUrlsSupport extends AbstractGrapheneSchemedAssetUrls {
         private static final String ROOT_PREFIX = SCHEME + ":///" + ASSET_HOST + "/";
 
-        private GrapheneClasspathUrlsSupport() {
-            super(SCHEME);
+        private GrapheneClasspathUrlsSupport(String defaultNamespace) {
+            super(SCHEME, defaultNamespace);
         }
 
         @Override

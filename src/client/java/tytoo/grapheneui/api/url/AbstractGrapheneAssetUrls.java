@@ -1,19 +1,23 @@
 package tytoo.grapheneui.api.url;
 
 import net.minecraft.resources.Identifier;
-import tytoo.grapheneui.api.GrapheneCore;
 
 import java.util.Objects;
 
 abstract class AbstractGrapheneAssetUrls implements GrapheneAssetUrls {
     protected static final String ASSET_HOST = "assets";
     protected static final String PATH_DELIMITER = "/";
+    private final String defaultNamespace;
+
+    protected AbstractGrapheneAssetUrls(String defaultNamespace) {
+        this.defaultNamespace = normalizeNamespace(defaultNamespace);
+    }
 
     protected abstract String rootPrefix();
 
     @Override
     public final String asset(String path) {
-        return asset(GrapheneCore.ID, path);
+        return asset(defaultNamespace, path);
     }
 
     @Override

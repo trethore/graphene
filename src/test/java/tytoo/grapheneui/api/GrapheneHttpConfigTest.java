@@ -2,9 +2,7 @@ package tytoo.grapheneui.api;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 final class GrapheneHttpConfigTest {
     @Test
@@ -47,5 +45,27 @@ final class GrapheneHttpConfigTest {
                 .build();
 
         assertEquals("https", config.baseUrlScheme());
+    }
+
+    @Test
+    void equivalentConfigsAreEqual() {
+        GrapheneHttpConfig left = GrapheneHttpConfig.builder()
+                .bindHost("127.0.0.1")
+                .randomPortInRange(20_000, 20_010)
+                .spaFallback("/assets/test/index.html")
+                .build();
+        GrapheneHttpConfig right = GrapheneHttpConfig.builder()
+                .bindHost("127.0.0.1")
+                .randomPortInRange(20_000, 20_010)
+                .spaFallback("/assets/test/index.html")
+                .build();
+        GrapheneHttpConfig different = GrapheneHttpConfig.builder()
+                .bindHost("localhost")
+                .randomPortInRange(20_000, 20_010)
+                .spaFallback("/assets/test/index.html")
+                .build();
+
+        assertEquals(left, right);
+        assertNotEquals(left, different);
     }
 }

@@ -9,7 +9,8 @@ abstract class AbstractGrapheneSchemedAssetUrls extends AbstractGrapheneAssetUrl
     private final String assetsPrefix;
     private final String schemePrefix;
 
-    protected AbstractGrapheneSchemedAssetUrls(String scheme) {
+    protected AbstractGrapheneSchemedAssetUrls(String scheme, String defaultNamespace) {
+        super(defaultNamespace);
         this.schemePrefix = Objects.requireNonNull(scheme, "scheme") + ":";
         this.assetsPrefix = ASSET_HOST + PATH_DELIMITER;
     }

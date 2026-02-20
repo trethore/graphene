@@ -1,6 +1,7 @@
 package tytoo.grapheneui.api.url;
 
 import net.minecraft.resources.Identifier;
+import tytoo.grapheneui.api.GrapheneCore;
 
 /**
  * Utility class for constructing and normalizing "app:" URLs for loading assets.
@@ -9,7 +10,7 @@ import net.minecraft.resources.Identifier;
 public final class GrapheneAppUrls {
     public static final String SCHEME = "app";
 
-    private static final GrapheneAppUrlsSupport SUPPORT = new GrapheneAppUrlsSupport();
+    private static final GrapheneAppUrlsSupport SUPPORT = new GrapheneAppUrlsSupport(GrapheneCore.ID);
 
     private GrapheneAppUrls() {
     }
@@ -30,6 +31,10 @@ public final class GrapheneAppUrls {
         return SUPPORT;
     }
 
+    public static GrapheneAssetUrls assets(String namespace) {
+        return new GrapheneAppUrlsSupport(namespace);
+    }
+
     public static String normalizeResourcePath(String url) {
         return SUPPORT.normalizeAssetResourcePath(url);
     }
@@ -37,8 +42,8 @@ public final class GrapheneAppUrls {
     private static final class GrapheneAppUrlsSupport extends AbstractGrapheneSchemedAssetUrls {
         private static final String ROOT_PREFIX = SCHEME + "://" + ASSET_HOST + "/";
 
-        private GrapheneAppUrlsSupport() {
-            super(SCHEME);
+        private GrapheneAppUrlsSupport(String defaultNamespace) {
+            super(SCHEME, defaultNamespace);
         }
 
         @Override

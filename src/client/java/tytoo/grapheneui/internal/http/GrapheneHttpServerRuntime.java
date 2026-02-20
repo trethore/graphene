@@ -13,11 +13,7 @@ import tytoo.grapheneui.internal.resource.GrapheneMimeTypes;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Objects;
@@ -73,40 +69,6 @@ public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, Auto
         return new GrapheneHttpServerRuntime(bindAddress.getHostAddress(), boundPort, baseUrl, server, spaFallbackResourcePath, true);
     }
 
-    @Override
-    public boolean isRunning() {
-        return running;
-    }
-
-    @Override
-    public String host() {
-        return host;
-    }
-
-    @Override
-    public int port() {
-        return port;
-    }
-
-    @Override
-    public String baseUrl() {
-        return baseUrl;
-    }
-
-    public String spaFallbackResourcePath() {
-        return spaFallbackResourcePath;
-    }
-
-    @Override
-    public void close() {
-        if (!running || server == null) {
-            return;
-        }
-
-        running = false;
-        server.stop(0);
-    }
-
     private static InetAddress resolveLoopbackAddress(String host) {
         try {
             InetAddress address = InetAddress.getByName(host);
@@ -155,6 +117,40 @@ public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, Auto
         }
     }
 
+    @Override
+    public boolean isRunning() {
+        return running;
+    }
+
+    @Override
+    public String host() {
+        return host;
+    }
+
+    @Override
+    public int port() {
+        return port;
+    }
+
+    @Override
+    public String baseUrl() {
+        return baseUrl;
+    }
+
+    public String spaFallbackResourcePath() {
+        return spaFallbackResourcePath;
+    }
+
+    @Override
+    public void close() {
+        if (!running || server == null) {
+            return;
+        }
+
+        running = false;
+        server.stop(0);
+    }
+
     private record ResourceResponse(int statusCode, String contentType, byte[] payload) {
         private ResourceResponse {
             payload = payload == null ? EMPTY_BYTES : payload;
@@ -166,7 +162,9 @@ public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, Auto
                 return true;
             }
 
-            if (!(object instanceof ResourceResponse(int otherStatusCode, String otherContentType, byte[] otherPayload))) {
+            if (!(object instanceof ResourceResponse(
+                    int otherStatusCode, String otherContentType, byte[] otherPayload
+            ))) {
                 return false;
             }
 

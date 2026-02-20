@@ -103,7 +103,7 @@ GrapheneConfig config = GrapheneConfig.builder()
                 .build())
         .build();
 
-GrapheneCore.init(config);
+GrapheneCore.init("my-mod-id", config);
 
 String url = GrapheneHttpUrls.asset("my-mod-id", "web/index.html");
 // http://127.0.0.1:<port>/assets/my-mod-id/web/index.html

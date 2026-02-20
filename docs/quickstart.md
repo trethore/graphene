@@ -2,9 +2,9 @@
 
 This guide shows the minimal path to render a web UI in a Minecraft screen.
 
-## 1) Initialize Graphene Once
+## 1) Register Your Mod Once
 
-Call `GrapheneCore.init()` in your client initializer.
+Call `GrapheneCore.init("your-mod-id")` in your client initializer.
 
 ```java
 package com.example.mymod;
@@ -15,12 +15,12 @@ import tytoo.grapheneui.api.GrapheneCore;
 public final class MyModClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
-        GrapheneCore.init();
+        GrapheneCore.init("my-mod-id");
     }
 }
 ```
 
-For custom setup, use `GrapheneCore.init(GrapheneConfig)` with `jcefDownloadPath(...)` and
+For custom setup, use `GrapheneCore.init("my-mod-id", GrapheneConfig)` with `jcefDownloadPath(...)` and
 `extensionFolder(...)`. Graphene stores JCEF in `<jcef-mvn-version>/<platform>` under the configured base path.
 
 If your framework prefers `http://` origins, enable Graphene's loopback HTTP server:
@@ -34,7 +34,7 @@ GrapheneConfig config = GrapheneConfig.builder()
                 .build())
         .build();
 
-GrapheneCore.init(config);
+GrapheneCore.init("my-mod-id", config);
 ```
 
 Inspect runtime HTTP server state:

@@ -7,7 +7,7 @@ It embeds Chromium (via JCEF) so you can render HTML/CSS/JS interfaces in-game, 
 
 ## Core Concepts
 
-- `GrapheneCore`: static entry point (`init()`, runtime access, surface manager)
+- `GrapheneCore`: static entry point (`init(modId, config)`, runtime access, surface manager)
 - `GrapheneRuntime`: runtime status/debug view exposed by `GrapheneCore.runtime()`
 - `GrapheneHttpServer`: optional loopback HTTP server view exposed by `GrapheneRuntime.httpServer()`
 - `BrowserSurface`: off-screen browser surface (size, resolution, viewBox, render APIs)
@@ -31,7 +31,7 @@ flowchart LR
 
 ## Typical Runtime Flow
 
-1. Your mod calls `GrapheneCore.init()` once during client init.
+1. Your mod calls `GrapheneCore.init("my-mod-id")` during client init.
 2. You create a `GrapheneWebViewWidget` or `BrowserSurface`.
 3. A page loads through `app://assets/...`, `classpath:///assets/...`, or any normal URL.
 4. Graphene injects the JS bridge bootstrap script.

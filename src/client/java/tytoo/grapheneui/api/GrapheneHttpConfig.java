@@ -1,8 +1,8 @@
 package tytoo.grapheneui.api;
 
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Locale;
 
 @SuppressWarnings("unused")
 public final class GrapheneHttpConfig {
@@ -94,6 +94,28 @@ public final class GrapheneHttpConfig {
 
     public Optional<String> spaFallback() {
         return Optional.ofNullable(spaFallback);
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) {
+            return true;
+        }
+
+        if (!(object instanceof GrapheneHttpConfig other)) {
+            return false;
+        }
+
+        return Objects.equals(baseUrlScheme, other.baseUrlScheme)
+                && Objects.equals(bindHost, other.bindHost)
+                && Objects.equals(fixedPort, other.fixedPort)
+                && Objects.equals(randomPortRange, other.randomPortRange)
+                && Objects.equals(spaFallback, other.spaFallback);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(baseUrlScheme, bindHost, fixedPort, randomPortRange, spaFallback);
     }
 
     public static final class Builder {

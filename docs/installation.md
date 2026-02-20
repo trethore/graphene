@@ -87,7 +87,7 @@ Important trade-offs:
 
 ## 5) Initialize Graphene in your client entrypoint
 
-Call `GrapheneCore.init()` once in your `ClientModInitializer`:
+Register your mod with `GrapheneCore.init("my-mod-id")` in your `ClientModInitializer`:
 
 ```java
 package com.example.mymod;
@@ -98,7 +98,7 @@ import tytoo.grapheneui.api.GrapheneCore;
 public final class MyModClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
-        GrapheneCore.init();
+        GrapheneCore.init("my-mod-id");
     }
 }
 ```
@@ -121,12 +121,12 @@ public final class MyModClient implements ClientModInitializer {
                 .extensionFolder(Path.of("./config/my-mod/extensions"))
                 .build();
 
-        GrapheneCore.init(config);
+        GrapheneCore.init("my-mod-id", config);
     }
 }
 ```
 
-If this is missing, runtime calls that need Graphene will fail with an initialization error.
+If this is missing, Graphene can still start with defaults on first usage, but your mod-specific shared configuration will not be registered.
 
 ## 6) Compatibility baseline
 

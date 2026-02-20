@@ -88,7 +88,7 @@ Jar-in-jar embedding is also possible, but it is not the preferred default. See 
 
 ### Initialize Graphene in your mod
 
-Call `GrapheneCore.init()` once from your client mod initializer:
+Register your mod with `GrapheneCore.init("your-mod-id")` from your client initializer:
 
 ```java
 import net.fabricmc.api.ClientModInitializer;
@@ -97,12 +97,12 @@ import tytoo.grapheneui.api.GrapheneCore;
 public final class MyModClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
-        GrapheneCore.init();
+        GrapheneCore.init("my-mod-id");
     }
 }
 ```
 
-If you need custom runtime paths or unpacked extension loading, pass a `GrapheneConfig`.
+If you need shared runtime options (HTTP, JCEF path, extension folders), pass a `GrapheneConfig`.
 `jcefDownloadPath(...)` is a base directory, and Graphene installs JCEF under `<jcef-mvn-version>/<platform>`:
 
 ```java
@@ -119,7 +119,7 @@ public final class MyModClient implements ClientModInitializer {
                 .extensionFolder(Path.of("./config/my-mod/extensions"))
                 .build();
 
-        GrapheneCore.init(config);
+        GrapheneCore.init("my-mod-id", config);
     }
 }
 ```
