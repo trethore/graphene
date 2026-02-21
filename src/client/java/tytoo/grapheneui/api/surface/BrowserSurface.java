@@ -59,7 +59,7 @@ public final class BrowserSurface implements AutoCloseable {
                 McWindowScale.getScaleY()
         );
 
-        GrapheneCore.start();
+        GrapheneCore.runtime();
 
         CefClient cefClient = builder.client != null ? builder.client : services.runtimeInternal().requireClient();
         CefRequestContext requestContext = builder.requestContext != null ? builder.requestContext : CefRequestContext.getGlobalContext();

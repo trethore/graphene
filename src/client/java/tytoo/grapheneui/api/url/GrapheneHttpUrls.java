@@ -41,7 +41,7 @@ public final class GrapheneHttpUrls {
         private static String requireHttpBaseUrl() {
             GrapheneHttpServer server = GrapheneCore.runtime().httpServer();
             if (!server.isRunning()) {
-                throw new IllegalStateException("Graphene HTTP server is not running. Configure GrapheneHttpConfig and register Graphene with GrapheneCore.init(modId, config).");
+                throw new IllegalStateException("Graphene HTTP server is not running. Configure GrapheneHttpConfig and register Graphene with GrapheneCore.register(modId, config).");
             }
 
             return server.baseUrl();
