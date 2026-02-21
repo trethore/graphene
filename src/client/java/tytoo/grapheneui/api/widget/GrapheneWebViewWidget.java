@@ -136,7 +136,7 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
         }
 
         if (surface.isLoading()) {
-            guiGraphics.fill(getX(), getY(), getX() + getWidth(), getY() + getHeight(), 0x66333333);
+            drawLoadingOverlay(guiGraphics);
         }
 
         surface.render(guiGraphics, getX(), getY(), getWidth(), getHeight());
@@ -144,6 +144,16 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
         if (isMouseOver(mouseX, mouseY)) {
             guiGraphics.requestCursor(surface.getRequestedCursor());
         }
+    }
+
+    /**
+     * Draws a loading overlay while the browser surface is loading.
+     *
+     * <p>The default implementation is a no-op. Override this method to provide a custom loading
+     * indicator.</p>
+     */
+    protected void drawLoadingOverlay(@SuppressWarnings("unused") @NonNull GuiGraphics guiGraphics) {
+        // Intentionally empty: subclasses can override this hook to draw custom loading UI.
     }
 
     @Override
