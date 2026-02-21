@@ -15,6 +15,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
@@ -27,12 +29,13 @@ public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, Auto
     private static final String HEADER_ALLOW = "Allow";
     private static final String CONTENT_TYPE_TEXT_PLAIN = "text/plain";
     private static final byte[] EMPTY_BYTES = new byte[0];
-    private static final GrapheneHttpServerRuntime DISABLED = new GrapheneHttpServerRuntime("", -1, "", null, null, false);
+    private static final GrapheneHttpServerRuntime DISABLED = new GrapheneHttpServerRuntime("", -1, "", null, null, null, false);
 
     private final String host;
     private final int port;
     private final String baseUrl;
     private final HttpServer server;
+    private final Path fileRoot;
     private final String spaFallbackResourcePath;
     private volatile boolean running;
 
@@ -41,6 +44,7 @@ public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, Auto
             int port,
             String baseUrl,
             HttpServer server,
+            Path fileRoot,
             String spaFallbackResourcePath,
             boolean running
     ) {
@@ -48,6 +52,7 @@ public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, Auto
         this.port = port;
         this.baseUrl = baseUrl;
         this.server = server;
+        this.fileRoot = fileRoot;
         this.spaFallbackResourcePath = spaFallbackResourcePath;
         this.running = running;
     }
@@ -60,13 +65,22 @@ public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, Auto
         GrapheneHttpConfig validatedConfig = Objects.requireNonNull(config, "config");
         InetAddress bindAddress = resolveLoopbackAddress(validatedConfig.bindHost());
         HttpServer server = createServer(validatedConfig, bindAddress);
-        String spaFallbackResourcePath = validatedConfig.spaFallback().map(ClasspathAssetHttpHandler::normalizeRequestPath).orElse(null);
-        server.createContext(PATH_DELIMITER, new ClasspathAssetHttpHandler(spaFallbackResourcePath));
+        Path fileRoot = validatedConfig.fileRoot().map(path -> path.toAbsolutePath().normalize()).orElse(null);
+        String spaFallbackResourcePath = validatedConfig.spaFallback().map(AssetHttpHandler::normalizeRequestPath).orElse(null);
+        server.createContext(PATH_DELIMITER, new AssetHttpHandler(fileRoot, spaFallbackResourcePath));
         server.start();
 
         int boundPort = server.getAddress().getPort();
         String baseUrl = buildBaseUrl(validatedConfig.baseUrlScheme(), bindAddress.getHostAddress(), boundPort);
-        return new GrapheneHttpServerRuntime(bindAddress.getHostAddress(), boundPort, baseUrl, server, spaFallbackResourcePath, true);
+        return new GrapheneHttpServerRuntime(
+                bindAddress.getHostAddress(),
+                boundPort,
+                baseUrl,
+                server,
+                fileRoot,
+                spaFallbackResourcePath,
+                true
+        );
     }
 
     private static InetAddress resolveLoopbackAddress(String host) {
@@ -141,6 +155,10 @@ public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, Auto
         return spaFallbackResourcePath;
     }
 
+    public Path fileRoot() {
+        return fileRoot;
+    }
+
     @Override
     public void close() {
         if (!running || server == null) {
@@ -193,8 +211,8 @@ public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, Auto
         }
     }
 
-    private record ClasspathAssetHttpHandler(String spaFallbackResourcePath) implements HttpHandler {
-        private static InputStream openResource(String path) {
+    private record AssetHttpHandler(Path fileRoot, String spaFallbackResourcePath) implements HttpHandler {
+        private static InputStream openClasspathResource(String path) {
             ClassLoader classLoader = GrapheneHttpServerRuntime.class.getClassLoader();
             InputStream stream = classLoader.getResourceAsStream(path);
             if (stream != null || path.startsWith(ASSETS_PREFIX)) {
@@ -266,7 +284,38 @@ public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, Auto
                 return new ResourceResponse(404, CONTENT_TYPE_TEXT_PLAIN, EMPTY_BYTES);
             }
 
-            try (InputStream inputStream = openResource(normalizedPath)) {
+            ResourceResponse fileSystemResponse = loadFileResource(normalizedPath);
+            if (fileSystemResponse.statusCode() == 200) {
+                return fileSystemResponse;
+            }
+
+            return loadClasspathResource(normalizedPath);
+        }
+
+        private ResourceResponse loadFileResource(String normalizedPath) {
+            if (fileRoot == null) {
+                return new ResourceResponse(404, CONTENT_TYPE_TEXT_PLAIN, EMPTY_BYTES);
+            }
+
+            Path resolvedPath = fileRoot.resolve(normalizedPath).normalize();
+            if (!resolvedPath.startsWith(fileRoot)
+                    || !Files.isRegularFile(resolvedPath)
+                    || !Files.isReadable(resolvedPath)) {
+                return new ResourceResponse(404, CONTENT_TYPE_TEXT_PLAIN, EMPTY_BYTES);
+            }
+
+            try {
+                byte[] payload = Files.readAllBytes(resolvedPath);
+                String contentType = GrapheneMimeTypes.resolve(normalizedPath);
+                return new ResourceResponse(200, contentType, payload);
+            } catch (IOException ignored) {
+                // Failed to read filesystem resource payload.
+                return new ResourceResponse(404, CONTENT_TYPE_TEXT_PLAIN, EMPTY_BYTES);
+            }
+        }
+
+        private ResourceResponse loadClasspathResource(String normalizedPath) {
+            try (InputStream inputStream = openClasspathResource(normalizedPath)) {
                 if (inputStream == null) {
                     return new ResourceResponse(404, CONTENT_TYPE_TEXT_PLAIN, EMPTY_BYTES);
                 }

@@ -99,6 +99,7 @@ GrapheneConfig config = GrapheneConfig.builder()
         .http(GrapheneHttpConfig.builder()
                 .bindHost("127.0.0.1")
                 .randomPortInRange(20_000, 21_000)
+                .fileRoot("C:/dev/my-ui-dist")
                 .spaFallback("/assets/my-mod-id/web/index.html")
                 .build())
         .build();
@@ -108,6 +109,14 @@ GrapheneCore.init("my-mod-id", config);
 String url = GrapheneHttpUrls.asset("my-mod-id", "web/index.html");
 // http://127.0.0.1:<port>/assets/my-mod-id/web/index.html
 ```
+
+When `fileRoot(...)` is configured, Graphene resolves each HTTP request in this order:
+
+1. `fileRoot` filesystem path (`<fileRoot>/<request-path>`)
+2. classpath asset lookup
+3. optional `spaFallback(...)` for non-`/assets/...` `GET` requests
+
+This makes frontend iteration faster: update local files under `fileRoot` without restarting Minecraft.
 
 ---
 Next: [Lifecycle](lifecycle.md)

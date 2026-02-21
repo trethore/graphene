@@ -269,9 +269,10 @@ public final class GrapheneCefRuntime implements GrapheneRuntime {
     private GrapheneHttpServerRuntime createHttpServer(GrapheneHttpConfig httpConfig) {
         GrapheneHttpServerRuntime startedHttpServer = GrapheneHttpServerRuntime.start(httpConfig);
         DEBUG_LOGGER.debug(
-                "Graphene HTTP server started: host={}, port={}, fallback={}",
+                "Graphene HTTP server started: host={}, port={}, fileRoot={}, fallback={}",
                 startedHttpServer.host(),
                 startedHttpServer.port(),
+                startedHttpServer.fileRoot(),
                 startedHttpServer.spaFallbackResourcePath()
         );
         return startedHttpServer;
