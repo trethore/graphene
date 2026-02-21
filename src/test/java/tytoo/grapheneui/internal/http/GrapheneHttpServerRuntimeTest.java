@@ -9,10 +9,10 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -25,6 +25,20 @@ final class GrapheneHttpServerRuntimeTest {
 
     @TempDir
     Path tempDir;
+
+    private static TestHttpResponse sendGet(String url) throws IOException {
+        HttpRequest request = HttpRequest.newBuilder(URI.create(url))
+                .GET()
+                .timeout(REQUEST_TIMEOUT)
+                .build();
+        try {
+            HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            return new TestHttpResponse(response.statusCode(), response.body());
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted while performing HTTP request", exception);
+        }
+    }
 
     @Test
     void servesFileSystemResourceWhenFileRootConfigured() throws IOException {
@@ -93,20 +107,6 @@ final class GrapheneHttpServerRuntimeTest {
 
             assertEquals(400, response.statusCode());
             assertEquals("Invalid path", response.body());
-        }
-    }
-
-    private static TestHttpResponse sendGet(String url) throws IOException {
-        HttpRequest request = HttpRequest.newBuilder(URI.create(url))
-                .GET()
-                .timeout(REQUEST_TIMEOUT)
-                .build();
-        try {
-            HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-            return new TestHttpResponse(response.statusCode(), response.body());
-        } catch (InterruptedException exception) {
-            Thread.currentThread().interrupt();
-            throw new IOException("Interrupted while performing HTTP request", exception);
         }
     }
 
