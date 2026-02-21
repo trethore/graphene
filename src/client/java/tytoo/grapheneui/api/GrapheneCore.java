@@ -16,7 +16,8 @@ import java.util.Objects;
 /**
  * The core class of the Graphene library.
  * Each consumer mod should register once with {@link #register(String)} or {@link #register(String, GrapheneConfig)}.
- * Runtime startup happens after client startup has finished.
+ * The Graphene runtime starts lazily on first use and, if not already started,
+ * is automatically initialized after the Minecraft client startup has finished.
  */
 public final class GrapheneCore implements ClientModInitializer {
     public static final String ID = "graphene-ui";
@@ -78,6 +79,15 @@ public final class GrapheneCore implements ClientModInitializer {
 
     static synchronized void start() {
         ensureInitialized();
+    }
+
+    private static synchronized void startIfConsumersRegistered() {
+        if (CONSUMERS.isEmpty()) {
+            LOGGER.info("Graphene is loaded but no consumers are registered; skipping initialization.");
+            return;
+        }
+
+        start();
     }
 
     private static String normalizeModId(String modId) {
@@ -188,7 +198,7 @@ public final class GrapheneCore implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        ClientLifecycleEvents.CLIENT_STARTED.register(ignoredClient -> start());
+        ClientLifecycleEvents.CLIENT_STARTED.register(ignoredClient -> startIfConsumersRegistered());
     }
 
     private record OwnedValue<T>(T value, String owner) {
