@@ -30,6 +30,7 @@ GrapheneConfig config = GrapheneConfig.builder()
         .http(GrapheneHttpConfig.builder()
                 .bindHost("127.0.0.1")
                 .randomPortInRange(20_000, 21_000)
+                .fileRoot("C:/dev/my-ui-dist")
                 .spaFallback("/assets/my-mod-id/web/index.html")
                 .build())
         .build();
@@ -44,6 +45,12 @@ GrapheneHttpServer server = GrapheneCore.runtime().httpServer();
 int port = server.port();
 String baseUrl = server.baseUrl();
 ```
+
+HTTP request resolution order:
+
+- If `fileRoot(...)` is set, Graphene tries `<fileRoot>/<request-path>` first.
+- If no filesystem file exists, Graphene falls back to classpath assets.
+- If still missing, `spaFallback(...)` applies for non-`/assets/...` `GET` requests.
 
 ## 2) Create A Screen With A WebView
 
@@ -109,6 +116,11 @@ When HTTP mode is enabled, build URLs from classpath assets with:
 ```java
 String url = GrapheneHttpUrls.asset("my-mod-id", "web/index.html");
 ```
+
+With the `fileRoot(...)` example above, this URL maps to:
+
+- `http://127.0.0.1:<port>/assets/my-mod-id/web/index.html`
+- filesystem path `C:/dev/my-ui-dist/assets/my-mod-id/web/index.html` (when present)
 
 ## 4) Open The Screen
 

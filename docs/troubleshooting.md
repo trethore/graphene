@@ -82,6 +82,24 @@ Fix:
 - Prefer `GrapheneAppUrls.asset("graphene-ui-debug", "graphene_test/welcome.html")` for bundled samples.
 - `classpath:///assets/<mod-id>/...` URLs remain available for simple file loading.
 
+## HTTP Dev File Root Not Serving Updated Files
+
+Symptom:
+
+- `http://127.0.0.1:<port>/...` serves old content or returns 404 while using `fileRoot(...)`.
+
+Likely cause:
+
+- URL path does not match `<fileRoot>/<request-path>`.
+- File exists outside configured `fileRoot`.
+- Requested a directory path without explicit file name (for example `/web/` instead of `/web/index.html`).
+
+Fix:
+
+- Confirm `GrapheneHttpConfig.fileRoot(...)` points to the correct local build output folder.
+- Request explicit files such as `/assets/<mod-id>/web/index.html`.
+- Keep using namespaced paths (`/assets/<mod-id>/...`) to avoid shared-runtime collisions.
+
 ## Pending Requests Fail On Navigation
 
 Symptom:

@@ -1,5 +1,6 @@
 package tytoo.grapheneui.api;
 
+import java.nio.file.Path;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
@@ -10,11 +11,13 @@ public final class GrapheneHttpConfig {
     private static final String DEFAULT_BASE_URL_SCHEME = "http";
     private static final int MIN_PORT = 1024;
     private static final int MAX_PORT = 65535;
+    private static final String FILE_ROOT_NAME = "fileRoot";
 
     private final String baseUrlScheme;
     private final String bindHost;
     private final Integer fixedPort;
     private final PortRange randomPortRange;
+    private final Path fileRoot;
     private final String spaFallback;
 
     private GrapheneHttpConfig(Builder builder) {
@@ -22,6 +25,7 @@ public final class GrapheneHttpConfig {
         this.bindHost = normalizeBindHost(builder.bindHost);
         this.fixedPort = builder.fixedPort;
         this.randomPortRange = builder.randomPortRange;
+        this.fileRoot = normalizeFileRoot(builder.fileRoot);
         this.spaFallback = normalizeSpaFallback(builder.spaFallback);
     }
 
@@ -68,6 +72,19 @@ public final class GrapheneHttpConfig {
         return normalizedSpaFallback;
     }
 
+    private static Path normalizeFileRoot(Path fileRoot) {
+        if (fileRoot == null) {
+            return null;
+        }
+
+        Path normalizedFileRoot = fileRoot.normalize();
+        if (normalizedFileRoot.toString().isBlank()) {
+            throw new IllegalArgumentException("fileRoot must not be blank");
+        }
+
+        return normalizedFileRoot.toAbsolutePath().normalize();
+    }
+
     private static int requireValidPort(int port, String name) {
         if (port < MIN_PORT || port > MAX_PORT) {
             throw new IllegalArgumentException(name + " must be between " + MIN_PORT + " and " + MAX_PORT);
@@ -96,6 +113,10 @@ public final class GrapheneHttpConfig {
         return Optional.ofNullable(spaFallback);
     }
 
+    public Optional<Path> fileRoot() {
+        return Optional.ofNullable(fileRoot);
+    }
+
     @Override
     public boolean equals(Object object) {
         if (this == object) {
@@ -110,12 +131,13 @@ public final class GrapheneHttpConfig {
                 && Objects.equals(bindHost, other.bindHost)
                 && Objects.equals(fixedPort, other.fixedPort)
                 && Objects.equals(randomPortRange, other.randomPortRange)
+                && Objects.equals(fileRoot, other.fileRoot)
                 && Objects.equals(spaFallback, other.spaFallback);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(baseUrlScheme, bindHost, fixedPort, randomPortRange, spaFallback);
+        return Objects.hash(baseUrlScheme, bindHost, fixedPort, randomPortRange, fileRoot, spaFallback);
     }
 
     public static final class Builder {
@@ -123,6 +145,7 @@ public final class GrapheneHttpConfig {
         private String bindHost = DEFAULT_BIND_HOST;
         private Integer fixedPort;
         private PortRange randomPortRange = new PortRange(20_000, 21_000);
+        private Path fileRoot;
         private String spaFallback;
 
         private Builder() {
@@ -158,6 +181,20 @@ public final class GrapheneHttpConfig {
 
         public Builder spaFallback(String spaFallback) {
             this.spaFallback = normalizeSpaFallback(spaFallback);
+            return this;
+        }
+
+        public Builder fileRoot(Path fileRoot) {
+            this.fileRoot = normalizeFileRoot(Objects.requireNonNull(fileRoot, FILE_ROOT_NAME));
+            return this;
+        }
+
+        public Builder fileRoot(String fileRoot) {
+            return fileRoot(Path.of(Objects.requireNonNull(fileRoot, FILE_ROOT_NAME)));
+        }
+
+        public Builder clearFileRoot() {
+            this.fileRoot = null;
             return this;
         }
 

@@ -32,6 +32,9 @@ GrapheneMod graphene = GrapheneCore.init("my-mod-id", GrapheneConfig.builder()
 - `http`: all explicit values must match.
 - `extensionFolder`: values are merged (union).
 
+`GrapheneHttpConfig.fileRoot(...)` is part of HTTP config equality. Graphene normalizes it to an absolute path, so equivalent
+relative and absolute references to the same directory are treated as the same shared setting.
+
 If conflicting shared settings are registered, Graphene throws a clear `IllegalStateException` during startup.
 
 ## Namespace-safe URL helpers
