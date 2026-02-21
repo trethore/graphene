@@ -263,7 +263,7 @@ public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, Auto
 
         private ResourceResponse loadResourceResponse(String requestPath, boolean isGetRequest) {
             ResourceResponse directResponse = loadResource(requestPath);
-            if (directResponse.statusCode() == 200) {
+            if (directResponse.statusCode() != 404) {
                 return directResponse;
             }
 
@@ -285,7 +285,7 @@ public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, Auto
             }
 
             ResourceResponse fileSystemResponse = loadFileResource(normalizedPath);
-            if (fileSystemResponse.statusCode() == 200) {
+            if (fileSystemResponse.statusCode() != 404) {
                 return fileSystemResponse;
             }
 
@@ -297,20 +297,35 @@ public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, Auto
                 return new ResourceResponse(404, CONTENT_TYPE_TEXT_PLAIN, EMPTY_BYTES);
             }
 
-            Path resolvedPath = fileRoot.resolve(normalizedPath).normalize();
-            if (!resolvedPath.startsWith(fileRoot)
-                    || !Files.isRegularFile(resolvedPath)
-                    || !Files.isReadable(resolvedPath)) {
+            Path normalizedRoot = fileRoot.toAbsolutePath().normalize();
+            Path normalizedResolvedPath = normalizedRoot.resolve(normalizedPath).normalize();
+            if (!normalizedResolvedPath.startsWith(normalizedRoot) || !Files.exists(normalizedResolvedPath)) {
+                return new ResourceResponse(404, CONTENT_TYPE_TEXT_PLAIN, EMPTY_BYTES);
+            }
+
+            Path realRoot;
+            Path realResolvedPath;
+            try {
+                realRoot = normalizedRoot.toRealPath();
+                realResolvedPath = normalizedResolvedPath.toRealPath();
+            } catch (IOException ignored) {
+                // Failed to resolve real filesystem path.
+                return new ResourceResponse(500, CONTENT_TYPE_TEXT_PLAIN, EMPTY_BYTES);
+            }
+
+            if (!realResolvedPath.startsWith(realRoot)
+                    || !Files.isRegularFile(realResolvedPath)
+                    || !Files.isReadable(realResolvedPath)) {
                 return new ResourceResponse(404, CONTENT_TYPE_TEXT_PLAIN, EMPTY_BYTES);
             }
 
             try {
-                byte[] payload = Files.readAllBytes(resolvedPath);
+                byte[] payload = Files.readAllBytes(realResolvedPath);
                 String contentType = GrapheneMimeTypes.resolve(normalizedPath);
                 return new ResourceResponse(200, contentType, payload);
             } catch (IOException ignored) {
                 // Failed to read filesystem resource payload.
-                return new ResourceResponse(404, CONTENT_TYPE_TEXT_PLAIN, EMPTY_BYTES);
+                return new ResourceResponse(500, CONTENT_TYPE_TEXT_PLAIN, EMPTY_BYTES);
             }
         }
 

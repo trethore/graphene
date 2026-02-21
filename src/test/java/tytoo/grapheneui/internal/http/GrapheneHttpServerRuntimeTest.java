@@ -1,5 +1,6 @@
 package tytoo.grapheneui.internal.http;
 
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import tytoo.grapheneui.api.GrapheneHttpConfig;
@@ -25,20 +26,6 @@ final class GrapheneHttpServerRuntimeTest {
 
     @TempDir
     Path tempDir;
-
-    private static TestHttpResponse sendGet(String url) throws IOException {
-        HttpRequest request = HttpRequest.newBuilder(URI.create(url))
-                .GET()
-                .timeout(REQUEST_TIMEOUT)
-                .build();
-        try {
-            HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-            return new TestHttpResponse(response.statusCode(), response.body());
-        } catch (InterruptedException exception) {
-            Thread.currentThread().interrupt();
-            throw new IOException("Interrupted while performing HTTP request", exception);
-        }
-    }
 
     @Test
     void servesFileSystemResourceWhenFileRootConfigured() throws IOException {
@@ -107,6 +94,53 @@ final class GrapheneHttpServerRuntimeTest {
 
             assertEquals(400, response.statusCode());
             assertEquals("Invalid path", response.body());
+        }
+    }
+
+    @Test
+    void doesNotServeSymlinkEscapingFileRoot() throws IOException {
+        Path fileRoot = tempDir.resolve("root");
+        Files.createDirectories(fileRoot.resolve("assets/my-mod-id/web"));
+
+        Path outsideFile = tempDir.resolve("outside.txt");
+        Files.writeString(outsideFile, "outside", StandardCharsets.UTF_8);
+
+        Path linkPath = fileRoot.resolve("assets/my-mod-id/web/escape.txt");
+        boolean symlinkCreated = tryCreateSymbolicLink(linkPath, outsideFile);
+        Assumptions.assumeTrue(symlinkCreated, "symbolic links are not available in this environment");
+
+        GrapheneHttpConfig config = GrapheneHttpConfig.builder()
+                .randomPortInRange(30_000, 60_000)
+                .fileRoot(fileRoot)
+                .build();
+
+        try (GrapheneHttpServerRuntime server = GrapheneHttpServerRuntime.start(config)) {
+            TestHttpResponse response = sendGet(server.baseUrl() + "/assets/my-mod-id/web/escape.txt");
+
+            assertEquals(404, response.statusCode());
+        }
+    }
+
+    private static TestHttpResponse sendGet(String url) throws IOException {
+        HttpRequest request = HttpRequest.newBuilder(URI.create(url))
+                .GET()
+                .timeout(REQUEST_TIMEOUT)
+                .build();
+        try {
+            HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            return new TestHttpResponse(response.statusCode(), response.body());
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted while performing HTTP request", exception);
+        }
+    }
+
+    private static boolean tryCreateSymbolicLink(Path linkPath, Path targetPath) {
+        try {
+            Files.createSymbolicLink(linkPath, targetPath);
+            return true;
+        } catch (UnsupportedOperationException | SecurityException | IOException ignored) {
+            return false;
         }
     }
 
