@@ -1,5 +1,10 @@
 # Graphene
 
+[![Loader: Fabric](https://img.shields.io/badge/Loader-Fabric-00BFA5?style=for-the-badge&logo=fabric)](https://modrinth.com/mod/fabric-api)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
+[![Minecraft: 1.21.11](https://img.shields.io/badge/Minecraft-1.21.11-5E8C31?style=for-the-badge&logo=minecraft)](https://www.minecraft.net/)
+[![Modrinth](https://img.shields.io/badge/Modrinth-Graphene-1BD96A?style=for-the-badge&logo=modrinth)](https://modrinth.com/mod/grapheneui)
+
 Graphene is a client-side UI library for Minecraft 1.21.11 (Fabric) that lets mod developers build interfaces with web technologies.
 It embeds Chromium through JCEF, so you can render HTML/CSS/JavaScript UIs in-game while keeping a clean Java API for mod integration.
 
