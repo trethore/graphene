@@ -4,8 +4,9 @@ Understanding lifecycle rules is key to avoiding leaks and stale bridge state.
 
 ## Runtime Lifecycle
 
-- Call `GrapheneCore.init("my-mod-id")` during client startup.
+- Call `GrapheneCore.register("my-mod-id")` during client startup.
 - Repeated calls for the same mod id are accepted only when the config is identical.
+- Runtime initialization runs automatically once client loading has finished.
 - Graphene registers shutdown hooks and disposes CEF on client stop/process shutdown.
 
 ## Surface And Widget Lifecycle

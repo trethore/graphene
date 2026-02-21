@@ -13,7 +13,11 @@
   "license": "MIT",
   "icon": "assets/graphene-ui/icon.png",
   "environment": "client",
-  "entrypoints": {},
+  "entrypoints": {
+    "client": [
+      "tytoo.grapheneui.api.GrapheneCore"
+    ]
+  },
   "mixins": [
     "graphene-ui.client.mixins.json"
   ],

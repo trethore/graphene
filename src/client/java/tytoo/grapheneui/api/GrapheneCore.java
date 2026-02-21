@@ -1,5 +1,7 @@
 package tytoo.grapheneui.api;
 
+import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,10 +15,11 @@ import java.util.Objects;
 
 /**
  * The core class of the Graphene library.
- * Each consumer mod should register once with {@link #init(String)} or {@link #init(String, GrapheneConfig)}.
- * Runtime startup is deferred until Graphene is first used.
+ * Each consumer mod should register once with {@link #register(String)} or {@link #register(String, GrapheneConfig)}.
+ * The Graphene runtime starts lazily on first use and, if not already started,
+ * is automatically initialized after the Minecraft client startup has finished.
  */
-public final class GrapheneCore {
+public final class GrapheneCore implements ClientModInitializer {
     public static final String ID = "graphene-ui";
     private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneCore.class);
     private static final GrapheneCoreServices SERVICES = GrapheneCoreServices.get();
@@ -24,14 +27,11 @@ public final class GrapheneCore {
     private static final Map<String, GrapheneMod> CONSUMERS = new LinkedHashMap<>();
     private static final String MOD_ID_NAME = "modId";
 
-    private GrapheneCore() {
+    public static synchronized GrapheneMod register(String modId) {
+        return register(modId, GrapheneConfig.defaults());
     }
 
-    public static synchronized GrapheneMod init(String modId) {
-        return init(modId, GrapheneConfig.defaults());
-    }
-
-    public static synchronized GrapheneMod init(String modId, GrapheneConfig config) {
+    public static synchronized GrapheneMod register(String modId, GrapheneConfig config) {
         String normalizedModId = normalizeModId(modId);
         GrapheneConfig validatedConfig = Objects.requireNonNull(config, "config");
 
@@ -62,11 +62,6 @@ public final class GrapheneCore {
         return consumer;
     }
 
-    public static synchronized void start() {
-        ensureInitialized();
-    }
-
-    @SuppressWarnings("unused")
     public static synchronized boolean isInitialized() {
         return SERVICES.runtimeInternal().isInitialized();
     }
@@ -80,6 +75,19 @@ public final class GrapheneCore {
             ensureInitialized();
         }
         return SERVICES.runtime();
+    }
+
+    static synchronized void start() {
+        ensureInitialized();
+    }
+
+    private static synchronized void startIfConsumersRegistered() {
+        if (CONSUMERS.isEmpty()) {
+            LOGGER.info("Graphene is loaded but no consumers are registered; skipping initialization.");
+            return;
+        }
+
+        start();
     }
 
     private static String normalizeModId(String modId) {
@@ -104,7 +112,7 @@ public final class GrapheneCore {
 
         if (CONSUMERS.isEmpty()) {
             throw new IllegalStateException(
-                    "No Graphene consumer registered. Call GrapheneCore.init(modId, config) before Graphene is used"
+                    "No Graphene consumer registered. Call GrapheneCore.register(modId, config) before Graphene is used"
             );
         }
 
@@ -186,6 +194,11 @@ public final class GrapheneCore {
                         + " and "
                         + candidateOwner
         );
+    }
+
+    @Override
+    public void onInitializeClient() {
+        ClientLifecycleEvents.CLIENT_STARTED.register(ignoredClient -> startIfConsumersRegistered());
     }
 
     private record OwnedValue<T>(T value, String owner) {

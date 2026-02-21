@@ -7,7 +7,7 @@ It embeds Chromium (via JCEF) so you can render HTML/CSS/JS interfaces in-game, 
 
 ## Core Concepts
 
-- `GrapheneCore`: static entry point (`init(modId, config)`, runtime access, surface manager)
+- `GrapheneCore`: static entry point (`register(modId, config)`, runtime access, surface manager)
 - `GrapheneRuntime`: runtime status/debug view exposed by `GrapheneCore.runtime()`
 - `GrapheneHttpServer`: optional loopback HTTP server view exposed by `GrapheneRuntime.httpServer()`
 - `BrowserSurface`: off-screen browser surface (size, resolution, viewBox, render APIs)
@@ -18,7 +18,7 @@ It embeds Chromium (via JCEF) so you can render HTML/CSS/JS interfaces in-game, 
 
 ```mermaid
 flowchart LR
-    A[Your Fabric Client Mod] --> B[GrapheneCore.init]
+    A[Your Fabric Client Mod] --> B[GrapheneCore.register]
     B --> C[GrapheneRuntime]
     C --> D[BrowserSurface]
     D --> E[Internal Browser Runtime]
@@ -31,12 +31,13 @@ flowchart LR
 
 ## Typical Runtime Flow
 
-1. Your mod calls `GrapheneCore.init("my-mod-id")` during client init.
-2. You create a `GrapheneWebViewWidget` or `BrowserSurface`.
-3. A page loads through `app://assets/...`, `classpath:///assets/...`, or any normal URL.
-4. Graphene injects the JS bridge bootstrap script.
-5. JS sends a `ready` handshake.
-6. Bridge messages start flowing both ways.
+1. Your mod calls `GrapheneCore.register("my-mod-id")` during client init.
+2. Once client loading is finished, Graphene initializes the shared runtime.
+3. You create a `GrapheneWebViewWidget` or `BrowserSurface`.
+4. A page loads through `app://assets/...`, `classpath:///assets/...`, or any normal URL.
+5. Graphene injects the JS bridge bootstrap script.
+6. JS sends a `ready` handshake.
+7. Bridge messages start flowing both ways.
 
 ## Where To Go Next
 
