@@ -3,6 +3,7 @@ package tytoo.grapheneui.internal.input.keyboard;
 import org.cef.input.CefKeyEvent;
 import org.cef.misc.EventFlags;
 import org.lwjgl.glfw.GLFW;
+import tytoo.grapheneui.internal.input.GrapheneCefModifierUtil;
 import tytoo.grapheneui.internal.input.GrapheneKeyCodeUtil;
 
 import java.awt.event.KeyEvent;
@@ -19,22 +20,7 @@ public final class GrapheneKeyboardInputBridge {
     private boolean rightAltPressed;
 
     private static int toCefModifiers(int modifiers, int keyCode, boolean numLockEnabled) {
-        int cefModifiers = EventFlags.EVENTFLAG_NONE;
-        if ((modifiers & GLFW.GLFW_MOD_SHIFT) != 0) {
-            cefModifiers |= EventFlags.EVENTFLAG_SHIFT_DOWN;
-        }
-
-        if ((modifiers & GLFW.GLFW_MOD_CONTROL) != 0) {
-            cefModifiers |= EventFlags.EVENTFLAG_CONTROL_DOWN;
-        }
-
-        if ((modifiers & GLFW.GLFW_MOD_ALT) != 0) {
-            cefModifiers |= EventFlags.EVENTFLAG_ALT_DOWN;
-        }
-
-        if ((modifiers & GLFW.GLFW_MOD_SUPER) != 0) {
-            cefModifiers |= EventFlags.EVENTFLAG_COMMAND_DOWN;
-        }
+        int cefModifiers = GrapheneCefModifierUtil.toCefCommonModifiers(modifiers);
 
         if ((modifiers & GLFW.GLFW_MOD_CAPS_LOCK) != 0) {
             cefModifiers |= EventFlags.EVENTFLAG_CAPS_LOCK_ON;
@@ -122,17 +108,24 @@ public final class GrapheneKeyboardInputBridge {
     public void keyTyped(Consumer<CefKeyEvent> keyEventSink, char character, int modifiers) {
         lockState.ensureLockKeyModifiersEnabled();
 
-        if (isDuplicateSyntheticTypedCharacter(character)) {
+        char normalizedCharacter = keyEventPlatformResolver.normalizeTypedCharacter(character);
+
+        if (isDuplicateSyntheticTypedCharacter(normalizedCharacter)) {
             return;
         }
 
-        if (character == KeyEvent.CHAR_UNDEFINED) {
+        if (normalizedCharacter == KeyEvent.CHAR_UNDEFINED || normalizedCharacter == CEF_CHAR_UNDEFINED) {
             return;
         }
 
         int charEventModifiers = keyEventPlatformResolver.sanitizeCharEventModifiers(modifiers, rightAltPressed);
         boolean numLockEnabled = lockState.isNumLockEnabled(modifiers);
-        CefKeyEvent cefEvent = createCefCharEvent(GLFW.GLFW_KEY_UNKNOWN, character, charEventModifiers, numLockEnabled);
+        CefKeyEvent cefEvent = createCefCharEvent(
+                GLFW.GLFW_KEY_UNKNOWN,
+                normalizedCharacter,
+                charEventModifiers,
+                numLockEnabled
+        );
         keyEventSink.accept(cefEvent);
     }
 
@@ -210,13 +203,14 @@ public final class GrapheneKeyboardInputBridge {
             int modifiers,
             boolean numLockEnabled
     ) {
-        if (character == KeyEvent.CHAR_UNDEFINED || character == CEF_CHAR_UNDEFINED) {
+        char normalizedCharacter = keyEventPlatformResolver.normalizeTypedCharacter(character);
+        if (normalizedCharacter == KeyEvent.CHAR_UNDEFINED || normalizedCharacter == CEF_CHAR_UNDEFINED) {
             return;
         }
 
-        rememberSyntheticTypedCharacter(character);
+        rememberSyntheticTypedCharacter(normalizedCharacter);
         int charEventModifiers = keyEventPlatformResolver.sanitizeCharEventModifiers(modifiers, rightAltPressed);
-        CefKeyEvent cefEvent = createCefCharEvent(keyCode, character, charEventModifiers, numLockEnabled);
+        CefKeyEvent cefEvent = createCefCharEvent(keyCode, normalizedCharacter, charEventModifiers, numLockEnabled);
         keyEventSink.accept(cefEvent);
     }
 
