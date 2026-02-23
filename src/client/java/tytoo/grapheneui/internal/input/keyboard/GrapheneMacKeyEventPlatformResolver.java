@@ -18,8 +18,20 @@ final class GrapheneMacKeyEventPlatformResolver extends GrapheneBaseKeyEventPlat
     private static final char MAC_FUNCTION_KEY_START = '\uF700';
     private static final char MAC_FUNCTION_KEY_END = '\uF8FF';
 
+    private static boolean isRawCharacterRequired(char character) {
+        if (character == 0x7F) {
+            return true;
+        }
+
+        if (character >= MAC_FUNCTION_KEY_START && character <= MAC_FUNCTION_KEY_END) {
+            return true;
+        }
+
+        return character == '\t' || character == '\r';
+    }
+
     @Override
-    public char resolveRawKeyCharacter(int keyCode, int scanCode, int modifiers) {
+    public char resolveRawKeyCharacter(int keyCode, char layoutCharacter) {
         return switch (keyCode) {
             case GLFW.GLFW_KEY_BACKSPACE -> 0x7F;
             case GLFW.GLFW_KEY_LEFT -> MAC_LEFT_ARROW;
@@ -32,7 +44,7 @@ final class GrapheneMacKeyEventPlatformResolver extends GrapheneBaseKeyEventPlat
             case GLFW.GLFW_KEY_END -> MAC_END;
             case GLFW.GLFW_KEY_PAGE_UP -> MAC_PAGE_UP;
             case GLFW.GLFW_KEY_PAGE_DOWN -> MAC_PAGE_DOWN;
-            default -> super.resolveRawKeyCharacter(keyCode, scanCode, modifiers);
+            default -> layoutCharacter;
         };
     }
 
@@ -46,13 +58,13 @@ final class GrapheneMacKeyEventPlatformResolver extends GrapheneBaseKeyEventPlat
     }
 
     @Override
-    public int resolveNativeKeyCode(int keyCode, int scanCode, char character, boolean pressed) {
+    public int getNativeKeyCode(int keyCode, int scanCode, char character, boolean pressed) {
         int mappedKeyCode = GrapheneMacKeyCodeMapping.resolveFromGlfwKey(keyCode);
         if (mappedKeyCode != 0) {
             return mappedKeyCode;
         }
 
-        int charMappedKeyCode = GrapheneMacKeyCodeMapping.resolveFromCharacter(normalizeTypedCharacter(character));
+        int charMappedKeyCode = GrapheneMacKeyCodeMapping.resolveFromCharacter(GrapheneCharacterMapper.normalizeTypedCharacter(character));
         if (charMappedKeyCode != 0) {
             return charMappedKeyCode;
         }
@@ -61,47 +73,7 @@ final class GrapheneMacKeyEventPlatformResolver extends GrapheneBaseKeyEventPlat
     }
 
     @Override
-    public int resolveCharNativeKeyCode(char character) {
-        return GrapheneMacKeyCodeMapping.resolveFromCharacter(normalizeTypedCharacter(character));
-    }
-
-    @Override
-    public char normalizeTypedCharacter(char character) {
-        if (character == 0x7F) {
-            return '\b';
-        }
-
-        if (character == '\n') {
-            return '\r';
-        }
-
-        if (isUnsupportedTypedCharacter(character)) {
-            return KeyEvent.CHAR_UNDEFINED;
-        }
-
-        return character;
-    }
-
-    private static boolean isUnsupportedTypedCharacter(char character) {
-        if (character >= MAC_FUNCTION_KEY_START && character <= MAC_FUNCTION_KEY_END) {
-            return true;
-        }
-
-        return Character.isISOControl(character)
-                && character != '\b'
-                && character != '\t'
-                && character != '\r';
-    }
-
-    private static boolean isRawCharacterRequired(char character) {
-        if (character == 0x7F) {
-            return true;
-        }
-
-        if (character >= MAC_FUNCTION_KEY_START && character <= MAC_FUNCTION_KEY_END) {
-            return true;
-        }
-
-        return character == '\t' || character == '\r';
+    public int getCharNativeKeyCode(char character) {
+        return GrapheneMacKeyCodeMapping.resolveFromCharacter(GrapheneCharacterMapper.normalizeTypedCharacter(character));
     }
 }

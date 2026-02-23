@@ -18,7 +18,6 @@ public final class GrapheneKeyCodeUtil {
     private static final int WINDOWS_VK_OEM_5 = 0xDC;
     private static final int WINDOWS_VK_OEM_6 = 0xDD;
     private static final int WINDOWS_VK_OEM_7 = 0xDE;
-    private static final int WINDOWS_VK_OEM_8 = 0xDF;
     private static final int WINDOWS_VK_OEM_102 = 0xE2;
 
     private GrapheneKeyCodeUtil() {
@@ -105,31 +104,34 @@ public final class GrapheneKeyCodeUtil {
         };
     }
 
-    public static int toWindowsKeyCodeFromLinuxCharacter(char character, int keyCode) {
+    @SuppressWarnings("java:S1479")
+    public static int toWindowsKeyCodeFromCharacter(char character) {
         return switch (character) {
-            case ',' -> WINDOWS_VK_OEM_COMMA;
-            case ';' -> WINDOWS_VK_OEM_PERIOD;
-            case ':' -> WINDOWS_VK_OEM_2;
-            case '.' -> WINDOWS_VK_OEM_PERIOD;
+            case '0', ')' -> KeyEvent.VK_0;
+            case '1', '!' -> KeyEvent.VK_1;
+            case '2', '@' -> KeyEvent.VK_2;
+            case '3', '#' -> KeyEvent.VK_3;
+            case '4', '$' -> KeyEvent.VK_4;
+            case '5', '%' -> KeyEvent.VK_5;
+            case '6', '^' -> KeyEvent.VK_6;
+            case '7', '&' -> KeyEvent.VK_7;
+            case '8', '*' -> KeyEvent.VK_8;
+            case '9', '(' -> KeyEvent.VK_9;
+            case '`', '~' -> WINDOWS_VK_OEM_3;
+            case '-', '_' -> WINDOWS_VK_OEM_MINUS;
+            case '=', '+' -> WINDOWS_VK_OEM_PLUS;
+            case '[', '{' -> WINDOWS_VK_OEM_4;
+            case ']', '}' -> WINDOWS_VK_OEM_6;
+            case '\\', '|' -> WINDOWS_VK_OEM_5;
+            case ';', ':' -> WINDOWS_VK_OEM_1;
+            case '\'', '"' -> WINDOWS_VK_OEM_7;
+            case ',', '<' -> WINDOWS_VK_OEM_COMMA;
+            case '.', '>' -> WINDOWS_VK_OEM_PERIOD;
             case '/', '?' -> WINDOWS_VK_OEM_2;
-            case '<' -> WINDOWS_VK_OEM_COMMA;
-            case '>' -> WINDOWS_VK_OEM_PERIOD;
-            case '*' -> WINDOWS_VK_OEM_5;
-            case '%' -> WINDOWS_VK_OEM_3;
-            case '$' -> WINDOWS_VK_OEM_1;
-            case '!' -> WINDOWS_VK_OEM_8;
-            case '&' -> KeyEvent.VK_1;
-            case 'e', 'E', 'é', 'É' -> keyCode == GLFW.GLFW_KEY_2 ? KeyEvent.VK_2 : 0;
-            case '"' -> KeyEvent.VK_3;
-            case '\'' -> KeyEvent.VK_4;
-            case '(' -> KeyEvent.VK_5;
-            case '-' -> keyCode == GLFW.GLFW_KEY_6 ? KeyEvent.VK_6 : WINDOWS_VK_OEM_MINUS;
+            case 'é', 'É' -> KeyEvent.VK_2;
             case 'è', 'È' -> KeyEvent.VK_7;
-            case '_' -> KeyEvent.VK_8;
             case 'ç', 'Ç' -> KeyEvent.VK_9;
             case 'à', 'À' -> KeyEvent.VK_0;
-            case ')' -> WINDOWS_VK_OEM_MINUS;
-            case '=' -> WINDOWS_VK_OEM_PLUS;
             default -> 0;
         };
     }

@@ -19,23 +19,19 @@ interface GrapheneKeyEventPlatformResolver {
         return new GrapheneDefaultKeyEventPlatformResolver();
     }
 
-    char resolveRawKeyCharacter(int keyCode, int scanCode, int modifiers);
+    int getNativeKeyCode(int keyCode, int scanCode, char character, boolean pressed);
 
-    char toRawEventCharacter(char character);
-
-    int resolveWindowsKeyCode(int keyCode, int scanCode, char character, boolean numLockEnabled);
-
-    int resolveNativeKeyCode(int keyCode, int scanCode, char character, boolean pressed);
-
-    int resolveRawKeyEventType(boolean pressed, int keyCode, char character);
-
-    long resolveScanCode(int scanCode);
-
-    int resolveCharNativeKeyCode(char character);
+    int getCharNativeKeyCode(char character);
 
     boolean isSystemKey(int modifiers);
 
+    int getRawEventType(boolean pressed, int keyCode, char character);
+
+    long getScanCode(int scanCode);
+
     int sanitizeCharEventModifiers(int modifiers, boolean rightAltPressed);
 
-    char normalizeTypedCharacter(char character);
+    char toRawEventCharacter(char character);
+
+    char resolveRawKeyCharacter(int keyCode, char layoutCharacter);
 }

@@ -2,7 +2,6 @@ package tytoo.grapheneui.internal.input.keyboard;
 
 import org.cef.input.CefKeyEvent;
 import org.lwjgl.glfw.GLFW;
-import tytoo.grapheneui.internal.input.GrapheneKeyCodeUtil;
 
 final class GrapheneWindowsKeyEventPlatformResolver extends GrapheneBaseKeyEventPlatformResolver {
     private static boolean isWindowsExtendedKey(int keyCode) {
@@ -28,29 +27,7 @@ final class GrapheneWindowsKeyEventPlatformResolver extends GrapheneBaseKeyEvent
     }
 
     @Override
-    public int resolveWindowsKeyCode(int keyCode, int scanCode, char character, boolean numLockEnabled) {
-        if (scanCode <= 0) {
-            return super.resolveWindowsKeyCode(keyCode, scanCode, character, numLockEnabled);
-        }
-
-        int mappedKeyCode = GrapheneKeyCodeUtil.toWindowsKeyCode(keyCode);
-        if (GrapheneKeyCodeUtil.isNumpadKey(keyCode)) {
-            if (GrapheneKeyCodeUtil.requiresNumLockForText(keyCode) && !numLockEnabled) {
-                return 0;
-            }
-
-            return mappedKeyCode;
-        }
-
-        if (isLayoutDependentKey(keyCode)) {
-            return 0;
-        }
-
-        return mappedKeyCode;
-    }
-
-    @Override
-    public int resolveNativeKeyCode(int keyCode, int scanCode, char character, boolean pressed) {
+    public int getNativeKeyCode(int keyCode, int scanCode, char character, boolean pressed) {
         if (scanCode <= 0) {
             return 0;
         }
@@ -59,7 +36,7 @@ final class GrapheneWindowsKeyEventPlatformResolver extends GrapheneBaseKeyEvent
     }
 
     @Override
-    public long resolveScanCode(int scanCode) {
+    public long getScanCode(int scanCode) {
         if (scanCode <= 0) {
             return 0L;
         }
@@ -68,7 +45,7 @@ final class GrapheneWindowsKeyEventPlatformResolver extends GrapheneBaseKeyEvent
     }
 
     @Override
-    public int resolveCharNativeKeyCode(char character) {
+    public int getCharNativeKeyCode(char character) {
         return 0;
     }
 
