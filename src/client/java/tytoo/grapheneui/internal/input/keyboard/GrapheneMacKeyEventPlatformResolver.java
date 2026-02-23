@@ -38,7 +38,11 @@ final class GrapheneMacKeyEventPlatformResolver extends GrapheneBaseKeyEventPlat
 
     @Override
     public char toRawEventCharacter(char character) {
-        return character;
+        if (isRawCharacterRequired(character)) {
+            return character;
+        }
+
+        return KeyEvent.CHAR_UNDEFINED;
     }
 
     @Override
@@ -87,5 +91,17 @@ final class GrapheneMacKeyEventPlatformResolver extends GrapheneBaseKeyEventPlat
                 && character != '\b'
                 && character != '\t'
                 && character != '\r';
+    }
+
+    private static boolean isRawCharacterRequired(char character) {
+        if (character == 0x7F) {
+            return true;
+        }
+
+        if (character >= MAC_FUNCTION_KEY_START && character <= MAC_FUNCTION_KEY_END) {
+            return true;
+        }
+
+        return character == '\t' || character == '\r';
     }
 }
