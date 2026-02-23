@@ -15,6 +15,7 @@ public final class GrapheneCefAppHandler extends MavenCefAppHandlerAdapter {
     @Override
     public synchronized void onRegisterCustomSchemes(CefSchemeRegistrar registrar) {
         super.onRegisterCustomSchemes(registrar);
+        // linux does not support isStandard.
         registrar.addCustomScheme(APP_SCHEME_NAME, !GraphenePlatform.isLinux(), false, false, true, true, false, true);
         registrar.addCustomScheme(CLASSPATH_SCHEME_NAME, false, false, false, false, false, false, false);
     }
