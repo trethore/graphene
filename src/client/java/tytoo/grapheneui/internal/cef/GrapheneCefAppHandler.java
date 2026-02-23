@@ -5,6 +5,7 @@ import org.cef.CefApp;
 import org.cef.callback.CefSchemeRegistrar;
 import tytoo.grapheneui.api.url.GrapheneAppUrls;
 import tytoo.grapheneui.api.url.GrapheneClasspathUrls;
+import tytoo.grapheneui.internal.platform.GraphenePlatform;
 
 public final class GrapheneCefAppHandler extends MavenCefAppHandlerAdapter {
     private static final String APP_SCHEME_NAME = GrapheneAppUrls.SCHEME;
@@ -14,7 +15,8 @@ public final class GrapheneCefAppHandler extends MavenCefAppHandlerAdapter {
     @Override
     public synchronized void onRegisterCustomSchemes(CefSchemeRegistrar registrar) {
         super.onRegisterCustomSchemes(registrar);
-        registrar.addCustomScheme(APP_SCHEME_NAME, true, false, false, true, true, false, true);
+        // linux does not support isStandard.
+        registrar.addCustomScheme(APP_SCHEME_NAME, !GraphenePlatform.isLinux(), false, false, true, true, false, true);
         registrar.addCustomScheme(CLASSPATH_SCHEME_NAME, false, false, false, false, false, false, false);
     }
 
