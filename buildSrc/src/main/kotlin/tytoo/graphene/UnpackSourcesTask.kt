@@ -173,7 +173,15 @@ abstract class UnpackSourcesTask : DefaultTask() {
 
 	private fun deriveRepoDirectoryName(repoUrl: String): String {
 		val trimmedUrl = repoUrl.trim().removeSuffix("/")
-		val repoName = trimmedUrl.substringAfterLast('/').substringBeforeLast(".git")
+		val cleanedUrl = trimmedUrl.substringBefore('?').substringBeforeLast(".git")
+		val ownerAndRepoMatch = Regex("[:/]([^/:]+)/([^/:]+)$").find(cleanedUrl)
+
+		val repoName = ownerAndRepoMatch?.let { matchResult ->
+			val owner = matchResult.groupValues[1]
+			val repository = matchResult.groupValues[2]
+			"$owner-$repository"
+		} ?: cleanedUrl.substringAfterLast('/').substringAfterLast(':')
+
 		if (repoName.isBlank()) {
 			throw GradleException("Unable to derive repository name from URL: $repoUrl")
 		}
