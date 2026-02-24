@@ -9,15 +9,15 @@ import java.util.Optional;
 
 final class GrapheneInputLockState {
     private boolean lockKeyModifiersEnabled;
-    private boolean fallbackNumLockState;
-    private boolean fallbackNumLockStateKnown;
+    private boolean cachedNumLockState;
+    private boolean cachedNumLockStateKnown;
 
     GrapheneInputLockState() {
         ensureLockKeyModifiersEnabled();
         Optional<Boolean> toolkitNumLockState = readToolkitNumLockState();
         if (toolkitNumLockState.isPresent()) {
-            fallbackNumLockState = toolkitNumLockState.get();
-            fallbackNumLockStateKnown = true;
+            cachedNumLockState = toolkitNumLockState.get();
+            cachedNumLockStateKnown = true;
         }
     }
 
@@ -33,32 +33,32 @@ final class GrapheneInputLockState {
     boolean isNumLockEnabled(int modifiers) {
         boolean numLockModifierSet = (modifiers & GLFW.GLFW_MOD_NUM_LOCK) != 0;
         if (numLockModifierSet) {
-            fallbackNumLockState = true;
-            fallbackNumLockStateKnown = true;
+            cachedNumLockState = true;
+            cachedNumLockStateKnown = true;
             return true;
         }
 
         Optional<Boolean> toolkitNumLockState = readToolkitNumLockState();
         if (toolkitNumLockState.isPresent()) {
-            fallbackNumLockState = toolkitNumLockState.get();
-            fallbackNumLockStateKnown = true;
-            return fallbackNumLockState;
+            cachedNumLockState = toolkitNumLockState.get();
+            cachedNumLockStateKnown = true;
+            return cachedNumLockState;
         }
 
-        if (fallbackNumLockStateKnown) {
-            return fallbackNumLockState;
+        if (cachedNumLockStateKnown) {
+            return cachedNumLockState;
         }
 
         return false;
     }
 
-    void updateFallbackNumLockState(int keyCode, boolean pressed) {
+    void updateCachedNumLockState(int keyCode, boolean pressed) {
         if (!pressed || keyCode != GLFW.GLFW_KEY_NUM_LOCK) {
             return;
         }
 
-        fallbackNumLockState = !fallbackNumLockState;
-        fallbackNumLockStateKnown = true;
+        cachedNumLockState = !cachedNumLockState;
+        cachedNumLockStateKnown = true;
     }
 
     void ensureLockKeyModifiersEnabled() {

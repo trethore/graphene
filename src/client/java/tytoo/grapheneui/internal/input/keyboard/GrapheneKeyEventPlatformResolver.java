@@ -1,6 +1,9 @@
 package tytoo.grapheneui.internal.input.keyboard;
 
+import org.cef.input.CefKeyEvent;
 import tytoo.grapheneui.internal.platform.GraphenePlatform;
+
+import java.awt.event.KeyEvent;
 
 interface GrapheneKeyEventPlatformResolver {
     static GrapheneKeyEventPlatformResolver create() {
@@ -16,28 +19,55 @@ interface GrapheneKeyEventPlatformResolver {
             return new GrapheneWindowsKeyEventPlatformResolver();
         }
 
-        return new GrapheneDefaultKeyEventPlatformResolver();
+        return new GrapheneLinuxKeyEventPlatformResolver();
     }
 
-    int getNativeKeyCode(int keyCode, int scanCode, char character, boolean pressed);
+    default int getNativeKeyCode(int keyCode, int scanCode, char character, boolean pressed) {
+        if (scanCode > 0) {
+            return scanCode;
+        }
 
-    int getCharNativeKeyCode(char character);
+        int mappedKeyCode = GrapheneKeyboardMappings.windowsVkFromGlfw(keyCode);
+        if (mappedKeyCode != 0) {
+            return mappedKeyCode;
+        }
 
-    boolean isSystemKey(int modifiers);
+        return character;
+    }
 
-    int getRawEventType(boolean pressed, int keyCode, char character);
+    default int getCharNativeKeyCode(char character) {
+        return character;
+    }
 
-    int resolveScanCode(int keyCode, int scanCode);
+    default boolean isSystemKey(int modifiers) {
+        return false;
+    }
 
-    long getScanCode(int scanCode);
+    default int getRawEventType(boolean pressed, int keyCode, char character) {
+        return pressed ? CefKeyEvent.KEYEVENT_RAWKEYDOWN : CefKeyEvent.KEYEVENT_KEYUP;
+    }
 
-    char getRawEventUnmodifiedCharacter(int keyCode, char character, int modifiers);
+    default int resolveScanCode(int keyCode, int scanCode) {
+        return scanCode;
+    }
 
-    char getRawEventCharacter(int keyCode, char unmodifiedCharacter, int modifiers);
+    default long getScanCode(int scanCode) {
+        return scanCode <= 0 ? 0L : scanCode;
+    }
 
-    int sanitizeCharEventModifiers(int modifiers, boolean rightAltPressed);
+    default char getRawEventUnmodifiedCharacter(int keyCode, char character, int modifiers) {
+        return KeyEvent.CHAR_UNDEFINED;
+    }
 
-    char toRawEventCharacter(char character);
+    default char getRawEventCharacter(int keyCode, char unmodifiedCharacter, int modifiers) {
+        return unmodifiedCharacter;
+    }
 
-    char resolveRawKeyCharacter(int keyCode, char layoutCharacter);
+    default int sanitizeCharEventModifiers(int modifiers, boolean rightAltPressed) {
+        return modifiers;
+    }
+
+    default char resolveRawKeyCharacter(int keyCode, char layoutCharacter) {
+        return layoutCharacter;
+    }
 }

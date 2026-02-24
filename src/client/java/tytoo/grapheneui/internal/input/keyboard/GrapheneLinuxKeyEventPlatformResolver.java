@@ -3,7 +3,12 @@ package tytoo.grapheneui.internal.input.keyboard;
 import org.cef.input.CefKeyEvent;
 import org.lwjgl.glfw.GLFW;
 
-final class GrapheneLinuxKeyEventPlatformResolver extends GrapheneBaseKeyEventPlatformResolver {
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+final class GrapheneLinuxKeyEventPlatformResolver implements GrapheneKeyEventPlatformResolver {
     private static final int XK_BACK_SPACE = 0xFF08;
     private static final int XK_TAB = 0xFF09;
     private static final int XK_RETURN = 0xFF0D;
@@ -14,6 +19,39 @@ final class GrapheneLinuxKeyEventPlatformResolver extends GrapheneBaseKeyEventPl
     private static final int XK_DOWN = 0xFF54;
     private static final int XK_DELETE = 0xFFFF;
 
+    private static final int[][] LINUX_NATIVE_KEY_CODES = {
+            {GLFW.GLFW_KEY_BACKSPACE, XK_BACK_SPACE},
+            {GLFW.GLFW_KEY_DELETE, XK_DELETE},
+            {GLFW.GLFW_KEY_DOWN, XK_DOWN},
+            {GLFW.GLFW_KEY_ENTER, XK_RETURN},
+            {GLFW.GLFW_KEY_KP_ENTER, XK_RETURN},
+            {GLFW.GLFW_KEY_ESCAPE, XK_ESCAPE},
+            {GLFW.GLFW_KEY_LEFT, XK_LEFT},
+            {GLFW.GLFW_KEY_RIGHT, XK_RIGHT},
+            {GLFW.GLFW_KEY_TAB, XK_TAB},
+            {GLFW.GLFW_KEY_UP, XK_UP}
+    };
+    private static final Map<Integer, Integer> LINUX_NATIVE_KEY_CODES_BY_KEY = createByFirstColumn(LINUX_NATIVE_KEY_CODES);
+    private static final int[][] CONTROL_SHIFTED_KEY_CODES = {
+            {GLFW.GLFW_KEY_2, 0},
+            {GLFW.GLFW_KEY_6, 0x1E},
+            {GLFW.GLFW_KEY_MINUS, 0x1F}
+    };
+    private static final int[][] CONTROL_UNSHIFTED_KEY_CODES = {
+            {GLFW.GLFW_KEY_LEFT_BRACKET, 0x1B},
+            {GLFW.GLFW_KEY_BACKSLASH, 0x1C},
+            {GLFW.GLFW_KEY_RIGHT_BRACKET, 0x1D},
+            {GLFW.GLFW_KEY_ENTER, 0x0A},
+            {GLFW.GLFW_KEY_KP_ENTER, 0x0A}
+    };
+    private static final int[][] ENTER_KEYS = {
+            {GLFW.GLFW_KEY_ENTER},
+            {GLFW.GLFW_KEY_KP_ENTER}
+    };
+    private static final Map<Integer, Integer> CONTROL_SHIFTED_BY_KEY = createByFirstColumn(CONTROL_SHIFTED_KEY_CODES);
+    private static final Map<Integer, Integer> CONTROL_UNSHIFTED_BY_KEY = createByFirstColumn(CONTROL_UNSHIFTED_KEY_CODES);
+    private static final Set<Integer> ENTER_KEYS_SET = createSetByFirstColumn(ENTER_KEYS);
+
     private static boolean isPrintableCharacter(char character) {
         return character >= 0x20 && !Character.isISOControl(character);
     }
@@ -23,22 +61,16 @@ final class GrapheneLinuxKeyEventPlatformResolver extends GrapheneBaseKeyEventPl
     }
 
     private static int resolveLinuxNativeKeyCode(int keyCode, char character) {
-        return switch (keyCode) {
-            case GLFW.GLFW_KEY_BACKSPACE -> XK_BACK_SPACE;
-            case GLFW.GLFW_KEY_DELETE -> XK_DELETE;
-            case GLFW.GLFW_KEY_DOWN -> XK_DOWN;
-            case GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> XK_RETURN;
-            case GLFW.GLFW_KEY_ESCAPE -> XK_ESCAPE;
-            case GLFW.GLFW_KEY_LEFT -> XK_LEFT;
-            case GLFW.GLFW_KEY_RIGHT -> XK_RIGHT;
-            case GLFW.GLFW_KEY_TAB -> XK_TAB;
-            case GLFW.GLFW_KEY_UP -> XK_UP;
-            default -> isPrintableCharacter(character) ? character : 0;
-        };
+        Integer nativeKeyCode = LINUX_NATIVE_KEY_CODES_BY_KEY.get(keyCode);
+        if (nativeKeyCode != null) {
+            return nativeKeyCode;
+        }
+
+        return isPrintableCharacter(character) ? character : 0;
     }
 
     private static char resolveLinuxUnmodifiedCharacter(int keyCode, char character) {
-        if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
+        if (ENTER_KEYS_SET.contains(keyCode)) {
             return '\r';
         }
 
@@ -55,22 +87,31 @@ final class GrapheneLinuxKeyEventPlatformResolver extends GrapheneBaseKeyEventPl
             return (char) (keyCode - GLFW.GLFW_KEY_A + 1);
         }
 
-        if (shift) {
-            return switch (keyCode) {
-                case GLFW.GLFW_KEY_2 -> 0;
-                case GLFW.GLFW_KEY_6 -> 0x1E;
-                case GLFW.GLFW_KEY_MINUS -> 0x1F;
-                default -> 0;
-            };
+        Map<Integer, Integer> controlMap = shift ? CONTROL_SHIFTED_BY_KEY : CONTROL_UNSHIFTED_BY_KEY;
+        Integer controlCharacter = controlMap.get(keyCode);
+        if (controlCharacter == null) {
+            return 0;
         }
 
-        return switch (keyCode) {
-            case GLFW.GLFW_KEY_LEFT_BRACKET -> 0x1B;
-            case GLFW.GLFW_KEY_BACKSLASH -> 0x1C;
-            case GLFW.GLFW_KEY_RIGHT_BRACKET -> 0x1D;
-            case GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> 0x0A;
-            default -> 0;
-        };
+        return (char) controlCharacter.intValue();
+    }
+
+    private static Map<Integer, Integer> createByFirstColumn(int[][] rows) {
+        Map<Integer, Integer> mappings = new HashMap<>();
+        for (int[] row : rows) {
+            mappings.put(row[0], row[1]);
+        }
+
+        return Map.copyOf(mappings);
+    }
+
+    private static Set<Integer> createSetByFirstColumn(int[][] rows) {
+        Set<Integer> values = new HashSet<>();
+        for (int[] row : rows) {
+            values.add(row[0]);
+        }
+
+        return Set.copyOf(values);
     }
 
     @Override
@@ -80,7 +121,7 @@ final class GrapheneLinuxKeyEventPlatformResolver extends GrapheneBaseKeyEventPl
             return nativeKeyCode;
         }
 
-        return super.getNativeKeyCode(keyCode, scanCode, character, pressed);
+        return GrapheneKeyEventPlatformResolver.super.getNativeKeyCode(keyCode, scanCode, character, pressed);
     }
 
     @Override
@@ -89,7 +130,7 @@ final class GrapheneLinuxKeyEventPlatformResolver extends GrapheneBaseKeyEventPl
             return CefKeyEvent.KEYEVENT_KEYUP;
         }
 
-        if (GrapheneDomKeyCodeMapper.isLayoutDependentKey(keyCode) && isPrintableCharacter(character)) {
+        if (GrapheneKeyboardMappings.isLayoutDependentKey(keyCode) && isPrintableCharacter(character)) {
             return CefKeyEvent.KEYEVENT_KEYDOWN;
         }
 
@@ -114,5 +155,4 @@ final class GrapheneLinuxKeyEventPlatformResolver extends GrapheneBaseKeyEventPl
 
         return unmodifiedCharacter;
     }
-
 }

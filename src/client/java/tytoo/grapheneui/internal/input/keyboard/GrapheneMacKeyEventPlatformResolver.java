@@ -2,7 +2,10 @@ package tytoo.grapheneui.internal.input.keyboard;
 
 import org.lwjgl.glfw.GLFW;
 
-final class GrapheneMacKeyEventPlatformResolver extends GrapheneBaseKeyEventPlatformResolver {
+import java.util.HashMap;
+import java.util.Map;
+
+final class GrapheneMacKeyEventPlatformResolver implements GrapheneKeyEventPlatformResolver {
     private static final char MAC_UP_ARROW = '\uF700';
     private static final char MAC_DOWN_ARROW = '\uF701';
     private static final char MAC_LEFT_ARROW = '\uF702';
@@ -13,6 +16,28 @@ final class GrapheneMacKeyEventPlatformResolver extends GrapheneBaseKeyEventPlat
     private static final char MAC_END = '\uF72B';
     private static final char MAC_PAGE_UP = '\uF72C';
     private static final char MAC_PAGE_DOWN = '\uF72D';
+
+    private static final int[][] RAW_KEY_CHARACTER_OVERRIDES = {
+            {GLFW.GLFW_KEY_BACKSPACE, 0x7F},
+            {GLFW.GLFW_KEY_LEFT, MAC_LEFT_ARROW},
+            {GLFW.GLFW_KEY_RIGHT, MAC_RIGHT_ARROW},
+            {GLFW.GLFW_KEY_UP, MAC_UP_ARROW},
+            {GLFW.GLFW_KEY_DOWN, MAC_DOWN_ARROW},
+            {GLFW.GLFW_KEY_INSERT, MAC_INSERT},
+            {GLFW.GLFW_KEY_DELETE, MAC_FORWARD_DELETE},
+            {GLFW.GLFW_KEY_HOME, MAC_HOME},
+            {GLFW.GLFW_KEY_END, MAC_END},
+            {GLFW.GLFW_KEY_PAGE_UP, MAC_PAGE_UP},
+            {GLFW.GLFW_KEY_PAGE_DOWN, MAC_PAGE_DOWN}
+    };
+    private static final Map<Integer, Integer> RAW_KEY_CHARACTER_OVERRIDES_BY_KEY = createByFirstColumn(RAW_KEY_CHARACTER_OVERRIDES);
+    private static final int[][] CONTROL_CHARACTER_OVERRIDES = {
+            {GLFW.GLFW_KEY_LEFT_BRACKET, 27},
+            {GLFW.GLFW_KEY_BACKSLASH, 28},
+            {GLFW.GLFW_KEY_RIGHT_BRACKET, 29}
+    };
+    private static final Map<Integer, Integer> CONTROL_CHARACTER_OVERRIDES_BY_KEY = createByFirstColumn(CONTROL_CHARACTER_OVERRIDES);
+
     private static boolean hasModifier(int modifiers, int modifier) {
         return (modifiers & modifier) != 0;
     }
@@ -22,30 +47,31 @@ final class GrapheneMacKeyEventPlatformResolver extends GrapheneBaseKeyEventPlat
             return (char) (keyCode - GLFW.GLFW_KEY_A + 1);
         }
 
-        return switch (keyCode) {
-            case GLFW.GLFW_KEY_LEFT_BRACKET -> 27;
-            case GLFW.GLFW_KEY_BACKSLASH -> 28;
-            case GLFW.GLFW_KEY_RIGHT_BRACKET -> 29;
-            default -> 0;
-        };
+        Integer mappedCharacter = CONTROL_CHARACTER_OVERRIDES_BY_KEY.get(keyCode);
+        if (mappedCharacter == null) {
+            return 0;
+        }
+
+        return (char) mappedCharacter.intValue();
+    }
+
+    private static Map<Integer, Integer> createByFirstColumn(int[][] rows) {
+        Map<Integer, Integer> mappings = new HashMap<>();
+        for (int[] row : rows) {
+            mappings.put(row[0], row[1]);
+        }
+
+        return Map.copyOf(mappings);
     }
 
     @Override
     public char resolveRawKeyCharacter(int keyCode, char layoutCharacter) {
-        return switch (keyCode) {
-            case GLFW.GLFW_KEY_BACKSPACE -> 0x7F;
-            case GLFW.GLFW_KEY_LEFT -> MAC_LEFT_ARROW;
-            case GLFW.GLFW_KEY_RIGHT -> MAC_RIGHT_ARROW;
-            case GLFW.GLFW_KEY_UP -> MAC_UP_ARROW;
-            case GLFW.GLFW_KEY_DOWN -> MAC_DOWN_ARROW;
-            case GLFW.GLFW_KEY_INSERT -> MAC_INSERT;
-            case GLFW.GLFW_KEY_DELETE -> MAC_FORWARD_DELETE;
-            case GLFW.GLFW_KEY_HOME -> MAC_HOME;
-            case GLFW.GLFW_KEY_END -> MAC_END;
-            case GLFW.GLFW_KEY_PAGE_UP -> MAC_PAGE_UP;
-            case GLFW.GLFW_KEY_PAGE_DOWN -> MAC_PAGE_DOWN;
-            default -> layoutCharacter;
-        };
+        Integer mappedCharacter = RAW_KEY_CHARACTER_OVERRIDES_BY_KEY.get(keyCode);
+        if (mappedCharacter == null) {
+            return layoutCharacter;
+        }
+
+        return (char) mappedCharacter.intValue();
     }
 
     @Override
@@ -67,12 +93,13 @@ final class GrapheneMacKeyEventPlatformResolver extends GrapheneBaseKeyEventPlat
 
     @Override
     public int getNativeKeyCode(int keyCode, int scanCode, char character, boolean pressed) {
-        int mappedKeyCode = GrapheneMacKeyCodeMapping.resolveFromGlfwKey(keyCode);
+        int mappedKeyCode = GrapheneKeyboardMappings.macNativeFromGlfw(keyCode);
         if (mappedKeyCode != 0) {
             return mappedKeyCode;
         }
 
-        int charMappedKeyCode = GrapheneMacKeyCodeMapping.resolveFromCharacter(GrapheneCharacterMapper.normalizeTypedCharacter(character));
+        char normalizedCharacter = GrapheneKeyboardSharedUtil.normalizeTypedCharacter(character);
+        int charMappedKeyCode = GrapheneKeyboardMappings.macNativeFromCharacter(normalizedCharacter);
         if (charMappedKeyCode != 0) {
             return charMappedKeyCode;
         }
@@ -82,6 +109,7 @@ final class GrapheneMacKeyEventPlatformResolver extends GrapheneBaseKeyEventPlat
 
     @Override
     public int getCharNativeKeyCode(char character) {
-        return GrapheneMacKeyCodeMapping.resolveFromCharacter(GrapheneCharacterMapper.normalizeTypedCharacter(character));
+        char normalizedCharacter = GrapheneKeyboardSharedUtil.normalizeTypedCharacter(character);
+        return GrapheneKeyboardMappings.macNativeFromCharacter(normalizedCharacter);
     }
 }

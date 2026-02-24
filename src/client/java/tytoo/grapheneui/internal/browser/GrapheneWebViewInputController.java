@@ -4,7 +4,7 @@ import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import org.lwjgl.glfw.GLFW;
 import tytoo.grapheneui.api.bridge.GrapheneBridge;
-import tytoo.grapheneui.internal.input.GrapheneGlfwModifierUtil;
+import tytoo.grapheneui.internal.input.GrapheneInputModifierUtil;
 
 import java.awt.*;
 import java.util.Objects;
@@ -91,9 +91,9 @@ public final class GrapheneWebViewInputController {
     }
 
     public void onMouseScrolled(Point browserPoint, int delta, int rotation) {
-        int modifiers = GrapheneGlfwModifierUtil.currentModifiers();
+        int modifiers = GrapheneInputModifierUtil.currentModifiers();
         int wheelDelta = delta * rotation;
-        if (GrapheneGlfwModifierUtil.isEditShortcutModifierDown(modifiers) && wheelDelta != 0) {
+        if (GrapheneInputModifierUtil.isEditShortcutModifierDown(modifiers) && wheelDelta != 0) {
             applyZoomDelta(wheelDelta);
             return;
         }

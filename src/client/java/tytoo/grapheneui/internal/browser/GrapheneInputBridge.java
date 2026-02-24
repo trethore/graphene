@@ -4,7 +4,7 @@ import org.cef.input.CefMouseEvent;
 import org.cef.input.CefMouseWheelEvent;
 import org.cef.misc.EventFlags;
 import org.lwjgl.glfw.GLFW;
-import tytoo.grapheneui.internal.input.GrapheneCefModifierUtil;
+import tytoo.grapheneui.internal.input.GrapheneInputModifierUtil;
 import tytoo.grapheneui.internal.input.keyboard.GrapheneKeyboardInputBridge;
 
 import java.awt.*;
@@ -28,7 +28,7 @@ final class GrapheneInputBridge {
     }
 
     private static int toCefMouseModifiers(int modifiers) {
-        return GrapheneCefModifierUtil.toCefCommonModifiers(modifiers);
+        return GrapheneInputModifierUtil.toCefCommonModifiers(modifiers);
     }
 
     private static int toCefButtonDownModifier(int button) {

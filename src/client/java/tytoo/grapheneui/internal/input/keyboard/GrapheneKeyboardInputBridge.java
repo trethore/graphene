@@ -2,7 +2,6 @@ package tytoo.grapheneui.internal.input.keyboard;
 
 import org.cef.input.CefKeyEvent;
 import org.lwjgl.glfw.GLFW;
-import tytoo.grapheneui.internal.input.GrapheneKeyCodeUtil;
 
 import java.awt.event.KeyEvent;
 import java.util.function.Consumer;
@@ -13,16 +12,19 @@ public final class GrapheneKeyboardInputBridge {
 
     private final GrapheneInputLockState lockState = new GrapheneInputLockState();
     private final GrapheneKeyEventPlatformResolver platformStrategy = GrapheneKeyEventPlatformResolver.create();
-    private final CefKeyEventFactory eventFactory = new CefKeyEventFactory(platformStrategy);
 
     private char pendingSyntheticCharacter = CEF_CHAR_UNDEFINED;
     private long pendingSyntheticCharacterTimestamp;
     private boolean rightAltPressed;
 
+    private static char normalizeCefCharacter(char character) {
+        return character == KeyEvent.CHAR_UNDEFINED ? CEF_CHAR_UNDEFINED : character;
+    }
+
     public void keyTyped(Consumer<CefKeyEvent> keyEventSink, char character, int modifiers) {
         lockState.ensureLockKeyModifiersEnabled();
 
-        char normalizedCharacter = GrapheneCharacterMapper.normalizeTypedCharacter(character);
+        char normalizedCharacter = GrapheneKeyboardSharedUtil.normalizeTypedCharacter(character);
 
         if (isDuplicateSyntheticTypedCharacter(normalizedCharacter)) {
             return;
@@ -35,7 +37,7 @@ public final class GrapheneKeyboardInputBridge {
         int charEventModifiers = platformStrategy.sanitizeCharEventModifiers(modifiers, rightAltPressed);
         boolean numLockEnabled = lockState.isNumLockEnabled(modifiers);
 
-        CefKeyEvent cefEvent = eventFactory.createCharEvent(
+        CefKeyEvent cefEvent = createCharEvent(
                 GLFW.GLFW_KEY_UNKNOWN,
                 normalizedCharacter,
                 charEventModifiers,
@@ -56,13 +58,13 @@ public final class GrapheneKeyboardInputBridge {
             rightAltPressed = pressed;
         }
 
-        lockState.updateFallbackNumLockState(keyCode, pressed);
+        lockState.updateCachedNumLockState(keyCode, pressed);
 
-        char layoutCharacter = GrapheneCharacterMapper.resolveLayoutCharacter(keyCode, scanCode, modifiers);
+        char layoutCharacter = GrapheneKeyboardSharedUtil.resolveLayoutCharacter(keyCode, scanCode, modifiers);
         char character = platformStrategy.resolveRawKeyCharacter(keyCode, layoutCharacter);
 
         boolean numLockEnabled = lockState.isNumLockEnabled(modifiers);
-        boolean treatNumpadAsText = GrapheneKeyCodeUtil.isNumpadTextKey(keyCode)
+        boolean treatNumpadAsText = GrapheneKeyboardMappings.isNumpadTextKey(keyCode)
                 && isNumpadTextModeEnabled(keyCode, numLockEnabled);
 
         if (treatNumpadAsText) {
@@ -73,7 +75,7 @@ public final class GrapheneKeyboardInputBridge {
             return;
         }
 
-        CefKeyEvent cefEvent = eventFactory.createRawKeyEvent(
+        CefKeyEvent cefEvent = createRawKeyEvent(
                 keyCode,
                 scanCode,
                 modifiers,
@@ -100,7 +102,7 @@ public final class GrapheneKeyboardInputBridge {
             int scanCode,
             boolean numLockEnabled
     ) {
-        CefKeyEvent cefEvent = eventFactory.createRawKeyEvent(
+        CefKeyEvent cefEvent = createRawKeyEvent(
                 glfwKeyCode,
                 scanCode,
                 modifiers,
@@ -118,15 +120,56 @@ public final class GrapheneKeyboardInputBridge {
             int modifiers,
             boolean numLockEnabled
     ) {
-        char normalizedCharacter = GrapheneCharacterMapper.normalizeTypedCharacter(character);
+        char normalizedCharacter = GrapheneKeyboardSharedUtil.normalizeTypedCharacter(character);
         if (normalizedCharacter == KeyEvent.CHAR_UNDEFINED || normalizedCharacter == CEF_CHAR_UNDEFINED) {
             return;
         }
 
         rememberSyntheticTypedCharacter(normalizedCharacter);
         int charEventModifiers = platformStrategy.sanitizeCharEventModifiers(modifiers, rightAltPressed);
-        CefKeyEvent cefEvent = eventFactory.createCharEvent(keyCode, normalizedCharacter, charEventModifiers, numLockEnabled);
+        CefKeyEvent cefEvent = createCharEvent(keyCode, normalizedCharacter, charEventModifiers, numLockEnabled);
         keyEventSink.accept(cefEvent);
+    }
+
+    private CefKeyEvent createRawKeyEvent(
+            int keyCode,
+            int scanCode,
+            int modifiers,
+            boolean pressed,
+            char character,
+            boolean numLockEnabled
+    ) {
+        char normalizedCharacter = normalizeCefCharacter(character);
+        int resolvedScanCode = platformStrategy.resolveScanCode(keyCode, scanCode);
+        char rawEventUnmodifiedCharacter = platformStrategy.getRawEventUnmodifiedCharacter(
+                keyCode,
+                normalizedCharacter,
+                modifiers
+        );
+        char rawEventCharacter = platformStrategy.getRawEventCharacter(keyCode, rawEventUnmodifiedCharacter, modifiers);
+        return new CefKeyEvent(
+                platformStrategy.getRawEventType(pressed, keyCode, rawEventCharacter),
+                GrapheneKeyboardSharedUtil.toCefKeyboardModifiers(modifiers, keyCode, numLockEnabled),
+                GrapheneKeyboardSharedUtil.resolveDomKeyCode(keyCode, normalizedCharacter, numLockEnabled),
+                platformStrategy.getNativeKeyCode(keyCode, resolvedScanCode, normalizedCharacter, pressed),
+                platformStrategy.isSystemKey(modifiers),
+                rawEventCharacter,
+                rawEventUnmodifiedCharacter,
+                platformStrategy.getScanCode(resolvedScanCode)
+        );
+    }
+
+    private CefKeyEvent createCharEvent(int keyCode, char character, int modifiers, boolean numLockEnabled) {
+        char normalizedCharacter = normalizeCefCharacter(character);
+        return new CefKeyEvent(
+                CefKeyEvent.KEYEVENT_CHAR,
+                GrapheneKeyboardSharedUtil.toCefKeyboardModifiers(modifiers, keyCode, numLockEnabled),
+                normalizedCharacter,
+                platformStrategy.getCharNativeKeyCode(normalizedCharacter),
+                platformStrategy.isSystemKey(modifiers),
+                normalizedCharacter,
+                normalizedCharacter
+        );
     }
 
     private void rememberSyntheticTypedCharacter(char character) {
@@ -148,6 +191,6 @@ public final class GrapheneKeyboardInputBridge {
     }
 
     private boolean isNumpadTextModeEnabled(int keyCode, boolean numLockEnabled) {
-        return !GrapheneKeyCodeUtil.requiresNumLockForText(keyCode) || numLockEnabled;
+        return !GrapheneKeyboardMappings.requiresNumLockForText(keyCode) || numLockEnabled;
     }
 }
