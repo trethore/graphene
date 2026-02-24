@@ -21,6 +21,8 @@ import javax.inject.Inject
 
 abstract class UnpackSourcesTask : DefaultTask() {
 
+	private data class GitRepository(val url: String, val branch: String?)
+
 	@get:InputFiles
 	@get:PathSensitive(PathSensitivity.RELATIVE)
 	abstract val sourceDeps: ConfigurableFileCollection
@@ -79,14 +81,43 @@ abstract class UnpackSourcesTask : DefaultTask() {
 
 	private fun cloneGitRepositories(outputDirFile: File) {
 		val repositories = gitRepos.orNull.orEmpty()
-		repositories.forEach { repoUrl ->
-			val targetDir = File(outputDirFile, deriveRepoDirectoryName(repoUrl))
+		repositories.forEach { repositorySpec ->
+			val gitRepository = parseGitRepository(repositorySpec)
+			val targetDir = File(outputDirFile, deriveRepoDirectoryName(gitRepository.url))
 
 			fileSystemOperations.delete { delete(targetDir) }
 			execOperations.exec {
-				commandLine("git", "clone", "--depth", "1", repoUrl, targetDir.absolutePath)
+				val commandLineArguments = mutableListOf("git", "clone", "--depth", "1")
+				gitRepository.branch?.let { branch ->
+					commandLineArguments.add("--branch")
+					commandLineArguments.add(branch)
+					commandLineArguments.add("--single-branch")
+				}
+				commandLineArguments.add(gitRepository.url)
+				commandLineArguments.add(targetDir.absolutePath)
+				commandLine(commandLineArguments)
 			}
 		}
+	}
+
+	private fun parseGitRepository(repositorySpec: String): GitRepository {
+		val trimmedSpec = repositorySpec.trim()
+		if (trimmedSpec.isBlank()) {
+			throw GradleException("Git repository specification cannot be blank")
+		}
+
+		val splitSpec = trimmedSpec.split('#', limit = 2)
+		if (splitSpec.size == 1) {
+			return GitRepository(trimmedSpec, null)
+		}
+
+		val url = splitSpec[0].trim()
+		val branch = splitSpec[1].trim()
+		if (url.isBlank() || branch.isBlank()) {
+			throw GradleException("Invalid git repository specification: $repositorySpec. Use <url>#<branch>.")
+		}
+
+		return GitRepository(url, branch)
 	}
 
 	private fun unpackMinecraftSources(outputDirFile: File) {
@@ -142,7 +173,15 @@ abstract class UnpackSourcesTask : DefaultTask() {
 
 	private fun deriveRepoDirectoryName(repoUrl: String): String {
 		val trimmedUrl = repoUrl.trim().removeSuffix("/")
-		val repoName = trimmedUrl.substringAfterLast('/').substringBeforeLast(".git")
+		val cleanedUrl = trimmedUrl.substringBefore('?').substringBeforeLast(".git")
+		val ownerAndRepoMatch = Regex("[:/]([^/:]+)/([^/:]+)$").find(cleanedUrl)
+
+		val repoName = ownerAndRepoMatch?.let { matchResult ->
+			val owner = matchResult.groupValues[1]
+			val repository = matchResult.groupValues[2]
+			"$owner-$repository"
+		} ?: cleanedUrl.substringAfterLast('/').substringAfterLast(':')
+
 		if (repoName.isBlank()) {
 			throw GradleException("Unable to derive repository name from URL: $repoUrl")
 		}
