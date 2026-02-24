@@ -164,7 +164,7 @@ final class GrapheneKeyboardMappings {
             {'\u00D9', WINDOWS_VK_OEM_3},
             {'\u00B2', WINDOWS_VK_OEM_7}
     };
-
+    private static final Map<Integer, Integer> WINDOWS_VK_BY_CHARACTER = createByFirstColumn(WINDOWS_VK_FROM_CHARACTER, 1);
     private static final int[][] WINDOWS_VK_LAYOUT_OVERRIDES = {
             {GLFW.GLFW_KEY_COMMA, ';', WINDOWS_VK_OEM_PERIOD},
             {GLFW.GLFW_KEY_PERIOD, ':', WINDOWS_VK_OEM_2},
@@ -176,8 +176,6 @@ final class GrapheneKeyboardMappings {
             {GLFW.GLFW_KEY_LEFT_BRACKET, '^', WINDOWS_VK_OEM_6},
             {GLFW.GLFW_KEY_GRAVE_ACCENT, '\u00B2', WINDOWS_VK_OEM_7}
     };
-
-    private static final Map<Integer, Integer> WINDOWS_VK_BY_CHARACTER = createByFirstColumn(WINDOWS_VK_FROM_CHARACTER, 1);
     private static final Map<Long, Integer> WINDOWS_VK_LAYOUT_OVERRIDES_BY_PAIR = createByKeyAndCharacter(WINDOWS_VK_LAYOUT_OVERRIDES);
     private static final int[][] GLFW_KEY_TO_CHARACTER = {
             {GLFW.GLFW_KEY_A, 'a', 'A'},
