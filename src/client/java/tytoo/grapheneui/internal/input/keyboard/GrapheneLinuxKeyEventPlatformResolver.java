@@ -123,7 +123,6 @@ final class GrapheneLinuxKeyEventPlatformResolver implements GrapheneKeyEventPla
         return GrapheneKeyEventPlatformResolver.super.getNativeKeyCode(keyCode, scanCode, character, pressed);
     }
 
-
     @Override
     public boolean isSystemKey(int modifiers) {
         return (modifiers & GLFW.GLFW_MOD_ALT) != 0;
@@ -141,5 +140,14 @@ final class GrapheneLinuxKeyEventPlatformResolver implements GrapheneKeyEventPla
         }
 
         return unmodifiedCharacter;
+    }
+
+    @Override
+    public int sanitizeCharEventModifiers(int modifiers, boolean rightAltPressed) {
+        if (!rightAltPressed || !hasModifier(modifiers, GLFW.GLFW_MOD_ALT)) {
+            return modifiers;
+        }
+
+        return modifiers & ~(GLFW.GLFW_MOD_CONTROL | GLFW.GLFW_MOD_ALT);
     }
 }
