@@ -2,8 +2,6 @@ package tytoo.grapheneui.internal.input.keyboard;
 
 import org.lwjgl.glfw.GLFW;
 
-import java.awt.event.KeyEvent;
-
 final class GrapheneMacKeyEventPlatformResolver extends GrapheneBaseKeyEventPlatformResolver {
     private static final char MAC_UP_ARROW = '\uF700';
     private static final char MAC_DOWN_ARROW = '\uF701';
@@ -15,19 +13,21 @@ final class GrapheneMacKeyEventPlatformResolver extends GrapheneBaseKeyEventPlat
     private static final char MAC_END = '\uF72B';
     private static final char MAC_PAGE_UP = '\uF72C';
     private static final char MAC_PAGE_DOWN = '\uF72D';
-    private static final char MAC_FUNCTION_KEY_START = '\uF700';
-    private static final char MAC_FUNCTION_KEY_END = '\uF8FF';
+    private static boolean hasModifier(int modifiers, int modifier) {
+        return (modifiers & modifier) != 0;
+    }
 
-    private static boolean isRawCharacterRequired(char character) {
-        if (character == 0x7F) {
-            return true;
+    private static char getControlCharacter(int keyCode) {
+        if (keyCode >= GLFW.GLFW_KEY_A && keyCode <= GLFW.GLFW_KEY_Z) {
+            return (char) (keyCode - GLFW.GLFW_KEY_A + 1);
         }
 
-        if (character >= MAC_FUNCTION_KEY_START && character <= MAC_FUNCTION_KEY_END) {
-            return true;
-        }
-
-        return character == '\t' || character == '\r';
+        return switch (keyCode) {
+            case GLFW.GLFW_KEY_LEFT_BRACKET -> 27;
+            case GLFW.GLFW_KEY_BACKSLASH -> 28;
+            case GLFW.GLFW_KEY_RIGHT_BRACKET -> 29;
+            default -> 0;
+        };
     }
 
     @Override
@@ -49,12 +49,20 @@ final class GrapheneMacKeyEventPlatformResolver extends GrapheneBaseKeyEventPlat
     }
 
     @Override
-    public char toRawEventCharacter(char character) {
-        if (isRawCharacterRequired(character)) {
-            return character;
+    public char getRawEventUnmodifiedCharacter(int keyCode, char character, int modifiers) {
+        return character;
+    }
+
+    @Override
+    public char getRawEventCharacter(int keyCode, char unmodifiedCharacter, int modifiers) {
+        if (hasModifier(modifiers, GLFW.GLFW_MOD_CONTROL)) {
+            char controlCharacter = getControlCharacter(keyCode);
+            if (controlCharacter != 0) {
+                return controlCharacter;
+            }
         }
 
-        return KeyEvent.CHAR_UNDEFINED;
+        return unmodifiedCharacter;
     }
 
     @Override

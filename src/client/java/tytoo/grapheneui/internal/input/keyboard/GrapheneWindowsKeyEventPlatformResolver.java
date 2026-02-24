@@ -4,6 +4,42 @@ import org.cef.input.CefKeyEvent;
 import org.lwjgl.glfw.GLFW;
 
 final class GrapheneWindowsKeyEventPlatformResolver extends GrapheneBaseKeyEventPlatformResolver {
+    private static boolean isGlfwScanCodePreferredKey(int keyCode) {
+        return switch (keyCode) {
+            case GLFW.GLFW_KEY_BACKSPACE,
+                 GLFW.GLFW_KEY_KP_4,
+                 GLFW.GLFW_KEY_KP_8,
+                 GLFW.GLFW_KEY_KP_6,
+                 GLFW.GLFW_KEY_KP_2,
+                 GLFW.GLFW_KEY_PRINT_SCREEN,
+                 GLFW.GLFW_KEY_SCROLL_LOCK,
+                 GLFW.GLFW_KEY_CAPS_LOCK,
+                 GLFW.GLFW_KEY_NUM_LOCK,
+                 GLFW.GLFW_KEY_PAUSE,
+                 GLFW.GLFW_KEY_INSERT -> true;
+            default -> false;
+        };
+    }
+
+    private static int remapWindowsScanCode(int keyCode) {
+        return switch (keyCode) {
+            case GLFW.GLFW_KEY_LEFT_CONTROL,
+                 GLFW.GLFW_KEY_RIGHT_CONTROL -> 29;
+            case GLFW.GLFW_KEY_DELETE -> 83;
+            case GLFW.GLFW_KEY_LEFT -> 75;
+            case GLFW.GLFW_KEY_DOWN -> 80;
+            case GLFW.GLFW_KEY_UP -> 72;
+            case GLFW.GLFW_KEY_RIGHT -> 77;
+            case GLFW.GLFW_KEY_PAGE_DOWN -> 81;
+            case GLFW.GLFW_KEY_PAGE_UP -> 73;
+            case GLFW.GLFW_KEY_END -> 79;
+            case GLFW.GLFW_KEY_HOME -> 71;
+            case GLFW.GLFW_KEY_ENTER,
+                 GLFW.GLFW_KEY_KP_ENTER -> 28;
+            default -> 0;
+        };
+    }
+
     private static boolean isWindowsExtendedKey(int keyCode) {
         return switch (keyCode) {
             case GLFW.GLFW_KEY_RIGHT_ALT,
@@ -24,6 +60,23 @@ final class GrapheneWindowsKeyEventPlatformResolver extends GrapheneBaseKeyEvent
                  GLFW.GLFW_KEY_PRINT_SCREEN -> true;
             default -> false;
         };
+    }
+
+    @Override
+    public int resolveScanCode(int keyCode, int scanCode) {
+        if (isGlfwScanCodePreferredKey(keyCode)) {
+            int glfwScanCode = GLFW.glfwGetKeyScancode(keyCode);
+            if (glfwScanCode > 0) {
+                return glfwScanCode;
+            }
+        }
+
+        int remappedScanCode = remapWindowsScanCode(keyCode);
+        if (remappedScanCode != 0) {
+            return remappedScanCode;
+        }
+
+        return scanCode;
     }
 
     @Override

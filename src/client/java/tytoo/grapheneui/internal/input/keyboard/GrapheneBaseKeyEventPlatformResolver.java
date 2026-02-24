@@ -36,8 +36,23 @@ abstract class GrapheneBaseKeyEventPlatformResolver implements GrapheneKeyEventP
     }
 
     @Override
+    public int resolveScanCode(int keyCode, int scanCode) {
+        return scanCode;
+    }
+
+    @Override
     public long getScanCode(int scanCode) {
         return scanCode <= 0 ? 0L : scanCode;
+    }
+
+    @Override
+    public char getRawEventUnmodifiedCharacter(int keyCode, char character, int modifiers) {
+        return toRawEventCharacter(character);
+    }
+
+    @Override
+    public char getRawEventCharacter(int keyCode, char unmodifiedCharacter, int modifiers) {
+        return unmodifiedCharacter;
     }
 
     @Override

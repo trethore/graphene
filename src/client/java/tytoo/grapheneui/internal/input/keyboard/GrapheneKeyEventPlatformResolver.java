@@ -27,7 +27,13 @@ interface GrapheneKeyEventPlatformResolver {
 
     int getRawEventType(boolean pressed, int keyCode, char character);
 
+    int resolveScanCode(int keyCode, int scanCode);
+
     long getScanCode(int scanCode);
+
+    char getRawEventUnmodifiedCharacter(int keyCode, char character, int modifiers);
+
+    char getRawEventCharacter(int keyCode, char unmodifiedCharacter, int modifiers);
 
     int sanitizeCharEventModifiers(int modifiers, boolean rightAltPressed);
 

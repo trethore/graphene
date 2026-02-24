@@ -72,16 +72,22 @@ final class CefKeyEventFactory {
             boolean numLockEnabled
     ) {
         char normalizedCharacter = normalizeCharacter(character);
-        char rawEventCharacter = platformStrategy.toRawEventCharacter(normalizedCharacter);
+        int resolvedScanCode = platformStrategy.resolveScanCode(keyCode, scanCode);
+        char rawEventUnmodifiedCharacter = platformStrategy.getRawEventUnmodifiedCharacter(
+                keyCode,
+                normalizedCharacter,
+                modifiers
+        );
+        char rawEventCharacter = platformStrategy.getRawEventCharacter(keyCode, rawEventUnmodifiedCharacter, modifiers);
         return new CefKeyEvent(
                 platformStrategy.getRawEventType(pressed, keyCode, rawEventCharacter),
                 toCefModifiers(modifiers, keyCode, numLockEnabled),
                 GrapheneDomKeyCodeMapper.resolveDomKeyCode(keyCode, normalizedCharacter, numLockEnabled),
-                platformStrategy.getNativeKeyCode(keyCode, scanCode, normalizedCharacter, pressed),
+                platformStrategy.getNativeKeyCode(keyCode, resolvedScanCode, normalizedCharacter, pressed),
                 platformStrategy.isSystemKey(modifiers),
                 rawEventCharacter,
-                rawEventCharacter,
-                platformStrategy.getScanCode(scanCode)
+                rawEventUnmodifiedCharacter,
+                platformStrategy.getScanCode(resolvedScanCode)
         );
     }
 
