@@ -220,7 +220,7 @@ val unpackSources by tasks.registering(UnpackSourcesTask::class) {
 	sourceDeps.from(configurations.named("sourceDeps"))
 	gitRepos.set(
 		listOf(
-			"https://github.com/trethore/jcef"
+			"https://github.com/trethore/jcef#master"
 		)
 	)
 	outputDir.set(unpackedSourcesDir)
