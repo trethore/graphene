@@ -21,6 +21,7 @@ final class GrapheneKeyboardMappings {
     private static final int WINDOWS_VK_OEM_5 = 0xDC;
     private static final int WINDOWS_VK_OEM_6 = 0xDD;
     private static final int WINDOWS_VK_OEM_7 = 0xDE;
+    private static final int WINDOWS_VK_OEM_8 = 0xDF;
     private static final int WINDOWS_VK_OEM_102 = 0xE2;
 
     private static final int[][] WINDOWS_VK_FROM_GLFW = {
@@ -156,9 +157,26 @@ final class GrapheneKeyboardMappings {
             {'\u00E7', KeyEvent.VK_9},
             {'\u00C7', KeyEvent.VK_9},
             {'\u00E0', KeyEvent.VK_0},
-            {'\u00C0', KeyEvent.VK_0}
+            {'\u00C0', KeyEvent.VK_0},
+            {'\u00F9', WINDOWS_VK_OEM_3},
+            {'\u00D9', WINDOWS_VK_OEM_3},
+            {'\u00B2', WINDOWS_VK_OEM_7}
     };
+
+    private static final int[][] WINDOWS_VK_LAYOUT_OVERRIDES = {
+            {GLFW.GLFW_KEY_COMMA, ';', WINDOWS_VK_OEM_PERIOD},
+            {GLFW.GLFW_KEY_PERIOD, ':', WINDOWS_VK_OEM_2},
+            {GLFW.GLFW_KEY_SLASH, '!', WINDOWS_VK_OEM_8},
+            {GLFW.GLFW_KEY_APOSTROPHE, '%', WINDOWS_VK_OEM_3},
+            {GLFW.GLFW_KEY_APOSTROPHE, '\u00F9', WINDOWS_VK_OEM_3},
+            {GLFW.GLFW_KEY_APOSTROPHE, '\u00D9', WINDOWS_VK_OEM_3},
+            {GLFW.GLFW_KEY_RIGHT_BRACKET, '$', WINDOWS_VK_OEM_1},
+            {GLFW.GLFW_KEY_LEFT_BRACKET, '^', WINDOWS_VK_OEM_6},
+            {GLFW.GLFW_KEY_GRAVE_ACCENT, '\u00B2', WINDOWS_VK_OEM_7}
+    };
+
     private static final Map<Integer, Integer> WINDOWS_VK_BY_CHARACTER = createByFirstColumn(WINDOWS_VK_FROM_CHARACTER, 1);
+    private static final Map<Long, Integer> WINDOWS_VK_LAYOUT_OVERRIDES_BY_PAIR = createByKeyAndCharacter(WINDOWS_VK_LAYOUT_OVERRIDES);
     private static final int[][] GLFW_KEY_TO_CHARACTER = {
             {GLFW.GLFW_KEY_A, 'a', 'A'},
             {GLFW.GLFW_KEY_B, 'b', 'B'},
@@ -560,6 +578,10 @@ final class GrapheneKeyboardMappings {
         return WINDOWS_VK_BY_CHARACTER.getOrDefault((int) character, 0);
     }
 
+    static int windowsVkFromLayoutPair(int keyCode, char character) {
+        return WINDOWS_VK_LAYOUT_OVERRIDES_BY_PAIR.getOrDefault(pairKey(keyCode, character), 0);
+    }
+
     static int macNativeFromGlfw(int keyCode) {
         return MAC_NATIVE_KEY_CODES_BY_GLFW.getOrDefault(keyCode, 0);
     }
@@ -610,5 +632,18 @@ final class GrapheneKeyboardMappings {
         }
 
         return Set.copyOf(values);
+    }
+
+    private static Map<Long, Integer> createByKeyAndCharacter(int[][] rows) {
+        Map<Long, Integer> mappings = new HashMap<>();
+        for (int[] row : rows) {
+            mappings.put(pairKey(row[0], (char) row[1]), row[2]);
+        }
+
+        return Map.copyOf(mappings);
+    }
+
+    private static long pairKey(int keyCode, char character) {
+        return ((long) keyCode << 32) | (character & 0xFFFFL);
     }
 }

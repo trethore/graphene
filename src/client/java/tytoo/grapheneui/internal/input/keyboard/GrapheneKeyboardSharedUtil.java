@@ -85,6 +85,11 @@ final class GrapheneKeyboardSharedUtil {
             return Character.toUpperCase(character);
         }
 
+        int layoutMappedKeyCode = GrapheneKeyboardMappings.windowsVkFromLayoutPair(keyCode, character);
+        if (layoutMappedKeyCode != 0) {
+            return layoutMappedKeyCode;
+        }
+
         int mappedKeyCode = GrapheneKeyboardMappings.windowsVkFromGlfw(keyCode);
         if (mappedKeyCode != 0) {
             return mappedKeyCode;
