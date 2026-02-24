@@ -588,8 +588,16 @@ final class GrapheneKeyboardMappings {
         return MAC_NATIVE_KEY_CODES_BY_GLFW.getOrDefault(keyCode, 0);
     }
 
+    static boolean hasMacNativeFromGlfw(int keyCode) {
+        return MAC_NATIVE_KEY_CODES_BY_GLFW.containsKey(keyCode);
+    }
+
     static int macNativeFromCharacter(char character) {
         return MAC_NATIVE_KEY_CODES_BY_CHARACTER.getOrDefault((int) character, 0);
+    }
+
+    static boolean hasMacNativeFromCharacter(char character) {
+        return MAC_NATIVE_KEY_CODES_BY_CHARACTER.containsKey((int) character);
     }
 
     static boolean isNumpadKey(int keyCode) {
