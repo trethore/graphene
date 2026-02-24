@@ -1,6 +1,5 @@
 package tytoo.grapheneui.internal.input.keyboard;
 
-import org.cef.input.CefKeyEvent;
 import org.lwjgl.glfw.GLFW;
 
 import java.util.HashMap;
@@ -124,18 +123,6 @@ final class GrapheneLinuxKeyEventPlatformResolver implements GrapheneKeyEventPla
         return GrapheneKeyEventPlatformResolver.super.getNativeKeyCode(keyCode, scanCode, character, pressed);
     }
 
-    @Override
-    public int getRawEventType(boolean pressed, int keyCode, char character) {
-        if (!pressed) {
-            return CefKeyEvent.KEYEVENT_KEYUP;
-        }
-
-        if (GrapheneKeyboardMappings.isLayoutDependentKey(keyCode) && isPrintableCharacter(character)) {
-            return CefKeyEvent.KEYEVENT_KEYDOWN;
-        }
-
-        return CefKeyEvent.KEYEVENT_RAWKEYDOWN;
-    }
 
     @Override
     public boolean isSystemKey(int modifiers) {

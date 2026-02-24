@@ -1,9 +1,7 @@
 package tytoo.grapheneui.internal.input.keyboard;
 
-import org.cef.input.CefKeyEvent;
 import org.lwjgl.glfw.GLFW;
 
-import java.awt.event.KeyEvent;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -42,10 +40,6 @@ final class GrapheneMacKeyEventPlatformResolver implements GrapheneKeyEventPlatf
 
     private static boolean hasModifier(int modifiers, int modifier) {
         return (modifiers & modifier) != 0;
-    }
-
-    private static boolean isPrintableCharacter(char character) {
-        return character >= 0x20 && !Character.isISOControl(character) && character != KeyEvent.CHAR_UNDEFINED;
     }
 
     private static char getControlCharacter(int keyCode) {
@@ -121,16 +115,4 @@ final class GrapheneMacKeyEventPlatformResolver implements GrapheneKeyEventPlatf
         return GrapheneKeyboardMappings.macNativeFromCharacter(normalizedCharacter);
     }
 
-    @Override
-    public int getRawEventType(boolean pressed, int keyCode, char character) {
-        if (!pressed) {
-            return CefKeyEvent.KEYEVENT_KEYUP;
-        }
-
-        if (GrapheneKeyboardMappings.isLayoutDependentKey(keyCode) && isPrintableCharacter(character)) {
-            return CefKeyEvent.KEYEVENT_KEYDOWN;
-        }
-
-        return CefKeyEvent.KEYEVENT_RAWKEYDOWN;
-    }
 }
