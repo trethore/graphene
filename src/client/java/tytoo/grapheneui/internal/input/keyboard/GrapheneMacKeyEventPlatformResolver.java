@@ -92,6 +92,11 @@ final class GrapheneMacKeyEventPlatformResolver implements GrapheneKeyEventPlatf
     }
 
     @Override
+    public boolean isSystemKey(int modifiers) {
+        return (modifiers & GLFW.GLFW_MOD_SUPER) != 0;
+    }
+
+    @Override
     public int getNativeKeyCode(int keyCode, int scanCode, char character, boolean pressed) {
         if (GrapheneKeyboardMappings.hasMacNativeFromGlfw(keyCode)) {
             return GrapheneKeyboardMappings.macNativeFromGlfw(keyCode);
