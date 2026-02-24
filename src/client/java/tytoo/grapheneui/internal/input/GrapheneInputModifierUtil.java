@@ -55,6 +55,10 @@ public final class GrapheneInputModifierUtil {
         return modifiers;
     }
 
+    public static int mergeWithCurrentModifiers(int modifiers) {
+        return modifiers | currentModifiers();
+    }
+
     public static boolean isEditShortcutModifierDown(int modifiers) {
         if (GraphenePlatform.isMac()) {
             return (modifiers & GLFW.GLFW_MOD_SUPER) != 0;
