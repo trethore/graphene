@@ -23,6 +23,8 @@ final class GrapheneKeyboardMappings {
     private static final int WINDOWS_VK_OEM_7 = 0xDE;
     private static final int WINDOWS_VK_OEM_8 = 0xDF;
     private static final int WINDOWS_VK_OEM_102 = 0xE2;
+    private static final int WINDOWS_VK_LWIN = 0x5B;
+    private static final int WINDOWS_VK_RWIN = 0x5C;
 
     private static final int[][] WINDOWS_VK_FROM_GLFW = {
             {GLFW.GLFW_KEY_BACKSPACE, KeyEvent.VK_BACK_SPACE},
@@ -45,8 +47,8 @@ final class GrapheneKeyboardMappings {
             {GLFW.GLFW_KEY_RIGHT_CONTROL, KeyEvent.VK_CONTROL},
             {GLFW.GLFW_KEY_LEFT_ALT, KeyEvent.VK_ALT},
             {GLFW.GLFW_KEY_RIGHT_ALT, KeyEvent.VK_ALT},
-            {GLFW.GLFW_KEY_LEFT_SUPER, KeyEvent.VK_WINDOWS},
-            {GLFW.GLFW_KEY_RIGHT_SUPER, KeyEvent.VK_WINDOWS},
+            {GLFW.GLFW_KEY_LEFT_SUPER, WINDOWS_VK_LWIN},
+            {GLFW.GLFW_KEY_RIGHT_SUPER, WINDOWS_VK_RWIN},
             {GLFW.GLFW_KEY_GRAVE_ACCENT, WINDOWS_VK_OEM_3},
             {GLFW.GLFW_KEY_MINUS, WINDOWS_VK_OEM_MINUS},
             {GLFW.GLFW_KEY_EQUAL, WINDOWS_VK_OEM_PLUS},
