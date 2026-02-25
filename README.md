@@ -50,7 +50,7 @@ Graphene is published on GitHub Packages. Check the latest available version her
 
 ```xml
 <dependency>
-  <groupId>tytoo.grapheneui</groupId>
+  <groupId>io.github.trethore</groupId>
   <artifactId>graphene-ui</artifactId>
   <version>&lt;version&gt;</version>
 </dependency>
@@ -73,7 +73,7 @@ repositories {
 }
 
 dependencies {
-    modImplementation("tytoo.grapheneui:graphene-ui:<version>")
+    modImplementation("io.github.trethore:graphene-ui:<version>")
 }
 ```
 

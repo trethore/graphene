@@ -12,6 +12,7 @@ import tytoo.graphene.UnpackSourcesTask
 plugins {
 	id("net.fabricmc.fabric-loom-remap")
 	id("maven-publish")
+	id("signing")
 }
 
 val modVersion = property("mod_version") as String
@@ -29,6 +30,17 @@ val grapheneDebugSelector = (findProperty("grapheneDebug") as String?)
 val githubUsername: String? = (findProperty("gpr.user") as String?) ?: System.getenv("GITHUB_ACTOR")
 val githubToken: String? = (findProperty("gpr.key") as String?) ?: System.getenv("GITHUB_TOKEN")
 val githubRepository = (findProperty("gpr.repo") as String?) ?: System.getenv("GITHUB_REPOSITORY") ?: "trethore/graphene"
+val mavenCentralUsername: String? = (findProperty("mavenCentralUsername") as String?)
+	?: System.getenv("MAVEN_CENTRAL_USERNAME")
+val mavenCentralPassword: String? = (findProperty("mavenCentralPassword") as String?)
+	?: System.getenv("MAVEN_CENTRAL_PASSWORD")
+val mavenCentralSigningKey: String? = (findProperty("mavenCentralSigningKey") as String?)
+	?: System.getenv("MAVEN_GPG_PRIVATE_KEY")
+val mavenCentralSigningPassphrase: String? = (findProperty("mavenCentralSigningPassphrase") as String?)
+	?: System.getenv("MAVEN_GPG_PASSPHRASE")
+val isMavenCentralPublishRequested: Boolean = gradle.startParameter.taskNames.any { taskName ->
+	taskName == "publish" || taskName.contains("MavenCentral", ignoreCase = true)
+}
 
 version = modVersion
 group = mavenGroup
@@ -148,6 +160,7 @@ java {
 	sourceCompatibility = JavaVersion.toVersion(javaLanguageVersion.asInt())
 	targetCompatibility = JavaVersion.toVersion(javaLanguageVersion.asInt())
 	withSourcesJar()
+	withJavadocJar()
 }
 
 val javaToolchainService: JavaToolchainService = extensions.getByType(JavaToolchainService::class.java)
@@ -185,6 +198,29 @@ publishing {
 		create<MavenPublication>("mavenJava") {
 			artifactId = archivesBaseName
 			from(components["java"])
+			pom {
+				name.set("Graphene UI")
+				description.set("Client-side Chromium-based UI library for Minecraft Fabric mods.")
+				url.set("https://github.com/trethore/graphene")
+				licenses {
+					license {
+						name.set("MIT License")
+						url.set("https://github.com/trethore/graphene/blob/main/LICENSE")
+					}
+				}
+				developers {
+					developer {
+						id.set("trethore")
+						name.set("Titouan Rethore")
+						email.set("titou.rethore@gmail.com")
+					}
+				}
+				scm {
+					connection.set("scm:git:git://github.com/trethore/graphene.git")
+					developerConnection.set("scm:git:ssh://git@github.com/trethore/graphene.git")
+					url.set("https://github.com/trethore/graphene")
+				}
+			}
 		}
 	}
 
@@ -198,6 +234,40 @@ publishing {
 				password = githubToken
 			}
 		}
+		maven {
+			name = "MavenCentral"
+			url = uri("https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/")
+			credentials {
+				username = mavenCentralUsername
+				password = mavenCentralPassword
+			}
+		}
+	}
+}
+
+if (isMavenCentralPublishRequested) {
+	check(!modVersion.endsWith("-SNAPSHOT")) {
+		"Maven Central publishing requires a non-SNAPSHOT mod_version"
+	}
+	check(!mavenCentralUsername.isNullOrBlank()) {
+		"Maven Central publishing requires MAVEN_CENTRAL_USERNAME or mavenCentralUsername"
+	}
+	check(!mavenCentralPassword.isNullOrBlank()) {
+		"Maven Central publishing requires MAVEN_CENTRAL_PASSWORD or mavenCentralPassword"
+	}
+	check(!mavenCentralSigningKey.isNullOrBlank()) {
+		"Maven Central publishing requires MAVEN_GPG_PRIVATE_KEY or mavenCentralSigningKey"
+	}
+	check(!mavenCentralSigningPassphrase.isNullOrBlank()) {
+		"Maven Central publishing requires MAVEN_GPG_PASSPHRASE or mavenCentralSigningPassphrase"
+	}
+}
+
+signing {
+	setRequired { isMavenCentralPublishRequested }
+	if (!mavenCentralSigningKey.isNullOrBlank() && !mavenCentralSigningPassphrase.isNullOrBlank()) {
+		useInMemoryPgpKeys(mavenCentralSigningKey, mavenCentralSigningPassphrase)
+		sign(publishing.publications["mavenJava"])
 	}
 }
 
