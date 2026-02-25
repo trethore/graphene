@@ -24,7 +24,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, AutoCloseable {
     private static final String PATH_DELIMITER = "/";
     private static final String ASSETS_PREFIX = "assets" + PATH_DELIMITER;
-    private static final String ALLOW_METHODS = "GET, HEAD";
+    private static final String ALLOW_METHODS = "GET, HEAD, POST";
     private static final String HEADER_CONTENT_TYPE = "Content-Type";
     private static final String HEADER_ALLOW = "Allow";
     private static final String CONTENT_TYPE_TEXT_PLAIN = "text/plain";
@@ -241,7 +241,8 @@ public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, Auto
                 String method = exchange.getRequestMethod();
                 boolean isHeadRequest = "HEAD".equalsIgnoreCase(method);
                 boolean isGetRequest = "GET".equalsIgnoreCase(method);
-                if (!isGetRequest && !isHeadRequest) {
+                boolean isPostRequest = "POST".equalsIgnoreCase(method);
+                if (!isGetRequest && !isHeadRequest && !isPostRequest) {
                     Headers responseHeaders = exchange.getResponseHeaders();
                     responseHeaders.set(HEADER_ALLOW, ALLOW_METHODS);
                     responseHeaders.set(HEADER_CONTENT_TYPE, CONTENT_TYPE_TEXT_PLAIN);
@@ -256,18 +257,18 @@ public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, Auto
                     return;
                 }
 
-                ResourceResponse response = loadResourceResponse(requestPath, isGetRequest);
+                ResourceResponse response = loadResourceResponse(requestPath, isGetRequest || isPostRequest);
                 send(exchange, response.statusCode(), response.contentType(), response.payload(), isHeadRequest);
             }
         }
 
-        private ResourceResponse loadResourceResponse(String requestPath, boolean isGetRequest) {
+        private ResourceResponse loadResourceResponse(String requestPath, boolean allowSpaFallback) {
             ResourceResponse directResponse = loadResource(requestPath);
             if (directResponse.statusCode() != 404) {
                 return directResponse;
             }
 
-            if (!isGetRequest || spaFallbackResourcePath == null || spaFallbackResourcePath.isBlank()) {
+            if (!allowSpaFallback || spaFallbackResourcePath == null || spaFallbackResourcePath.isBlank()) {
                 return directResponse;
             }
 

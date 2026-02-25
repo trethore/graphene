@@ -114,7 +114,7 @@ When `fileRoot(...)` is configured, Graphene resolves each HTTP request in this 
 
 1. `fileRoot` filesystem path (`<fileRoot>/<request-path>`)
 2. classpath asset lookup
-3. optional `spaFallback(...)` for non-`/assets/...` `GET` requests
+3. optional `spaFallback(...)` for non-`/assets/...` `GET` and `POST` requests
 
 This makes frontend iteration faster: update local files under `fileRoot` without restarting Minecraft.
 

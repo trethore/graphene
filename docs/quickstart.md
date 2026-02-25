@@ -50,7 +50,7 @@ HTTP request resolution order:
 
 - If `fileRoot(...)` is set, Graphene tries `<fileRoot>/<request-path>` first.
 - If no filesystem file exists, Graphene falls back to classpath assets.
-- If still missing, `spaFallback(...)` applies for non-`/assets/...` `GET` requests.
+- If still missing, `spaFallback(...)` applies for non-`/assets/...` `GET` and `POST` requests.
 
 ## 2) Create A Screen With A WebView
 
