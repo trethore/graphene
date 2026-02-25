@@ -1,8 +1,6 @@
 package tytoo.grapheneui.internal.cef.alert;
 
-import net.minecraft.client.gui.ActiveTextCollector;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.TextAlignment;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.MultiLineLabel;
@@ -87,9 +85,7 @@ final class GrapheneJsDialogScreen extends Screen {
     @Override
     public void render(@NonNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         super.render(guiGraphics, mouseX, mouseY, partialTick);
-        guiGraphics.drawCenteredString(this.font, this.title, this.width / 2, 40, TITLE_COLOR);
-        ActiveTextCollector activeTextCollector = guiGraphics.textRenderer();
-        this.messageLabel.visitLines(TextAlignment.CENTER, this.width / 2, VERTICAL_TEXT_START, TEXT_LINE_HEIGHT, activeTextCollector);
+        GrapheneDialogScreenRenderHelper.renderCenteredTitleAndMessage(guiGraphics, this.font, this.title, this.width, this.messageLabel, TITLE_COLOR, VERTICAL_TEXT_START, TEXT_LINE_HEIGHT);
     }
 
     @Override
