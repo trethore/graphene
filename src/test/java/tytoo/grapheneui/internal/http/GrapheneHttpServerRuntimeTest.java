@@ -27,6 +27,29 @@ final class GrapheneHttpServerRuntimeTest {
     @TempDir
     Path tempDir;
 
+    private static TestHttpResponse sendGet(String url) throws IOException {
+        HttpRequest request = HttpRequest.newBuilder(URI.create(url))
+                .GET()
+                .timeout(REQUEST_TIMEOUT)
+                .build();
+        try {
+            HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            return new TestHttpResponse(response.statusCode(), response.body());
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted while performing HTTP request", exception);
+        }
+    }
+
+    private static boolean tryCreateSymbolicLink(Path linkPath, Path targetPath) {
+        try {
+            Files.createSymbolicLink(linkPath, targetPath);
+            return true;
+        } catch (UnsupportedOperationException | SecurityException | IOException ignored) {
+            return false;
+        }
+    }
+
     @Test
     void servesFileSystemResourceWhenFileRootConfigured() throws IOException {
         Path scriptPath = tempDir.resolve("assets/my-mod-id/web/live.js");
@@ -118,29 +141,6 @@ final class GrapheneHttpServerRuntimeTest {
             TestHttpResponse response = sendGet(server.baseUrl() + "/assets/my-mod-id/web/escape.txt");
 
             assertEquals(404, response.statusCode());
-        }
-    }
-
-    private static TestHttpResponse sendGet(String url) throws IOException {
-        HttpRequest request = HttpRequest.newBuilder(URI.create(url))
-                .GET()
-                .timeout(REQUEST_TIMEOUT)
-                .build();
-        try {
-            HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-            return new TestHttpResponse(response.statusCode(), response.body());
-        } catch (InterruptedException exception) {
-            Thread.currentThread().interrupt();
-            throw new IOException("Interrupted while performing HTTP request", exception);
-        }
-    }
-
-    private static boolean tryCreateSymbolicLink(Path linkPath, Path targetPath) {
-        try {
-            Files.createSymbolicLink(linkPath, targetPath);
-            return true;
-        } catch (UnsupportedOperationException | SecurityException | IOException ignored) {
-            return false;
         }
     }
 

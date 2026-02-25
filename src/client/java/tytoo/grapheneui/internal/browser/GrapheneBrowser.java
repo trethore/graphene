@@ -33,9 +33,13 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
     private final GrapheneInputBridge inputBridge = new GrapheneInputBridge();
     private final GraphenePaintBuffer paintBuffer = new GraphenePaintBuffer();
     private final GrapheneFocusUtil focusUtil = new GrapheneFocusUtil(this::setNativeFocus);
+    private final Object dragSessionLock = new Object();
     private final Rectangle browserRect = new Rectangle(0, 0, 1, 1);
     private final Point screenPoint = new Point(0, 0);
     private volatile int cursorType = Cursor.DEFAULT_CURSOR;
+    private CefDragData activeDragData;
+    private int activeDragMask = CefDragData.DragOperations.DRAG_OPERATION_NONE;
+    private boolean dragTargetEntered;
     private boolean closed = false;
 
 
@@ -68,6 +72,22 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
         super(client, url, context, parent, inspectAt, Objects.requireNonNull(browserSettings, "browserSettings"));
         this.transparent = transparent;
         this.renderer = renderer;
+    }
+
+    private static int preferredDragOperation(int mask) {
+        if ((mask & CefDragData.DragOperations.DRAG_OPERATION_MOVE) != 0) {
+            return CefDragData.DragOperations.DRAG_OPERATION_MOVE;
+        }
+
+        if ((mask & CefDragData.DragOperations.DRAG_OPERATION_COPY) != 0) {
+            return CefDragData.DragOperations.DRAG_OPERATION_COPY;
+        }
+
+        if ((mask & CefDragData.DragOperations.DRAG_OPERATION_LINK) != 0) {
+            return CefDragData.DragOperations.DRAG_OPERATION_LINK;
+        }
+
+        return CefDragData.DragOperations.DRAG_OPERATION_NONE;
     }
 
     @Override
@@ -151,6 +171,16 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
 
     @Override
     public boolean startDragging(CefBrowser browser, CefDragData dragData, int mask, int x, int y) {
+        if (dragData == null) {
+            return false;
+        }
+
+        synchronized (dragSessionLock) {
+            closeActiveDragSessionLocked();
+            activeDragData = dragData.clone();
+            activeDragMask = mask;
+            dragTargetEntered = false;
+        }
         return true;
     }
 
@@ -176,6 +206,7 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
             return;
         }
 
+        cancelActiveDrag();
         closed = true;
         renderer.destroy();
         super.close(force);
@@ -269,6 +300,48 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
         inputBridge.mouseDragged(this, x, y, button);
     }
 
+    void dragUpdated(int x, int y, int modifiers) {
+        synchronized (dragSessionLock) {
+            if (activeDragData == null) {
+                return;
+            }
+
+            Point point = new Point(x, y);
+            if (!dragTargetEntered) {
+                dragTargetDragEnter(activeDragData, point, modifiers, activeDragMask);
+                dragTargetEntered = true;
+                return;
+            }
+
+            dragTargetDragOver(point, modifiers, activeDragMask);
+        }
+    }
+
+    void dragCompleted(int x, int y, int modifiers) {
+        synchronized (dragSessionLock) {
+            if (activeDragData == null) {
+                return;
+            }
+
+            Point point = new Point(x, y);
+            if (!dragTargetEntered) {
+                dragTargetDragEnter(activeDragData, point, modifiers, activeDragMask);
+                dragTargetEntered = true;
+            }
+
+            dragTargetDrop(point, modifiers);
+            dragSourceEndedAt(point, preferredDragOperation(activeDragMask));
+            dragSourceSystemDragEnded();
+            clearActiveDragSessionLocked();
+        }
+    }
+
+    void cancelActiveDrag() {
+        synchronized (dragSessionLock) {
+            closeActiveDragSessionLocked();
+        }
+    }
+
     public void mouseInteracted(int x, int y, int modifiers, int button, boolean pressed, int clickCount) {
         inputBridge.mouseInteracted(this, x, y, modifiers, button, pressed, clickCount);
     }
@@ -351,6 +424,29 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
         if (getParentBrowser() == null) {
             createBrowser(getClient(), NO_WINDOW_HANDLE, getUrl(), true, transparent, null, getRequestContext());
         }
+    }
+
+    private void closeActiveDragSessionLocked() {
+        if (activeDragData == null) {
+            return;
+        }
+
+        if (dragTargetEntered) {
+            dragTargetDragLeave();
+        }
+
+        dragSourceSystemDragEnded();
+        clearActiveDragSessionLocked();
+    }
+
+    private void clearActiveDragSessionLocked() {
+        if (activeDragData != null) {
+            activeDragData.dispose();
+            activeDragData = null;
+        }
+
+        activeDragMask = CefDragData.DragOperations.DRAG_OPERATION_NONE;
+        dragTargetEntered = false;
     }
 
     private static final class NoopRenderer implements GrapheneRenderer {
