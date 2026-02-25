@@ -17,6 +17,8 @@ public final class GrapheneCefClientConfig {
     private static final GrapheneFolderUploadDialogManager FOLDER_UPLOAD_DIALOG_MANAGER = new GrapheneFolderUploadDialogManager();
     private static final GrapheneCefDownloadHandler DOWNLOAD_HANDLER = new GrapheneCefDownloadHandler();
     private static final GrapheneCefKeyboardHandler KEYBOARD_HANDLER = new GrapheneCefKeyboardHandler();
+    private static final GrapheneCefLifeSpanHandler LIFE_SPAN_HANDLER = new GrapheneCefLifeSpanHandler();
+    private static final GrapheneCefRequestHandler REQUEST_HANDLER = new GrapheneCefRequestHandler();
 
     private GrapheneCefClientConfig() {
     }
@@ -33,6 +35,8 @@ public final class GrapheneCefClientConfig {
         validatedClient.addDialogHandler(new GrapheneCefFileDialogHandler(FOLDER_UPLOAD_DIALOG_MANAGER));
         validatedClient.addDownloadHandler(DOWNLOAD_HANDLER);
         validatedClient.addKeyboardHandler(KEYBOARD_HANDLER);
+        validatedClient.addLifeSpanHandler(LIFE_SPAN_HANDLER);
+        validatedClient.addRequestHandler(REQUEST_HANDLER);
 
         CefMessageRouter messageRouter = CefMessageRouter.create(new CefMessageRouter.CefMessageRouterConfig());
         messageRouter.addHandler(new GrapheneCefMessageRouterHandler(validatedBridgeRuntime), true);

@@ -27,6 +27,37 @@ final class GrapheneHttpServerRuntimeTest {
     @TempDir
     Path tempDir;
 
+    private static TestHttpResponse sendRequest(String method, String url) throws IOException {
+        HttpRequest request = HttpRequest.newBuilder(URI.create(url))
+                .method(method, HttpRequest.BodyPublishers.noBody())
+                .timeout(REQUEST_TIMEOUT)
+                .build();
+        try {
+            HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            return new TestHttpResponse(response.statusCode(), response.body());
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted while performing HTTP request", exception);
+        }
+    }
+
+    private static TestHttpResponse sendGet(String url) throws IOException {
+        return sendRequest("GET", url);
+    }
+
+    private static TestHttpResponse sendPost(String url) throws IOException {
+        return sendRequest("POST", url);
+    }
+
+    private static boolean tryCreateSymbolicLink(Path linkPath, Path targetPath) {
+        try {
+            Files.createSymbolicLink(linkPath, targetPath);
+            return true;
+        } catch (UnsupportedOperationException | SecurityException | IOException ignored) {
+            return false;
+        }
+    }
+
     @Test
     void servesFileSystemResourceWhenFileRootConfigured() throws IOException {
         Path scriptPath = tempDir.resolve("assets/my-mod-id/web/live.js");
@@ -83,6 +114,55 @@ final class GrapheneHttpServerRuntimeTest {
     }
 
     @Test
+    void servesFileSystemResourceForPostRequests() throws IOException {
+        Path htmlPath = tempDir.resolve("assets/my-mod-id/web/submit-target.html");
+        Files.createDirectories(htmlPath.getParent());
+        String htmlBody = "<html><body>ok</body></html>";
+        Files.writeString(htmlPath, htmlBody, StandardCharsets.UTF_8);
+
+        GrapheneHttpConfig config = GrapheneHttpConfig.builder()
+                .randomPortInRange(30_000, 60_000)
+                .fileRoot(tempDir)
+                .build();
+
+        try (GrapheneHttpServerRuntime server = GrapheneHttpServerRuntime.start(config)) {
+            TestHttpResponse response = sendPost(server.baseUrl() + "/assets/my-mod-id/web/submit-target.html");
+
+            assertEquals(200, response.statusCode());
+            assertEquals(htmlBody, response.body());
+        }
+    }
+
+    @Test
+    void appliesSpaFallbackForPostRequests() throws IOException {
+        GrapheneHttpConfig config = GrapheneHttpConfig.builder()
+                .randomPortInRange(30_000, 60_000)
+                .spaFallback("/assets/graphene-ui/example.html")
+                .build();
+
+        try (GrapheneHttpServerRuntime server = GrapheneHttpServerRuntime.start(config)) {
+            TestHttpResponse response = sendPost(server.baseUrl() + "/signin");
+
+            assertEquals(200, response.statusCode());
+            assertTrue(response.body().contains("<title>Graphene Widget Example</title>"));
+        }
+    }
+
+    @Test
+    void rejectsUnsupportedMethods() throws IOException {
+        GrapheneHttpConfig config = GrapheneHttpConfig.builder()
+                .randomPortInRange(30_000, 60_000)
+                .build();
+
+        try (GrapheneHttpServerRuntime server = GrapheneHttpServerRuntime.start(config)) {
+            TestHttpResponse response = sendRequest("PUT", server.baseUrl() + "/assets/graphene-ui/example.html");
+
+            assertEquals(405, response.statusCode());
+            assertEquals("Method Not Allowed", response.body());
+        }
+    }
+
+    @Test
     void rejectsParentTraversalRequestPaths() throws IOException {
         GrapheneHttpConfig config = GrapheneHttpConfig.builder()
                 .randomPortInRange(30_000, 60_000)
@@ -118,29 +198,6 @@ final class GrapheneHttpServerRuntimeTest {
             TestHttpResponse response = sendGet(server.baseUrl() + "/assets/my-mod-id/web/escape.txt");
 
             assertEquals(404, response.statusCode());
-        }
-    }
-
-    private static TestHttpResponse sendGet(String url) throws IOException {
-        HttpRequest request = HttpRequest.newBuilder(URI.create(url))
-                .GET()
-                .timeout(REQUEST_TIMEOUT)
-                .build();
-        try {
-            HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-            return new TestHttpResponse(response.statusCode(), response.body());
-        } catch (InterruptedException exception) {
-            Thread.currentThread().interrupt();
-            throw new IOException("Interrupted while performing HTTP request", exception);
-        }
-    }
-
-    private static boolean tryCreateSymbolicLink(Path linkPath, Path targetPath) {
-        try {
-            Files.createSymbolicLink(linkPath, targetPath);
-            return true;
-        } catch (UnsupportedOperationException | SecurityException | IOException ignored) {
-            return false;
         }
     }
 

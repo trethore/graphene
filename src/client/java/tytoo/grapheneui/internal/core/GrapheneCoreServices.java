@@ -4,6 +4,7 @@ import tytoo.grapheneui.api.runtime.GrapheneRuntime;
 import tytoo.grapheneui.internal.browser.GrapheneBrowserSurfaceManager;
 import tytoo.grapheneui.internal.cef.GrapheneCefRuntime;
 
+@SuppressWarnings("java:S6548") // Yes Sonar, this is a lazy singleton...
 public final class GrapheneCoreServices {
     private static final GrapheneCoreServices INSTANCE = new GrapheneCoreServices();
 

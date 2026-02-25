@@ -9,6 +9,17 @@ const GRAPHENE_ERROR_HANDLER_FAILURE = "js_handler_error";
 const GRAPHENE_ERROR_INVALID_RESPONSE = "invalid_response";
 const GRAPHENE_INSTALLED_FLAG = "__grapheneInstalled";
 const GRAPHENE_RECEIVE_FN_NAME = "__grapheneBridgeReceiveFromJava";
+const GRAPHENE_POPUP_FALLBACK_INSTALLED_FLAG = "__graphenePopupFallbackInstalled";
+
+/**
+ * @typedef {Object} GrapheneCefQueryRequest
+ * @property {string} request
+ * @property {(responseText: string) => void} onSuccess
+ * @property {(errorCode: number, errorMessage: string) => void} onFailure
+ */
+
+/** @type {((query: GrapheneCefQueryRequest) => void) | undefined} */
+const grapheneBridgeCefQuery = globalThis["cefQuery"];
 
 let grapheneBridgeNextRequestSequence = 0;
 const grapheneBridgeEventListenersByChannel = new Map();
@@ -112,20 +123,30 @@ function grapheneBridgeToError(response) {
     return error;
 }
 
+/**
+ * @param {Object} message
+ * @param {(responseText: string) => void} resolve
+ * @param {(error: Error) => void} reject
+ * @returns {GrapheneCefQueryRequest}
+ */
+function grapheneBridgeCreateCefQueryRequest(message, resolve, reject) {
+    return {
+        request: JSON.stringify(message),
+        onSuccess: resolve,
+        onFailure: function (_, errorMessage) {
+            reject(new Error(errorMessage));
+        }
+    };
+}
+
 function grapheneBridgeSendToJava(message) {
     return new Promise(function (resolve, reject) {
-        if (typeof globalThis.cefQuery !== "function") {
+        if (typeof grapheneBridgeCefQuery !== "function") {
             reject(new Error("cefQuery is unavailable"));
             return;
         }
 
-        globalThis.cefQuery({
-            request: JSON.stringify(message),
-            onSuccess: resolve,
-            onFailure: function (_, errorMessage) {
-                reject(new Error(errorMessage));
-            }
-        });
+        grapheneBridgeCefQuery(grapheneBridgeCreateCefQueryRequest(message, resolve, reject));
     });
 }
 
@@ -218,17 +239,15 @@ function grapheneBridgeReceiveFromJava(messageJson) {
 function grapheneBridgeInstallApi() {
     globalThis[GRAPHENE_RECEIVE_FN_NAME] = grapheneBridgeReceiveFromJava;
 
-    globalThis.grapheneBridge = {
+    const grapheneBridgeApi = {
         __grapheneInstalled: true,
         on: function (channel, listener) {
             grapheneBridgeAddEventListener(channel, listener);
             return function () {
-                grapheneBridgeRemoveEventListener(channel, listener);
+                grapheneBridgeApi.off(channel, listener);
             };
         },
-        off: function (channel, listener) {
-            grapheneBridgeRemoveEventListener(channel, listener);
-        },
+        off: grapheneBridgeOff,
         handle: function (channel, handler) {
             grapheneBridgeRequestHandlersByChannel.set(channel, handler);
             return function () {
@@ -258,10 +277,95 @@ function grapheneBridgeInstallApi() {
             });
         }
     };
+
+    globalThis.grapheneBridge = grapheneBridgeApi;
+}
+
+function grapheneBridgeOff(channel, listener) {
+    grapheneBridgeRemoveEventListener(channel, listener);
+}
+
+function grapheneBridgeFindAnchorFromClick(event) {
+    const target = event?.target;
+    if (target && typeof target.closest === "function") {
+        const directMatch = target.closest("a[href]");
+        if (directMatch) {
+            return directMatch;
+        }
+    }
+
+    if (typeof event?.composedPath !== "function") {
+        return null;
+    }
+
+    const path = event.composedPath();
+    for (const node of path) {
+        if (!node) {
+            continue;
+        }
+
+        if (typeof node.closest === "function") {
+            const pathMatch = node.closest("a[href]");
+            if (pathMatch) {
+                return pathMatch;
+            }
+        }
+    }
+
+    return null;
+}
+
+function grapheneBridgeInstallPopupFallback() {
+    if (globalThis[GRAPHENE_POPUP_FALLBACK_INSTALLED_FLAG]) {
+        return;
+    }
+
+    globalThis[GRAPHENE_POPUP_FALLBACK_INSTALLED_FLAG] = true;
+
+    document.addEventListener("click", function (event) {
+        const anchor = grapheneBridgeFindAnchorFromClick(event);
+        if (!anchor) {
+            return;
+        }
+
+        const target = String(anchor.getAttribute("target") || "").toLowerCase();
+        if (target !== "_blank") {
+            return;
+        }
+
+        const href = anchor.href;
+        if (!href) {
+            return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        globalThis.location?.assign?.(href);
+    }, true);
+
+    const originalOpen = typeof globalThis.open === "function"
+        ? globalThis.open.bind(globalThis)
+        : null;
+
+    globalThis.open = function (url, target, features) {
+        const hasUrl = typeof url === "string" && url.length > 0;
+        const normalizedTarget = typeof target === "string" ? target.toLowerCase() : "";
+        if (hasUrl && (normalizedTarget === "_blank" || normalizedTarget === "")) {
+            globalThis.location?.assign?.(url);
+            return globalThis;
+        }
+
+        if (originalOpen) {
+            return originalOpen(url, target, features);
+        }
+
+        return null;
+    };
 }
 
 if (!globalThis.grapheneBridge?.[GRAPHENE_INSTALLED_FLAG]) {
     grapheneBridgeInstallApi();
 }
 
+grapheneBridgeInstallPopupFallback();
 grapheneBridgeSendReady();

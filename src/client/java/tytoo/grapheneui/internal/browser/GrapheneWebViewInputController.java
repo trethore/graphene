@@ -64,13 +64,21 @@ public final class GrapheneWebViewInputController {
             primaryPointerButtonDown = false;
         }
 
+        int cefModifiers = currentCefModifiers();
+
         if (!focusUtil.isFocused()) {
+            if (button == 0) {
+                browser.cancelActiveDrag();
+            }
             return false;
         }
 
         emitSideMouseButtonEvent(button, false);
         int releaseClickCount = button == pressedButton ? pressedClickCount : 1;
         browser.mouseInteracted(browserPoint.x, browserPoint.y, 0, button, false, releaseClickCount);
+        if (button == 0) {
+            browser.dragCompleted(browserPoint.x, browserPoint.y, cefModifiers);
+        }
         if (button == pressedButton) {
             pressedButton = -1;
             pressedClickCount = 1;
@@ -87,6 +95,7 @@ public final class GrapheneWebViewInputController {
         lastBrowserMouseX = browserPoint.x;
         lastBrowserMouseY = browserPoint.y;
         browser.mouseDragged(browserPoint.x, browserPoint.y, button);
+        browser.dragUpdated(browserPoint.x, browserPoint.y, currentCefModifiers());
         return true;
     }
 
@@ -118,6 +127,7 @@ public final class GrapheneWebViewInputController {
             return;
         }
 
+        browser.cancelActiveDrag();
         primaryPointerButtonDown = false;
         pressedButton = -1;
         pressedClickCount = 1;
@@ -168,5 +178,9 @@ public final class GrapheneWebViewInputController {
 
     private String sideMouseButtonPayload(int button, boolean pressed) {
         return "{\"button\":" + button + ",\"pressed\":" + pressed + "}";
+    }
+
+    private int currentCefModifiers() {
+        return GrapheneInputModifierUtil.toCefCommonModifiers(GrapheneInputModifierUtil.currentModifiers());
     }
 }
