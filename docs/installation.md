@@ -15,7 +15,7 @@ Release artifacts (remapped jar + sources jar) are also published here:
 
 Dependency coordinates:
 
-- Group: `tytoo.grapheneui`
+- Group: `io.github.trethore`
 - Artifact: `graphene-ui`
 - Version: `<version>`
 
@@ -47,7 +47,7 @@ repositories {
 }
 
 dependencies {
-    modImplementation("tytoo.grapheneui:graphene-ui:<version>")
+    modImplementation("io.github.trethore:graphene-ui:<version>")
 }
 ```
 
@@ -74,8 +74,8 @@ If you want a single distributable mod jar, you can embed Graphene with jar-in-j
 
 ```kotlin
 dependencies {
-    modImplementation("tytoo.grapheneui:graphene-ui:<version>")
-    include("tytoo.grapheneui:graphene-ui:<version>")
+    modImplementation("io.github.trethore:graphene-ui:<version>")
+    include("io.github.trethore:graphene-ui:<version>")
 }
 ```
 
