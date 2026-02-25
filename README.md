@@ -43,8 +43,11 @@ In short: Graphene gives Fabric mods a practical way to use web-powered interfac
 
 ## Installation
 
-Graphene is published on GitHub Packages. Check the latest available version here:
-[https://github.com/trethore/graphene/packages](https://github.com/trethore/graphene/packages)
+Graphene is published on Maven Central and Github Packages.
+
+We recommend using Maven Central for ease of use (no authentication required).
+
+Check [Maven](https://repo1.maven.org/maven2/io/github/trethore/graphene-ui/) for the latest version.
 
 ### Maven coordinates
 
@@ -62,20 +65,15 @@ Primary model (recommended): keep Graphene as a separate mod dependency.
 
 ```kotlin
 repositories {
-    maven {
-        name = "GitHubPackagesGraphene"
-        url = uri("https://maven.pkg.github.com/trethore/graphene")
-        credentials {
-            username = System.getenv("GITHUB_ACTOR")
-            password = System.getenv("GITHUB_TOKEN")
-        }
-    }
+    mavenCentral()
 }
 
 dependencies {
     modImplementation("io.github.trethore:graphene-ui:<version>")
 }
 ```
+
+Note: Graphene is also available on GitHub Packages.
 
 In your `fabric.mod.json`, declare:
 
@@ -108,7 +106,7 @@ public final class MyModClient implements ClientModInitializer {
 ```
 
 If you need shared runtime options (HTTP, JCEF path, extension folders), pass a `GrapheneConfig`.
-`jcefDownloadPath(...)` is a base directory, and Graphene installs JCEF under `<jcef-mvn-version>/<platform>`:
+`jcefDownloadPath(...)` is a base directory, and Graphene installs JCEF under `<jcef-gth-version>/<platform>`:
 
 ```java
 import java.nio.file.Path;
