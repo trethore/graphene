@@ -239,7 +239,7 @@ jobs:
           name: Graphene ${{ needs.build.outputs.mod_version }}
           body_path: release-assets/release-notes.md
           files: |
-            release-assets/*.jar
+            release-assets/**/*.jar
             release-assets/*.zip
             release-assets/*.tar.gz
 
