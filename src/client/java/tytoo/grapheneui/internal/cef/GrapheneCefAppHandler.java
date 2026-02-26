@@ -1,6 +1,6 @@
 package tytoo.grapheneui.internal.cef;
 
-import me.tytoo.jcefgithub.MavenCefAppHandlerAdapter;
+import io.github.trethore.jcefgithub.MavenCefAppHandlerAdapter;
 import org.cef.CefApp;
 import org.cef.callback.CefSchemeRegistrar;
 import tytoo.grapheneui.api.url.GrapheneAppUrls;

@@ -1,8 +1,8 @@
 package tytoo.grapheneui.internal.cef;
 
-import me.tytoo.jcefgithub.CefAppBuilder;
-import me.tytoo.jcefgithub.CefInitializationException;
-import me.tytoo.jcefgithub.UnsupportedPlatformException;
+import io.github.trethore.jcefgithub.CefAppBuilder;
+import io.github.trethore.jcefgithub.CefInitializationException;
+import io.github.trethore.jcefgithub.UnsupportedPlatformException;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import org.cef.CefApp;
 import org.cef.CefClient;
