@@ -51,14 +51,6 @@ base {
 
 repositories {
 	mavenLocal()
-	maven {
-		name = "GitHubPackages"
-		url = uri("https://maven.pkg.github.com/trethore/jcefgithub")
-		credentials {
-			username = githubUsername
-			password = githubToken
-		}
-	}
 	mavenCentral()
 }
 
@@ -126,7 +118,7 @@ dependencies {
 	minecraft("com.mojang:minecraft:${minecraftVersion}")
 	mappings(loom.officialMojangMappings())
 	modImplementation("net.fabricmc:fabric-loader:${loaderVersion}")
-	implementation("me.tytoo:jcefgithub:${jcefGithubVersion}:all-relocated") {
+	implementation("io.github.trethore:jcefgithub:${jcefGithubVersion}:all-relocated") {
 		isTransitive = false
 	}
 
@@ -236,11 +228,7 @@ publishing {
 		}
 		maven {
 			name = "MavenCentral"
-			url = uri("https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/")
-			credentials {
-				username = mavenCentralUsername
-				password = mavenCentralPassword
-			}
+			url = layout.buildDirectory.dir("central-portal/staging").get().asFile.toURI()
 		}
 	}
 }
