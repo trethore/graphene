@@ -191,15 +191,6 @@ jobs:
             echo "${commit_list}"
           } > release-notes.md
 
-      - name: package source code archives
-        if: steps.targets.outputs.publish_github == 'true'
-        env:
-          MOD_VERSION: ${{ steps.metadata.outputs.mod_version }}
-        run: |
-          source_archive_base="graphene-ui-${MOD_VERSION}-source-code"
-          git archive --format=zip --output "${source_archive_base}.zip" HEAD
-          git archive --format=tar.gz --output "${source_archive_base}.tar.gz" HEAD
-
       - name: capture github release artifacts
         if: steps.targets.outputs.publish_github == 'true'
         uses: actions/upload-artifact@v4
@@ -210,8 +201,6 @@ jobs:
             release-notes.md
             ${{ steps.metadata.outputs.release_jar }}
             ${{ steps.metadata.outputs.sources_jar }}
-            graphene-ui-${{ steps.metadata.outputs.mod_version }}-source-code.zip
-            graphene-ui-${{ steps.metadata.outputs.mod_version }}-source-code.tar.gz
 
       - name: capture maven central bundle
         if: steps.targets.outputs.publish_maven == 'true'
@@ -240,8 +229,6 @@ jobs:
           body_path: release-assets/release-notes.md
           files: |
             release-assets/**/*.jar
-            release-assets/*.zip
-            release-assets/*.tar.gz
 
   publish-maven:
     needs: build
