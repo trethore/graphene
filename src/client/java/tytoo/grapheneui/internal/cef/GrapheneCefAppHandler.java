@@ -2,6 +2,7 @@ package tytoo.grapheneui.internal.cef;
 
 import io.github.trethore.jcefgithub.MavenCefAppHandlerAdapter;
 import org.cef.CefApp;
+import org.cef.browser.CefRequestContext;
 import org.cef.callback.CefSchemeRegistrar;
 import tytoo.grapheneui.api.url.GrapheneAppUrls;
 import tytoo.grapheneui.api.url.GrapheneClasspathUrls;
@@ -27,6 +28,16 @@ public final class GrapheneCefAppHandler extends MavenCefAppHandlerAdapter {
         if (schemeHandlerRegistered) {
             return;
         }
+
+        // Allow file system access.
+        CefRequestContext ctx = CefRequestContext.getGlobalContext();
+        final int ALLOW = 1;
+        ctx.setPreference(
+                "profile.default_content_setting_values.file_system_read_guard", ALLOW);
+        ctx.setPreference(
+                "profile.default_content_setting_values.file_system_write_guard", ALLOW);
+        ctx.setPreference(
+                "profile.default_content_setting_values.file_system_access_extended_permission", ALLOW);
 
         CefApp cefApp = CefApp.getInstance();
         if (cefApp != null) {
