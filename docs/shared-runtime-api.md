@@ -1,19 +1,12 @@
-# Shared Runtime API (Breaking)
+# Shared Runtime API
 
-Graphene now uses a shared-consumer registration model instead of immediate runtime startup.
+Graphene uses a shared-consumer registration model.
+This page summarizes the behavior and migration impact for integrations that assumed single-consumer initialization.
 
-## Why
+## What Changed
 
-When multiple mods called `GrapheneCore.register(modId, GrapheneConfig)` with different values, the first call won and later calls were ignored.
-That created hidden conflicts for HTTP setup, extension folders, JCEF install path selection, and remote debugging.
-
-## New flow
-
-1. Each mod registers itself during client init.
-2. Graphene merges all registered configs.
-3. Runtime initializes automatically once client loading has finished.
-
-## New entry points
+Older first-call-wins startup behavior has been replaced.
+Now each consumer registers first, then Graphene merges config and initializes one shared runtime.
 
 ```java
 GrapheneMod graphene = GrapheneCore.register("my-mod-id", GrapheneConfig.builder()
@@ -26,38 +19,54 @@ GrapheneMod graphene = GrapheneCore.register("my-mod-id", GrapheneConfig.builder
         .build());
 ```
 
-- `GrapheneCore.register(String modId)` registers with defaults.
-- `GrapheneCore.register(String modId, GrapheneConfig config)` registers with explicit shared-runtime requirements.
-- Runtime startup is automatic after client loading completes.
+Entry points:
 
-## Conflict model
+- `GrapheneCore.register(String modId)`
+- `GrapheneCore.register(String modId, GrapheneConfig config)`
 
-- `jcefDownloadPath`: all explicit values must match.
-- `http`: all explicit values must match.
-- `remoteDebugging`: all explicit values must match.
-- `fileSystemAccessMode`: `ALLOW` wins if any consumer requests it.
-- `extensionFolder`: values are merged (union).
+`register(...)` returns `GrapheneMod`, which includes namespace-bound URL helpers.
 
-`GrapheneHttpConfig.fileRoot(...)` is part of HTTP config equality. Graphene normalizes it to an absolute path, so equivalent
-relative and absolute references to the same directory are treated as the same shared setting.
+## Initialization Timing
 
-If conflicting shared settings are registered, Graphene throws a clear `IllegalStateException` during startup.
+- Automatic startup after client start when at least one consumer is registered.
+- Lazy startup on first Graphene usage if needed.
+- If Graphene is used before any consumer is registered, Graphene throws an initialization error.
 
-## Namespace-safe URL helpers
+## Conflict Rules
 
-You can now bind URL helpers to a mod namespace:
+When configs are merged across consumers:
+
+- `jcefDownloadPath`: explicit values must match
+- `http`: explicit values must match
+- `remoteDebugging`: explicit values must match
+- `fileSystemAccessMode`: `ALLOW` wins over `DENY`
+- `extensionFolder`: union merge across consumers
+
+Conflicts throw `IllegalStateException` naming the conflicting consumers.
+
+Normalization notes:
+
+- `jcefDownloadPath` is compared as normalized absolute path.
+- `GrapheneHttpConfig.fileRoot` is normalized to absolute path, so equivalent relative/absolute references compare equal.
+
+## Namespace-Bound URL Helpers
+
+From `GrapheneMod`:
 
 ```java
 GrapheneMod graphene = GrapheneCore.register("my-mod-id");
+
 String appUrl = graphene.appAssets().asset("web/index.html");
 String classpathUrl = graphene.classpathAssets().asset("web/index.html");
 String httpUrl = graphene.httpAssets().asset("web/index.html");
 ```
 
-Equivalent static helpers are available:
+Equivalent static forms:
 
 ```java
 GrapheneAppUrls.assets("my-mod-id").asset("web/index.html");
 GrapheneClasspathUrls.assets("my-mod-id").asset("web/index.html");
 GrapheneHttpUrls.assets("my-mod-id").asset("web/index.html");
 ```
+
+`GrapheneHttpUrls` requires HTTP mode to be running.

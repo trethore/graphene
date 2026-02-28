@@ -1,12 +1,10 @@
 # Debugging
 
-This page covers the most useful runtime diagnostics when integrating Graphene.
+This page covers the most useful Graphene diagnostics for integration work.
 
-## Open Chromium DevTools
+## Remote DevTools
 
-Remote debugging is disabled by default.
-
-Enable it through `GrapheneConfig` if you need DevTools (dev-only):
+Remote debugging is disabled unless configured.
 
 ```java
 GrapheneConfig config = GrapheneConfig.builder()
@@ -19,9 +17,7 @@ GrapheneConfig config = GrapheneConfig.builder()
 GrapheneCore.register("my-mod-id", config);
 ```
 
-Do not use wildcard origins (for example, `allowedOrigins("*")`) outside tightly controlled local debugging.
-
-Then query the active debug port:
+Runtime inspection:
 
 ```java
 int port = GrapheneCore.runtime().getRemoteDebuggingPort();
@@ -30,73 +26,65 @@ if (port > 0) {
 }
 ```
 
-Open the `/json` endpoint in a browser to inspect available targets, then open DevTools for your page target.
+- `-1`: remote debugging disabled
+- `> 0`: active port
+
+Open `/json` in a browser and attach DevTools to your page target.
 
 ![DevTools targets page](images/devtools-targets.png)
 
-## Use The Repository Debug Screen (This Repo)
+## Repository Debug Screen
 
-In this repository's debug mod:
+In this repository's debug module:
 
-- press `F10` to open `GrapheneBrowserDebugScreen`
-- use the `DevTools` button to open the remote debug endpoint
-- test bridge events/requests from the sample pages
+- Press `F10` to open `GrapheneBrowserDebugScreen`
+- Use navigation controls and the `DevTools` button
+- Test bridge and page behavior with bundled pages
 
-Recommended sample pages:
+Useful sample pages:
 
 - `app://assets/graphene-ui-debug/graphene_test/pages/welcome.html`
 - `app://assets/graphene-ui-debug/graphene_test/pages/tests.html`
+- `app://assets/graphene-ui-debug/graphene_test/pages/js-bridge.html`
+- `app://assets/graphene-ui-debug/graphene_test/pages/automated-tests.html`
 
-Alternative classpath URLs are also supported:
-
-- `classpath:///assets/graphene-ui-debug/graphene_test/pages/welcome.html`
-- `classpath:///assets/graphene-ui-debug/graphene_test/pages/tests.html`
+Classpath equivalents also work.
 
 ![Debug screen overview](images/debug-screen-overview.png)
 
-## Logging Tips
+## Logging
 
-- Watch Graphene logs for initialization status and CEF startup args.
-- Bridge and load listener exceptions are logged with context.
-- Enable package-scoped debug traces in this repository with `runDebugClient`:
-  - `./gradlew runDebugClient -PgrapheneDebug=*`
-  - `./gradlew runDebugClient -PgrapheneDebug=tytoo.grapheneui.internal.cef`
-  - `./gradlew runDebugClient -PgrapheneDebug=tytoo.grapheneui.internal.bridge,tytoo.grapheneuidebug`
-- `grapheneDebug` selector semantics:
-  - `*` enables all Graphene debug logs.
-  - comma-separated package prefixes enable matching namespaces only.
-  - prefixes match exact package or subpackages.
-- When `-PgrapheneDebug=...` is set for `runDebugClient`, the run config now also enables `fabric.log.level=debug` so SLF4J debug lines are visible in console output.
-- Best setup for Graphene consumers (non-repo mods):
-  - pass a startup JVM property such as `-Dgraphene.debug=tytoo.grapheneui.internal.bridge` (or another package prefix).
-  - configure your logger backend to DEBUG only for `tytoo.grapheneui` so you do not enable global debug noise.
-  - Log4j2 example (`log4j2.xml`):
+Graphene supports package-prefix debug selectors via the JVM property `graphene.debug`.
 
-```xml
-<Loggers>
-    <Logger name="tytoo.grapheneui" level="debug"/>
-    <Root level="info"/>
-</Loggers>
-```
+Examples:
 
-- restart the game after changing `graphene.debug` because selector parsing happens at startup.
-- If page interactions fail silently, inspect both:
-  - Minecraft log output
-  - browser console in DevTools
+- `-Dgraphene.debug=*`
+- `-Dgraphene.debug=tytoo.grapheneui.internal.bridge`
+- `-Dgraphene.debug=tytoo.grapheneui.internal.cef,tytoo.grapheneuidebug`
 
-## Migration Note
+Selector behavior:
 
-- `GrapheneCore.LOGGER` has been removed as an intentional API break in this repository.
-- Use class-local SLF4J loggers (`LoggerFactory.getLogger(CurrentClass.class)`) in consumer code.
+- `*` enables all Graphene debug logs
+- comma-separated prefixes enable matching package/subpackage logs
+
+Repository convenience for debug run config:
+
+- `./gradlew runDebugClient -PgrapheneDebug=*`
+- `./gradlew runDebugClient -PgrapheneDebug=tytoo.grapheneui.internal.bridge`
+
+When `-PgrapheneDebug=...` is set for `runDebugClient`, the run configuration also enables `fabric.log.level=debug`.
 
 ## Quick Checks
 
-- `GrapheneCore.isInitialized()` should be `true` after startup.
-- `GrapheneCore.runtime().getRemoteDebuggingPort()` is `-1` when disabled, `> 0` when enabled.
-- `bridge.onReady(...)` should fire after page load.
-- `globalThis.grapheneBridge` should exist in page console.
+- `GrapheneCore.isInitialized()` is `true` after runtime startup.
+- `GrapheneCore.runtime().isInitialized()` is `true` when runtime reports ready.
+- `globalThis.grapheneBridge` exists in page console.
+- `bridge.onReady(...)` fires after page bridge bootstrap finishes.
 
-If those image files do not exist yet, capture and add them under `docs/images/`.
+## API Note
+
+`GrapheneCore.LOGGER` is not public API.
+Use your own class-local SLF4J logger in consumer code.
 
 ---
 

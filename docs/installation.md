@@ -1,25 +1,23 @@
 # Installation
 
-Graphene is published on Maven Central and released as a ready-to-use remapped Fabric mod jar.
-The primary integration model is to depend on Graphene as a separate mod in `mods/`.
+Graphene is published as a Fabric mod on Maven Central.
+Recommended integration is to depend on Graphene as a separate runtime mod.
 
-## 1) Get the latest version
-
-Use this URL pattern for a specific release:
-
-- `https://repo1.maven.org/maven2/io/github/trethore/graphene-ui/<version>/`
-
-Release artifacts (remapped jar + sources jar) are also published here:
-
-- https://github.com/trethore/graphene/releases
-
-Dependency coordinates:
+## 1) Dependency Coordinates
 
 - Group: `io.github.trethore`
 - Artifact: `graphene-ui`
 - Version: `<version>`
 
-## 2) Primary setup: separate Graphene mod dependency (recommended)
+Maven Central artifact path:
+
+- `https://repo1.maven.org/maven2/io/github/trethore/graphene-ui/<version>/`
+
+Releases:
+
+- `https://github.com/trethore/graphene/releases`
+
+## 2) Gradle Setup (Recommended)
 
 In your mod `build.gradle.kts`:
 
@@ -33,9 +31,7 @@ dependencies {
 }
 ```
 
-Note: Graphene is also published on GitHub Packages if you need that distribution path.
-
-In your mod `fabric.mod.json`, declare Graphene as a runtime dependency:
+In your `fabric.mod.json`, declare Graphene as a dependency:
 
 ```json
 {
@@ -45,16 +41,14 @@ In your mod `fabric.mod.json`, declare Graphene as a runtime dependency:
 }
 ```
 
-Runtime distribution for this model:
+Runtime packaging model:
 
-1. Ship your mod jar.
-2. Install `graphene-ui-<version>.jar` in the same `mods/` folder.
+1. Ship your mod.
+2. Install `graphene-ui-<version>.jar` in the same `mods/` directory.
 
-This is the best option for compatibility across modpacks and avoids bundling duplicate Graphene copies.
+## 3) Optional Jar-In-Jar Model
 
-## 3) Alternative setup: jar-in-jar (possible, but not preferred)
-
-If you want a single distributable mod jar, you can embed Graphene with jar-in-jar:
+If you need one distributable jar, you can embed Graphene:
 
 ```kotlin
 dependencies {
@@ -63,40 +57,44 @@ dependencies {
 }
 ```
 
-Important trade-offs:
+Trade-offs:
 
-- If multiple mods embed different Graphene versions, dependency resolution can fail.
-- Users should not additionally install a standalone `graphene-ui` jar when already embedding one.
-- Prefer the recommended separate-mod model unless you explicitly need single-jar distribution.
+- Version conflicts are more likely if multiple mods embed different Graphene versions.
+- Users should not install both embedded and standalone Graphene copies.
 
-## 4) Initialize Graphene in your client entrypoint
+## 4) Register Your Mod
 
-Register your mod with `GrapheneCore.register("my-mod-id")` in your `ClientModInitializer`:
+Call `GrapheneCore.register(...)` during client init.
 
 ```java
 package com.example.mymod;
 
 import net.fabricmc.api.ClientModInitializer;
 import tytoo.grapheneui.api.GrapheneCore;
+import tytoo.grapheneui.api.GrapheneMod;
 
 public final class MyModClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
-        GrapheneCore.register("my-mod-id");
+        GrapheneMod graphene = GrapheneCore.register("my-mod-id");
     }
 }
 ```
 
-Optional: pass a `GrapheneConfig` if you want a custom JCEF download directory, to load unpacked extensions,
-or to enable remote debugging.
-`jcefDownloadPath(...)` is treated as a base directory, and Graphene installs JCEF under
-`<jcef-mvn-version>/<platform>`:
+If you register the same `modId` multiple times, config must be identical.
+Registering the same `modId` with different config throws `IllegalStateException`.
+
+## 5) Optional Runtime Config
+
+`GrapheneConfig` lets you configure JCEF install location, extension folders, HTTP mode, remote debugging, and file-system access mode.
 
 ```java
 import java.nio.file.Path;
 import net.fabricmc.api.ClientModInitializer;
-import tytoo.grapheneui.api.config.GrapheneConfig;
 import tytoo.grapheneui.api.GrapheneCore;
+import tytoo.grapheneui.api.config.GrapheneConfig;
+import tytoo.grapheneui.api.config.GrapheneFileSystemAccessMode;
+import tytoo.grapheneui.api.config.GrapheneHttpConfig;
 import tytoo.grapheneui.api.config.GrapheneRemoteDebugConfig;
 
 public final class MyModClient implements ClientModInitializer {
@@ -105,10 +103,17 @@ public final class MyModClient implements ClientModInitializer {
         GrapheneConfig config = GrapheneConfig.builder()
                 .jcefDownloadPath(Path.of("./graphene-jcef"))
                 .extensionFolder(Path.of("./config/my-mod/extensions"))
+                .http(GrapheneHttpConfig.builder()
+                        .bindHost("127.0.0.1")
+                        .randomPortInRange(20_000, 21_000)
+                        .fileRoot(Path.of("C:/dev/my-ui-dist"))
+                        .spaFallback("/assets/my-mod-id/web/index.html")
+                        .build())
                 .remoteDebugging(GrapheneRemoteDebugConfig.builder()
                         .randomPort()
                         .allowedOrigins("https://chrome-devtools-frontend.appspot.com")
                         .build())
+                .fileSystemAccessMode(GrapheneFileSystemAccessMode.DENY)
                 .build();
 
         GrapheneCore.register("my-mod-id", config);
@@ -116,38 +121,30 @@ public final class MyModClient implements ClientModInitializer {
 }
 ```
 
-If this is missing, Graphene startup fails when client loading finishes, because no consumer/config was registered for merge.
+Notes:
 
-## 5) Compatibility baseline
+- `jcefDownloadPath(...)` is a base directory. Graphene installs under `<jcef-mvn-version>/<platform>`.
+- If HTTP mode is not configured, `GrapheneRuntime.httpServer().isRunning()` is `false`.
+- If remote debugging is not configured, `GrapheneRuntime.getRemoteDebuggingPort()` is `-1`.
 
-Current Graphene baseline:
+## 6) Shared Config Merge Rules
 
-- Minecraft: `1.21.11`
-- Fabric Loader: `0.18.4`
-- Fabric API: `0.141.3+1.21.11`
-- Java: `21`
-- GPU: `NVIDIA GeForce GT 720` or better
-- For mac users, macOS 12 (Monterey) or later.
+Graphene merges config from all registered consumers before runtime initialization.
 
-## 6) Supported platforms
+- `jcefDownloadPath`, `http`, and `remoteDebugging`: all explicit values must match
+- `extensionFolder`: merged union across consumers
+- `fileSystemAccessMode`: `ALLOW` wins if any consumer requests it
 
-- macOS: `arm64`, `amd64`
-- Linux: `arm64`, `amd64`
-- Windows: `amd64`
+Conflicts throw a startup `IllegalStateException` naming both conflicting consumers.
 
-## 7) Tested platforms
+## 7) Compatibility Baseline
 
-- Windows 11 with `AZERTY` and `QWERTY` keyboard layouts
-- Linux (Wayland) with `AZERTY` and `QWERTY` keyboard layouts
-- MacOS 26 with `QWERTY` keyboard layout. (Thx to @Thinkseal for testing on macOS!)
+Current repository baseline:
 
-## 8) Quick verification
-
-After wiring the dependency and initializer:
-
-1. Run your client and confirm startup succeeds.
-2. Open a screen containing a `GrapheneWebViewWidget`.
-3. Confirm the page renders and no `Graphene is not initialized` error appears.
+- Minecraft `1.21.11`
+- Fabric Loader `0.18.4`
+- Fabric API `0.141.3+1.21.11`
+- Java `21`
 
 ---
 
