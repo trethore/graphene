@@ -258,7 +258,6 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
 
     public void handleScreenResize() {
         surface.setSurfaceSize(getWidth(), getHeight());
-        surface.reload();
     }
 
     @Override

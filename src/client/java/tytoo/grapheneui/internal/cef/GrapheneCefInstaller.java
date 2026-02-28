@@ -9,6 +9,7 @@ import io.github.trethore.jcefgithub.UnsupportedPlatformException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tytoo.grapheneui.api.GrapheneConfig;
+import tytoo.grapheneui.api.GrapheneRemoteDebugConfig;
 import tytoo.grapheneui.internal.logging.GrapheneDebugLogger;
 import tytoo.grapheneui.internal.platform.GraphenePlatform;
 
@@ -48,8 +49,8 @@ public final class GrapheneCefInstaller {
         cefAppBuilder.setInstallDir(installDir);
         configureRuntimePaths(cefAppBuilder, installDir);
         cefAppBuilder.setMirrors(MIRRORS);
-        cefAppBuilder.addJcefArgs("--remote-allow-origins=*");
         configureExtensionLoading(cefAppBuilder, validatedConfig);
+        configureRemoteDebugging(cefAppBuilder, validatedConfig);
         configurePlatformCompatibility(cefAppBuilder);
 
         try {
@@ -62,7 +63,6 @@ public final class GrapheneCefInstaller {
         }
 
         cefAppBuilder.getCefSettings().windowless_rendering_enabled = true;
-        cefAppBuilder.getCefSettings().remote_debugging_port = findRandomPort();
 
         DEBUG_LOGGER.debug(
                 "Configured CEF installDir={} cachePath={} remoteDebugPort={}",
@@ -166,6 +166,17 @@ public final class GrapheneCefInstaller {
                 extensionDirectories.size(),
                 configuredExtensionFolders.size()
         );
+    }
+
+    private static void configureRemoteDebugging(CefAppBuilder cefAppBuilder, GrapheneConfig config) {
+        GrapheneRemoteDebugConfig remoteDebugConfig = config.remoteDebugging().orElse(GrapheneRemoteDebugConfig.disabled());
+        if (!remoteDebugConfig.enabled()) {
+            cefAppBuilder.getCefSettings().remote_debugging_port = 0;
+            return;
+        }
+
+        cefAppBuilder.getCefSettings().remote_debugging_port = remoteDebugConfig.fixedPort().orElseGet(GrapheneCefInstaller::findRandomPort);
+        remoteDebugConfig.allowedOrigins().ifPresent(origins -> cefAppBuilder.addJcefArgs("--remote-allow-origins=" + origins));
     }
 
     private static List<Path> collectExtensionDirectories(Path extensionFolder) {

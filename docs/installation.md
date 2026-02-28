@@ -87,7 +87,8 @@ public final class MyModClient implements ClientModInitializer {
 }
 ```
 
-Optional: pass a `GrapheneConfig` if you want a custom JCEF download directory or to load unpacked extensions.
+Optional: pass a `GrapheneConfig` if you want a custom JCEF download directory, to load unpacked extensions,
+or to enable remote debugging.
 `jcefDownloadPath(...)` is treated as a base directory, and Graphene installs JCEF under
 `<jcef-mvn-version>/<platform>`:
 
@@ -96,6 +97,7 @@ import java.nio.file.Path;
 import net.fabricmc.api.ClientModInitializer;
 import tytoo.grapheneui.api.GrapheneConfig;
 import tytoo.grapheneui.api.GrapheneCore;
+import tytoo.grapheneui.api.GrapheneRemoteDebugConfig;
 
 public final class MyModClient implements ClientModInitializer {
     @Override
@@ -103,6 +105,7 @@ public final class MyModClient implements ClientModInitializer {
         GrapheneConfig config = GrapheneConfig.builder()
                 .jcefDownloadPath(Path.of("./graphene-jcef"))
                 .extensionFolder(Path.of("./config/my-mod/extensions"))
+                .remoteDebugging(GrapheneRemoteDebugConfig.builder().randomPort().build())
                 .build();
 
         GrapheneCore.register("my-mod-id", config);

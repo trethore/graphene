@@ -13,10 +13,12 @@ public final class GrapheneConfig {
     private static final String JCEF_DOWNLOAD_PATH_NAME = "jcefDownloadPath";
     private static final String EXTENSION_FOLDER_NAME = "extensionFolder";
     private static final String HTTP_CONFIG_NAME = "httpConfig";
+    private static final String REMOTE_DEBUG_CONFIG_NAME = "remoteDebugConfig";
 
     private final Path jcefDownloadPath;
     private final List<Path> extensionFolders;
     private final GrapheneHttpConfig httpConfig;
+    private final GrapheneRemoteDebugConfig remoteDebugConfig;
 
     private GrapheneConfig(Builder builder) {
         this.jcefDownloadPath = builder.jcefDownloadPath == null
@@ -24,6 +26,7 @@ public final class GrapheneConfig {
                 : normalizePath(builder.jcefDownloadPath, JCEF_DOWNLOAD_PATH_NAME);
         this.extensionFolders = List.copyOf(builder.extensionFolders.stream().sorted().toList());
         this.httpConfig = builder.httpConfig;
+        this.remoteDebugConfig = builder.remoteDebugConfig;
     }
 
     public static GrapheneConfig defaults() {
@@ -59,6 +62,10 @@ public final class GrapheneConfig {
         return Optional.ofNullable(httpConfig);
     }
 
+    public Optional<GrapheneRemoteDebugConfig> remoteDebugging() {
+        return Optional.ofNullable(remoteDebugConfig);
+    }
+
     @Override
     public boolean equals(Object object) {
         if (this == object) {
@@ -71,18 +78,20 @@ public final class GrapheneConfig {
 
         return Objects.equals(jcefDownloadPath, other.jcefDownloadPath)
                 && Objects.equals(extensionFolders, other.extensionFolders)
-                && Objects.equals(httpConfig, other.httpConfig);
+                && Objects.equals(httpConfig, other.httpConfig)
+                && Objects.equals(remoteDebugConfig, other.remoteDebugConfig);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(jcefDownloadPath, extensionFolders, httpConfig);
+        return Objects.hash(jcefDownloadPath, extensionFolders, httpConfig, remoteDebugConfig);
     }
 
     public static final class Builder {
         private final LinkedHashSet<Path> extensionFolders = new LinkedHashSet<>();
         private Path jcefDownloadPath;
         private GrapheneHttpConfig httpConfig;
+        private GrapheneRemoteDebugConfig remoteDebugConfig;
 
         private Builder() {
         }
@@ -117,6 +126,16 @@ public final class GrapheneConfig {
 
         public Builder disableHttp() {
             this.httpConfig = null;
+            return this;
+        }
+
+        public Builder remoteDebugging(GrapheneRemoteDebugConfig remoteDebugConfig) {
+            this.remoteDebugConfig = Objects.requireNonNull(remoteDebugConfig, REMOTE_DEBUG_CONFIG_NAME);
+            return this;
+        }
+
+        public Builder disableRemoteDebugging() {
+            this.remoteDebugConfig = GrapheneRemoteDebugConfig.disabled();
             return this;
         }
 

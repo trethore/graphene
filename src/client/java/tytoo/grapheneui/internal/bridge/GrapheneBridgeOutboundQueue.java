@@ -83,15 +83,15 @@ final class GrapheneBridgeOutboundQueue {
         Objects.requireNonNull(outboundPacketJson, "outboundPacketJson");
 
         synchronized (lock) {
-            if (state == State.READY) {
-                dispatcher.accept(outboundPacketJson);
-                DEBUG_LOGGER.debug("Dispatched bridge outbound message immediately size={}", outboundPacketJson.length());
+            if (state != State.READY) {
+                queueMessageLocked(outboundPacketJson);
+                DEBUG_LOGGER.debug("Queued bridge outbound message size={} queued={}", outboundPacketJson.length(), queuedMessages.size());
                 return;
             }
-
-            queueMessageLocked(outboundPacketJson);
-            DEBUG_LOGGER.debug("Queued bridge outbound message size={} queued={}", outboundPacketJson.length(), queuedMessages.size());
         }
+
+        dispatcher.accept(outboundPacketJson);
+        DEBUG_LOGGER.debug("Dispatched bridge outbound message immediately size={}", outboundPacketJson.length());
     }
 
     void clear() {

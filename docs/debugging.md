@@ -4,11 +4,28 @@ This page covers the most useful runtime diagnostics when integrating Graphene.
 
 ## Open Chromium DevTools
 
-Graphene enables remote debugging on a runtime-selected port.
+Remote debugging is disabled by default.
+
+Enable it through `GrapheneConfig` if you need DevTools:
+
+```java
+GrapheneConfig config = GrapheneConfig.builder()
+        .remoteDebugging(GrapheneRemoteDebugConfig.builder()
+                .randomPort()
+                .allowedOrigins("*")
+                .build())
+        .build();
+
+GrapheneCore.register("my-mod-id", config);
+```
+
+Then query the active debug port:
 
 ```java
 int port = GrapheneCore.runtime().getRemoteDebuggingPort();
-String endpoint = "http://127.0.0.1:" + port + "/json";
+if (port > 0) {
+    String endpoint = "http://127.0.0.1:" + port + "/json";
+}
 ```
 
 Open the `/json` endpoint in a browser to inspect available targets, then open DevTools for your page target.
@@ -73,7 +90,7 @@ Alternative classpath URLs are also supported:
 ## Quick Checks
 
 - `GrapheneCore.isInitialized()` should be `true` after startup.
-- `GrapheneCore.runtime().getRemoteDebuggingPort()` should be `> 0`.
+- `GrapheneCore.runtime().getRemoteDebuggingPort()` is `-1` when disabled, `> 0` when enabled.
 - `bridge.onReady(...)` should fire after page load.
 - `globalThis.grapheneBridge` should exist in page console.
 

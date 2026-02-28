@@ -125,6 +125,7 @@ public final class GrapheneCore implements ClientModInitializer {
         GrapheneConfig.Builder mergedConfigBuilder = GrapheneConfig.builder();
         OwnedValue<Path> selectedJcefPath = null;
         OwnedValue<GrapheneHttpConfig> selectedHttpConfig = null;
+        OwnedValue<GrapheneRemoteDebugConfig> selectedRemoteDebugConfig = null;
 
         for (Map.Entry<String, GrapheneConfig> consumerConfigEntry : CONSUMER_CONFIGS.entrySet()) {
             String consumerId = consumerConfigEntry.getKey();
@@ -143,6 +144,12 @@ public final class GrapheneCore implements ClientModInitializer {
                     consumerId,
                     "HTTP config"
             );
+            selectedRemoteDebugConfig = mergeOwnedValue(
+                    selectedRemoteDebugConfig,
+                    consumerConfig.remoteDebugging().orElse(null),
+                    consumerId,
+                    "remote debugging config"
+            );
         }
 
         if (selectedJcefPath != null) {
@@ -151,6 +158,10 @@ public final class GrapheneCore implements ClientModInitializer {
 
         if (selectedHttpConfig != null) {
             mergedConfigBuilder.http(selectedHttpConfig.value());
+        }
+
+        if (selectedRemoteDebugConfig != null) {
+            mergedConfigBuilder.remoteDebugging(selectedRemoteDebugConfig.value());
         }
 
         return mergedConfigBuilder.build();

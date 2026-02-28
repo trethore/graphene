@@ -23,6 +23,18 @@ public final class MyModClient implements ClientModInitializer {
 For custom setup, use `GrapheneCore.register("my-mod-id", GrapheneConfig)` with `jcefDownloadPath(...)` and
 `extensionFolder(...)`. Graphene stores JCEF in `<jcef-mvn-version>/<platform>` under the configured base path.
 
+If you need Chromium DevTools, enable remote debugging explicitly:
+
+```java
+GrapheneConfig config = GrapheneConfig.builder()
+        .remoteDebugging(GrapheneRemoteDebugConfig.builder()
+                .port(9222)
+                .build())
+        .build();
+
+GrapheneCore.register("my-mod-id", config);
+```
+
 If your framework prefers `http://` origins, enable Graphene's loopback HTTP server:
 
 ```java
