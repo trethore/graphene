@@ -1,10 +1,12 @@
 package tytoo.grapheneui.internal.bridge;
 
 import com.google.gson.*;
+import tytoo.grapheneui.internal.logging.GrapheneDebugLogger;
 
 import java.util.Objects;
 
 final class GrapheneBridgeMessageCodec {
+    private static final GrapheneDebugLogger DEBUG_LOGGER = GrapheneDebugLogger.of(GrapheneBridgeMessageCodec.class);
     private static final String FIELD_BRIDGE = "bridge";
     private static final String FIELD_PAYLOAD = "payload";
     private final Gson gson;
@@ -31,7 +33,12 @@ final class GrapheneBridgeMessageCodec {
             }
 
             return packet;
-        } catch (RuntimeException ignored) {
+        } catch (RuntimeException exception) {
+            int requestSize = requestJson.length();
+            DEBUG_LOGGER.debugIfEnabled(logger -> {
+                logger.debug("Failed to parse bridge packet JSON requestSize={}", requestSize);
+                logger.debug("Bridge packet parse failure stack trace", exception);
+            });
             return null;
         }
     }

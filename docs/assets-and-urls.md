@@ -1,27 +1,35 @@
 # Assets And URLs
 
-Graphene registers custom schemes so browser pages can load resources directly from mod jars.
+Graphene provides URL helpers to load web assets from your mod namespace and optional runtime HTTP server.
 
-## URL Forms
+## URL Helpers
 
-Recommended:
+App scheme (`app://`):
 
-- `app://assets/<mod-id>/...`
-- `GrapheneAppUrls.asset("<mod-id>", "...")` for mod-owned assets under `assets/<mod-id>/...`
+- `GrapheneAppUrls.asset(namespace, path)`
+- `grapheneMod.appAssets().asset(path)`
+
+Classpath scheme (`classpath:///`):
+
+- `GrapheneClasspathUrls.asset(namespace, path)`
+- `grapheneMod.classpathAssets().asset(path)`
+
+Runtime HTTP (from configured base URL scheme, default `http://`):
+
+- `GrapheneHttpUrls.asset(namespace, path)`
+- `grapheneMod.httpAssets().asset(path)`
 
 Examples:
 
 ```java
-String grapheneDebugAsset = GrapheneAppUrls.asset("graphene-ui-debug", "graphene_test/welcome.html");
-// app://assets/graphene-ui-debug/graphene_test/welcome.html
-
-String myModAsset = GrapheneAppUrls.asset("my-mod-id", "web/index.html");
+String appUrl = GrapheneAppUrls.asset("my-mod-id", "web/index.html");
 // app://assets/my-mod-id/web/index.html
+
+String classpathUrl = GrapheneClasspathUrls.asset("my-mod-id", "web/index.html");
+// classpath:///assets/my-mod-id/web/index.html
 ```
 
-## Where To Put Files
-
-Typical layout in a consumer mod:
+## Resource Layout
 
 ```text
 src/client/resources/
@@ -31,19 +39,18 @@ src/client/resources/
         index.html
         app.js
         styles.css
-        images/
-          logo.png
+        images/logo.png
 ```
 
-Then load with:
+Load with:
 
 ```java
 String url = GrapheneAppUrls.asset("my-mod-id", "web/index.html");
 ```
 
-## Relative Resource Loading
+## Relative Paths Inside HTML
 
-If your page is loaded from `app://assets/my-mod-id/web/index.html`, then relative paths inside HTML work naturally:
+If your page is loaded from `app://assets/my-mod-id/web/index.html`, relative references resolve naturally:
 
 ```html
 <link rel="stylesheet" href="styles.css">
@@ -51,48 +58,28 @@ If your page is loaded from `app://assets/my-mod-id/web/index.html`, then relati
 <img src="images/logo.png" alt="logo">
 ```
 
-## Path Normalization Notes
+## URL Normalization
 
-Graphene normalizes asset URLs by:
+`GrapheneAppUrls.normalizeResourcePath(url)` and `GrapheneClasspathUrls.normalizeResourcePath(url)`:
 
-- stripping query string and fragment
-- decoding URL-encoded segments
-- trimming leading slashes
+- verify scheme
+- strip query and fragment
+- decode URL-encoded path segments
+- return normalized classpath resource path
 
 Example:
 
-`app://assets/graphene-ui/a%20b.html?x=1#top`
-
-resolves to resource path:
-
-`assets/graphene-ui/a b.html`
+- input: `app://assets/graphene-ui/a%20b.html?x=1#top`
+- result: `assets/graphene-ui/a b.html`
 
 ## MIME Types
 
-The classpath scheme handler maps common extensions, including:
-
-- HTML/CSS/JS/JSON
-- PNG/JPG/GIF/WEBP/SVG/ICO
-- WOFF/WOFF2/TTF/OTF
-- WASM
-
+Graphene resolves common MIME types for HTML, CSS, JS, JSON, images, fonts, and WASM.
 Unknown extensions default to `text/plain`.
 
-## Best Practices
+## HTTP Mode
 
-- Keep all web resources under one folder (`assets/<mod-id>/web/...`).
-- Prefer lowercase file names and explicit extensions.
-- Prefer `GrapheneAppUrls.asset("<mod-id>", "...")` for your mod namespace.
-- Use an explicit namespace for bundled samples too (for example `graphene-ui-debug`).
-
-## Two Schemes
-
-- `GrapheneAppUrls` (`app://assets/...`) targets framework-heavy pages that need browser-like origin behavior.
-- `GrapheneClasspathUrls` (`classpath:///assets/...`) stays available for simple classpath file loading.
-
-## Loopback HTTP URLs
-
-Enable HTTP mode with `GrapheneHttpConfig`, then build runtime HTTP URLs:
+Enable HTTP mode with `GrapheneHttpConfig`:
 
 ```java
 GrapheneConfig config = GrapheneConfig.builder()
@@ -107,16 +94,23 @@ GrapheneConfig config = GrapheneConfig.builder()
 GrapheneCore.register("my-mod-id", config);
 
 String url = GrapheneHttpUrls.asset("my-mod-id", "web/index.html");
-// http://127.0.0.1:<port>/assets/my-mod-id/web/index.html
 ```
 
-When `fileRoot(...)` is configured, Graphene resolves each HTTP request in this order:
+Important behavior:
 
-1. `fileRoot` filesystem path (`<fileRoot>/<request-path>`)
-2. classpath asset lookup
-3. optional `spaFallback(...)` for non-`/assets/...` `GET` and `POST` requests
+- `GrapheneHttpUrls.asset(...)` throws `IllegalStateException` when HTTP server is not running.
+- HTTP request resolution order:
+1. filesystem (`fileRoot/request-path`)
+2. classpath assets
+3. optional SPA fallback for non-`/assets/...` `GET` and `POST` requests
 
-This makes frontend iteration faster: update local files under `fileRoot` without restarting Minecraft.
+## Recommendations
+
+- Keep web assets under `assets/<mod-id>/web/...`.
+- Use namespaced helper APIs instead of hard-coded string concatenation.
+- Keep filenames lowercase and extension-explicit.
+- In shared runtime setups, keep HTTP paths namespaced (`/assets/<mod-id>/...`).
 
 ---
+
 Next: [Lifecycle](lifecycle.md)

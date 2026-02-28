@@ -6,7 +6,7 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import org.jspecify.annotations.NonNull;
 import tytoo.grapheneui.api.GrapheneCore;
-import tytoo.grapheneui.api.GrapheneHttpConfig;
+import tytoo.grapheneui.api.config.GrapheneHttpConfig;
 import tytoo.grapheneui.api.runtime.GrapheneHttpServer;
 import tytoo.grapheneui.internal.resource.GrapheneMimeTypes;
 

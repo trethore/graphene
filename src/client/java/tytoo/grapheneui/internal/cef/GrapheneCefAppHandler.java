@@ -2,15 +2,24 @@ package tytoo.grapheneui.internal.cef;
 
 import io.github.trethore.jcefgithub.MavenCefAppHandlerAdapter;
 import org.cef.CefApp;
+import org.cef.browser.CefRequestContext;
 import org.cef.callback.CefSchemeRegistrar;
+import tytoo.grapheneui.api.config.GrapheneFileSystemAccessMode;
 import tytoo.grapheneui.api.url.GrapheneAppUrls;
 import tytoo.grapheneui.api.url.GrapheneClasspathUrls;
 import tytoo.grapheneui.internal.platform.GraphenePlatform;
 
+import java.util.Objects;
+
 public final class GrapheneCefAppHandler extends MavenCefAppHandlerAdapter {
     private static final String APP_SCHEME_NAME = GrapheneAppUrls.SCHEME;
     private static final String CLASSPATH_SCHEME_NAME = GrapheneClasspathUrls.SCHEME;
+    private final GrapheneFileSystemAccessMode fileSystemAccessMode;
     private boolean schemeHandlerRegistered = false;
+
+    public GrapheneCefAppHandler(GrapheneFileSystemAccessMode fileSystemAccessMode) {
+        this.fileSystemAccessMode = Objects.requireNonNull(fileSystemAccessMode, "fileSystemAccessMode");
+    }
 
     @Override
     public synchronized void onRegisterCustomSchemes(CefSchemeRegistrar registrar) {
@@ -26,6 +35,17 @@ public final class GrapheneCefAppHandler extends MavenCefAppHandlerAdapter {
 
         if (schemeHandlerRegistered) {
             return;
+        }
+
+        if (fileSystemAccessMode == GrapheneFileSystemAccessMode.ALLOW) {
+            CefRequestContext context = CefRequestContext.getGlobalContext();
+            final int allow = 1;
+            context.setPreference(
+                    "profile.default_content_setting_values.file_system_read_guard", allow);
+            context.setPreference(
+                    "profile.default_content_setting_values.file_system_write_guard", allow);
+            context.setPreference(
+                    "profile.default_content_setting_values.file_system_access_extended_permission", allow);
         }
 
         CefApp cefApp = CefApp.getInstance();

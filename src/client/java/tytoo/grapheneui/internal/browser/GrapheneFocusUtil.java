@@ -33,7 +33,7 @@ public final class GrapheneFocusUtil {
     }
 
     public synchronized void syncNativeFocus() {
-        applyNativeFocus(true);
+        applyNativeFocus(focused);
     }
 
     private synchronized List<Consumer<Boolean>> updateFocusedState(boolean focused) {

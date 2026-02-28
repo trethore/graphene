@@ -1,6 +1,7 @@
 package tytoo.grapheneui.api;
 
 import org.junit.jupiter.api.Test;
+import tytoo.grapheneui.api.config.GrapheneHttpConfig;
 
 import java.nio.file.Path;
 

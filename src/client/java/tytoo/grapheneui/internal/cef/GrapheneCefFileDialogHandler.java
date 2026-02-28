@@ -25,9 +25,9 @@ final class GrapheneCefFileDialogHandler implements CefDialogHandler {
             FileDialogMode mode,
             String title,
             String defaultFilePath,
-            Vector<String> acceptFilters,
-            Vector<String> acceptExtensions,
-            Vector<String> acceptDescriptions,
+            Vector<String> ignoredAcceptFilters,
+            Vector<String> ignoredAcceptExtensions,
+            Vector<String> ignoredAcceptDescriptions,
             CefFileDialogCallback callback
     ) {
         if (mode != FileDialogMode.FILE_DIALOG_OPEN_FOLDER) {
@@ -43,9 +43,6 @@ final class GrapheneCefFileDialogHandler implements CefDialogHandler {
                 browser,
                 title,
                 defaultFilePath,
-                acceptFilters,
-                acceptExtensions,
-                acceptDescriptions,
                 callback
         );
         return true;

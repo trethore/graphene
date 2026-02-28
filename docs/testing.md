@@ -1,88 +1,69 @@
 # Testing
 
-Graphene currently has two useful testing layers:
+Graphene has two practical validation layers:
 
-- unit tests (`src/test/java/...`) for protocol and mapping behavior
-- in-game debug smoke tests (debug module command)
+- unit tests under `src/test/java/...`
+- in-game debug flows in the debug module
 
-## Unit Tests In This Repository
+## Unit Test Coverage
 
-Current coverage includes:
+Current test classes include:
 
+- `GrapheneBridgeJsonApiTest`
 - `GrapheneBridgeMessageCodecTest`
-  - packet parse behavior
-  - payload parse validation
-  - success response shape
 - `GrapheneBridgeOutboundQueueTest`
-  - pre-ready queue buffering
-  - flush ordering
-  - clear behavior
-- `GrapheneClasspathUrlsTest`
-  - URL build and normalization semantics
 - `GrapheneAppUrlsTest`
-  - secure scheme URL build and normalization semantics
+- `GrapheneClasspathUrlsTest`
 - `GrapheneHttpUrlsTest`
-  - runtime guard for HTTP URL generation when server is disabled
 - `GrapheneHttpConfigTest`
-  - loopback host defaults, port selection strategy, and SPA fallback normalization
 - `GrapheneConfigTest`
-  - HTTP server config wiring through `GrapheneConfig.Builder`
+- `GrapheneHttpServerRuntimeTest`
+- `GrapheneMimeTypesTest`
 - `BrowserSurfaceViewportMapperTest`
-  - coordinate scaling/truncation behavior
 - `GrapheneDebugLogSelectorTest`
-  - wildcard and prefix selector matching
-  - comma-separated selector parsing
-  - blank/non-matching selector behavior
+- `GrapheneLinuxKeyEventPlatformResolverTest`
 
-## In-Game Debug Smoke Tests (This Repository)
+These cover bridge serialization and routing behavior, URL/path normalization, HTTP server behavior, MIME detection, viewport/input mapping, and debug selector parsing.
 
-The debug module provides `/graphene test`, which runs:
+## In-Game Debug Validation
 
-- runtime initialization smoke test
-- browser surface smoke test
-- bridge API smoke (subscription, emit, and request timeout behavior through public API)
-- side mouse bridge smoke for buttons 4..8 (press/release path through `grapheneMouse` bridge)
+Use the debug client and bundled pages to validate end-to-end behavior:
 
-This is useful before/after larger bridge or lifecycle changes.
+1. Run `./gradlew runDebugClient`.
+2. Press `F10` to open `GrapheneBrowserDebugScreen`.
+3. Visit `graphene_test/pages/tests.html` and `graphene_test/pages/automated-tests.html`.
+4. Trigger bridge interactions and automated test runs from the page UI.
 
-Note: when the JS bridge ready handshake is unavailable in a given environment, the mouse smoke test falls back to Java-side input-path validation and logs a warning.
+`automated-tests.html` calls the Java-side debug runner over the bridge (`debug:tests:run`) and renders pass/fail results.
 
-## Commands To Run
+## Commands
 
-Use the following from repository root:
+Run from repository root:
 
 ```bash
-./gradlew test
 ./gradlew compileJava
+./gradlew test
 ./gradlew build
 ./gradlew runDebugClient
 ./gradlew runDebugClient -PgrapheneDebug=*
 ./gradlew runDebugClient -PgrapheneDebug=tytoo.grapheneui.internal.bridge
 ```
 
-`runDebugClient` is the fastest way to validate full UI + bridge behavior manually.
+For logging checks, run one pass without `-PgrapheneDebug` and one with a selector.
 
-For logging verification, run one pass without `-PgrapheneDebug` and one with a package selector to confirm debug output is gated correctly.
+## When Adding Features
 
-## How To Extend Tests
+Keep tests focused and deterministic:
 
-When adding features, prefer small focused tests:
+- bridge protocol changes: codec/router/request lifecycle tests
+- rendering/input math: mapper/state tests
+- lifecycle behavior: navigation/close/pending-request edge cases
 
-- protocol changes: add/extend codec + router tests first
-- sizing/input math: add deterministic mapper/state tests
-- lifecycle changes: add queue/pending-request edge case tests
+For bridge-facing features, prefer both:
 
-For each new bridge behavior, try to include both:
-
-- unit test for core logic
-- debug smoke assertion for end-to-end confirmation
-
-## Suggested Future Test Additions
-
-- `BrowserSurfaceSizingState` edge cases (viewBox clamping and resize mode transitions)
-- JS dialog manager queue sequencing
-- load listener scope isolation across multiple surfaces
-- bridge timeout behavior and cancellation edge cases
+1. unit tests for core logic
+2. debug-page/manual verification for integration behavior
 
 ---
+
 Next: [Overview](overview.md)

@@ -1,10 +1,14 @@
 package tytoo.grapheneui.internal.browser;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tytoo.grapheneui.api.surface.BrowserSurface;
 
 import java.util.*;
 
 public final class GrapheneBrowserSurfaceManager {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneBrowserSurfaceManager.class);
+
     private static final String OWNER_NAME = "owner";
     private static final String SURFACE_NAME = "surface";
 
@@ -18,7 +22,11 @@ public final class GrapheneBrowserSurfaceManager {
 
     private static void closeSurfaces(List<BrowserSurface> surfacesToClose) {
         for (BrowserSurface surface : surfacesToClose) {
-            surface.close();
+            try {
+                surface.close();
+            } catch (RuntimeException exception) {
+                LOGGER.warn("Failed to close browser surface {}", surface, exception);
+            }
         }
     }
 

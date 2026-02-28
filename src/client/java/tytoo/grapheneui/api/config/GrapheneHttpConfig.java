@@ -1,4 +1,4 @@
-package tytoo.grapheneui.api;
+package tytoo.grapheneui.api.config;
 
 import java.nio.file.Path;
 import java.util.Locale;

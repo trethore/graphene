@@ -2,105 +2,133 @@
 
 Common integration issues and direct fixes.
 
+## `Graphene is not initialized` Error
+
+Symptom:
+
+- Creating a surface or using runtime APIs throws an initialization error.
+
+Likely cause:
+
+- No consumer was registered before Graphene usage.
+
+Fix:
+
+- Register in `ClientModInitializer` with `GrapheneCore.register("my-mod-id")`.
+- Ensure registration happens before first web view or surface creation.
+
 ## Bridge Not Ready
 
 Symptom:
 
-- Java events/requests appear to do nothing immediately after page load.
+- Java events/requests seem ignored right after page load.
 
 Likely cause:
 
-- JS bridge bootstrap has not finished and `ready` handshake was not received yet.
+- JS bridge bootstrap has not sent `ready` yet.
 
 Fix:
 
-- Register `bridge.onReady(...)` and send startup messages only after it fires.
-- Verify `globalThis.grapheneBridge` exists in DevTools console.
+- Gate startup messages behind `bridge.onReady(...)`.
+- Verify `globalThis.grapheneBridge` in DevTools.
 
 ## Request Fails With `handler_not_found`
 
 Symptom:
 
-- Request future completes exceptionally or JS promise rejects with handler-not-found error.
+- Java future fails or JS promise rejects with handler-not-found.
 
 Likely cause:
 
-- No handler registered on the target side for that channel.
+- Missing request handler on the receiving side.
 
 Fix:
 
-- Ensure `bridge.onRequest("channel", ...)` exists on Java for JS->Java calls.
-- Ensure `grapheneBridge.handle("channel", ...)` exists on JS for Java->JS calls.
-- Check exact channel spelling and namespace.
+- For JS -> Java: register `bridge.onRequest("channel", ...)`.
+- For Java -> JS: register `grapheneBridge.handle("channel", ...)`.
+- Check exact channel spelling.
 
 ## Invalid JSON Errors
 
 Symptom:
 
-- `IllegalArgumentException` on Java emit/request payloads.
-- `invalid_response` from bridge.
+- `IllegalArgumentException` when sending Java payloads.
+- Request fails with `invalid_response`.
 
 Likely cause:
 
-- Payload/response strings are not valid JSON.
+- Java payload/response is not valid JSON text.
 
 Fix:
 
-- Always send proper JSON text from Java (object/array/primitive all valid).
-- If building JSON manually, prefer a JSON library instead of string concatenation.
+- Send valid JSON strings from Java.
+- Prefer serializer helpers (`emitJson`, `requestJson`, `GrapheneBridgeJson`) over manual string assembly.
 
-## Surface Renders But Input Feels Off
+## Input Mapping Feels Wrong
 
 Symptom:
 
-- Clicks land in wrong positions, especially with scaling/cropping.
+- Clicks land in wrong places, especially with scaling or cropping.
 
 Likely cause:
 
-- Render size and source viewBox mapping are inconsistent.
+- Surface size, rendered widget size, and/or viewBox are misaligned.
 
 Fix:
 
-- Keep surface size and rendered widget size in sync.
+- Keep render size aligned with `surfaceSize`.
 - Re-check `setViewBox(...)` usage.
-- Use `toBrowserPoint(...)` when forwarding custom input.
+- Use `toBrowserPoint(...)` for custom input forwarding.
 
-## Blank Page / 404 For Asset URL
-
-Symptom:
-
-- Page fails to load from `app://assets/...`.
-
-Likely cause:
-
-- Wrong asset path or wrong namespace under `assets/`.
-
-Fix:
-
-- Confirm resource exists at `src/client/resources/assets/<mod-id>/...`.
-- Use `app://assets/<mod-id>/...` URLs.
-- Prefer `GrapheneAppUrls.asset("graphene-ui-debug", "graphene_test/welcome.html")` for bundled samples.
-- `classpath:///assets/<mod-id>/...` URLs remain available for simple file loading.
-
-## HTTP Dev File Root Not Serving Updated Files
+## Asset URL 404 Or Blank Page
 
 Symptom:
 
-- `http://127.0.0.1:<port>/...` serves old content or returns 404 while using `fileRoot(...)`.
+- `app://assets/...` page does not load.
 
 Likely cause:
 
-- URL path does not match `<fileRoot>/<request-path>`.
-- File exists outside configured `fileRoot`.
-- Requested a directory path without explicit file name (for example `/web/` instead of `/web/index.html`).
+- Wrong namespace or wrong resource path.
 
 Fix:
 
-- Confirm `GrapheneHttpConfig.fileRoot(...)` points to the correct local build output folder.
-- Request explicit files such as `/assets/<mod-id>/web/index.html`.
-- Keep using namespaced paths (`/assets/<mod-id>/...`) to avoid shared-runtime collisions.
+- Verify file exists under `assets/<mod-id>/...`.
+- Use helper APIs (`GrapheneAppUrls.asset(...)`).
+- For debug samples in this repo, use `graphene_test/pages/...` paths.
 
-## Pending Requests Fail On Navigation
+## `Graphene HTTP server is not running`
+
+Symptom:
+
+- `GrapheneHttpUrls.asset(...)` throws `IllegalStateException`.
+
+Likely cause:
+
+- HTTP mode was not configured in `GrapheneConfig`.
+
+Fix:
+
+- Register with `.http(GrapheneHttpConfig.builder() ... .build())`.
+- Verify `GrapheneCore.runtime().httpServer().isRunning()` before generating HTTP URLs.
+
+## HTTP `fileRoot` Not Serving Updated Files
+
+Symptom:
+
+- HTTP requests return stale content or 404 while using `fileRoot(...)`.
+
+Likely cause:
+
+- Request path does not match `fileRoot` layout.
+- File is outside configured root.
+
+Fix:
+
+- Confirm request path resolves to `<fileRoot>/<request-path>`.
+- Request explicit files, for example `/assets/my-mod-id/web/index.html`.
+- Keep namespaced assets paths (`/assets/<mod-id>/...`).
+
+## Pending Requests Fail During Navigation
 
 Symptom:
 
@@ -108,28 +136,29 @@ Symptom:
 
 Likely cause:
 
-- Bridge intentionally fails pending requests when page load starts.
+- Graphene intentionally fails pending requests on page change.
 
 Fix:
 
-- Retry request after next `onReady`.
+- Retry after next `onReady`.
 - Avoid navigation during critical request windows.
 
-## CEF Process Does Not Shut Down Cleanly
+## Slow Shutdown Or CEF Disposal Warnings
 
 Symptom:
 
-- Client exits slowly or logs timeout warnings while disposing CEF.
+- Client exit is slow or logs CEF disposal warnings.
 
 Likely cause:
 
-- Native CEF termination delay.
+- Native CEF shutdown delay and/or lingering active surfaces.
 
 Fix:
 
-- Ensure surfaces are closed cleanly.
-- Avoid long-running JS tasks during shutdown.
-- Collect logs and reproduce with minimal UI for diagnosis.
+- Ensure widgets/surfaces are closed cleanly.
+- Reduce long-running page tasks during shutdown.
+- Capture logs and reproduce with minimal UI.
 
 ---
+
 Next: [Testing](testing.md)

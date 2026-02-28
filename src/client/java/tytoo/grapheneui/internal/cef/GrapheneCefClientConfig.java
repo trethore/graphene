@@ -13,13 +13,6 @@ import java.util.Objects;
 public final class GrapheneCefClientConfig {
     private static final GrapheneDebugLogger DEBUG_LOGGER = GrapheneDebugLogger.of(GrapheneCefClientConfig.class);
 
-    private static final GrapheneJsDialogManager JS_DIALOG_MANAGER = new GrapheneJsDialogManager();
-    private static final GrapheneFolderUploadDialogManager FOLDER_UPLOAD_DIALOG_MANAGER = new GrapheneFolderUploadDialogManager();
-    private static final GrapheneCefDownloadHandler DOWNLOAD_HANDLER = new GrapheneCefDownloadHandler();
-    private static final GrapheneCefKeyboardHandler KEYBOARD_HANDLER = new GrapheneCefKeyboardHandler();
-    private static final GrapheneCefLifeSpanHandler LIFE_SPAN_HANDLER = new GrapheneCefLifeSpanHandler();
-    private static final GrapheneCefRequestHandler REQUEST_HANDLER = new GrapheneCefRequestHandler();
-
     private GrapheneCefClientConfig() {
     }
 
@@ -27,16 +20,22 @@ public final class GrapheneCefClientConfig {
         CefClient validatedClient = Objects.requireNonNull(cefClient, "cefClient");
         GrapheneLoadEventBus validatedLoadEventBus = Objects.requireNonNull(loadEventBus, "loadEventBus");
         GrapheneBridgeRuntime validatedBridgeRuntime = Objects.requireNonNull(bridgeRuntime, "bridgeRuntime");
+        GrapheneJsDialogManager jsDialogManager = new GrapheneJsDialogManager();
+        GrapheneFolderUploadDialogManager folderUploadDialogManager = new GrapheneFolderUploadDialogManager();
+        GrapheneCefDownloadHandler downloadHandler = new GrapheneCefDownloadHandler();
+        GrapheneCefKeyboardHandler keyboardHandler = new GrapheneCefKeyboardHandler();
+        GrapheneCefLifeSpanHandler lifeSpanHandler = new GrapheneCefLifeSpanHandler();
+        GrapheneCefRequestHandler requestHandler = new GrapheneCefRequestHandler();
 
         validatedClient.addLoadHandler(new GrapheneCefLoadHandler(validatedLoadEventBus, validatedBridgeRuntime));
         validatedClient.addDisplayHandler(new GrapheneCefDisplayHandler());
         validatedClient.addContextMenuHandler(new GrapheneCefContextMenuHandler());
-        validatedClient.addJSDialogHandler(new GrapheneCefJsDialogHandler(JS_DIALOG_MANAGER));
-        validatedClient.addDialogHandler(new GrapheneCefFileDialogHandler(FOLDER_UPLOAD_DIALOG_MANAGER));
-        validatedClient.addDownloadHandler(DOWNLOAD_HANDLER);
-        validatedClient.addKeyboardHandler(KEYBOARD_HANDLER);
-        validatedClient.addLifeSpanHandler(LIFE_SPAN_HANDLER);
-        validatedClient.addRequestHandler(REQUEST_HANDLER);
+        validatedClient.addJSDialogHandler(new GrapheneCefJsDialogHandler(jsDialogManager));
+        validatedClient.addDialogHandler(new GrapheneCefFileDialogHandler(folderUploadDialogManager));
+        validatedClient.addDownloadHandler(downloadHandler);
+        validatedClient.addKeyboardHandler(keyboardHandler);
+        validatedClient.addLifeSpanHandler(lifeSpanHandler);
+        validatedClient.addRequestHandler(requestHandler);
 
         CefMessageRouter messageRouter = CefMessageRouter.create(new CefMessageRouter.CefMessageRouterConfig());
         messageRouter.addHandler(new GrapheneCefMessageRouterHandler(validatedBridgeRuntime), true);

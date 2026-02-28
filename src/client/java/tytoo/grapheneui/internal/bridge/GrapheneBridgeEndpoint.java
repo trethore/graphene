@@ -153,10 +153,18 @@ public final class GrapheneBridgeEndpoint implements GrapheneBridge {
             return;
         }
 
+        String currentUrl = currentUrl();
         try {
             injectBootstrapScript();
-            DEBUG_LOGGER.debug("Injected bridge bootstrap on load end browserId={} url={}", browserIdentifier(), currentUrl());
-        } catch (RuntimeException ignored) {
+            DEBUG_LOGGER.debug("Injected bridge bootstrap on load end browserId={} url={}", browserIdentifier(), currentUrl);
+        } catch (RuntimeException exception) {
+            DEBUG_LOGGER.debug(
+                    "Bridge bootstrap injection failed on load end browserId={} url={} reason={}",
+                    browserIdentifier(),
+                    currentUrl,
+                    exception.getMessage()
+            );
+            DEBUG_LOGGER.debug("Bridge bootstrap load-end failure stack trace", exception);
             // Bridge bootstrap will be retried by the fallback path during rendering.
         }
     }
@@ -243,7 +251,14 @@ public final class GrapheneBridgeEndpoint implements GrapheneBridge {
         try {
             injectBootstrapScript();
             DEBUG_LOGGER.debug("Injected bridge bootstrap fallback browserId={} url={}", browserIdentifier(), currentUrl);
-        } catch (RuntimeException ignored) {
+        } catch (RuntimeException exception) {
+            DEBUG_LOGGER.debug(
+                    "Bridge bootstrap fallback injection failed browserId={} url={} reason={}",
+                    browserIdentifier(),
+                    currentUrl,
+                    exception.getMessage()
+            );
+            DEBUG_LOGGER.debug("Bridge bootstrap fallback failure stack trace", exception);
             // Bridge bootstrap will be retried by the fallback path during rendering.
         }
     }

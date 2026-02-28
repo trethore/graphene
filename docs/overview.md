@@ -1,50 +1,47 @@
 # Graphene Overview
 
 Graphene is a client-side UI library for Fabric mods on Minecraft `1.21.11`.
-It embeds Chromium (via JCEF) so you can render HTML/CSS/JS interfaces in-game, then connect those UIs to Java mod logic.
+It embeds Chromium via JCEF, so you can render HTML/CSS/JS in Minecraft screens and communicate with Java code through a bridge.
 
 ![Graphene demo](images/demo.png)
 
 ## Core Concepts
 
-- `GrapheneCore`: static entry point (`register(modId, config)`, runtime access, surface manager)
-- `GrapheneRuntime`: runtime status/debug view exposed by `GrapheneCore.runtime()`
-- `GrapheneHttpServer`: optional loopback HTTP server view exposed by `GrapheneRuntime.httpServer()`
-- `BrowserSurface`: off-screen browser surface (size, resolution, viewBox, render APIs)
-- `GrapheneWebViewWidget`: Minecraft widget wrapper for a `BrowserSurface`
-- `GrapheneBridge`: Java <-> JS messaging API (events + request/response)
+- `GrapheneCore`: registration and runtime entry point
+- `GrapheneMod`: namespace-bound helper returned by `GrapheneCore.register(...)`
+- `GrapheneRuntime`: runtime state (`isInitialized`, remote debugging port, HTTP server state)
+- `GrapheneHttpServer`: runtime HTTP server view (`isRunning`, `host`, `port`, `baseUrl`)
+- `BrowserSurface`: off-screen browser surface with rendering, navigation, sizing, and input mapping
+- `GrapheneWebViewWidget`: Minecraft widget wrapper around `BrowserSurface`
+- `GrapheneBridge`: Java <-> JS event/request messaging
 
-## Architecture
+## Runtime Model
 
-```mermaid
-flowchart LR
-    A[Your Fabric Client Mod] --> B[GrapheneCore.register]
-    B --> C[GrapheneRuntime]
-    C --> D[BrowserSurface]
-    D --> E[Internal Browser Runtime]
-    E --> F[HTML CSS JS UI]
-    D --> G[GrapheneBridge]
-    G <--> F
-    D --> H[GrapheneWebViewWidget]
-    H --> I[Minecraft Screen]
-```
+Graphene uses shared consumer registration:
 
-## Typical Runtime Flow
+1. Each mod registers once with `GrapheneCore.register(modId)` or `GrapheneCore.register(modId, config)`.
+2. Graphene merges all registered configs.
+3. Runtime initialization happens:
+- automatically after client startup if at least one consumer is registered
+- lazily on first Graphene usage if startup did not initialize it yet
 
-1. Your mod calls `GrapheneCore.register("my-mod-id")` during client init.
-2. Once client loading is finished, Graphene initializes the shared runtime.
-3. You create a `GrapheneWebViewWidget` or `BrowserSurface`.
-4. A page loads through `app://assets/...`, `classpath:///assets/...`, or any normal URL.
-5. Graphene injects the JS bridge bootstrap script.
-6. JS sends a `ready` handshake.
-7. Bridge messages start flowing both ways.
+If nothing is registered and Graphene is used, Graphene throws an `IllegalStateException` asking you to register first.
 
-## Where To Go Next
+## Typical Flow
 
-- Setup and version constraints: [installation.md](./installation.md)
-- First UI and screen integration: [quickstart.md](./quickstart.md)
-- Java <-> JS messaging contracts: [bridge.md](./bridge.md)
-- Rendering and sizing controls: [advanced-surface.md](./advanced-surface.md)
+1. Register your mod in `ClientModInitializer`.
+2. Create a `GrapheneWebViewWidget` or `BrowserSurface`.
+3. Load a page from `app://assets/...`, `classpath:///assets/...`, or HTTP mode.
+4. Bridge bootstrap scripts are injected.
+5. JavaScript sends `ready`.
+6. Java and JS exchange events and requests.
+
+## Next
+
+- Setup and dependency wiring: [Installation](installation.md)
+- First screen integration: [Quickstart](quickstart.md)
+- Java <-> JS contracts: [Bridge](bridge.md)
+- Rendering and sizing controls: [Advanced Surface](advanced-surface.md)
 
 ---
 
