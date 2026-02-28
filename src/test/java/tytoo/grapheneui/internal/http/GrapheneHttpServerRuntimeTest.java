@@ -3,7 +3,7 @@ package tytoo.grapheneui.internal.http;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import tytoo.grapheneui.api.GrapheneHttpConfig;
+import tytoo.grapheneui.api.config.GrapheneHttpConfig;
 
 import java.io.IOException;
 import java.net.URI;

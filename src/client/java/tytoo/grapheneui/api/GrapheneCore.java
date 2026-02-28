@@ -5,6 +5,10 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tytoo.grapheneui.api.config.GrapheneConfig;
+import tytoo.grapheneui.api.config.GrapheneFileSystemAccessMode;
+import tytoo.grapheneui.api.config.GrapheneHttpConfig;
+import tytoo.grapheneui.api.config.GrapheneRemoteDebugConfig;
 import tytoo.grapheneui.api.runtime.GrapheneRuntime;
 import tytoo.grapheneui.internal.core.GrapheneCoreServices;
 
@@ -126,6 +130,7 @@ public final class GrapheneCore implements ClientModInitializer {
         OwnedValue<Path> selectedJcefPath = null;
         OwnedValue<GrapheneHttpConfig> selectedHttpConfig = null;
         OwnedValue<GrapheneRemoteDebugConfig> selectedRemoteDebugConfig = null;
+        GrapheneFileSystemAccessMode mergedFileSystemAccessMode = GrapheneFileSystemAccessMode.DENY;
 
         for (Map.Entry<String, GrapheneConfig> consumerConfigEntry : CONSUMER_CONFIGS.entrySet()) {
             String consumerId = consumerConfigEntry.getKey();
@@ -150,6 +155,7 @@ public final class GrapheneCore implements ClientModInitializer {
                     consumerId,
                     "remote debugging config"
             );
+            mergedFileSystemAccessMode = mergeFileSystemAccessMode(mergedFileSystemAccessMode, consumerConfig.fileSystemAccessMode());
         }
 
         if (selectedJcefPath != null) {
@@ -163,6 +169,8 @@ public final class GrapheneCore implements ClientModInitializer {
         if (selectedRemoteDebugConfig != null) {
             mergedConfigBuilder.remoteDebugging(selectedRemoteDebugConfig.value());
         }
+
+        mergedConfigBuilder.fileSystemAccessMode(mergedFileSystemAccessMode);
 
         return mergedConfigBuilder.build();
     }
@@ -205,6 +213,17 @@ public final class GrapheneCore implements ClientModInitializer {
                         + " and "
                         + candidateOwner
         );
+    }
+
+    private static GrapheneFileSystemAccessMode mergeFileSystemAccessMode(
+            GrapheneFileSystemAccessMode mergedMode,
+            GrapheneFileSystemAccessMode candidateMode
+    ) {
+        if (mergedMode == GrapheneFileSystemAccessMode.ALLOW || candidateMode == GrapheneFileSystemAccessMode.ALLOW) {
+            return GrapheneFileSystemAccessMode.ALLOW;
+        }
+
+        return GrapheneFileSystemAccessMode.DENY;
     }
 
     @Override

@@ -8,8 +8,8 @@ import io.github.trethore.jcefgithub.EnumPlatform;
 import io.github.trethore.jcefgithub.UnsupportedPlatformException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tytoo.grapheneui.api.GrapheneConfig;
-import tytoo.grapheneui.api.GrapheneRemoteDebugConfig;
+import tytoo.grapheneui.api.config.GrapheneConfig;
+import tytoo.grapheneui.api.config.GrapheneRemoteDebugConfig;
 import tytoo.grapheneui.internal.logging.GrapheneDebugLogger;
 import tytoo.grapheneui.internal.platform.GraphenePlatform;
 

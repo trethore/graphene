@@ -111,9 +111,9 @@ If you need shared runtime options (HTTP, JCEF path, extension folders, remote d
 ```java
 import java.nio.file.Path;
 import net.fabricmc.api.ClientModInitializer;
-import tytoo.grapheneui.api.GrapheneConfig;
+import tytoo.grapheneui.api.config.GrapheneConfig;
 import tytoo.grapheneui.api.GrapheneCore;
-import tytoo.grapheneui.api.GrapheneRemoteDebugConfig;
+import tytoo.grapheneui.api.config.GrapheneRemoteDebugConfig;
 
 public final class MyModClient implements ClientModInitializer {
     @Override
@@ -121,7 +121,10 @@ public final class MyModClient implements ClientModInitializer {
         GrapheneConfig config = GrapheneConfig.builder()
                 .jcefDownloadPath(Path.of("./graphene-jcef"))
                 .extensionFolder(Path.of("./config/my-mod/extensions"))
-                .remoteDebugging(GrapheneRemoteDebugConfig.builder().randomPort().build())
+                .remoteDebugging(GrapheneRemoteDebugConfig.builder()
+                        .randomPort()
+                        .allowedOrigins("https://chrome-devtools-frontend.appspot.com")
+                        .build())
                 .build();
 
         GrapheneCore.register("my-mod-id", config);

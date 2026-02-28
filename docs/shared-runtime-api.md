@@ -19,7 +19,10 @@ That created hidden conflicts for HTTP setup, extension folders, JCEF install pa
 GrapheneMod graphene = GrapheneCore.register("my-mod-id", GrapheneConfig.builder()
         .http(GrapheneHttpConfig.builder().randomPortInRange(20_000, 20_050).build())
         .extensionFolder("./extensions/my-mod")
-        .remoteDebugging(GrapheneRemoteDebugConfig.builder().port(9222).build())
+        .remoteDebugging(GrapheneRemoteDebugConfig.builder()
+                .randomPort()
+                .allowedOrigins("https://chrome-devtools-frontend.appspot.com")
+                .build())
         .build());
 ```
 
@@ -32,6 +35,7 @@ GrapheneMod graphene = GrapheneCore.register("my-mod-id", GrapheneConfig.builder
 - `jcefDownloadPath`: all explicit values must match.
 - `http`: all explicit values must match.
 - `remoteDebugging`: all explicit values must match.
+- `fileSystemAccessMode`: `ALLOW` wins if any consumer requests it.
 - `extensionFolder`: values are merged (union).
 
 `GrapheneHttpConfig.fileRoot(...)` is part of HTTP config equality. Graphene normalizes it to an absolute path, so equivalent

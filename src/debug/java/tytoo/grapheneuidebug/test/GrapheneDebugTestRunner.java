@@ -155,7 +155,11 @@ public final class GrapheneDebugTestRunner {
         return runOnClientThread(() -> {
             requireState(GrapheneCore.isInitialized(), "GrapheneCore must be initialized in debug runtime");
             requireState(GrapheneCore.runtime().isInitialized(), "Graphene runtime must report initialized");
-            requireState(GrapheneCore.runtime().getRemoteDebuggingPort() > 0, "Graphene runtime debug port must be > 0");
+            int remoteDebuggingPort = GrapheneCore.runtime().getRemoteDebuggingPort();
+            requireState(
+                    remoteDebuggingPort == -1 || (remoteDebuggingPort >= 1024 && remoteDebuggingPort <= 65535),
+                    "Graphene runtime debug port must be -1 (disabled) or a valid TCP port"
+            );
         });
     }
 

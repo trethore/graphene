@@ -88,10 +88,10 @@ final class GrapheneBridgeOutboundQueue {
                 DEBUG_LOGGER.debug("Queued bridge outbound message size={} queued={}", outboundPacketJson.length(), queuedMessages.size());
                 return;
             }
-        }
 
-        dispatcher.accept(outboundPacketJson);
-        DEBUG_LOGGER.debug("Dispatched bridge outbound message immediately size={}", outboundPacketJson.length());
+            dispatcher.accept(outboundPacketJson);
+            DEBUG_LOGGER.debug("Dispatched bridge outbound message immediately size={}", outboundPacketJson.length());
+        }
     }
 
     void clear() {

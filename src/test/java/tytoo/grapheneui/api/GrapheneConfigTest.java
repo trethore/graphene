@@ -1,6 +1,9 @@
 package tytoo.grapheneui.api;
 
 import org.junit.jupiter.api.Test;
+import tytoo.grapheneui.api.config.GrapheneConfig;
+import tytoo.grapheneui.api.config.GrapheneFileSystemAccessMode;
+import tytoo.grapheneui.api.config.GrapheneHttpConfig;
 
 import java.nio.file.Path;
 
@@ -15,6 +18,7 @@ final class GrapheneConfigTest {
         assertTrue(config.jcefDownloadPath().isEmpty());
         assertTrue(config.extensionFolders().isEmpty());
         assertTrue(config.http().isEmpty());
+        assertEquals(GrapheneFileSystemAccessMode.DENY, config.fileSystemAccessMode());
     }
 
     @Test
@@ -27,6 +31,15 @@ final class GrapheneConfigTest {
                 .build();
 
         assertTrue(config.http().isPresent());
+    }
+
+    @Test
+    void builderCanAllowFileSystemAccess() {
+        GrapheneConfig config = GrapheneConfig.builder()
+                .allowFileSystemAccess()
+                .build();
+
+        assertEquals(GrapheneFileSystemAccessMode.ALLOW, config.fileSystemAccessMode());
     }
 
     @Test

@@ -8,9 +8,9 @@ import org.cef.CefApp;
 import org.cef.CefClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tytoo.grapheneui.api.GrapheneConfig;
-import tytoo.grapheneui.api.GrapheneHttpConfig;
 import tytoo.grapheneui.api.bridge.GrapheneBridge;
+import tytoo.grapheneui.api.config.GrapheneConfig;
+import tytoo.grapheneui.api.config.GrapheneHttpConfig;
 import tytoo.grapheneui.api.runtime.GrapheneHttpServer;
 import tytoo.grapheneui.api.runtime.GrapheneRuntime;
 import tytoo.grapheneui.internal.bridge.GrapheneBridgeOptions;
@@ -116,7 +116,7 @@ public final class GrapheneCefRuntime implements GrapheneRuntime {
 
             CefAppBuilder cefAppBuilder = GrapheneCefInstaller.createBuilder(validatedConfig);
             logStartupConfiguration(cefAppBuilder);
-            GrapheneCefAppHandler appHandler = new GrapheneCefAppHandler();
+            GrapheneCefAppHandler appHandler = new GrapheneCefAppHandler(validatedConfig.fileSystemAccessMode());
             cefAppBuilder.setAppHandler(appHandler);
 
             try {

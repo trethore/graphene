@@ -6,18 +6,20 @@ This page covers the most useful runtime diagnostics when integrating Graphene.
 
 Remote debugging is disabled by default.
 
-Enable it through `GrapheneConfig` if you need DevTools:
+Enable it through `GrapheneConfig` if you need DevTools (dev-only):
 
 ```java
 GrapheneConfig config = GrapheneConfig.builder()
         .remoteDebugging(GrapheneRemoteDebugConfig.builder()
                 .randomPort()
-                .allowedOrigins("*")
+                .allowedOrigins("https://chrome-devtools-frontend.appspot.com")
                 .build())
         .build();
 
 GrapheneCore.register("my-mod-id", config);
 ```
+
+Do not use wildcard origins (for example, `allowedOrigins("*")`) outside tightly controlled local debugging.
 
 Then query the active debug port:
 

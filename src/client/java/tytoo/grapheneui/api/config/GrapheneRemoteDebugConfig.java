@@ -1,4 +1,4 @@
-package tytoo.grapheneui.api;
+package tytoo.grapheneui.api.config;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -7,7 +7,6 @@ import java.util.Optional;
 public final class GrapheneRemoteDebugConfig {
     private static final int MIN_PORT = 1024;
     private static final int MAX_PORT = 65535;
-    private static final String DEFAULT_ALLOWED_ORIGINS = "*";
     private static final GrapheneRemoteDebugConfig DISABLED = GrapheneRemoteDebugConfig.builder().disable().build();
 
     private final boolean enabled;
@@ -23,7 +22,7 @@ public final class GrapheneRemoteDebugConfig {
         }
 
         this.fixedPort = builder.fixedPort == null ? null : requireValidPort(builder.fixedPort);
-        this.allowedOrigins = normalizeAllowedOrigins(builder.allowedOrigins);
+        this.allowedOrigins = builder.allowedOrigins == null ? null : normalizeAllowedOrigins(builder.allowedOrigins);
     }
 
     public static GrapheneRemoteDebugConfig disabled() {
@@ -86,14 +85,13 @@ public final class GrapheneRemoteDebugConfig {
     public static final class Builder {
         private boolean enabled = true;
         private Integer fixedPort;
-        private String allowedOrigins = DEFAULT_ALLOWED_ORIGINS;
+        private String allowedOrigins;
 
         private Builder() {
         }
 
         public Builder enable() {
             this.enabled = true;
-            ensureEnabledDefaults();
             return this;
         }
 
@@ -106,33 +104,24 @@ public final class GrapheneRemoteDebugConfig {
 
         public Builder port(int port) {
             this.enabled = true;
-            ensureEnabledDefaults();
             this.fixedPort = requireValidPort(port);
             return this;
         }
 
         public Builder randomPort() {
             this.enabled = true;
-            ensureEnabledDefaults();
             this.fixedPort = null;
             return this;
         }
 
         public Builder allowedOrigins(String allowedOrigins) {
             this.enabled = true;
-            ensureEnabledDefaults();
             this.allowedOrigins = normalizeAllowedOrigins(allowedOrigins);
             return this;
         }
 
         public GrapheneRemoteDebugConfig build() {
             return new GrapheneRemoteDebugConfig(this);
-        }
-
-        private void ensureEnabledDefaults() {
-            if (this.allowedOrigins == null) {
-                this.allowedOrigins = DEFAULT_ALLOWED_ORIGINS;
-            }
         }
     }
 }

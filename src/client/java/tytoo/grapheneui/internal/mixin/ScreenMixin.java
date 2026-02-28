@@ -56,7 +56,7 @@ public abstract class ScreenMixin extends AbstractContainerEventHandler implemen
         GuiEventListener focused = this.getFocused();
         if (mouseButtonEvent.button() == 0 && this.isDragging()) {
             this.setDragging(false);
-            if (focused != null) {
+            if (focused != null && focused != this) {
                 return focused.mouseReleased(mouseButtonEvent);
             }
 
