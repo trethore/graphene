@@ -19,6 +19,9 @@
 - `settingsCustomizer(Consumer<CefBrowserSettings>)` mutate low-level CEF settings
 - `owner(Object)` register owner for lifecycle-managed cleanup
 
+When `maxFps(...)` is applied multiple times on the same `BrowserSurfaceConfig` or `BrowserSurface.Builder`,
+Graphene keeps the largest explicit value.
+
 ## Sizing Modes
 
 Fixed resolution example:
