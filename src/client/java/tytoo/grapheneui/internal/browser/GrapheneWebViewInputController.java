@@ -55,7 +55,8 @@ public final class GrapheneWebViewInputController {
         int currentClickCount = resolveClickCount(button, isDoubleClick);
         pressedButton = button;
         pressedClickCount = currentClickCount;
-        browser.mouseInteracted(browserPoint.x, browserPoint.y, 0, button, true, currentClickCount);
+        int modifiers = GrapheneInputModifierUtil.currentModifiers();
+        browser.mouseInteracted(browserPoint.x, browserPoint.y, modifiers, button, true, currentClickCount);
         emitSideMouseButtonEvent(button, true);
     }
 
@@ -64,7 +65,8 @@ public final class GrapheneWebViewInputController {
             primaryPointerButtonDown = false;
         }
 
-        int cefModifiers = currentCefModifiers();
+        int modifiers = GrapheneInputModifierUtil.currentModifiers();
+        int cefModifiers = GrapheneInputModifierUtil.toCefCommonModifiers(modifiers);
 
         if (!focusUtil.isFocused()) {
             if (button == 0) {
@@ -75,7 +77,7 @@ public final class GrapheneWebViewInputController {
 
         emitSideMouseButtonEvent(button, false);
         int releaseClickCount = button == pressedButton ? pressedClickCount : 1;
-        browser.mouseInteracted(browserPoint.x, browserPoint.y, 0, button, false, releaseClickCount);
+        browser.mouseInteracted(browserPoint.x, browserPoint.y, modifiers, button, false, releaseClickCount);
         if (button == 0) {
             browser.dragCompleted(browserPoint.x, browserPoint.y, cefModifiers);
         }

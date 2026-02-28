@@ -89,8 +89,12 @@ final class GrapheneBridgeOutboundQueue {
                 return;
             }
 
-            dispatcher.accept(outboundPacketJson);
-            DEBUG_LOGGER.debug("Dispatched bridge outbound message immediately size={}", outboundPacketJson.length());
+            try {
+                dispatcher.accept(outboundPacketJson);
+                DEBUG_LOGGER.debug("Dispatched bridge outbound message immediately size={}", outboundPacketJson.length());
+            } catch (RuntimeException exception) {
+                LOGGER.warn("Failed to dispatch immediate Graphene bridge message", exception);
+            }
         }
     }
 

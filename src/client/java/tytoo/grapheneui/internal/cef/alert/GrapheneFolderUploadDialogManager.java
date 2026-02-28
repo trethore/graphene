@@ -13,14 +13,12 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
-import java.util.Vector;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public final class GrapheneFolderUploadDialogManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneFolderUploadDialogManager.class);
@@ -36,17 +34,7 @@ public final class GrapheneFolderUploadDialogManager {
     private boolean dialogVisible;
 
     private static Path selectFolder(GrapheneFolderUploadDialogRequest request) {
-        List<String> acceptFilters = request.acceptFilters();
-        List<String> acceptExtensions = request.acceptExtensions();
-        List<String> acceptDescriptions = request.acceptDescriptions();
-
-        DEBUG_LOGGER.debug(
-                "Opening folder chooser title={} filters={} extensions={} descriptions={}",
-                request.title(),
-                acceptFilters.size(),
-                acceptExtensions.size(),
-                acceptDescriptions.size()
-        );
+        DEBUG_LOGGER.debug("Opening folder chooser title={}", request.title());
 
         Path selectedFolder = openNativeDirectoryChooser(request.title(), request.defaultFilePath());
         if (selectedFolder == null) {
@@ -59,18 +47,6 @@ public final class GrapheneFolderUploadDialogManager {
         }
 
         return selectedFolder;
-    }
-
-    private static Vector<String> collectUploadFilePaths(Path folder) {
-        try (Stream<Path> pathStream = Files.walk(folder)) {
-            return pathStream
-                    .filter(Files::isRegularFile)
-                    .map(path -> path.toAbsolutePath().normalize().toString())
-                    .collect(Collectors.toCollection(Vector::new));
-        } catch (Exception exception) {
-            LOGGER.warn("Failed to enumerate files for folder upload {}", folder, exception);
-            return new Vector<>();
-        }
     }
 
     private static Path openNativeDirectoryChooser(String title, String defaultFilePath) {
@@ -115,22 +91,21 @@ public final class GrapheneFolderUploadDialogManager {
         return null;
     }
 
+    @SuppressWarnings("java:S1149") // CEF callback API requires Vector<String>.
+    private static java.util.Vector<String> toCefFileDialogSelection(List<String> selectedPaths) {
+        return new java.util.Vector<>(selectedPaths);
+    }
+
     public void enqueueDialog(
             CefBrowser browser,
             String title,
             String defaultFilePath,
-            Vector<String> acceptFilters,
-            Vector<String> acceptExtensions,
-            Vector<String> acceptDescriptions,
             CefFileDialogCallback callback
     ) {
         GrapheneFolderUploadDialogRequest request = new GrapheneFolderUploadDialogRequest(
                 browser,
                 title,
                 defaultFilePath,
-                acceptFilters,
-                acceptExtensions,
-                acceptDescriptions,
                 callback
         );
 
@@ -181,8 +156,9 @@ public final class GrapheneFolderUploadDialogManager {
                         return;
                     }
 
-                    Vector<String> selectedPaths = collectUploadFilePaths(selectedFolder);
-                    long fileCount = selectedPaths.size();
+                    List<String> selectedPaths = new ArrayList<>(1);
+                    selectedPaths.add(selectedFolder.toString());
+                    long fileCount = -1L;
                     McClient.execute(() -> showFolderUploadDialog(request, selectedFolder, selectedPaths, fileCount));
                 });
     }
@@ -190,7 +166,7 @@ public final class GrapheneFolderUploadDialogManager {
     private void showFolderUploadDialog(
             GrapheneFolderUploadDialogRequest request,
             Path selectedFolder,
-            Vector<String> selectedPaths,
+            List<String> selectedPaths,
             long fileCount
     ) {
         Screen currentScreen = McClient.currentScreen();
@@ -222,7 +198,7 @@ public final class GrapheneFolderUploadDialogManager {
 
     private void resolveContinue(
             GrapheneFolderUploadDialogRequest request,
-            Vector<String> selectedPaths,
+            List<String> selectedPaths,
             Screen dialogScreen,
             Screen returnScreen
     ) {
@@ -231,7 +207,7 @@ public final class GrapheneFolderUploadDialogManager {
         }
 
         try {
-            request.callback().Continue(selectedPaths);
+            request.callback().Continue(toCefFileDialogSelection(selectedPaths));
         } catch (RuntimeException exception) {
             LOGGER.error("Failed to continue folder upload callback for {}", request.browser(), exception);
         }

@@ -10,9 +10,9 @@ import org.jspecify.annotations.NonNull;
 
 import java.nio.file.Path;
 import java.text.NumberFormat;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.Vector;
 
 final class GrapheneFolderUploadDialogScreen extends Screen {
     private static final int DIALOG_WIDTH = 340;
@@ -31,7 +31,7 @@ final class GrapheneFolderUploadDialogScreen extends Screen {
     private final GrapheneFolderUploadDialogRequest request;
     private final Screen returnScreen;
     private final GrapheneFolderUploadDialogCompletionHandler completionHandler;
-    private final Vector<String> selectedPaths;
+    private final List<String> selectedPaths;
     private final Path folderPath;
     private final long fileCount;
     private MultiLineLabel messageLabel = MultiLineLabel.EMPTY;
@@ -41,7 +41,7 @@ final class GrapheneFolderUploadDialogScreen extends Screen {
             GrapheneFolderUploadDialogRequest request,
             Screen returnScreen,
             GrapheneFolderUploadDialogCompletionHandler completionHandler,
-            Vector<String> selectedPaths,
+            List<String> selectedPaths,
             Path folderPath,
             long fileCount
     ) {
@@ -133,7 +133,7 @@ final class GrapheneFolderUploadDialogScreen extends Screen {
         return returnScreen;
     }
 
-    Vector<String> selectedPaths() {
+    List<String> selectedPaths() {
         return selectedPaths;
     }
 
