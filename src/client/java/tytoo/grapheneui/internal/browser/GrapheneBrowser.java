@@ -6,7 +6,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import org.cef.CefBrowserSettings;
 import org.cef.CefClient;
 import org.cef.browser.CefBrowser;
-import org.cef.browser.CefBrowserNAccessor;
+import org.cef.browser.CefBrowserWindowless;
 import org.cef.browser.CefPaintEvent;
 import org.cef.browser.CefRequestContext;
 import org.cef.callback.CefDragData;
@@ -26,7 +26,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
-public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHandler, AutoCloseable {
+public class GrapheneBrowser extends CefBrowserWindowless implements CefRenderHandler, AutoCloseable {
     private static final long NO_WINDOW_HANDLE = 0L;
     private final GrapheneRenderer renderer;
     private final boolean transparent;
@@ -66,7 +66,7 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
             CefRequestContext context,
             GrapheneRenderer renderer,
             CefBrowserSettings browserSettings,
-            CefBrowserNAccessor parent,
+            CefBrowserWindowless parent,
             Point inspectAt
     ) {
         super(client, url, context, parent, inspectAt, Objects.requireNonNull(browserSettings, "browserSettings"));
@@ -218,11 +218,11 @@ public class GrapheneBrowser extends CefBrowserNAccessor implements CefRenderHan
     }
 
     @Override
-    protected CefBrowserNAccessor createDevToolsBrowserAccessor(
+    protected CefBrowserWindowless createDevToolsBrowserWindowless(
             CefClient client,
             String url,
             CefRequestContext context,
-            CefBrowserNAccessor parent,
+            CefBrowserWindowless parent,
             Point inspectAt
     ) {
         return new GrapheneBrowser(
