@@ -123,7 +123,7 @@ dependencies {
 		isTransitive = false
 	}
 	include("io.github.trethore:jcefgithub:${jcefGithubVersion}:all-relocated")
-	sourceDeps("io.github.trethore:jcefgithub:${jcefGithubVersion}:all-relocated")
+	sourceDeps("io.github.trethore:jcefgithub:${jcefGithubVersion}:sources")
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation("net.fabricmc.fabric-api:fabric-api:${fabricApiVersion}")
