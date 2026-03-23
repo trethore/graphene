@@ -33,7 +33,7 @@ In short: Graphene gives Fabric mods a practical way to use web-powered interfac
 
 - macOS: `arm64`, `amd64`
 - Linux: `arm64`, `amd64`
-- Windows: `amd64`
+- Windows: `amd64`, `arm64`
 
 ## Tested Platforms
 
