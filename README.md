@@ -10,7 +10,7 @@ It embeds Chromium through JCEF, so you can render HTML/CSS/JavaScript UIs in-ga
 
 ![Graphene demo](docs/images/demo.png)
 
-## What is this ?
+## What is Graphene?
 
 Graphene is meant to bridge Minecraft modding and modern web UI development.
 
@@ -27,7 +27,7 @@ In short: Graphene gives Fabric mods a practical way to use web-powered interfac
 
 - Java: `21`
 - GPU: `NVIDIA GeForce GT 720` or better
-- For mac users, macOS 12 (Monterey) or later.
+- For macOS users: macOS 12 (Monterey) or later
 
 ## Supported Platforms
 
@@ -39,15 +39,15 @@ In short: Graphene gives Fabric mods a practical way to use web-powered interfac
 
 - Windows 11 with `AZERTY` and `QWERTY` keyboard layouts
 - Linux (Wayland) with `AZERTY` and `QWERTY` keyboard layouts
-- MacOS 26 with `QWERTY` keyboard layout. (Thx to @Thinkseal for testing on macOS!)
+- macOS 26 with `QWERTY` keyboard layout (thanks to @Thinkseal for testing on macOS)
 
 ## Installation
 
-Graphene is published on Maven Central and Github Packages.
+Graphene is published on Maven Central and GitHub Packages.
 
 We recommend using Maven Central for ease of use (no authentication required).
 
-Check [Maven](https://repo1.maven.org/maven2/io/github/trethore/graphene-ui/) for the latest version.
+Check [Maven Central](https://repo1.maven.org/maven2/io/github/trethore/graphene-ui/) for the latest version.
 
 ### Maven coordinates
 
@@ -91,45 +91,80 @@ Jar-in-jar embedding is also possible, but it is not the preferred default. See 
 
 ### Initialize Graphene in your mod
 
-Register your mod with `GrapheneCore.register("your-mod-id")` from your client initializer:
+Register your mod from `onInitializeClient()` with an anchor class. Graphene resolves the owning Fabric mod id from that class and returns a `GrapheneHandle` for namespaced usage:
 
 ```java
 import net.fabricmc.api.ClientModInitializer;
 import tytoo.grapheneui.api.GrapheneCore;
+import tytoo.grapheneui.api.GrapheneHandle;
 
 public final class MyModClient implements ClientModInitializer {
+    private static GrapheneHandle graphene;
+
     @Override
     public void onInitializeClient() {
-        GrapheneCore.register("my-mod-id");
+        graphene = GrapheneCore.register(MyModClient.class);
+    }
+
+    public static GrapheneHandle graphene() {
+        return graphene;
     }
 }
 ```
 
-If you need shared runtime options (HTTP, JCEF path, extension folders, remote debugging), pass a `GrapheneConfig`.
-`jcefDownloadPath(...)` is a base directory, and Graphene installs JCEF under `<jcef-mvn-version>/<platform>`:
+Graphene separates per-consumer container settings from shared runtime settings.
+`jcefDownloadPath(...)` is a base directory, and Graphene installs JCEF under `<jcef-mvn-version>/<platform>`.
 
 ```java
 import java.nio.file.Path;
 import net.fabricmc.api.ClientModInitializer;
-import tytoo.grapheneui.api.config.GrapheneConfig;
 import tytoo.grapheneui.api.GrapheneCore;
+import tytoo.grapheneui.api.GrapheneHandle;
+import tytoo.grapheneui.api.config.GrapheneConfig;
+import tytoo.grapheneui.api.config.GrapheneContainerConfig;
+import tytoo.grapheneui.api.config.GrapheneGlobalConfig;
+import tytoo.grapheneui.api.config.GrapheneHttpConfig;
 import tytoo.grapheneui.api.config.GrapheneRemoteDebugConfig;
 
 public final class MyModClient implements ClientModInitializer {
+    private static GrapheneHandle graphene;
+
     @Override
     public void onInitializeClient() {
-        GrapheneConfig config = GrapheneConfig.builder()
-                .jcefDownloadPath(Path.of("./graphene-jcef"))
-                .extensionFolder(Path.of("./config/my-mod/extensions"))
-                .remoteDebugging(GrapheneRemoteDebugConfig.builder()
-                        .randomPort()
-                        .allowedOrigins("https://chrome-devtools-frontend.appspot.com")
-                        .build())
-                .build();
+        graphene = GrapheneCore.register(
+                MyModClient.class,
+                GrapheneConfig.builder()
+                        .container(GrapheneContainerConfig.builder()
+                                .http(GrapheneHttpConfig.builder()
+                                        .bindHost("127.0.0.1")
+                                        .randomPortInRange(20_000, 21_000)
+                                        .fileRoot(Path.of("C:/dev/my-ui-dist"))
+                                        .spaFallback("/assets/my-mod-id/web/index.html")
+                                        .build())
+                                .build())
+                        .global(GrapheneGlobalConfig.builder()
+                                .jcefDownloadPath(Path.of("./graphene-jcef"))
+                                .extensionFolder(Path.of("./config/my-mod/extensions"))
+                                .remoteDebugging(GrapheneRemoteDebugConfig.builder()
+                                        .randomPort()
+                                        .allowedOrigins("https://chrome-devtools-frontend.appspot.com")
+                                        .build())
+                                .build())
+                        .build()
+        );
+    }
 
-        GrapheneCore.register("my-mod-id", config);
+    public static GrapheneHandle graphene() {
+        return graphene;
     }
 }
+```
+
+Use the handle for namespaced helpers:
+
+```java
+String appUrl = MyModClient.graphene().appAssets().asset("web/index.html");
+String mountedHttpUrl = MyModClient.graphene().httpUrl("web/index.html");
 ```
 
 ## Documentation

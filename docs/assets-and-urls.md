@@ -1,23 +1,28 @@
 # Assets And URLs
 
-Graphene provides URL helpers to load web assets from your mod namespace and optional runtime HTTP server.
+Graphene provides URL helpers for loading web assets from your mod namespace and, optionally, from the runtime HTTP server.
 
 ## URL Helpers
 
 App scheme (`app://`):
 
 - `GrapheneAppUrls.asset(namespace, path)`
-- `grapheneMod.appAssets().asset(path)`
+- `grapheneHandle.appAssets().asset(path)`
 
 Classpath scheme (`classpath:///`):
 
 - `GrapheneClasspathUrls.asset(namespace, path)`
-- `grapheneMod.classpathAssets().asset(path)`
+- `grapheneHandle.classpathAssets().asset(path)`
 
-Runtime HTTP (from configured base URL scheme, default `http://`):
+Runtime HTTP for shared classpath assets:
 
 - `GrapheneHttpUrls.asset(namespace, path)`
-- `grapheneMod.httpAssets().asset(path)`
+- `grapheneHandle.httpAssets().asset(path)`
+
+Runtime HTTP for this mod's mounted container route:
+
+- `GrapheneHttpUrls.modUrl(namespace, path)`
+- `grapheneHandle.httpUrl(path)`
 
 Examples:
 
@@ -27,6 +32,12 @@ String appUrl = GrapheneAppUrls.asset("my-mod-id", "web/index.html");
 
 String classpathUrl = GrapheneClasspathUrls.asset("my-mod-id", "web/index.html");
 // classpath:///assets/my-mod-id/web/index.html
+
+String classpathHttpUrl = GrapheneHttpUrls.asset("my-mod-id", "web/index.html");
+// http://127.0.0.1:<port>/assets/my-mod-id/web/index.html
+
+String mountedHttpUrl = GrapheneHttpUrls.modUrl("my-mod-id", "web/index.html");
+// http://127.0.0.1:<port>/mods/my-mod-id/web/index.html
 ```
 
 ## Resource Layout
@@ -79,37 +90,43 @@ Unknown extensions default to `text/plain`.
 
 ## HTTP Mode
 
-Enable HTTP mode with `GrapheneHttpConfig`:
+Enable HTTP mode with `GrapheneContainerConfig`:
 
 ```java
 GrapheneConfig config = GrapheneConfig.builder()
-        .http(GrapheneHttpConfig.builder()
-                .bindHost("127.0.0.1")
-                .randomPortInRange(20_000, 21_000)
-                .fileRoot("C:/dev/my-ui-dist")
-                .spaFallback("/assets/my-mod-id/web/index.html")
+        .container(GrapheneContainerConfig.builder()
+                .http(GrapheneHttpConfig.builder()
+                        .bindHost("127.0.0.1")
+                        .randomPortInRange(20_000, 21_000)
+                        .fileRoot("C:/dev/my-ui-dist")
+                        .spaFallback("/assets/my-mod-id/web/index.html")
+                        .build())
                 .build())
         .build();
 
-GrapheneCore.register("my-mod-id", config);
+GrapheneHandle graphene = GrapheneCore.register(MyModClient.class, config);
 
-String url = GrapheneHttpUrls.asset("my-mod-id", "web/index.html");
+String classpathHttpUrl = graphene.httpAssets().asset("web/index.html");
+String mountedHttpUrl = graphene.httpUrl("web/index.html");
 ```
 
 Important behavior:
 
-- `GrapheneHttpUrls.asset(...)` throws `IllegalStateException` when HTTP server is not running.
-- HTTP request resolution order:
-1. filesystem (`fileRoot/request-path`)
-2. classpath assets
-3. optional SPA fallback for non-`/assets/...` `GET` and `POST` requests
+- `GrapheneHttpUrls.asset(...)` and `GrapheneHttpUrls.modUrl(...)` throw `IllegalStateException` when HTTP server is not running.
+- `graphene.httpAssets().asset(...)` always targets shared classpath assets under `/assets/<mod-id>/...`.
+- `graphene.httpUrl(...)` targets the consumer mount under `/mods/<mod-id>/...`.
+- Mounted HTTP request resolution order is:
+  1. filesystem (`fileRoot/request-path`)
+  2. classpath fallback under `assets/<mod-id>/<request-path>`
+  3. optional SPA fallback
+- Requests under `/mods/<mod-id>/assets/...` are classpath-only and do not consult `fileRoot`.
 
 ## Recommendations
 
 - Keep web assets under `assets/<mod-id>/web/...`.
 - Use namespaced helper APIs instead of hard-coded string concatenation.
 - Keep filenames lowercase and extension-explicit.
-- In shared runtime setups, keep HTTP paths namespaced (`/assets/<mod-id>/...`).
+- Prefer `grapheneHandle.httpUrl(...)` for consumer-mounted content and `grapheneHandle.httpAssets().asset(...)` for shared classpath assets.
 
 ---
 

@@ -4,21 +4,27 @@ Understanding Graphene lifecycle rules prevents stale bridge state and browser l
 
 ## Runtime Lifecycle
 
-- Register every consumer with `GrapheneCore.register(...)` before first Graphene usage.
-- Re-registering the same `modId` is allowed only when config is identical.
-- Different config for the same `modId` throws `IllegalStateException`.
-- Runtime initializes automatically after client startup when at least one consumer is registered.
+- Register every consumer with `GrapheneCore.register(...)` from `onInitializeClient()`.
+- Registration uses an anchor class, and Graphene closes registration before the first client tick.
+- Re-registering the same consumer is allowed only when config is identical.
+- Different config for the same consumer throws `IllegalStateException`.
+- Runtime initializes automatically before the first client tick when at least one consumer is registered.
 - Runtime can also initialize lazily on first `GrapheneCore.runtime()` or first surface creation.
 
 If no consumer is registered, first Graphene usage fails with `IllegalStateException`.
 
 ## Shared Config Merge Lifecycle
 
-Before runtime initialization, Graphene merges all registered consumer configs.
+Before runtime initialization, Graphene merges all registered global config contributions.
 
-- Conflicting explicit `jcefDownloadPath`, `http`, or `remoteDebugging` configs fail startup.
+- Conflicting explicit `jcefDownloadPath` or `remoteDebugging` configs fail startup.
 - `extensionFolder` values are merged.
 - `fileSystemAccessMode` resolves to `ALLOW` if any consumer requests `ALLOW`; otherwise `DENY`.
+
+HTTP server settings are merged from container configs:
+
+- `bindHost`, `baseUrlScheme`, and port binding must match when multiple consumers enable HTTP
+- `fileRoot` and `spaFallback` remain isolated per consumer mount
 
 ## Surface And Widget Lifecycle
 

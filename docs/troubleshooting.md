@@ -2,11 +2,11 @@
 
 Common integration issues and direct fixes.
 
-## `Graphene is not initialized` Error
+## `No Graphene consumer registered`
 
 Symptom:
 
-- Creating a surface or using runtime APIs throws an initialization error.
+- Creating a surface or using runtime APIs throws an `IllegalStateException` about Graphene registration.
 
 Likely cause:
 
@@ -14,8 +14,23 @@ Likely cause:
 
 Fix:
 
-- Register in `ClientModInitializer` with `GrapheneCore.register("my-mod-id")`.
+- Register in `ClientModInitializer` with `GrapheneCore.register(MyModClient.class)`.
 - Ensure registration happens before first web view or surface creation.
+
+## `Graphene consumer registration is closed`
+
+Symptom:
+
+- `GrapheneCore.register(...)` throws after startup has already progressed.
+
+Likely cause:
+
+- Registration happened after `onInitializeClient()` or after Graphene was already initialized.
+
+Fix:
+
+- Register from `onInitializeClient()`.
+- Avoid delayed or lazy registration after the first client tick.
 
 ## Bridge Not Ready
 
@@ -36,7 +51,7 @@ Fix:
 
 Symptom:
 
-- Java future fails or JS promise rejects with handler-not-found.
+- Java future fails or JS promise rejects with `handler_not_found`.
 
 Likely cause:
 
@@ -93,22 +108,22 @@ Likely cause:
 Fix:
 
 - Verify file exists under `assets/<mod-id>/...`.
-- Use helper APIs (`GrapheneAppUrls.asset(...)`).
+- Use helper APIs (`GrapheneAppUrls.asset(...)` or `handle.appAssets().asset(...)`).
 - For debug samples in this repo, use `graphene_test/pages/...` paths.
 
 ## `Graphene HTTP server is not running`
 
 Symptom:
 
-- `GrapheneHttpUrls.asset(...)` throws `IllegalStateException`.
+- `GrapheneHttpUrls.asset(...)` or `GrapheneHttpUrls.modUrl(...)` throws `IllegalStateException`.
 
 Likely cause:
 
-- HTTP mode was not configured in `GrapheneConfig`.
+- HTTP mode was not configured in `GrapheneContainerConfig`.
 
 Fix:
 
-- Register with `.http(GrapheneHttpConfig.builder() ... .build())`.
+- Register with `.container(GrapheneContainerConfig.builder().http(GrapheneHttpConfig.builder() ... .build()).build())`.
 - Verify `GrapheneCore.runtime().httpServer().isRunning()` before generating HTTP URLs.
 
 ## HTTP `fileRoot` Not Serving Updated Files
@@ -124,9 +139,9 @@ Likely cause:
 
 Fix:
 
-- Confirm request path resolves to `<fileRoot>/<request-path>`.
-- Request explicit files, for example `/assets/my-mod-id/web/index.html`.
-- Keep namespaced assets paths (`/assets/<mod-id>/...`).
+- Confirm mounted request path resolves to `<fileRoot>/<request-path>`.
+- Request mounted files with `/mods/<mod-id>/...`, for example `handle.httpUrl("web/index.html")`.
+- Use `/assets/<mod-id>/...` only for shared classpath assets.
 
 ## Pending Requests Fail During Navigation
 

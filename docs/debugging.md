@@ -8,13 +8,15 @@ Remote debugging is disabled unless configured.
 
 ```java
 GrapheneConfig config = GrapheneConfig.builder()
-        .remoteDebugging(GrapheneRemoteDebugConfig.builder()
-                .randomPort()
-                .allowedOrigins("https://chrome-devtools-frontend.appspot.com")
+        .global(GrapheneGlobalConfig.builder()
+                .remoteDebugging(GrapheneRemoteDebugConfig.builder()
+                        .randomPort()
+                        .allowedOrigins("https://chrome-devtools-frontend.appspot.com")
+                        .build())
                 .build())
         .build();
 
-GrapheneCore.register("my-mod-id", config);
+GrapheneCore.register(MyModClient.class, config);
 ```
 
 Runtime inspection:
@@ -29,7 +31,7 @@ if (port > 0) {
 - `-1`: remote debugging disabled
 - `> 0`: active port
 
-Open `/json` in a browser and attach DevTools to your page target.
+Open `http://127.0.0.1:<port>/json` in a browser and attach DevTools to your page target.
 
 ![DevTools targets page](images/devtools-targets.png)
 
@@ -41,7 +43,7 @@ In this repository's debug module:
 - Use navigation controls and the `DevTools` button
 - Test bridge and page behavior with bundled pages
 
-Useful sample pages:
+Useful bundled sample pages:
 
 - `app://assets/graphene-ui-debug/graphene_test/pages/welcome.html`
 - `app://assets/graphene-ui-debug/graphene_test/pages/tests.html`

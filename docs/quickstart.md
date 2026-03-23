@@ -9,33 +9,33 @@ package com.example.mymod;
 
 import net.fabricmc.api.ClientModInitializer;
 import tytoo.grapheneui.api.GrapheneCore;
-import tytoo.grapheneui.api.GrapheneMod;
+import tytoo.grapheneui.api.GrapheneHandle;
 
 public final class MyModClient implements ClientModInitializer {
-    private static GrapheneMod graphene;
+    private static GrapheneHandle graphene;
 
     @Override
     public void onInitializeClient() {
-        graphene = GrapheneCore.register("my-mod-id");
+        graphene = GrapheneCore.register(MyModClient.class);
     }
 
-    public static GrapheneMod graphene() {
+    public static GrapheneHandle graphene() {
         return graphene;
     }
 }
 ```
 
-For custom setup, use `GrapheneCore.register("my-mod-id", GrapheneConfig)`.
+For custom setup, use `GrapheneCore.register(MyModClient.class, GrapheneConfig)`.
 
 ## 2) Create A Screen With `GrapheneWebViewWidget`
 
 ```java
 package com.example.mymod.client.screen;
 
+import com.example.mymod.MyModClient;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import tytoo.grapheneui.api.widget.GrapheneWebViewWidget;
-import com.example.mymod.MyModClient;
 
 public final class MyWebScreen extends Screen {
     private GrapheneWebViewWidget webView;
@@ -98,12 +98,11 @@ String url = GrapheneAppUrls.asset("graphene-ui-debug", "graphene_test/pages/wel
 
 ## 4) Open The Screen
 
-Open from your keybind, command callback, or tick hook:
+Open the screen from any client-side callback that already has access to the Minecraft client, such as a keybind handler, command callback, or tick hook.
+For example, inside a Fabric callback that exposes a `client` parameter:
 
 ```java
-import net.minecraft.client.Minecraft;
-
-Minecraft.getInstance().setScreen(new MyWebScreen());
+client.setScreen(new MyWebScreen());
 ```
 
 ## 5) Optional: Enable Remote Debugging
@@ -112,16 +111,19 @@ Use this instead of the default registration in step 1:
 
 ```java
 import tytoo.grapheneui.api.config.GrapheneConfig;
+import tytoo.grapheneui.api.config.GrapheneGlobalConfig;
 import tytoo.grapheneui.api.config.GrapheneRemoteDebugConfig;
 
 GrapheneConfig config = GrapheneConfig.builder()
-        .remoteDebugging(GrapheneRemoteDebugConfig.builder()
-                .randomPort()
-                .allowedOrigins("https://chrome-devtools-frontend.appspot.com")
+        .global(GrapheneGlobalConfig.builder()
+                .remoteDebugging(GrapheneRemoteDebugConfig.builder()
+                        .randomPort()
+                        .allowedOrigins("https://chrome-devtools-frontend.appspot.com")
+                        .build())
                 .build())
         .build();
 
-GrapheneCore.register("my-mod-id", config);
+GrapheneCore.register(MyModClient.class, config);
 ```
 
 Query runtime state:
@@ -137,28 +139,35 @@ Use this instead of the default registration in step 1:
 
 ```java
 import tytoo.grapheneui.api.config.GrapheneConfig;
+import tytoo.grapheneui.api.config.GrapheneContainerConfig;
 import tytoo.grapheneui.api.config.GrapheneHttpConfig;
-import tytoo.grapheneui.api.url.GrapheneHttpUrls;
 
 GrapheneConfig config = GrapheneConfig.builder()
-        .http(GrapheneHttpConfig.builder()
-                .bindHost("127.0.0.1")
-                .randomPortInRange(20_000, 21_000)
-                .fileRoot("C:/dev/my-ui-dist")
-                .spaFallback("/assets/my-mod-id/web/index.html")
+        .container(GrapheneContainerConfig.builder()
+                .http(GrapheneHttpConfig.builder()
+                        .bindHost("127.0.0.1")
+                        .randomPortInRange(20_000, 21_000)
+                        .fileRoot("C:/dev/my-ui-dist")
+                        .spaFallback("/assets/my-mod-id/web/index.html")
+                        .build())
                 .build())
         .build();
 
-GrapheneCore.register("my-mod-id", config);
+GrapheneCore.register(MyModClient.class, config);
 
-String httpUrl = GrapheneHttpUrls.asset("my-mod-id", "web/index.html");
+String classpathHttpUrl = MyModClient.graphene().httpAssets().asset("web/index.html");
+String mountedHttpUrl = MyModClient.graphene().httpUrl("web/index.html");
 ```
 
-HTTP resolution order:
+HTTP resolution order for `handle.httpUrl("...")`:
 
 1. `<fileRoot>/<request-path>`
-2. classpath assets
-3. optional `spaFallback` for non-`/assets/...` `GET` and `POST`
+2. `assets/<mod-id>/<request-path>` on the classpath
+3. optional `spaFallback`
+
+`handle.httpAssets().asset(...)` always targets shared classpath assets under `/assets/<mod-id>/...`.
+
+Use `handle.httpUrl(...)` when you want filesystem-first development through `fileRoot(...)`, and use `handle.httpAssets().asset(...)` when you only need shared classpath assets.
 
 ---
 

@@ -64,36 +64,46 @@ Trade-offs:
 
 ## 4) Register Your Mod
 
-Call `GrapheneCore.register(...)` during client init.
+Call `GrapheneCore.register(...)` once during client init and keep the returned `GrapheneHandle`.
 
 ```java
 package com.example.mymod;
 
 import net.fabricmc.api.ClientModInitializer;
 import tytoo.grapheneui.api.GrapheneCore;
-import tytoo.grapheneui.api.GrapheneMod;
+import tytoo.grapheneui.api.GrapheneHandle;
 
 public final class MyModClient implements ClientModInitializer {
+    private static GrapheneHandle graphene;
+
     @Override
     public void onInitializeClient() {
-        GrapheneMod graphene = GrapheneCore.register("my-mod-id");
+        graphene = GrapheneCore.register(MyModClient.class);
+    }
+
+    public static GrapheneHandle graphene() {
+        return graphene;
     }
 }
 ```
 
-If you register the same `modId` multiple times, config must be identical.
-Registering the same `modId` with different config throws `IllegalStateException`.
+If you register the same consumer multiple times, the config must be identical.
+Registering the same consumer with different config throws `IllegalStateException`.
 
 ## 5) Optional Runtime Config
 
-`GrapheneConfig` lets you configure JCEF install location, extension folders, HTTP mode, remote debugging, and file-system access mode.
+`GrapheneConfig` is split into two parts:
+
+- `GrapheneContainerConfig`: this mod's own configuration
+- `GrapheneGlobalConfig`: this mod's contribution to the shared Graphene runtime
 
 ```java
 import java.nio.file.Path;
 import net.fabricmc.api.ClientModInitializer;
 import tytoo.grapheneui.api.GrapheneCore;
 import tytoo.grapheneui.api.config.GrapheneConfig;
-import tytoo.grapheneui.api.config.GrapheneFileSystemAccessMode;
+import tytoo.grapheneui.api.config.GrapheneContainerConfig;
+import tytoo.grapheneui.api.config.GrapheneGlobalConfig;
 import tytoo.grapheneui.api.config.GrapheneHttpConfig;
 import tytoo.grapheneui.api.config.GrapheneRemoteDebugConfig;
 
@@ -101,22 +111,26 @@ public final class MyModClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         GrapheneConfig config = GrapheneConfig.builder()
-                .jcefDownloadPath(Path.of("./graphene-jcef"))
-                .extensionFolder(Path.of("./config/my-mod/extensions"))
-                .http(GrapheneHttpConfig.builder()
-                        .bindHost("127.0.0.1")
-                        .randomPortInRange(20_000, 21_000)
-                        .fileRoot(Path.of("C:/dev/my-ui-dist"))
-                        .spaFallback("/assets/my-mod-id/web/index.html")
+                .container(GrapheneContainerConfig.builder()
+                        .http(GrapheneHttpConfig.builder()
+                                .bindHost("127.0.0.1")
+                                .randomPortInRange(20_000, 21_000)
+                                .fileRoot(Path.of("C:/dev/my-ui-dist"))
+                                .spaFallback("/assets/my-mod-id/web/index.html")
+                                .build())
                         .build())
-                .remoteDebugging(GrapheneRemoteDebugConfig.builder()
-                        .randomPort()
-                        .allowedOrigins("https://chrome-devtools-frontend.appspot.com")
+                .global(GrapheneGlobalConfig.builder()
+                        .jcefDownloadPath(Path.of("./graphene-jcef"))
+                        .extensionFolder(Path.of("./config/my-mod/extensions"))
+                        .remoteDebugging(GrapheneRemoteDebugConfig.builder()
+                                .randomPort()
+                                .allowedOrigins("https://chrome-devtools-frontend.appspot.com")
+                                .build())
+                        .allowFileSystemAccess()
                         .build())
-                .fileSystemAccessMode(GrapheneFileSystemAccessMode.DENY)
                 .build();
 
-        GrapheneCore.register("my-mod-id", config);
+        GrapheneCore.register(MyModClient.class, config);
     }
 }
 ```
@@ -124,18 +138,24 @@ public final class MyModClient implements ClientModInitializer {
 Notes:
 
 - `jcefDownloadPath(...)` is a base directory. Graphene installs under `<jcef-mvn-version>/<platform>`.
-- If HTTP mode is not configured, `GrapheneRuntime.httpServer().isRunning()` is `false`.
+- If no consumer configures HTTP, `GrapheneRuntime.httpServer().isRunning()` is `false`.
 - If remote debugging is not configured, `GrapheneRuntime.getRemoteDebuggingPort()` is `-1`.
 
 ## 6) Shared Config Merge Rules
 
-Graphene merges config from all registered consumers before runtime initialization.
+Graphene merges global contributions from all registered consumers before runtime initialization.
 
-- `jcefDownloadPath`, `http`, and `remoteDebugging`: all explicit values must match
-- `extensionFolder`: merged union across consumers
-- `fileSystemAccessMode`: `ALLOW` wins if any consumer requests it
+- `GrapheneGlobalConfig.jcefDownloadPath(...)`: all explicit values must match
+- `GrapheneGlobalConfig.remoteDebugging(...)`: all explicit values must match
+- `GrapheneGlobalConfig.extensionFolder(...)`: union merge across consumers
+- `GrapheneGlobalConfig.fileSystemAccessMode(...)`: `ALLOW` wins if any consumer requests it
 
-Conflicts throw a startup `IllegalStateException` naming both conflicting consumers.
+HTTP server settings are contributed per consumer through `GrapheneContainerConfig.http(...)`:
+
+- `bindHost`, `baseUrlScheme`, and port selection must match across consumers using HTTP
+- `fileRoot` and `spaFallback` stay private to each consumer mount
+
+Conflicts throw a startup `IllegalStateException` that names both conflicting consumers.
 
 ## 7) Compatibility Baseline
 
