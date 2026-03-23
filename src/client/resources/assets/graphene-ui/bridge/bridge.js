@@ -38,7 +38,7 @@ function grapheneBridgeReportSuppressedError(context, error) {
 
 function grapheneBridgeGetSharedState() {
     let sharedState = globalThis[GRAPHENE_SHARED_STATE_NAME];
-    if (sharedState) {
+    if (grapheneBridgeIsValidSharedState(sharedState)) {
         return sharedState;
     }
 
@@ -58,6 +58,36 @@ function grapheneBridgeGetSharedState() {
     };
     globalThis[GRAPHENE_SHARED_STATE_NAME] = sharedState;
     return sharedState;
+}
+
+function grapheneBridgeIsValidSharedState(sharedState) {
+    if (!sharedState || typeof sharedState !== "object") {
+        return false;
+    }
+
+    return grapheneBridgeHasBoolean(sharedState, "ready")
+        && grapheneBridgeHasBoolean(sharedState, "readyRequestInFlight")
+        && grapheneBridgeHasBoolean(sharedState, "readyRetryScheduled")
+        && grapheneBridgeHasListenerSet(sharedState.readyListeners)
+        && grapheneBridgeIsPromiseLike(sharedState.readyPromise)
+        && typeof sharedState.resolveReadyPromise === "function";
+}
+
+function grapheneBridgeHasBoolean(objectValue, key) {
+    return Object.hasOwn(objectValue, key) && typeof objectValue[key] === "boolean";
+}
+
+function grapheneBridgeHasListenerSet(value) {
+    return value
+        && typeof value === "object"
+        && typeof value.add === "function"
+        && typeof value.delete === "function"
+        && typeof value.forEach === "function"
+        && typeof value.clear === "function";
+}
+
+function grapheneBridgeIsPromiseLike(value) {
+    return value && typeof value === "object" && typeof value.then === "function";
 }
 
 function grapheneBridgeResolveCefQuery() {

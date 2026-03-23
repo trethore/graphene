@@ -12,6 +12,7 @@ import tytoo.grapheneui.api.runtime.GrapheneRuntime;
 import tytoo.grapheneui.internal.core.GrapheneCoreServices;
 
 import java.nio.file.Path;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -26,6 +27,7 @@ public final class GrapheneCore implements ClientModInitializer {
     public static final String ID = "graphene-ui";
     private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneCore.class);
     private static final GrapheneCoreServices SERVICES = GrapheneCoreServices.get();
+    private static final Map<Class<?>, String> RESOLVED_MOD_IDS_BY_ANCHOR_CLASS = new IdentityHashMap<>();
     private static final Map<String, GrapheneConfig> CONSUMER_CONFIGS = new LinkedHashMap<>();
     private static final Map<String, GrapheneMod> CONSUMERS = new LinkedHashMap<>();
     private static volatile boolean registrationClosed;
@@ -131,6 +133,11 @@ public final class GrapheneCore implements ClientModInitializer {
 
     private static String resolveModId(Class<?> anchorClass) {
         Class<?> validatedAnchorClass = Objects.requireNonNull(anchorClass, "anchorClass");
+        String cachedModId = RESOLVED_MOD_IDS_BY_ANCHOR_CLASS.get(validatedAnchorClass);
+        if (cachedModId != null) {
+            return cachedModId;
+        }
+
         String classFilePath = validatedAnchorClass.getName().replace('.', '/') + ".class";
         String resolvedModId = null;
 
@@ -158,6 +165,7 @@ public final class GrapheneCore implements ClientModInitializer {
             );
         }
 
+        RESOLVED_MOD_IDS_BY_ANCHOR_CLASS.put(validatedAnchorClass, resolvedModId);
         return resolvedModId;
     }
 

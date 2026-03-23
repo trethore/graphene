@@ -31,9 +31,6 @@ import java.util.concurrent.CompletionException;
 public final class GrapheneBrowserDebugScreen extends Screen {
     private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneBrowserDebugScreen.class);
 
-    private static final String DEFAULT_URL = GrapheneCore.handle(GrapheneDebugClient.class)
-            .appAssets()
-            .asset("graphene_test/pages/welcome.html");
     private static final String DEBUG_EVENT_CHANNEL = "debug:event";
     private static final String DEBUG_ECHO_CHANNEL = "debug:echo";
     private static final String DEBUG_SUM_CHANNEL = "debug:sum";
@@ -44,7 +41,7 @@ public final class GrapheneBrowserDebugScreen extends Screen {
     private static final String DEBUG_JAVA_TO_JS_REQUEST_CHANNEL = "debug:bridge:java-request";
     private static final Duration DEBUG_JAVA_TO_JS_REQUEST_TIMEOUT = Duration.ofSeconds(3);
 
-    private static String lastUrl = DEFAULT_URL;
+    private static String lastUrl;
     private final List<GrapheneBridgeSubscription> bridgeSubscriptions = new ArrayList<>();
     private GrapheneWebViewWidget webViewWidget;
     private EditBox urlBox;
@@ -53,6 +50,16 @@ public final class GrapheneBrowserDebugScreen extends Screen {
 
     public GrapheneBrowserDebugScreen() {
         super(Component.translatable("screen.graphene-ui-debug.title"));
+    }
+
+    private static String defaultUrl() {
+        return GrapheneCore.handle(GrapheneDebugClient.class)
+                .appAssets()
+                .asset("graphene_test/pages/welcome.html");
+    }
+
+    private static String initialUrl() {
+        return lastUrl == null ? defaultUrl() : lastUrl;
     }
 
     private static void rememberLastUrl(String url) {
@@ -169,6 +176,7 @@ public final class GrapheneBrowserDebugScreen extends Screen {
     @Override
     protected void init() {
         clearWidgets();
+        String initialUrl = initialUrl();
 
         int controlsY = 8;
         int controlHeight = 20;
@@ -177,7 +185,7 @@ public final class GrapheneBrowserDebugScreen extends Screen {
         int webViewHeight = height - webViewY - 8;
 
         if (webViewWidget == null) {
-            webViewWidget = new GrapheneWebViewWidget(this, 8, webViewY, webViewWidth, webViewHeight, Component.empty(), lastUrl);
+            webViewWidget = new GrapheneWebViewWidget(this, 8, webViewY, webViewWidth, webViewHeight, Component.empty(), initialUrl);
         } else {
             webViewWidget.setPosition(8, webViewY);
             webViewWidget.setSize(webViewWidth, webViewHeight);
@@ -213,7 +221,7 @@ public final class GrapheneBrowserDebugScreen extends Screen {
 
         urlBox = addRenderableWidget(new EditBox(font, 168, controlsY, width - 176, controlHeight, Component.empty()));
         urlBox.setMaxLength(Integer.MAX_VALUE);
-        urlBox.setValue(lastUrl);
+        urlBox.setValue(initialUrl);
     }
 
     @Override
