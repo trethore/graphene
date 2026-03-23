@@ -1,4 +1,4 @@
-package tytoo.grapheneui.api.url;
+package tytoo.grapheneui.internal.url;
 
 import org.junit.jupiter.api.Test;
 

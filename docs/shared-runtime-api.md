@@ -5,10 +5,10 @@ This page summarizes the current API shape and merge behavior.
 
 ## Registration Model
 
-Each consumer registers before first Graphene usage and receives a scoped `GrapheneHandle`.
+Each consumer registers before first Graphene usage and can later resolve its scoped `GrapheneHandle` from the anchor class.
 
 ```java
-GrapheneHandle graphene = GrapheneCore.register(
+GrapheneCore.register(
         MyModClient.class,
         GrapheneConfig.builder()
                 .container(GrapheneContainerConfig.builder()
@@ -23,12 +23,15 @@ GrapheneHandle graphene = GrapheneCore.register(
                         .build())
                 .build()
 );
+
+GrapheneHandle graphene = GrapheneCore.handle(MyModClient.class);
 ```
 
 Entry points:
 
 - `GrapheneCore.register(Class<?> anchorClass)`
 - `GrapheneCore.register(Class<?> anchorClass, GrapheneConfig config)`
+- `GrapheneCore.handle(Class<?> anchorClass)`
 
 ## Config Split
 
@@ -85,13 +88,10 @@ String classpathHttpUrl = graphene.httpAssets().asset("web/index.html");
 String mountedHttpUrl = graphene.httpUrl("web/index.html");
 ```
 
-Equivalent static forms:
+Related static helpers:
 
 ```java
-GrapheneAppUrls.assets("my-mod-id").asset("web/index.html");
 GrapheneClasspathUrls.assets("my-mod-id").asset("web/index.html");
-GrapheneHttpUrls.assets("my-mod-id").asset("web/index.html");
-GrapheneHttpUrls.modUrl("my-mod-id", "web/index.html");
 ```
 
-`GrapheneHttpUrls` requires HTTP mode to be running.
+For app and HTTP URLs, prefer the consumer-scoped `GrapheneHandle` helpers shown above.

@@ -12,10 +12,10 @@ import org.cef.network.CefRequest;
 import org.cef.network.CefResponse;
 import org.jspecify.annotations.NonNull;
 import tytoo.grapheneui.api.GrapheneCore;
-import tytoo.grapheneui.api.url.GrapheneAppUrls;
 import tytoo.grapheneui.api.url.GrapheneClasspathUrls;
 import tytoo.grapheneui.internal.logging.GrapheneDebugLogger;
 import tytoo.grapheneui.internal.resource.GrapheneMimeTypes;
+import tytoo.grapheneui.internal.url.GrapheneAppUrls;
 
 import java.io.IOException;
 import java.io.InputStream;

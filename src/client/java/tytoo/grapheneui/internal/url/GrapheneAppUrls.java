@@ -1,22 +1,15 @@
-package tytoo.grapheneui.api.url;
+package tytoo.grapheneui.internal.url;
 
 import net.minecraft.resources.Identifier;
 import tytoo.grapheneui.api.GrapheneCore;
+import tytoo.grapheneui.api.url.GrapheneAssetUrls;
 
-/**
- * Utility class for constructing and normalizing "app:" URLs for loading assets.
- * The URLs have the format "app://assets/{namespace}/{path}".
- */
 public final class GrapheneAppUrls {
     public static final String SCHEME = "app";
 
     private static final GrapheneAppUrlsSupport SUPPORT = new GrapheneAppUrlsSupport(GrapheneCore.ID);
 
     private GrapheneAppUrls() {
-    }
-
-    public static String asset(String path) {
-        return SUPPORT.asset(path);
     }
 
     public static String asset(String namespace, String path) {

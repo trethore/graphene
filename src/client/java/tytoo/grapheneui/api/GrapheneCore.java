@@ -67,6 +67,21 @@ public final class GrapheneCore implements ClientModInitializer {
         return consumer;
     }
 
+    public static synchronized GrapheneHandle handle(Class<?> anchorClass) {
+        Class<?> validatedAnchorClass = Objects.requireNonNull(anchorClass, "anchorClass");
+        String modId = resolveModId(validatedAnchorClass);
+        GrapheneMod consumer = CONSUMERS.get(modId);
+        if (consumer != null) {
+            return consumer;
+        }
+
+        throw new IllegalStateException(
+                "No Graphene consumer registered for anchor class "
+                        + validatedAnchorClass.getName()
+                        + ". Call GrapheneCore.register(anchorClass, config) from onInitializeClient() before requesting its handle"
+        );
+    }
+
     public static synchronized GrapheneGlobalConfig globalConfig() {
         return mergeGlobalConfig();
     }

@@ -91,23 +91,16 @@ Jar-in-jar embedding is also possible, but it is not the preferred default. See 
 
 ### Initialize Graphene in your mod
 
-Register your mod from `onInitializeClient()` with an anchor class. Graphene resolves the owning Fabric mod id from that class and returns a `GrapheneHandle` for namespaced usage:
+Register your mod from `onInitializeClient()` with an anchor class. Graphene resolves the owning Fabric mod id from that class, and you can later resolve the scoped `GrapheneHandle` from the same anchor class:
 
 ```java
 import net.fabricmc.api.ClientModInitializer;
 import tytoo.grapheneui.api.GrapheneCore;
-import tytoo.grapheneui.api.GrapheneHandle;
 
 public final class MyModClient implements ClientModInitializer {
-    private static GrapheneHandle graphene;
-
     @Override
     public void onInitializeClient() {
-        graphene = GrapheneCore.register(MyModClient.class);
-    }
-
-    public static GrapheneHandle graphene() {
-        return graphene;
+        GrapheneCore.register(MyModClient.class);
     }
 }
 ```
@@ -127,11 +120,9 @@ import tytoo.grapheneui.api.config.GrapheneHttpConfig;
 import tytoo.grapheneui.api.config.GrapheneRemoteDebugConfig;
 
 public final class MyModClient implements ClientModInitializer {
-    private static GrapheneHandle graphene;
-
     @Override
     public void onInitializeClient() {
-        graphene = GrapheneCore.register(
+        GrapheneCore.register(
                 MyModClient.class,
                 GrapheneConfig.builder()
                         .container(GrapheneContainerConfig.builder()
@@ -153,18 +144,16 @@ public final class MyModClient implements ClientModInitializer {
                         .build()
         );
     }
-
-    public static GrapheneHandle graphene() {
-        return graphene;
-    }
 }
 ```
 
 Use the handle for namespaced helpers:
 
 ```java
-String appUrl = MyModClient.graphene().appAssets().asset("web/index.html");
-String mountedHttpUrl = MyModClient.graphene().httpUrl("web/index.html");
+GrapheneHandle graphene = GrapheneCore.handle(MyModClient.class);
+
+String appUrl = graphene.appAssets().asset("web/index.html");
+String mountedHttpUrl = graphene.httpUrl("web/index.html");
 ```
 
 ## Documentation

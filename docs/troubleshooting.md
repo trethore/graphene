@@ -108,14 +108,14 @@ Likely cause:
 Fix:
 
 - Verify file exists under `assets/<mod-id>/...`.
-- Use helper APIs (`GrapheneAppUrls.asset(...)` or `handle.appAssets().asset(...)`).
+- Use `handle.appAssets().asset(...)`.
 - For debug samples in this repo, use `graphene_test/pages/...` paths.
 
 ## `Graphene HTTP server is not running`
 
 Symptom:
 
-- `GrapheneHttpUrls.asset(...)` or `GrapheneHttpUrls.modUrl(...)` throws `IllegalStateException`.
+- `handle.httpAssets().asset(...)` or `handle.httpUrl(...)` throws `IllegalStateException`.
 
 Likely cause:
 

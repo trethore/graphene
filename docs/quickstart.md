@@ -9,23 +9,17 @@ package com.example.mymod;
 
 import net.fabricmc.api.ClientModInitializer;
 import tytoo.grapheneui.api.GrapheneCore;
-import tytoo.grapheneui.api.GrapheneHandle;
 
 public final class MyModClient implements ClientModInitializer {
-    private static GrapheneHandle graphene;
-
     @Override
     public void onInitializeClient() {
-        graphene = GrapheneCore.register(MyModClient.class);
-    }
-
-    public static GrapheneHandle graphene() {
-        return graphene;
+        GrapheneCore.register(MyModClient.class);
     }
 }
 ```
 
 For custom setup, use `GrapheneCore.register(MyModClient.class, GrapheneConfig)`.
+Later, access the scoped handle with `GrapheneCore.handle(MyModClient.class)`.
 
 ## 2) Create A Screen With `GrapheneWebViewWidget`
 
@@ -35,6 +29,7 @@ package com.example.mymod.client.screen;
 import com.example.mymod.MyModClient;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import tytoo.grapheneui.api.GrapheneCore;
 import tytoo.grapheneui.api.widget.GrapheneWebViewWidget;
 
 public final class MyWebScreen extends Screen {
@@ -52,7 +47,7 @@ public final class MyWebScreen extends Screen {
         int webWidth = width - margin * 2;
         int webHeight = height - margin * 2;
 
-        String url = MyModClient.graphene().appAssets().asset("web/index.html");
+        String url = GrapheneCore.handle(MyModClient.class).appAssets().asset("web/index.html");
         webView = new GrapheneWebViewWidget(this, webX, webY, webWidth, webHeight, Component.empty(), url);
         addRenderableWidget(webView);
     }
@@ -81,19 +76,13 @@ src/client/resources/
 Then load with:
 
 ```java
-String url = MyModClient.graphene().appAssets().asset("web/index.html");
-```
-
-You can also use static helpers:
-
-```java
-String url = GrapheneAppUrls.asset("my-mod-id", "web/index.html");
+String url = GrapheneCore.handle(MyModClient.class).appAssets().asset("web/index.html");
 ```
 
 For this repository's debug module, sample page URL:
 
 ```java
-String url = GrapheneAppUrls.asset("graphene-ui-debug", "graphene_test/pages/welcome.html");
+String url = GrapheneCore.handle(GrapheneDebugClient.class).appAssets().asset("graphene_test/pages/welcome.html");
 ```
 
 ## 4) Open The Screen
@@ -155,8 +144,8 @@ GrapheneConfig config = GrapheneConfig.builder()
 
 GrapheneCore.register(MyModClient.class, config);
 
-String classpathHttpUrl = MyModClient.graphene().httpAssets().asset("web/index.html");
-String mountedHttpUrl = MyModClient.graphene().httpUrl("web/index.html");
+String classpathHttpUrl = GrapheneCore.handle(MyModClient.class).httpAssets().asset("web/index.html");
+String mountedHttpUrl = GrapheneCore.handle(MyModClient.class).httpUrl("web/index.html");
 ```
 
 HTTP resolution order for `handle.httpUrl("...")`:

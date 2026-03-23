@@ -15,6 +15,16 @@ public class GrapheneDebugClient implements ClientModInitializer {
     /* Debug entry point for testing purposes. */
     @Override
     public void onInitializeClient() {
+        registerHandle();
+        GrapheneDebugKeyBindings.register();
+        String debugSelector = System.getProperty("graphene.debug");
+        if (debugSelector != null && !debugSelector.isBlank()) {
+            LOGGER.info("Graphene debug selector enabled: {}", debugSelector);
+        }
+        LOGGER.info("Graphene debug client initialized");
+    }
+
+    private static void registerHandle() {
         GrapheneCore.register(
                 GrapheneDebugClient.class,
                 GrapheneConfig.builder()
@@ -23,11 +33,5 @@ public class GrapheneDebugClient implements ClientModInitializer {
                                 .build())
                         .build()
         );
-        GrapheneDebugKeyBindings.register();
-        String debugSelector = System.getProperty("graphene.debug");
-        if (debugSelector != null && !debugSelector.isBlank()) {
-            LOGGER.info("Graphene debug selector enabled: {}", debugSelector);
-        }
-        LOGGER.info("Graphene debug client initialized");
     }
 }

@@ -4,10 +4,10 @@ import tytoo.grapheneui.api.config.GrapheneConfig;
 import tytoo.grapheneui.api.config.GrapheneContainerConfig;
 import tytoo.grapheneui.api.config.GrapheneGlobalConfig;
 import tytoo.grapheneui.api.runtime.GrapheneRuntime;
-import tytoo.grapheneui.api.url.GrapheneAppUrls;
 import tytoo.grapheneui.api.url.GrapheneAssetUrls;
 import tytoo.grapheneui.api.url.GrapheneClasspathUrls;
-import tytoo.grapheneui.api.url.GrapheneHttpUrls;
+import tytoo.grapheneui.internal.url.GrapheneAppUrls;
+import tytoo.grapheneui.internal.url.GrapheneHttpUrls;
 
 import java.util.Objects;
 

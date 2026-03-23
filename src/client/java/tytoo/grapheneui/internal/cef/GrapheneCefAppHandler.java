@@ -5,9 +5,9 @@ import org.cef.CefApp;
 import org.cef.browser.CefRequestContext;
 import org.cef.callback.CefSchemeRegistrar;
 import tytoo.grapheneui.api.config.GrapheneFileSystemAccessMode;
-import tytoo.grapheneui.api.url.GrapheneAppUrls;
 import tytoo.grapheneui.api.url.GrapheneClasspathUrls;
 import tytoo.grapheneui.internal.platform.GraphenePlatform;
+import tytoo.grapheneui.internal.url.GrapheneAppUrls;
 
 import java.util.Objects;
 

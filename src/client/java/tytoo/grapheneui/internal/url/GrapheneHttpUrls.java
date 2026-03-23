@@ -1,12 +1,9 @@
-package tytoo.grapheneui.api.url;
+package tytoo.grapheneui.internal.url;
 
-import net.minecraft.resources.Identifier;
 import tytoo.grapheneui.api.GrapheneCore;
 import tytoo.grapheneui.api.runtime.GrapheneHttpServer;
+import tytoo.grapheneui.api.url.GrapheneAssetUrls;
 
-/**
- * Utility class for constructing runtime HTTP URLs for classpath assets.
- */
 public final class GrapheneHttpUrls {
     private static final String PATH_DELIMITER = "/";
     private static final String MODS_ROOT = "mods";
@@ -15,16 +12,8 @@ public final class GrapheneHttpUrls {
     private GrapheneHttpUrls() {
     }
 
-    public static String asset(String path) {
-        return SUPPORT.asset(path);
-    }
-
     public static String asset(String namespace, String path) {
         return SUPPORT.asset(namespace, path);
-    }
-
-    public static String asset(Identifier assetId) {
-        return SUPPORT.asset(assetId);
     }
 
     public static GrapheneAssetUrls assets() {
@@ -39,11 +28,6 @@ public final class GrapheneHttpUrls {
         String normalizedModId = SUPPORT.normalizeNamespace(modId);
         String normalizedPath = SUPPORT.normalizePath(path);
         return requireHttpBaseUrl() + PATH_DELIMITER + MODS_ROOT + PATH_DELIMITER + normalizedModId + PATH_DELIMITER + normalizedPath;
-    }
-
-    public static String modRootUrl(String modId) {
-        String normalizedModId = SUPPORT.normalizeNamespace(modId);
-        return requireHttpBaseUrl() + PATH_DELIMITER + MODS_ROOT + PATH_DELIMITER + normalizedModId + PATH_DELIMITER;
     }
 
     private static String requireHttpBaseUrl() {

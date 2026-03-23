@@ -1,11 +1,11 @@
-package tytoo.grapheneui.api.url;
+package tytoo.grapheneui.internal.url;
 
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
-abstract class AbstractGrapheneSchemedAssetUrls extends AbstractGrapheneAssetUrls {
+public abstract class AbstractGrapheneSchemedAssetUrls extends AbstractGrapheneAssetUrls {
     private final String assetsPrefix;
     private final String schemePrefix;
 

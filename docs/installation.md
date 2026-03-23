@@ -64,25 +64,19 @@ Trade-offs:
 
 ## 4) Register Your Mod
 
-Call `GrapheneCore.register(...)` once during client init and keep the returned `GrapheneHandle`.
+Call `GrapheneCore.register(...)` once during client init.
+Later, access your scoped handle with `GrapheneCore.handle(MyModClient.class)`.
 
 ```java
 package com.example.mymod;
 
 import net.fabricmc.api.ClientModInitializer;
 import tytoo.grapheneui.api.GrapheneCore;
-import tytoo.grapheneui.api.GrapheneHandle;
 
 public final class MyModClient implements ClientModInitializer {
-    private static GrapheneHandle graphene;
-
     @Override
     public void onInitializeClient() {
-        graphene = GrapheneCore.register(MyModClient.class);
-    }
-
-    public static GrapheneHandle graphene() {
-        return graphene;
+        GrapheneCore.register(MyModClient.class);
     }
 }
 ```

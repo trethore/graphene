@@ -1,12 +1,11 @@
 # Assets And URLs
 
-Graphene provides URL helpers for loading web assets from your mod namespace and, optionally, from the runtime HTTP server.
+Graphene provides handle-scoped URL helpers for loading web assets from your mod namespace and, optionally, from the runtime HTTP server.
 
 ## URL Helpers
 
 App scheme (`app://`):
 
-- `GrapheneAppUrls.asset(namespace, path)`
 - `grapheneHandle.appAssets().asset(path)`
 
 Classpath scheme (`classpath:///`):
@@ -16,27 +15,25 @@ Classpath scheme (`classpath:///`):
 
 Runtime HTTP for shared classpath assets:
 
-- `GrapheneHttpUrls.asset(namespace, path)`
 - `grapheneHandle.httpAssets().asset(path)`
 
 Runtime HTTP for this mod's mounted container route:
 
-- `GrapheneHttpUrls.modUrl(namespace, path)`
 - `grapheneHandle.httpUrl(path)`
 
 Examples:
 
 ```java
-String appUrl = GrapheneAppUrls.asset("my-mod-id", "web/index.html");
+String appUrl = grapheneHandle.appAssets().asset("web/index.html");
 // app://assets/my-mod-id/web/index.html
 
 String classpathUrl = GrapheneClasspathUrls.asset("my-mod-id", "web/index.html");
 // classpath:///assets/my-mod-id/web/index.html
 
-String classpathHttpUrl = GrapheneHttpUrls.asset("my-mod-id", "web/index.html");
+String classpathHttpUrl = grapheneHandle.httpAssets().asset("web/index.html");
 // http://127.0.0.1:<port>/assets/my-mod-id/web/index.html
 
-String mountedHttpUrl = GrapheneHttpUrls.modUrl("my-mod-id", "web/index.html");
+String mountedHttpUrl = grapheneHandle.httpUrl("web/index.html");
 // http://127.0.0.1:<port>/mods/my-mod-id/web/index.html
 ```
 
@@ -56,7 +53,7 @@ src/client/resources/
 Load with:
 
 ```java
-String url = GrapheneAppUrls.asset("my-mod-id", "web/index.html");
+String url = grapheneHandle.appAssets().asset("web/index.html");
 ```
 
 ## Relative Paths Inside HTML
@@ -71,7 +68,8 @@ If your page is loaded from `app://assets/my-mod-id/web/index.html`, relative re
 
 ## URL Normalization
 
-`GrapheneAppUrls.normalizeResourcePath(url)` and `GrapheneClasspathUrls.normalizeResourcePath(url)`:
+Graphene normalizes `app://` and `classpath:///` asset requests before resolving classpath resources.
+`GrapheneClasspathUrls.normalizeResourcePath(url)` is also available when you need to normalize a public classpath URL yourself:
 
 - verify scheme
 - strip query and fragment
@@ -80,7 +78,7 @@ If your page is loaded from `app://assets/my-mod-id/web/index.html`, relative re
 
 Example:
 
-- input: `app://assets/graphene-ui/a%20b.html?x=1#top`
+- input: `classpath:///assets/graphene-ui/a%20b.html?x=1#top`
 - result: `assets/graphene-ui/a b.html`
 
 ## MIME Types
@@ -104,7 +102,9 @@ GrapheneConfig config = GrapheneConfig.builder()
                 .build())
         .build();
 
-GrapheneHandle graphene = GrapheneCore.register(MyModClient.class, config);
+GrapheneCore.register(MyModClient.class, config);
+
+GrapheneHandle graphene = GrapheneCore.handle(MyModClient.class);
 
 String classpathHttpUrl = graphene.httpAssets().asset("web/index.html");
 String mountedHttpUrl = graphene.httpUrl("web/index.html");
@@ -112,7 +112,7 @@ String mountedHttpUrl = graphene.httpUrl("web/index.html");
 
 Important behavior:
 
-- `GrapheneHttpUrls.asset(...)` and `GrapheneHttpUrls.modUrl(...)` throw `IllegalStateException` when HTTP server is not running.
+- `graphene.httpAssets().asset(...)` and `graphene.httpUrl(...)` throw `IllegalStateException` when HTTP server is not running.
 - `graphene.httpAssets().asset(...)` always targets shared classpath assets under `/assets/<mod-id>/...`.
 - `graphene.httpUrl(...)` targets the consumer mount under `/mods/<mod-id>/...`.
 - Mounted HTTP request resolution order is:
@@ -124,7 +124,7 @@ Important behavior:
 ## Recommendations
 
 - Keep web assets under `assets/<mod-id>/web/...`.
-- Use namespaced helper APIs instead of hard-coded string concatenation.
+- Use handle or `GrapheneClasspathUrls` helpers instead of hard-coded string concatenation.
 - Keep filenames lowercase and extension-explicit.
 - Prefer `grapheneHandle.httpUrl(...)` for consumer-mounted content and `grapheneHandle.httpAssets().asset(...)` for shared classpath assets.
 
