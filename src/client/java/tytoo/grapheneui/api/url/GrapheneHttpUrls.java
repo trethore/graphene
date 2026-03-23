@@ -8,6 +8,8 @@ import tytoo.grapheneui.api.runtime.GrapheneHttpServer;
  * Utility class for constructing runtime HTTP URLs for classpath assets.
  */
 public final class GrapheneHttpUrls {
+    private static final String PATH_DELIMITER = "/";
+    private static final String MODS_ROOT = "mods";
     private static final GrapheneHttpUrlsSupport SUPPORT = new GrapheneHttpUrlsSupport(GrapheneCore.ID);
 
     private GrapheneHttpUrls() {
@@ -33,23 +35,36 @@ public final class GrapheneHttpUrls {
         return new GrapheneHttpUrlsSupport(namespace);
     }
 
+    public static String modUrl(String modId, String path) {
+        String normalizedModId = SUPPORT.normalizeNamespace(modId);
+        String normalizedPath = SUPPORT.normalizePath(path);
+        return requireHttpBaseUrl() + PATH_DELIMITER + MODS_ROOT + PATH_DELIMITER + normalizedModId + PATH_DELIMITER + normalizedPath;
+    }
+
+    public static String modRootUrl(String modId) {
+        String normalizedModId = SUPPORT.normalizeNamespace(modId);
+        return requireHttpBaseUrl() + PATH_DELIMITER + MODS_ROOT + PATH_DELIMITER + normalizedModId + PATH_DELIMITER;
+    }
+
+    private static String requireHttpBaseUrl() {
+        GrapheneHttpServer server = GrapheneCore.runtime().httpServer();
+        if (!server.isRunning()) {
+            throw new IllegalStateException(
+                    "Graphene HTTP server is not running. Configure GrapheneContainerConfig.http(...) and register Graphene with GrapheneCore.register(anchorClass, config)."
+            );
+        }
+
+        return server.baseUrl();
+    }
+
     private static final class GrapheneHttpUrlsSupport extends AbstractGrapheneAssetUrls {
         private GrapheneHttpUrlsSupport(String defaultNamespace) {
             super(defaultNamespace);
         }
 
-        private static String requireHttpBaseUrl() {
-            GrapheneHttpServer server = GrapheneCore.runtime().httpServer();
-            if (!server.isRunning()) {
-                throw new IllegalStateException("Graphene HTTP server is not running. Configure GrapheneHttpConfig and register Graphene with GrapheneCore.register(modId, config).");
-            }
-
-            return server.baseUrl();
-        }
-
         @Override
         protected String rootPrefix() {
-            return requireHttpBaseUrl() + PATH_DELIMITER + ASSET_HOST + PATH_DELIMITER;
+            return GrapheneHttpUrls.requireHttpBaseUrl() + PATH_DELIMITER + ASSET_HOST + PATH_DELIMITER;
         }
     }
 }

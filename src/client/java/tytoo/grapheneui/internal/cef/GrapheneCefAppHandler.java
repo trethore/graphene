@@ -14,6 +14,15 @@ import java.util.Objects;
 public final class GrapheneCefAppHandler extends MavenCefAppHandlerAdapter {
     private static final String APP_SCHEME_NAME = GrapheneAppUrls.SCHEME;
     private static final String CLASSPATH_SCHEME_NAME = GrapheneClasspathUrls.SCHEME;
+    private static final String FILE_SYSTEM_READ_GUARD_PREFERENCE =
+            "profile.default_content_setting_values.file_system_read_guard";
+    private static final String FILE_SYSTEM_WRITE_GUARD_PREFERENCE =
+            "profile.default_content_setting_values.file_system_write_guard";
+    private static final String FILE_SYSTEM_EXTENDED_PERMISSION_PREFERENCE =
+            "profile.default_content_setting_values.file_system_access_extended_permission";
+    private static final int CONTENT_SETTING_ALLOW = 1;
+    private static final int CONTENT_SETTING_BLOCK = 2;
+
     private final GrapheneFileSystemAccessMode fileSystemAccessMode;
     private boolean schemeHandlerRegistered = false;
 
@@ -37,16 +46,7 @@ public final class GrapheneCefAppHandler extends MavenCefAppHandlerAdapter {
             return;
         }
 
-        if (fileSystemAccessMode == GrapheneFileSystemAccessMode.ALLOW) {
-            CefRequestContext context = CefRequestContext.getGlobalContext();
-            final int allow = 1;
-            context.setPreference(
-                    "profile.default_content_setting_values.file_system_read_guard", allow);
-            context.setPreference(
-                    "profile.default_content_setting_values.file_system_write_guard", allow);
-            context.setPreference(
-                    "profile.default_content_setting_values.file_system_access_extended_permission", allow);
-        }
+        configureFileSystemAccess(CefRequestContext.getGlobalContext());
 
         CefApp cefApp = CefApp.getInstance();
         if (cefApp != null) {
@@ -55,5 +55,14 @@ public final class GrapheneCefAppHandler extends MavenCefAppHandlerAdapter {
             cefApp.registerSchemeHandlerFactory(CLASSPATH_SCHEME_NAME, "", schemeHandlerFactory);
             schemeHandlerRegistered = true;
         }
+    }
+
+    private void configureFileSystemAccess(CefRequestContext context) {
+        int contentSetting = fileSystemAccessMode == GrapheneFileSystemAccessMode.ALLOW
+                ? CONTENT_SETTING_ALLOW
+                : CONTENT_SETTING_BLOCK;
+        context.setPreference(FILE_SYSTEM_READ_GUARD_PREFERENCE, contentSetting);
+        context.setPreference(FILE_SYSTEM_WRITE_GUARD_PREFERENCE, contentSetting);
+        context.setPreference(FILE_SYSTEM_EXTENDED_PERMISSION_PREFERENCE, contentSetting);
     }
 }

@@ -1,35 +1,19 @@
 package tytoo.grapheneui.api.config;
 
-import java.nio.file.Path;
-import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 @SuppressWarnings("unused")
 public final class GrapheneConfig {
-    private static final Path DEFAULT_JCEF_DOWNLOAD_PATH = Path.of("./jcef");
     private static final GrapheneConfig DEFAULT = builder().build();
-    private static final String JCEF_DOWNLOAD_PATH_NAME = "jcefDownloadPath";
-    private static final String EXTENSION_FOLDER_NAME = "extensionFolder";
-    private static final String HTTP_CONFIG_NAME = "httpConfig";
-    private static final String REMOTE_DEBUG_CONFIG_NAME = "remoteDebugConfig";
-    private static final String FILE_SYSTEM_ACCESS_MODE_NAME = "fileSystemAccessMode";
+    private static final String CONTAINER_CONFIG_NAME = "containerConfig";
+    private static final String GLOBAL_CONFIG_NAME = "globalConfig";
 
-    private final Path jcefDownloadPath;
-    private final List<Path> extensionFolders;
-    private final GrapheneHttpConfig httpConfig;
-    private final GrapheneRemoteDebugConfig remoteDebugConfig;
-    private final GrapheneFileSystemAccessMode fileSystemAccessMode;
+    private final GrapheneContainerConfig containerConfig;
+    private final GrapheneGlobalConfig globalConfig;
 
     private GrapheneConfig(Builder builder) {
-        this.jcefDownloadPath = builder.jcefDownloadPath == null
-                ? null
-                : normalizePath(builder.jcefDownloadPath, JCEF_DOWNLOAD_PATH_NAME);
-        this.extensionFolders = List.copyOf(builder.extensionFolders.stream().sorted().toList());
-        this.httpConfig = builder.httpConfig;
-        this.remoteDebugConfig = builder.remoteDebugConfig;
-        this.fileSystemAccessMode = Objects.requireNonNull(builder.fileSystemAccessMode, FILE_SYSTEM_ACCESS_MODE_NAME);
+        this.containerConfig = Objects.requireNonNull(builder.containerConfig, CONTAINER_CONFIG_NAME);
+        this.globalConfig = Objects.requireNonNull(builder.globalConfig, GLOBAL_CONFIG_NAME);
     }
 
     public static GrapheneConfig defaults() {
@@ -40,37 +24,12 @@ public final class GrapheneConfig {
         return new Builder();
     }
 
-    private static Path normalizePath(Path path, String argumentName) {
-        Path validatedPath = Objects.requireNonNull(path, argumentName).normalize();
-        if (validatedPath.toString().isBlank()) {
-            throw new IllegalArgumentException(argumentName + " must not be blank");
-        }
-
-        return validatedPath;
+    public GrapheneContainerConfig container() {
+        return containerConfig;
     }
 
-    public Optional<Path> jcefDownloadPath() {
-        return Optional.ofNullable(jcefDownloadPath);
-    }
-
-    public Path resolvedJcefDownloadPath() {
-        return jcefDownloadPath == null ? DEFAULT_JCEF_DOWNLOAD_PATH : jcefDownloadPath;
-    }
-
-    public List<Path> extensionFolders() {
-        return extensionFolders;
-    }
-
-    public Optional<GrapheneHttpConfig> http() {
-        return Optional.ofNullable(httpConfig);
-    }
-
-    public Optional<GrapheneRemoteDebugConfig> remoteDebugging() {
-        return Optional.ofNullable(remoteDebugConfig);
-    }
-
-    public GrapheneFileSystemAccessMode fileSystemAccessMode() {
-        return fileSystemAccessMode;
+    public GrapheneGlobalConfig global() {
+        return globalConfig;
     }
 
     @Override
@@ -83,83 +42,29 @@ public final class GrapheneConfig {
             return false;
         }
 
-        return Objects.equals(jcefDownloadPath, other.jcefDownloadPath)
-                && Objects.equals(extensionFolders, other.extensionFolders)
-                && Objects.equals(httpConfig, other.httpConfig)
-                && Objects.equals(remoteDebugConfig, other.remoteDebugConfig)
-                && fileSystemAccessMode == other.fileSystemAccessMode;
+        return Objects.equals(containerConfig, other.containerConfig)
+                && Objects.equals(globalConfig, other.globalConfig);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(jcefDownloadPath, extensionFolders, httpConfig, remoteDebugConfig, fileSystemAccessMode);
+        return Objects.hash(containerConfig, globalConfig);
     }
 
     public static final class Builder {
-        private final LinkedHashSet<Path> extensionFolders = new LinkedHashSet<>();
-        private Path jcefDownloadPath;
-        private GrapheneHttpConfig httpConfig;
-        private GrapheneRemoteDebugConfig remoteDebugConfig;
-        private GrapheneFileSystemAccessMode fileSystemAccessMode = GrapheneFileSystemAccessMode.DENY;
+        private GrapheneContainerConfig containerConfig = GrapheneContainerConfig.defaults();
+        private GrapheneGlobalConfig globalConfig = GrapheneGlobalConfig.defaults();
 
         private Builder() {
         }
 
-        public Builder jcefDownloadPath(Path jcefDownloadPath) {
-            this.jcefDownloadPath = normalizePath(jcefDownloadPath, JCEF_DOWNLOAD_PATH_NAME);
+        public Builder container(GrapheneContainerConfig containerConfig) {
+            this.containerConfig = Objects.requireNonNull(containerConfig, CONTAINER_CONFIG_NAME);
             return this;
         }
 
-        public Builder jcefDownloadPath(String jcefDownloadPath) {
-            return jcefDownloadPath(Path.of(Objects.requireNonNull(jcefDownloadPath, JCEF_DOWNLOAD_PATH_NAME)));
-        }
-
-        public Builder extensionFolder(Path extensionFolder) {
-            this.extensionFolders.add(normalizePath(extensionFolder, EXTENSION_FOLDER_NAME));
-            return this;
-        }
-
-        public Builder extensionFolder(String extensionFolder) {
-            return extensionFolder(Path.of(Objects.requireNonNull(extensionFolder, EXTENSION_FOLDER_NAME)));
-        }
-
-        public Builder disableExtensions() {
-            this.extensionFolders.clear();
-            return this;
-        }
-
-        public Builder http(GrapheneHttpConfig httpConfig) {
-            this.httpConfig = Objects.requireNonNull(httpConfig, HTTP_CONFIG_NAME);
-            return this;
-        }
-
-        public Builder disableHttp() {
-            this.httpConfig = null;
-            return this;
-        }
-
-        public Builder remoteDebugging(GrapheneRemoteDebugConfig remoteDebugConfig) {
-            this.remoteDebugConfig = Objects.requireNonNull(remoteDebugConfig, REMOTE_DEBUG_CONFIG_NAME);
-            return this;
-        }
-
-        public Builder disableRemoteDebugging() {
-            this.remoteDebugConfig = GrapheneRemoteDebugConfig.disabled();
-            return this;
-        }
-
-        public Builder fileSystemAccessMode(GrapheneFileSystemAccessMode fileSystemAccessMode) {
-            this.fileSystemAccessMode = Objects.requireNonNull(fileSystemAccessMode, FILE_SYSTEM_ACCESS_MODE_NAME);
-            return this;
-        }
-
-        public Builder allowFileSystemAccess() {
-            this.fileSystemAccessMode = GrapheneFileSystemAccessMode.ALLOW;
-            return this;
-        }
-
-        public Builder denyFileSystemAccess() {
-            this.fileSystemAccessMode = GrapheneFileSystemAccessMode.DENY;
+        public Builder global(GrapheneGlobalConfig globalConfig) {
+            this.globalConfig = Objects.requireNonNull(globalConfig, GLOBAL_CONFIG_NAME);
             return this;
         }
 

@@ -1,0 +1,151 @@
+package tytoo.grapheneui.api.config;
+
+import java.nio.file.Path;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+
+@SuppressWarnings("unused")
+public final class GrapheneGlobalConfig {
+    private static final Path DEFAULT_JCEF_DOWNLOAD_PATH = Path.of("./jcef");
+    private static final GrapheneGlobalConfig DEFAULT = builder().build();
+    private static final String JCEF_DOWNLOAD_PATH_NAME = "jcefDownloadPath";
+    private static final String EXTENSION_FOLDER_NAME = "extensionFolder";
+    private static final String REMOTE_DEBUG_CONFIG_NAME = "remoteDebugConfig";
+    private static final String FILE_SYSTEM_ACCESS_MODE_NAME = "fileSystemAccessMode";
+
+    private final Path jcefDownloadPath;
+    private final List<Path> extensionFolders;
+    private final GrapheneRemoteDebugConfig remoteDebugConfig;
+    private final GrapheneFileSystemAccessMode fileSystemAccessMode;
+
+    private GrapheneGlobalConfig(Builder builder) {
+        this.jcefDownloadPath = builder.jcefDownloadPath == null
+                ? null
+                : normalizePath(builder.jcefDownloadPath, JCEF_DOWNLOAD_PATH_NAME);
+        this.extensionFolders = List.copyOf(builder.extensionFolders.stream().sorted().toList());
+        this.remoteDebugConfig = builder.remoteDebugConfig;
+        this.fileSystemAccessMode = Objects.requireNonNull(builder.fileSystemAccessMode, FILE_SYSTEM_ACCESS_MODE_NAME);
+    }
+
+    public static GrapheneGlobalConfig defaults() {
+        return DEFAULT;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    private static Path normalizePath(Path path, String argumentName) {
+        Path validatedPath = Objects.requireNonNull(path, argumentName).normalize();
+        if (validatedPath.toString().isBlank()) {
+            throw new IllegalArgumentException(argumentName + " must not be blank");
+        }
+
+        return validatedPath;
+    }
+
+    public Optional<Path> jcefDownloadPath() {
+        return Optional.ofNullable(jcefDownloadPath);
+    }
+
+    public Path resolvedJcefDownloadPath() {
+        return jcefDownloadPath == null ? DEFAULT_JCEF_DOWNLOAD_PATH : jcefDownloadPath;
+    }
+
+    public List<Path> extensionFolders() {
+        return extensionFolders;
+    }
+
+    public Optional<GrapheneRemoteDebugConfig> remoteDebugging() {
+        return Optional.ofNullable(remoteDebugConfig);
+    }
+
+    public GrapheneFileSystemAccessMode fileSystemAccessMode() {
+        return fileSystemAccessMode;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) {
+            return true;
+        }
+
+        if (!(object instanceof GrapheneGlobalConfig other)) {
+            return false;
+        }
+
+        return Objects.equals(jcefDownloadPath, other.jcefDownloadPath)
+                && Objects.equals(extensionFolders, other.extensionFolders)
+                && Objects.equals(remoteDebugConfig, other.remoteDebugConfig)
+                && fileSystemAccessMode == other.fileSystemAccessMode;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(jcefDownloadPath, extensionFolders, remoteDebugConfig, fileSystemAccessMode);
+    }
+
+    public static final class Builder {
+        private final LinkedHashSet<Path> extensionFolders = new LinkedHashSet<>();
+        private Path jcefDownloadPath;
+        private GrapheneRemoteDebugConfig remoteDebugConfig;
+        private GrapheneFileSystemAccessMode fileSystemAccessMode = GrapheneFileSystemAccessMode.DENY;
+
+        private Builder() {
+        }
+
+        public Builder jcefDownloadPath(Path jcefDownloadPath) {
+            this.jcefDownloadPath = normalizePath(jcefDownloadPath, JCEF_DOWNLOAD_PATH_NAME);
+            return this;
+        }
+
+        public Builder jcefDownloadPath(String jcefDownloadPath) {
+            return jcefDownloadPath(Path.of(Objects.requireNonNull(jcefDownloadPath, JCEF_DOWNLOAD_PATH_NAME)));
+        }
+
+        public Builder extensionFolder(Path extensionFolder) {
+            this.extensionFolders.add(normalizePath(extensionFolder, EXTENSION_FOLDER_NAME));
+            return this;
+        }
+
+        public Builder extensionFolder(String extensionFolder) {
+            return extensionFolder(Path.of(Objects.requireNonNull(extensionFolder, EXTENSION_FOLDER_NAME)));
+        }
+
+        public Builder disableExtensions() {
+            this.extensionFolders.clear();
+            return this;
+        }
+
+        public Builder remoteDebugging(GrapheneRemoteDebugConfig remoteDebugConfig) {
+            this.remoteDebugConfig = Objects.requireNonNull(remoteDebugConfig, REMOTE_DEBUG_CONFIG_NAME);
+            return this;
+        }
+
+        public Builder disableRemoteDebugging() {
+            this.remoteDebugConfig = GrapheneRemoteDebugConfig.disabled();
+            return this;
+        }
+
+        public Builder fileSystemAccessMode(GrapheneFileSystemAccessMode fileSystemAccessMode) {
+            this.fileSystemAccessMode = Objects.requireNonNull(fileSystemAccessMode, FILE_SYSTEM_ACCESS_MODE_NAME);
+            return this;
+        }
+
+        public Builder allowFileSystemAccess() {
+            this.fileSystemAccessMode = GrapheneFileSystemAccessMode.ALLOW;
+            return this;
+        }
+
+        public Builder denyFileSystemAccess() {
+            this.fileSystemAccessMode = GrapheneFileSystemAccessMode.DENY;
+            return this;
+        }
+
+        public GrapheneGlobalConfig build() {
+            return new GrapheneGlobalConfig(this);
+        }
+    }
+}

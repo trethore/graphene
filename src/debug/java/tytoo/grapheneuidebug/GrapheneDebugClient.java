@@ -4,6 +4,8 @@ import net.fabricmc.api.ClientModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tytoo.grapheneui.api.GrapheneCore;
+import tytoo.grapheneui.api.config.GrapheneConfig;
+import tytoo.grapheneui.api.config.GrapheneGlobalConfig;
 import tytoo.grapheneuidebug.key.GrapheneDebugKeyBindings;
 
 public class GrapheneDebugClient implements ClientModInitializer {
@@ -13,7 +15,14 @@ public class GrapheneDebugClient implements ClientModInitializer {
     /* Debug entry point for testing purposes. */
     @Override
     public void onInitializeClient() {
-        GrapheneCore.register(ID);
+        GrapheneCore.register(
+                GrapheneDebugClient.class,
+                GrapheneConfig.builder()
+                        .global(GrapheneGlobalConfig.builder()
+                                .allowFileSystemAccess()
+                                .build())
+                        .build()
+        );
         GrapheneDebugKeyBindings.register();
         String debugSelector = System.getProperty("graphene.debug");
         if (debugSelector != null && !debugSelector.isBlank()) {

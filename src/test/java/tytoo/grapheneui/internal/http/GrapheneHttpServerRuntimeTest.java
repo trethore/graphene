@@ -14,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -59,8 +60,8 @@ final class GrapheneHttpServerRuntimeTest {
     }
 
     @Test
-    void servesFileSystemResourceWhenFileRootConfigured() throws IOException {
-        Path scriptPath = tempDir.resolve("assets/my-mod-id/web/live.js");
+    void servesMountedFileSystemResourceWhenConsumerFileRootConfigured() throws IOException {
+        Path scriptPath = tempDir.resolve("web/live.js");
         Files.createDirectories(scriptPath.getParent());
         String scriptBody = "console.log('live reload');";
         Files.writeString(scriptPath, scriptBody, StandardCharsets.UTF_8);
@@ -70,8 +71,8 @@ final class GrapheneHttpServerRuntimeTest {
                 .fileRoot(tempDir)
                 .build();
 
-        try (GrapheneHttpServerRuntime server = GrapheneHttpServerRuntime.start(config)) {
-            TestHttpResponse response = sendGet(server.baseUrl() + "/assets/my-mod-id/web/live.js");
+        try (GrapheneHttpServerRuntime server = GrapheneHttpServerRuntime.start(Map.of("my-mod-id", config))) {
+            TestHttpResponse response = sendGet(server.baseUrl() + "/mods/my-mod-id/web/live.js");
 
             assertEquals(200, response.statusCode());
             assertEquals(scriptBody, response.body());
@@ -79,7 +80,7 @@ final class GrapheneHttpServerRuntimeTest {
     }
 
     @Test
-    void fileSystemResourceTakesPrecedenceOverClasspathResource() throws IOException {
+    void mountedFileSystemResourceDoesNotOverrideClasspathAssets() throws IOException {
         Path overridePath = tempDir.resolve("assets/graphene-ui/example.html");
         Files.createDirectories(overridePath.getParent());
         String overrideBody = "<html><body>filesystem override</body></html>";
@@ -90,22 +91,7 @@ final class GrapheneHttpServerRuntimeTest {
                 .fileRoot(tempDir)
                 .build();
 
-        try (GrapheneHttpServerRuntime server = GrapheneHttpServerRuntime.start(config)) {
-            TestHttpResponse response = sendGet(server.baseUrl() + "/assets/graphene-ui/example.html");
-
-            assertEquals(200, response.statusCode());
-            assertEquals(overrideBody, response.body());
-        }
-    }
-
-    @Test
-    void servesClasspathResourceWhenFileIsMissingFromFileRoot() throws IOException {
-        GrapheneHttpConfig config = GrapheneHttpConfig.builder()
-                .randomPortInRange(30_000, 60_000)
-                .fileRoot(tempDir)
-                .build();
-
-        try (GrapheneHttpServerRuntime server = GrapheneHttpServerRuntime.start(config)) {
+        try (GrapheneHttpServerRuntime server = GrapheneHttpServerRuntime.start(Map.of("my-mod-id", config))) {
             TestHttpResponse response = sendGet(server.baseUrl() + "/assets/graphene-ui/example.html");
 
             assertEquals(200, response.statusCode());
@@ -114,8 +100,23 @@ final class GrapheneHttpServerRuntimeTest {
     }
 
     @Test
-    void servesFileSystemResourceForPostRequests() throws IOException {
-        Path htmlPath = tempDir.resolve("assets/my-mod-id/web/submit-target.html");
+    void servesClasspathResourceWhenRequestedFromAssetsRoute() throws IOException {
+        GrapheneHttpConfig config = GrapheneHttpConfig.builder()
+                .randomPortInRange(30_000, 60_000)
+                .fileRoot(tempDir)
+                .build();
+
+        try (GrapheneHttpServerRuntime server = GrapheneHttpServerRuntime.start(Map.of("my-mod-id", config))) {
+            TestHttpResponse response = sendGet(server.baseUrl() + "/assets/graphene-ui/example.html");
+
+            assertEquals(200, response.statusCode());
+            assertTrue(response.body().contains("<title>Graphene Widget Example</title>"));
+        }
+    }
+
+    @Test
+    void servesMountedFileSystemResourceForPostRequests() throws IOException {
+        Path htmlPath = tempDir.resolve("submit-target.html");
         Files.createDirectories(htmlPath.getParent());
         String htmlBody = "<html><body>ok</body></html>";
         Files.writeString(htmlPath, htmlBody, StandardCharsets.UTF_8);
@@ -125,8 +126,8 @@ final class GrapheneHttpServerRuntimeTest {
                 .fileRoot(tempDir)
                 .build();
 
-        try (GrapheneHttpServerRuntime server = GrapheneHttpServerRuntime.start(config)) {
-            TestHttpResponse response = sendPost(server.baseUrl() + "/assets/my-mod-id/web/submit-target.html");
+        try (GrapheneHttpServerRuntime server = GrapheneHttpServerRuntime.start(Map.of("my-mod-id", config))) {
+            TestHttpResponse response = sendPost(server.baseUrl() + "/mods/my-mod-id/submit-target.html");
 
             assertEquals(200, response.statusCode());
             assertEquals(htmlBody, response.body());
@@ -134,14 +135,61 @@ final class GrapheneHttpServerRuntimeTest {
     }
 
     @Test
-    void appliesSpaFallbackForPostRequests() throws IOException {
+    void servesMountedClasspathResourceFromConsumerNamespaceWhenFileIsMissing() throws IOException {
+        GrapheneHttpConfig config = GrapheneHttpConfig.builder()
+                .randomPortInRange(30_000, 60_000)
+                .build();
+
+        try (GrapheneHttpServerRuntime server = GrapheneHttpServerRuntime.start(Map.of("graphene-ui", config))) {
+            TestHttpResponse response = sendGet(server.baseUrl() + "/mods/graphene-ui/example.html");
+
+            assertEquals(200, response.statusCode());
+            assertTrue(response.body().contains("<title>Graphene Widget Example</title>"));
+        }
+    }
+
+    @Test
+    void isolatesMountedFileRootsPerConsumerMod() throws IOException {
+        Path modAPath = tempDir.resolve("mod-a/index.html");
+        Files.createDirectories(modAPath.getParent());
+        Files.writeString(modAPath, "mod-a", StandardCharsets.UTF_8);
+
+        Path modBPath = tempDir.resolve("mod-b/index.html");
+        Files.createDirectories(modBPath.getParent());
+        Files.writeString(modBPath, "mod-b", StandardCharsets.UTF_8);
+
+        GrapheneHttpConfig modAConfig = GrapheneHttpConfig.builder()
+                .randomPortInRange(30_000, 60_000)
+                .fileRoot(tempDir.resolve("mod-a"))
+                .build();
+        GrapheneHttpConfig modBConfig = GrapheneHttpConfig.builder()
+                .randomPortInRange(30_000, 60_000)
+                .fileRoot(tempDir.resolve("mod-b"))
+                .build();
+
+        try (GrapheneHttpServerRuntime server = GrapheneHttpServerRuntime.start(Map.of(
+                "mod-a", modAConfig,
+                "mod-b", modBConfig
+        ))) {
+            TestHttpResponse modAResponse = sendGet(server.baseUrl() + "/mods/mod-a/index.html");
+            TestHttpResponse modBResponse = sendGet(server.baseUrl() + "/mods/mod-b/index.html");
+
+            assertEquals(200, modAResponse.statusCode());
+            assertEquals("mod-a", modAResponse.body());
+            assertEquals(200, modBResponse.statusCode());
+            assertEquals("mod-b", modBResponse.body());
+        }
+    }
+
+    @Test
+    void appliesMountedSpaFallbackForPostRequests() throws IOException {
         GrapheneHttpConfig config = GrapheneHttpConfig.builder()
                 .randomPortInRange(30_000, 60_000)
                 .spaFallback("/assets/graphene-ui/example.html")
                 .build();
 
-        try (GrapheneHttpServerRuntime server = GrapheneHttpServerRuntime.start(config)) {
-            TestHttpResponse response = sendPost(server.baseUrl() + "/signin");
+        try (GrapheneHttpServerRuntime server = GrapheneHttpServerRuntime.start(Map.of("my-mod-id", config))) {
+            TestHttpResponse response = sendPost(server.baseUrl() + "/mods/my-mod-id/signin");
 
             assertEquals(200, response.statusCode());
             assertTrue(response.body().contains("<title>Graphene Widget Example</title>"));
@@ -154,7 +202,7 @@ final class GrapheneHttpServerRuntimeTest {
                 .randomPortInRange(30_000, 60_000)
                 .build();
 
-        try (GrapheneHttpServerRuntime server = GrapheneHttpServerRuntime.start(config)) {
+        try (GrapheneHttpServerRuntime server = GrapheneHttpServerRuntime.start(Map.of("my-mod-id", config))) {
             TestHttpResponse response = sendRequest("PUT", server.baseUrl() + "/assets/graphene-ui/example.html");
 
             assertEquals(405, response.statusCode());
@@ -169,8 +217,8 @@ final class GrapheneHttpServerRuntimeTest {
                 .fileRoot(tempDir)
                 .build();
 
-        try (GrapheneHttpServerRuntime server = GrapheneHttpServerRuntime.start(config)) {
-            TestHttpResponse response = sendGet(server.baseUrl() + "/%2e%2e/%2e%2e/outside.txt");
+        try (GrapheneHttpServerRuntime server = GrapheneHttpServerRuntime.start(Map.of("my-mod-id", config))) {
+            TestHttpResponse response = sendGet(server.baseUrl() + "/mods/my-mod-id/%2e%2e/%2e%2e/outside.txt");
 
             assertEquals(400, response.statusCode());
             assertEquals("Invalid path", response.body());
@@ -178,14 +226,14 @@ final class GrapheneHttpServerRuntimeTest {
     }
 
     @Test
-    void doesNotServeSymlinkEscapingFileRoot() throws IOException {
+    void doesNotServeSymlinkEscapingMountedFileRoot() throws IOException {
         Path fileRoot = tempDir.resolve("root");
-        Files.createDirectories(fileRoot.resolve("assets/my-mod-id/web"));
+        Files.createDirectories(fileRoot.resolve("web"));
 
         Path outsideFile = tempDir.resolve("outside.txt");
         Files.writeString(outsideFile, "outside", StandardCharsets.UTF_8);
 
-        Path linkPath = fileRoot.resolve("assets/my-mod-id/web/escape.txt");
+        Path linkPath = fileRoot.resolve("web/escape.txt");
         boolean symlinkCreated = tryCreateSymbolicLink(linkPath, outsideFile);
         Assumptions.assumeTrue(symlinkCreated, "symbolic links are not available in this environment");
 
@@ -194,8 +242,8 @@ final class GrapheneHttpServerRuntimeTest {
                 .fileRoot(fileRoot)
                 .build();
 
-        try (GrapheneHttpServerRuntime server = GrapheneHttpServerRuntime.start(config)) {
-            TestHttpResponse response = sendGet(server.baseUrl() + "/assets/my-mod-id/web/escape.txt");
+        try (GrapheneHttpServerRuntime server = GrapheneHttpServerRuntime.start(Map.of("my-mod-id", config))) {
+            TestHttpResponse response = sendGet(server.baseUrl() + "/mods/my-mod-id/web/escape.txt");
 
             assertEquals(404, response.statusCode());
         }

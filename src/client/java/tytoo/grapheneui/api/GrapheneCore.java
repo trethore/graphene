@@ -2,13 +2,12 @@ package tytoo.grapheneui.api;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
+import net.fabricmc.loader.api.FabricLoader;
+import net.fabricmc.loader.api.ModContainer;
 import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tytoo.grapheneui.api.config.GrapheneConfig;
-import tytoo.grapheneui.api.config.GrapheneFileSystemAccessMode;
-import tytoo.grapheneui.api.config.GrapheneHttpConfig;
-import tytoo.grapheneui.api.config.GrapheneRemoteDebugConfig;
+import tytoo.grapheneui.api.config.*;
 import tytoo.grapheneui.api.runtime.GrapheneRuntime;
 import tytoo.grapheneui.internal.core.GrapheneCoreServices;
 
@@ -19,9 +18,9 @@ import java.util.Objects;
 
 /**
  * The core class of the Graphene library.
- * Each consumer mod should register once with {@link #register(String)} or {@link #register(String, GrapheneConfig)}.
- * The Graphene runtime starts lazily on first use and, if not already started,
- * is automatically initialized after the Minecraft client startup has finished.
+ * Each consumer mod must register once from its {@code onInitializeClient()} entrypoint.
+ * Graphene closes registration before the first client tick and initializes lazily on first use,
+ * or automatically after the Minecraft client startup has finished.
  */
 public final class GrapheneCore implements ClientModInitializer {
     public static final String ID = "graphene-ui";
@@ -29,23 +28,25 @@ public final class GrapheneCore implements ClientModInitializer {
     private static final GrapheneCoreServices SERVICES = GrapheneCoreServices.get();
     private static final Map<String, GrapheneConfig> CONSUMER_CONFIGS = new LinkedHashMap<>();
     private static final Map<String, GrapheneMod> CONSUMERS = new LinkedHashMap<>();
-    private static final String MOD_ID_NAME = "modId";
+    private static volatile boolean registrationClosed;
 
-    public static synchronized GrapheneMod register(String modId) {
-        return register(modId, GrapheneConfig.defaults());
+    public static synchronized GrapheneHandle register(Class<?> anchorClass) {
+        return register(anchorClass, GrapheneConfig.defaults());
     }
 
-    public static synchronized GrapheneMod register(String modId, GrapheneConfig config) {
-        String normalizedModId = normalizeModId(modId);
+    public static synchronized GrapheneHandle register(Class<?> anchorClass, GrapheneConfig config) {
+        ensureRegistrationOpen();
+
+        String modId = resolveModId(anchorClass);
         GrapheneConfig validatedConfig = Objects.requireNonNull(config, "config");
 
-        GrapheneMod existingConsumer = CONSUMERS.get(normalizedModId);
+        GrapheneMod existingConsumer = CONSUMERS.get(modId);
         if (existingConsumer != null) {
-            GrapheneConfig existingConfig = CONSUMER_CONFIGS.get(normalizedModId);
+            GrapheneConfig existingConfig = CONSUMER_CONFIGS.get(modId);
             if (!Objects.equals(existingConfig, validatedConfig)) {
                 throw new IllegalStateException(
                         "Graphene consumer "
-                                + normalizedModId
+                                + modId
                                 + " is already registered with a different config"
                 );
             }
@@ -55,15 +56,19 @@ public final class GrapheneCore implements ClientModInitializer {
 
         if (SERVICES.runtimeInternal().isInitialized()) {
             throw new IllegalStateException(
-                    "Graphene runtime is already initialized; register all consumers before first Graphene usage"
+                    "Graphene runtime is already initialized; register all consumers before Graphene starts"
             );
         }
 
-        GrapheneMod consumer = new GrapheneMod(normalizedModId);
-        CONSUMERS.put(normalizedModId, consumer);
-        CONSUMER_CONFIGS.put(normalizedModId, validatedConfig);
-        LOGGER.info("Registered Graphene consumer {}", normalizedModId);
+        GrapheneMod consumer = new GrapheneMod(modId, validatedConfig);
+        CONSUMERS.put(modId, consumer);
+        CONSUMER_CONFIGS.put(modId, validatedConfig);
+        LOGGER.info("Registered Graphene consumer {}", modId);
         return consumer;
+    }
+
+    public static synchronized GrapheneGlobalConfig globalConfig() {
+        return mergeGlobalConfig();
     }
 
     public static synchronized boolean isInitialized() {
@@ -86,6 +91,11 @@ public final class GrapheneCore implements ClientModInitializer {
     }
 
     private static synchronized void startIfConsumersRegistered() {
+        if (registrationClosed) {
+            return;
+        }
+
+        registrationClosed = true;
         if (CONSUMERS.isEmpty()) {
             LOGGER.info("Graphene is loaded but no consumers are registered; skipping initialization.");
             return;
@@ -94,15 +104,57 @@ public final class GrapheneCore implements ClientModInitializer {
         start();
     }
 
+    private static void ensureRegistrationOpen() {
+        if (!registrationClosed) {
+            return;
+        }
+
+        throw new IllegalStateException(
+                "Graphene consumer registration is closed; register from onInitializeClient() before the first client tick"
+        );
+    }
+
+    private static String resolveModId(Class<?> anchorClass) {
+        Class<?> validatedAnchorClass = Objects.requireNonNull(anchorClass, "anchorClass");
+        String classFilePath = validatedAnchorClass.getName().replace('.', '/') + ".class";
+        String resolvedModId = null;
+
+        for (ModContainer modContainer : FabricLoader.getInstance().getAllMods()) {
+            if (modContainer.findPath(classFilePath).isPresent()) {
+                String candidateModId = normalizeModId(modContainer.getMetadata().getId());
+                if (resolvedModId == null) {
+                    resolvedModId = candidateModId;
+                } else if (!resolvedModId.equals(candidateModId)) {
+                    throw new IllegalStateException(
+                            "Graphene anchor class "
+                                    + validatedAnchorClass.getName()
+                                    + " resolved to multiple mod containers: "
+                                    + resolvedModId
+                                    + " and "
+                                    + candidateModId
+                    );
+                }
+            }
+        }
+
+        if (resolvedModId == null) {
+            throw new IllegalArgumentException(
+                    "Failed to resolve Graphene consumer mod id for anchor class " + validatedAnchorClass.getName()
+            );
+        }
+
+        return resolvedModId;
+    }
+
     private static String normalizeModId(String modId) {
-        String normalizedModId = Objects.requireNonNull(modId, MOD_ID_NAME).trim();
+        String normalizedModId = Objects.requireNonNull(modId, "modId").trim();
         if (normalizedModId.isBlank()) {
-            throw new IllegalArgumentException(MOD_ID_NAME + " must not be blank");
+            throw new IllegalArgumentException("modId must not be blank");
         }
 
         if (!Identifier.isValidNamespace(normalizedModId)) {
             throw new IllegalArgumentException(
-                    MOD_ID_NAME + " must be a valid namespace using lowercase letters, digits, '.', '_' or '-'"
+                    "modId must be a valid namespace using lowercase letters, digits, '.', '_' or '-'"
             );
         }
 
@@ -116,54 +168,55 @@ public final class GrapheneCore implements ClientModInitializer {
 
         if (CONSUMERS.isEmpty()) {
             throw new IllegalStateException(
-                    "No Graphene consumer registered. Call GrapheneCore.register(modId, config) before Graphene is used"
+                    "No Graphene consumer registered. Call GrapheneCore.register(anchorClass, config) before Graphene is used"
             );
         }
 
-        GrapheneConfig mergedConfig = mergeSharedConfig();
-        SERVICES.runtimeInternal().initialize(mergedConfig);
+        registrationClosed = true;
+        SERVICES.runtimeInternal().initialize(mergeGlobalConfig(), snapshotContainerConfigs());
         LOGGER.info("Graphene initialized with {} registered consumer(s)", CONSUMERS.size());
     }
 
-    private static GrapheneConfig mergeSharedConfig() {
-        GrapheneConfig.Builder mergedConfigBuilder = GrapheneConfig.builder();
+    private static Map<String, GrapheneContainerConfig> snapshotContainerConfigs() {
+        LinkedHashMap<String, GrapheneContainerConfig> containerConfigs = new LinkedHashMap<>();
+        for (Map.Entry<String, GrapheneConfig> consumerConfigEntry : CONSUMER_CONFIGS.entrySet()) {
+            containerConfigs.put(consumerConfigEntry.getKey(), consumerConfigEntry.getValue().container());
+        }
+
+        return Map.copyOf(containerConfigs);
+    }
+
+    private static GrapheneGlobalConfig mergeGlobalConfig() {
+        GrapheneGlobalConfig.Builder mergedConfigBuilder = GrapheneGlobalConfig.builder();
         OwnedValue<Path> selectedJcefPath = null;
-        OwnedValue<GrapheneHttpConfig> selectedHttpConfig = null;
         OwnedValue<GrapheneRemoteDebugConfig> selectedRemoteDebugConfig = null;
         GrapheneFileSystemAccessMode mergedFileSystemAccessMode = GrapheneFileSystemAccessMode.DENY;
 
         for (Map.Entry<String, GrapheneConfig> consumerConfigEntry : CONSUMER_CONFIGS.entrySet()) {
             String consumerId = consumerConfigEntry.getKey();
-            GrapheneConfig consumerConfig = consumerConfigEntry.getValue();
+            GrapheneGlobalConfig consumerGlobalConfig = consumerConfigEntry.getValue().global();
 
             selectedJcefPath = mergeOwnedValue(
                     selectedJcefPath,
-                    normalizeConfiguredJcefPath(consumerConfig),
+                    normalizeConfiguredJcefPath(consumerGlobalConfig),
                     consumerId,
                     "jcefDownloadPath"
             );
-            mergeExtensionFolders(mergedConfigBuilder, consumerConfig);
-            selectedHttpConfig = mergeOwnedValue(
-                    selectedHttpConfig,
-                    consumerConfig.http().orElse(null),
-                    consumerId,
-                    "HTTP config"
-            );
+            mergeExtensionFolders(mergedConfigBuilder, consumerGlobalConfig);
             selectedRemoteDebugConfig = mergeOwnedValue(
                     selectedRemoteDebugConfig,
-                    consumerConfig.remoteDebugging().orElse(null),
+                    consumerGlobalConfig.remoteDebugging().orElse(null),
                     consumerId,
                     "remote debugging config"
             );
-            mergedFileSystemAccessMode = mergeFileSystemAccessMode(mergedFileSystemAccessMode, consumerConfig.fileSystemAccessMode());
+            mergedFileSystemAccessMode = mergeFileSystemAccessMode(
+                    mergedFileSystemAccessMode,
+                    consumerGlobalConfig.fileSystemAccessMode()
+            );
         }
 
         if (selectedJcefPath != null) {
             mergedConfigBuilder.jcefDownloadPath(selectedJcefPath.value());
-        }
-
-        if (selectedHttpConfig != null) {
-            mergedConfigBuilder.http(selectedHttpConfig.value());
         }
 
         if (selectedRemoteDebugConfig != null) {
@@ -175,14 +228,17 @@ public final class GrapheneCore implements ClientModInitializer {
         return mergedConfigBuilder.build();
     }
 
-    private static Path normalizeConfiguredJcefPath(GrapheneConfig consumerConfig) {
-        return consumerConfig.jcefDownloadPath()
+    private static Path normalizeConfiguredJcefPath(GrapheneGlobalConfig consumerGlobalConfig) {
+        return consumerGlobalConfig.jcefDownloadPath()
                 .map(path -> path.toAbsolutePath().normalize())
                 .orElse(null);
     }
 
-    private static void mergeExtensionFolders(GrapheneConfig.Builder mergedConfigBuilder, GrapheneConfig consumerConfig) {
-        for (Path extensionFolder : consumerConfig.extensionFolders()) {
+    private static void mergeExtensionFolders(
+            GrapheneGlobalConfig.Builder mergedConfigBuilder,
+            GrapheneGlobalConfig consumerGlobalConfig
+    ) {
+        for (Path extensionFolder : consumerGlobalConfig.extensionFolders()) {
             mergedConfigBuilder.extensionFolder(extensionFolder);
         }
     }

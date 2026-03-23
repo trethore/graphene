@@ -8,7 +8,7 @@ import io.github.trethore.jcefgithub.EnumPlatform;
 import io.github.trethore.jcefgithub.UnsupportedPlatformException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import tytoo.grapheneui.api.config.GrapheneConfig;
+import tytoo.grapheneui.api.config.GrapheneGlobalConfig;
 import tytoo.grapheneui.api.config.GrapheneRemoteDebugConfig;
 import tytoo.grapheneui.internal.logging.GrapheneDebugLogger;
 import tytoo.grapheneui.internal.platform.GraphenePlatform;
@@ -40,8 +40,8 @@ public final class GrapheneCefInstaller {
     private GrapheneCefInstaller() {
     }
 
-    public static CefAppBuilder createBuilder(GrapheneConfig config) {
-        GrapheneConfig validatedConfig = Objects.requireNonNull(config, "config");
+    public static CefAppBuilder createBuilder(GrapheneGlobalConfig config) {
+        GrapheneGlobalConfig validatedConfig = Objects.requireNonNull(config, "config");
         Path installPath = resolveInstallPath(validatedConfig);
         File installDir = installPath.toFile();
 
@@ -74,7 +74,7 @@ public final class GrapheneCefInstaller {
         return cefAppBuilder;
     }
 
-    private static Path resolveInstallPath(GrapheneConfig config) {
+    private static Path resolveInstallPath(GrapheneGlobalConfig config) {
         Path basePath = config.resolvedJcefDownloadPath().toAbsolutePath().normalize();
         String jcefMavenVersion = resolveJcefMavenVersion();
         String platformIdentifier = resolvePlatformIdentifier();
@@ -82,36 +82,50 @@ public final class GrapheneCefInstaller {
     }
 
     private static String resolveJcefMavenVersion() {
+        try {
+            return readJcefMavenVersion();
+        } catch (IOException | JsonParseException exception) {
+            return resolveFallbackJcefMavenVersion(exception);
+        }
+    }
+
+    private static String readJcefMavenVersion() throws IOException {
         try (InputStream in = GrapheneCefInstaller.class.getResourceAsStream(JCEFGITHUB_BUILD_META_RESOURCE_PATH)) {
             if (in == null) {
                 throw new IOException(JCEFGITHUB_BUILD_META_RESOURCE_PATH + " is missing from the classpath");
             }
 
             JsonObject metadata = GSON.fromJson(new InputStreamReader(in, StandardCharsets.UTF_8), JsonObject.class);
-            if (metadata == null || !metadata.has(JCEFGITHUB_VERSION_FIELD)) {
-                throw new IOException("Missing version field in " + JCEFGITHUB_BUILD_META_RESOURCE_PATH);
-            }
+            return requireJcefMavenVersion(metadata);
+        }
+    }
 
-            String version = metadata.get(JCEFGITHUB_VERSION_FIELD).getAsString();
-            if (version == null || version.isBlank()) {
-                throw new IOException("Blank version field in " + JCEFGITHUB_BUILD_META_RESOURCE_PATH);
-            }
+    private static String requireJcefMavenVersion(JsonObject metadata) throws IOException {
+        if (metadata == null || !metadata.has(JCEFGITHUB_VERSION_FIELD)) {
+            throw new IOException("Missing version field in " + JCEFGITHUB_BUILD_META_RESOURCE_PATH);
+        }
 
-            return version;
-        } catch (IOException | JsonParseException exception) {
-            String implementationVersion = CefAppBuilder.class.getPackage().getImplementationVersion();
-            if (implementationVersion != null && !implementationVersion.isBlank()) {
-                LOGGER.warn(
-                        "Failed to resolve jcefgithub Maven version from {}, falling back to implementation version {}",
-                        JCEFGITHUB_BUILD_META_RESOURCE_PATH,
-                        implementationVersion,
-                        exception
-                );
-                return implementationVersion;
-            }
+        String version = metadata.get(JCEFGITHUB_VERSION_FIELD).getAsString();
+        if (version == null || version.isBlank()) {
+            throw new IOException("Blank version field in " + JCEFGITHUB_BUILD_META_RESOURCE_PATH);
+        }
 
+        return version;
+    }
+
+    private static String resolveFallbackJcefMavenVersion(Exception exception) {
+        String implementationVersion = CefAppBuilder.class.getPackage().getImplementationVersion();
+        if (implementationVersion == null || implementationVersion.isBlank()) {
             throw new IllegalStateException("Failed to resolve jcefgithub Maven version", exception);
         }
+
+        LOGGER.warn(
+                "Failed to resolve jcefgithub Maven version from {}, falling back to implementation version {}",
+                JCEFGITHUB_BUILD_META_RESOURCE_PATH,
+                implementationVersion,
+                exception
+        );
+        return implementationVersion;
     }
 
     private static String resolvePlatformIdentifier() {
@@ -139,7 +153,7 @@ public final class GrapheneCefInstaller {
         cefAppBuilder.getCefSettings().browser_subprocess_path = installPath + File.separator + "jcef_helper";
     }
 
-    private static void configureExtensionLoading(CefAppBuilder cefAppBuilder, GrapheneConfig config) {
+    private static void configureExtensionLoading(CefAppBuilder cefAppBuilder, GrapheneGlobalConfig config) {
         List<Path> configuredExtensionFolders = config.extensionFolders();
         if (configuredExtensionFolders.isEmpty()) {
             cefAppBuilder.addJcefArgs("--disable-extensions");
@@ -168,7 +182,7 @@ public final class GrapheneCefInstaller {
         );
     }
 
-    private static void configureRemoteDebugging(CefAppBuilder cefAppBuilder, GrapheneConfig config) {
+    private static void configureRemoteDebugging(CefAppBuilder cefAppBuilder, GrapheneGlobalConfig config) {
         GrapheneRemoteDebugConfig remoteDebugConfig = config.remoteDebugging().orElse(GrapheneRemoteDebugConfig.disabled());
         if (!remoteDebugConfig.enabled()) {
             cefAppBuilder.getCefSettings().remote_debugging_port = 0;
