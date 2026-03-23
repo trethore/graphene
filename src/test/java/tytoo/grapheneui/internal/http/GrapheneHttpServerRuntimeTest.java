@@ -50,6 +50,10 @@ final class GrapheneHttpServerRuntimeTest {
         return sendRequest("POST", url);
     }
 
+    private static TestHttpResponse sendHead(String url) throws IOException {
+        return sendRequest("HEAD", url);
+    }
+
     private static boolean tryCreateSymbolicLink(Path linkPath, Path targetPath) {
         try {
             Files.createSymbolicLink(linkPath, targetPath);
@@ -93,6 +97,25 @@ final class GrapheneHttpServerRuntimeTest {
 
         try (GrapheneHttpServerRuntime server = GrapheneHttpServerRuntime.start(Map.of("my-mod-id", config))) {
             TestHttpResponse response = sendGet(server.baseUrl() + "/assets/graphene-ui/example.html");
+
+            assertEquals(200, response.statusCode());
+            assertTrue(response.body().contains("<title>Graphene Widget Example</title>"));
+        }
+    }
+
+    @Test
+    void mountedAssetsPathDoesNotOverrideClasspathAssets() throws IOException {
+        Path overridePath = tempDir.resolve("assets/graphene-ui/example.html");
+        Files.createDirectories(overridePath.getParent());
+        Files.writeString(overridePath, "<html><body>filesystem override</body></html>", StandardCharsets.UTF_8);
+
+        GrapheneHttpConfig config = GrapheneHttpConfig.builder()
+                .randomPortInRange(30_000, 60_000)
+                .fileRoot(tempDir)
+                .build();
+
+        try (GrapheneHttpServerRuntime server = GrapheneHttpServerRuntime.start(Map.of("my-mod-id", config))) {
+            TestHttpResponse response = sendGet(server.baseUrl() + "/mods/my-mod-id/assets/graphene-ui/example.html");
 
             assertEquals(200, response.statusCode());
             assertTrue(response.body().contains("<title>Graphene Widget Example</title>"));
@@ -193,6 +216,20 @@ final class GrapheneHttpServerRuntimeTest {
 
             assertEquals(200, response.statusCode());
             assertTrue(response.body().contains("<title>Graphene Widget Example</title>"));
+        }
+    }
+
+    @Test
+    void appliesMountedSpaFallbackForHeadRequests() throws IOException {
+        GrapheneHttpConfig config = GrapheneHttpConfig.builder()
+                .randomPortInRange(30_000, 60_000)
+                .spaFallback("/assets/graphene-ui/example.html")
+                .build();
+
+        try (GrapheneHttpServerRuntime server = GrapheneHttpServerRuntime.start(Map.of("my-mod-id", config))) {
+            TestHttpResponse response = sendHead(server.baseUrl() + "/mods/my-mod-id/signin");
+
+            assertEquals(200, response.statusCode());
         }
     }
 

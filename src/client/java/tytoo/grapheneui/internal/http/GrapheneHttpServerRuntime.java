@@ -352,7 +352,7 @@ public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, Auto
                     return;
                 }
 
-                ResourceResponse response = loadResourceResponse(requestPath, isGetRequest || isPostRequest);
+                ResourceResponse response = loadResourceResponse(requestPath, true);
                 send(exchange, response.statusCode(), response.contentType(), response.payload(), isHeadRequest);
             }
         }
@@ -437,6 +437,10 @@ public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, Auto
             String normalizedPath = normalizeRequestPath(resourcePath);
             if (normalizedPath.isBlank()) {
                 return new ResourceResponse(404, CONTENT_TYPE_TEXT_PLAIN, EMPTY_BYTES);
+            }
+
+            if (normalizedPath.startsWith(ASSETS_PREFIX)) {
+                return loadClasspathResource(normalizedPath);
             }
 
             ResourceResponse fileSystemResponse = loadFileResource(mount.fileRoot(), normalizedPath);
