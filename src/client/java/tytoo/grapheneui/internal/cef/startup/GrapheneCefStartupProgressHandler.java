@@ -7,22 +7,20 @@ import java.util.Objects;
 
 public final class GrapheneCefStartupProgressHandler implements IProgressHandler {
     private final GrapheneNativeDownloadState downloadState;
-    private final Runnable downloadStartedAction;
+    private final Runnable progressAction;
     private boolean downloadStarted;
 
-    public GrapheneCefStartupProgressHandler(GrapheneNativeDownloadState downloadState, Runnable downloadStartedAction) {
+    public GrapheneCefStartupProgressHandler(GrapheneNativeDownloadState downloadState, Runnable progressAction) {
         this.downloadState = Objects.requireNonNull(downloadState, "downloadState");
-        this.downloadStartedAction = Objects.requireNonNull(downloadStartedAction, "downloadStartedAction");
+        this.progressAction = Objects.requireNonNull(progressAction, "progressAction");
     }
 
     @Override
     public void handleProgress(EnumProgress state, float percent) {
         if (state == EnumProgress.DOWNLOADING) {
             downloadState.beginDownload(percent);
-            if (!downloadStarted) {
-                downloadStarted = true;
-                downloadStartedAction.run();
-            }
+            downloadStarted = true;
+            progressAction.run();
             return;
         }
 
@@ -35,6 +33,7 @@ public final class GrapheneCefStartupProgressHandler implements IProgressHandler
                 || state == EnumProgress.INITIALIZING
                 || state == EnumProgress.INITIALIZED) {
             downloadState.markPostDownloadWork();
+            progressAction.run();
         }
     }
 }
