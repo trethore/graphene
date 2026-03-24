@@ -103,10 +103,6 @@ public final class GrapheneCore implements ClientModInitializer {
         return SERVICES.runtime();
     }
 
-    static synchronized void start() {
-        ensureInitialized();
-    }
-
     private static synchronized void startIfConsumersRegistered() {
         if (registrationClosed) {
             return;
@@ -118,7 +114,7 @@ public final class GrapheneCore implements ClientModInitializer {
             return;
         }
 
-        start();
+        SERVICES.runtimeInternal().initializeAsync(mergeGlobalConfig(), snapshotContainerConfigs());
     }
 
     private static void ensureRegistrationOpen() {
