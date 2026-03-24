@@ -11,10 +11,10 @@ import tytoo.grapheneui.internal.mc.McClient;
 import java.util.Objects;
 
 public final class GrapheneNativeDownloadOverlay extends Overlay {
-    private static final int BACKGROUND_COLOR = ARGB.color(224, 10, 10, 14);
+    private static final int BACKGROUND_COLOR = ARGB.color(128, 34, 34, 34);
     private static final int BAR_OUTLINE_COLOR = ARGB.color(255, 64, 64, 74);
     private static final int BAR_BACKGROUND_COLOR = ARGB.color(255, 24, 24, 30);
-    private static final int BAR_FILL_COLOR = ARGB.color(255, 88, 166, 255);
+    private static final int BAR_FILL_COLOR = ARGB.color(255, 76, 175, 80);
     private static final int TITLE_COLOR = ARGB.color(255, 255, 255, 255);
     private static final int BAR_WIDTH = 240;
     private static final int BAR_HEIGHT = 14;
