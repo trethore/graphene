@@ -74,6 +74,10 @@ public final class GrapheneCefInstaller {
         return cefAppBuilder;
     }
 
+    public static String currentPlatformIdentifier() {
+        return resolvePlatformIdentifier();
+    }
+
     private static Path resolveInstallPath(GrapheneGlobalConfig config) {
         Path basePath = config.resolvedJcefDownloadPath().toAbsolutePath().normalize();
         String jcefMavenVersion = resolveJcefMavenVersion();

@@ -1,0 +1,76 @@
+package tytoo.grapheneui.internal.cef.startup;
+
+import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Overlay;
+import net.minecraft.network.chat.Component;
+import net.minecraft.util.ARGB;
+import org.jspecify.annotations.NonNull;
+import tytoo.grapheneui.internal.mc.McClient;
+
+import java.util.Objects;
+
+public final class GrapheneNativeDownloadOverlay extends Overlay {
+    private static final int BACKGROUND_COLOR = ARGB.color(224, 10, 10, 14);
+    private static final int BAR_OUTLINE_COLOR = ARGB.color(255, 64, 64, 74);
+    private static final int BAR_BACKGROUND_COLOR = ARGB.color(255, 24, 24, 30);
+    private static final int BAR_FILL_COLOR = ARGB.color(255, 88, 166, 255);
+    private static final int TITLE_COLOR = ARGB.color(255, 255, 255, 255);
+    private static final int BAR_WIDTH = 240;
+    private static final int BAR_HEIGHT = 14;
+    private static final int TITLE_MARGIN = 18;
+
+    private final GrapheneNativeDownloadState state;
+
+    public GrapheneNativeDownloadOverlay(GrapheneNativeDownloadState state) {
+        this.state = Objects.requireNonNull(state, "state");
+    }
+
+    @Override
+    public void render(@NonNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        if (!state.isActive()) {
+            return;
+        }
+
+        int width = guiGraphics.guiWidth();
+        int height = guiGraphics.guiHeight();
+        int barLeft = width / 2 - BAR_WIDTH / 2;
+        int barTop = height / 2;
+        int filledWidth = Math.round((BAR_WIDTH - 2) * state.progress());
+        Font font = McClient.mc().font;
+        Component title = Component.literal("Graphene: downloading natives for " + state.platformIdentifier());
+
+        guiGraphics.fill(0, 0, width, height, BACKGROUND_COLOR);
+        guiGraphics.drawCenteredString(
+                font,
+                title,
+                width / 2,
+                barTop - TITLE_MARGIN - font.lineHeight,
+                TITLE_COLOR
+        );
+        guiGraphics.fill(barLeft, barTop, barLeft + BAR_WIDTH, barTop + BAR_HEIGHT, BAR_OUTLINE_COLOR);
+        guiGraphics.fill(
+                barLeft + 1,
+                barTop + 1,
+                barLeft + BAR_WIDTH - 1,
+                barTop + BAR_HEIGHT - 1,
+                BAR_BACKGROUND_COLOR
+        );
+        if (filledWidth > 0) {
+            guiGraphics.fill(
+                    barLeft + 1,
+                    barTop + 1,
+                    barLeft + 1 + filledWidth,
+                    barTop + BAR_HEIGHT - 1,
+                    BAR_FILL_COLOR
+            );
+        }
+    }
+
+    @Override
+    public void tick() {
+        if (!state.isActive() && McClient.currentOverlay() == this) {
+            McClient.setOverlay(null);
+        }
+    }
+}

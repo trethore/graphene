@@ -1,6 +1,7 @@
 package tytoo.grapheneui.internal.mc;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Overlay;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.Identifier;
@@ -56,6 +57,14 @@ public final class McClient {
 
     public static void setScreen(Screen screen) {
         mc().setScreen(screen);
+    }
+
+    public static Overlay currentOverlay() {
+        return mc().getOverlay();
+    }
+
+    public static void setOverlay(Overlay overlay) {
+        mc().setOverlay(overlay);
     }
 
     public static int windowWidth() {
