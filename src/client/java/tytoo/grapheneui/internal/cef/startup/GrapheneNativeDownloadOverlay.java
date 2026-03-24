@@ -12,13 +12,15 @@ import tytoo.grapheneui.internal.mc.McClient;
 import java.util.Objects;
 
 public final class GrapheneNativeDownloadOverlay extends Overlay {
-    private static final int BACKGROUND_COLOR = ARGB.color(128, 34, 34, 34);
-    private static final int BAR_OUTLINE_COLOR = ARGB.color(255, 64, 64, 74);
-    private static final int BAR_BACKGROUND_COLOR = ARGB.color(255, 24, 24, 30);
-    private static final int BAR_FILL_COLOR = ARGB.color(255, 76, 175, 80);
-    private static final int TITLE_COLOR = ARGB.color(255, 255, 255, 255);
+    private static final int FULL_OPACITY = 255;
+    private static final int BACKGROUND_COLOR = ARGB.color(200, 34, 34, 34);
+    private static final int BAR_OUTLINE_COLOR = ARGB.color(FULL_OPACITY, 64, 64, 74);
+    private static final int BAR_BACKGROUND_COLOR = ARGB.color(FULL_OPACITY, 24, 24, 30);
+    private static final int BAR_FILL_COLOR = ARGB.color(FULL_OPACITY, 76, 175, 80);
+    private static final int TITLE_COLOR = ARGB.color(FULL_OPACITY, 255, 255, 255);
     private static final int BAR_WIDTH = 240;
     private static final int BAR_HEIGHT = 14;
+    private static final int BORDER_WIDTH = 1;
     private static final int TITLE_MARGIN = 18;
 
     private final GrapheneNativeDownloadState state;
@@ -42,7 +44,7 @@ public final class GrapheneNativeDownloadOverlay extends Overlay {
         int height = guiGraphics.guiHeight();
         int barLeft = width / 2 - BAR_WIDTH / 2;
         int barTop = height / 2;
-        int filledWidth = Math.round((BAR_WIDTH - 2) * state.progress());
+        int filledWidth = Math.round((BAR_WIDTH - BORDER_WIDTH * 2) * state.progress());
         Font font = McClient.mc().font;
         Component title = Component.literal("Graphene: downloading natives for " + state.platformIdentifier());
 
@@ -57,18 +59,18 @@ public final class GrapheneNativeDownloadOverlay extends Overlay {
         );
         guiGraphics.fill(barLeft, barTop, barLeft + BAR_WIDTH, barTop + BAR_HEIGHT, BAR_OUTLINE_COLOR);
         guiGraphics.fill(
-                barLeft + 1,
-                barTop + 1,
-                barLeft + BAR_WIDTH - 1,
-                barTop + BAR_HEIGHT - 1,
+                barLeft + BORDER_WIDTH,
+                barTop + BORDER_WIDTH,
+                barLeft + BAR_WIDTH - BORDER_WIDTH,
+                barTop + BAR_HEIGHT - BORDER_WIDTH,
                 BAR_BACKGROUND_COLOR
         );
         if (filledWidth > 0) {
             guiGraphics.fill(
-                    barLeft + 1,
-                    barTop + 1,
-                    barLeft + 1 + filledWidth,
-                    barTop + BAR_HEIGHT - 1,
+                    barLeft + BORDER_WIDTH,
+                    barTop + BORDER_WIDTH,
+                    barLeft + BORDER_WIDTH + filledWidth,
+                    barTop + BAR_HEIGHT - BORDER_WIDTH,
                     BAR_FILL_COLOR
             );
         }
