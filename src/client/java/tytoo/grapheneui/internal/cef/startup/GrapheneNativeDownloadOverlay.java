@@ -40,7 +40,8 @@ public final class GrapheneNativeDownloadOverlay extends Overlay {
         Font font = McClient.mc().font;
         Component title = Component.literal("Graphene: downloading natives for " + state.platformIdentifier());
 
-        guiGraphics.fill(0, 0, width, height, BACKGROUND_COLOR);
+        guiGraphics.nextStratum();
+        guiGraphics.fillGradient(0, 0, width, height, BACKGROUND_COLOR, BACKGROUND_COLOR);
         guiGraphics.drawCenteredString(
                 font,
                 title,
