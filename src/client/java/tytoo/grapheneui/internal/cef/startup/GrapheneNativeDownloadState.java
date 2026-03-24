@@ -10,7 +10,8 @@ public final class GrapheneNativeDownloadState {
     private volatile float progress;
 
     public GrapheneNativeDownloadState(String platformIdentifier) {
-        this.platformIdentifier = Objects.requireNonNull(platformIdentifier, "platformIdentifier").trim();
+        String trimmed = Objects.requireNonNull(platformIdentifier, "platformIdentifier").trim();
+        this.platformIdentifier = trimmed.isEmpty() ? "unknown" : trimmed;
     }
 
     public String platformIdentifier() {

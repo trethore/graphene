@@ -21,8 +21,8 @@ public final class GrapheneCefStartupProgressHandler implements IProgressHandler
             downloadState.beginDownload(percent);
             if (!downloadStarted) {
                 downloadStarted = true;
+                downloadStartedAction.run();
             }
-            downloadStartedAction.run();
             return;
         }
 
