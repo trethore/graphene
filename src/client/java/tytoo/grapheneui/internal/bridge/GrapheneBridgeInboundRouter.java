@@ -42,17 +42,12 @@ final class GrapheneBridgeInboundRouter {
         }
 
         DEBUG_LOGGER.debug(
-                "Routing inbound bridge packet kind={} id={} channel={} version={}",
+                "Routing inbound bridge packet kind={} id={} channel={} VERSION={}",
                 packet.kind,
                 packet.id,
                 packet.channel,
-                packet.version
+                GrapheneBridgeProtocol.VERSION
         );
-
-        if (packet.version != GrapheneBridgeProtocol.VERSION) {
-            callback.failure(422, "Unsupported bridge protocol version: " + packet.version);
-            return true;
-        }
 
         if (packet.kind == null || packet.kind.isBlank()) {
             callback.failure(400, "Bridge message is missing kind");

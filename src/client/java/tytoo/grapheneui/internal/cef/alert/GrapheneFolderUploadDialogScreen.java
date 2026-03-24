@@ -107,11 +107,6 @@ final class GrapheneFolderUploadDialogScreen extends Screen {
     }
 
     @Override
-    public boolean shouldCloseOnEsc() {
-        return true;
-    }
-
-    @Override
     public void onClose() {
         complete(false);
     }
