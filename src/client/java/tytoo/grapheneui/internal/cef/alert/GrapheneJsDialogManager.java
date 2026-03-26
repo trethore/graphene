@@ -15,6 +15,7 @@ import java.util.Deque;
 public final class GrapheneJsDialogManager {
     private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneJsDialogManager.class);
     private static final GrapheneDebugLogger DEBUG_LOGGER = GrapheneDebugLogger.of(GrapheneJsDialogManager.class);
+    private static final String EMPTY_VALUE = "";
 
     private final Object lock = new Object();
     private final Deque<GrapheneJsDialogRequest> pendingDialogs = new ArrayDeque<>();
@@ -28,7 +29,7 @@ public final class GrapheneJsDialogManager {
             String defaultPromptText,
             CefJSDialogCallback callback
     ) {
-        GrapheneJsDialogRequest request = new GrapheneJsDialogRequest(
+        GrapheneJsDialogRequest request = GrapheneJsDialogRequest.jsDialog(
                 browser,
                 originUrl,
                 dialogType,
@@ -37,6 +38,28 @@ public final class GrapheneJsDialogManager {
                 callback
         );
 
+        enqueueRequest(request, originUrl);
+    }
+
+    public void enqueueBeforeUnloadDialog(
+            CefBrowser browser,
+            String messageText,
+            boolean isReload,
+            CefJSDialogCallback callback
+    ) {
+        GrapheneJsDialogRequest request = GrapheneJsDialogRequest.beforeUnloadDialog(browser, messageText, isReload, callback);
+        enqueueRequest(request, isReload ? "reload" : "unload");
+    }
+
+    public void resetDialogState(CefBrowser browser) {
+        cancelDialogs(browser, "reset");
+    }
+
+    public void onDialogClosed(CefBrowser browser) {
+        cancelDialogs(browser, "closed");
+    }
+
+    private void enqueueRequest(GrapheneJsDialogRequest request, String context) {
         boolean shouldOpen;
         synchronized (lock) {
             pendingDialogs.addLast(request);
@@ -46,9 +69,9 @@ public final class GrapheneJsDialogManager {
             }
 
             DEBUG_LOGGER.debug(
-                    "Queued JS dialog type={} origin={} pending={} shouldOpen={}",
-                    dialogType,
-                    originUrl,
+                    "Queued JS dialog type={} context={} pending={} shouldOpen={}",
+                    request.logType(),
+                    context,
                     pendingDialogs.size(),
                     shouldOpen
             );
@@ -90,20 +113,6 @@ public final class GrapheneJsDialogManager {
             return;
         }
 
-        boolean normalizedAccepted = request.normalizeAccepted(accepted);
-        String normalizedValue = request.normalizeValue(normalizedAccepted, value);
-
-        try {
-            request.callback().Continue(normalizedAccepted, normalizedValue);
-        } catch (RuntimeException exception) {
-            LOGGER.error(
-                    "Failed to continue JavaScript dialog callback for {} ({})",
-                    request.originUrl(),
-                    request.browser(),
-                    exception
-            );
-        }
-
         boolean hasMore;
         synchronized (lock) {
             GrapheneJsDialogRequest current = pendingDialogs.peekFirst();
@@ -118,8 +127,8 @@ public final class GrapheneJsDialogManager {
 
             DEBUG_LOGGER.debug(
                     "Resolved JS dialog type={} accepted={} pending={} hasMore={}",
-                    request.dialogType(),
-                    normalizedAccepted,
+                    request.logType(),
+                    request.normalizeAccepted(accepted),
                     pendingDialogs.size(),
                     hasMore
             );
@@ -129,8 +138,82 @@ public final class GrapheneJsDialogManager {
             McClient.setScreen(screen.returnScreen());
         }
 
+        continueRequest(request, accepted, value);
+
         if (hasMore) {
             McClient.execute(this::displayNextDialogOnClientThread);
         }
+    }
+
+    private void cancelDialogs(CefBrowser browser, String reason) {
+        boolean activeDialogRemoved;
+        boolean hasMore;
+        Deque<GrapheneJsDialogRequest> requestsToCancel = new ArrayDeque<>();
+        synchronized (lock) {
+            GrapheneJsDialogRequest activeDialog = pendingDialogs.peekFirst();
+            activeDialogRemoved = activeDialog != null && matchesBrowser(activeDialog, browser);
+
+            pendingDialogs.removeIf(request -> {
+                if (!matchesBrowser(request, browser)) {
+                    return false;
+                }
+
+                requestsToCancel.addLast(request);
+                return true;
+            });
+
+            hasMore = !pendingDialogs.isEmpty();
+            if (activeDialogRemoved) {
+                dialogVisible = hasMore;
+            }
+        }
+
+        if (requestsToCancel.isEmpty()) {
+            return;
+        }
+
+        for (GrapheneJsDialogRequest request : requestsToCancel) {
+            if (!request.tryResolve()) {
+                continue;
+            }
+
+            continueRequest(request, false, EMPTY_VALUE);
+            DEBUG_LOGGER.debug("Canceled JS dialog type={} reason={}", request.logType(), reason);
+        }
+
+        if (!activeDialogRemoved) {
+            return;
+        }
+
+        McClient.execute(() -> {
+            Screen currentScreen = McClient.currentScreen();
+            if (currentScreen instanceof GrapheneJsDialogScreen dialogScreen && matchesBrowser(dialogScreen.request(), browser)) {
+                McClient.setScreen(dialogScreen.returnScreen());
+            }
+
+            if (hasMore) {
+                displayNextDialogOnClientThread();
+            }
+        });
+    }
+
+    private void continueRequest(GrapheneJsDialogRequest request, boolean accepted, String value) {
+        boolean normalizedAccepted = request.normalizeAccepted(accepted);
+        String normalizedValue = request.normalizeValue(normalizedAccepted, value);
+
+        try {
+            request.callback().Continue(normalizedAccepted, normalizedValue);
+        } catch (RuntimeException exception) {
+            LOGGER.error(
+                    "Failed to continue JavaScript dialog callback for {} ({})",
+                    request.originUrl(),
+                    request.browser(),
+                    exception
+            );
+        }
+    }
+
+    private boolean matchesBrowser(GrapheneJsDialogRequest request, CefBrowser browser) {
+        return request.browser() == browser;
     }
 }

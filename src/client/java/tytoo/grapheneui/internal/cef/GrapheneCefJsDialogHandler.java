@@ -46,4 +46,38 @@ final class GrapheneCefJsDialogHandler extends CefJSDialogHandlerAdapter {
         dialogManager.enqueueDialog(browser, originUrl, dialogType, messageText, defaultPromptText, callback);
         return true;
     }
+
+    @Override
+    public boolean onBeforeUnloadDialog(CefBrowser browser, String messageText, boolean isReload, CefJSDialogCallback callback) {
+        if (browser == null) {
+            LOGGER.warn("Cannot handle before-unload dialog without browser (reload={})", isReload);
+            return false;
+        }
+
+        if (callback == null) {
+            LOGGER.warn("Suppressed before-unload dialog without callback (reload={})", isReload);
+            return true;
+        }
+
+        dialogManager.enqueueBeforeUnloadDialog(browser, messageText, isReload, callback);
+        return true;
+    }
+
+    @Override
+    public void onResetDialogState(CefBrowser browser) {
+        if (browser == null) {
+            return;
+        }
+
+        dialogManager.resetDialogState(browser);
+    }
+
+    @Override
+    public void onDialogClosed(CefBrowser browser) {
+        if (browser == null) {
+            return;
+        }
+
+        dialogManager.onDialogClosed(browser);
+    }
 }

@@ -11,9 +11,7 @@ import tytoo.grapheneui.api.GrapheneCore;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 final class GrapheneCefDownloadHandler extends CefDownloadHandlerAdapter {
@@ -25,6 +23,7 @@ final class GrapheneCefDownloadHandler extends CefDownloadHandlerAdapter {
             GrapheneCore.ID
     );
 
+    private final Object activeDownloadsLock = new Object();
     private final Map<Integer, Path> activeDownloads = new ConcurrentHashMap<>();
 
     private static String downloadUrl(CefDownloadItem downloadItem) {
@@ -85,8 +84,9 @@ final class GrapheneCefDownloadHandler extends CefDownloadHandlerAdapter {
         }
     }
 
-    private static Path uniqueDownloadPath(Path downloadDirectory, String fileName) {
+    static Path uniqueDownloadPath(Path downloadDirectory, String fileName, Set<Path> reservedPaths) {
         Objects.requireNonNull(downloadDirectory, "downloadDirectory");
+        Objects.requireNonNull(reservedPaths, "reservedPaths");
         String normalizedName = sanitizeFileName(fileName);
 
         int extensionIndex = normalizedName.lastIndexOf('.');
@@ -95,7 +95,7 @@ final class GrapheneCefDownloadHandler extends CefDownloadHandlerAdapter {
 
         Path candidate = downloadDirectory.resolve(normalizedName);
         int suffix = 1;
-        while (Files.exists(candidate)) {
+        while (Files.exists(candidate) || reservedPaths.contains(candidate)) {
             candidate = downloadDirectory.resolve(baseName + " (" + suffix + ")" + extension);
             suffix++;
         }
@@ -119,10 +119,14 @@ final class GrapheneCefDownloadHandler extends CefDownloadHandlerAdapter {
 
         Path downloadDirectory = ensureDownloadDirectory();
         String fileName = firstNonBlank(suggestedName, downloadItem == null ? null : downloadItem.getSuggestedFileName());
-        Path targetPath = uniqueDownloadPath(downloadDirectory, fileName).toAbsolutePath().normalize();
+        Path targetPath;
+        synchronized (activeDownloadsLock) {
+            Set<Path> reservedPaths = new HashSet<>(activeDownloads.values());
+            targetPath = uniqueDownloadPath(downloadDirectory, fileName, reservedPaths).toAbsolutePath().normalize();
 
-        if (downloadItem != null) {
-            activeDownloads.put(downloadItem.getId(), targetPath);
+            if (downloadItem != null) {
+                activeDownloads.put(downloadItem.getId(), targetPath);
+            }
         }
         callback.Continue(targetPath.toString(), false);
         if (LOGGER.isInfoEnabled()) {
@@ -142,7 +146,10 @@ final class GrapheneCefDownloadHandler extends CefDownloadHandlerAdapter {
         }
 
         int downloadId = downloadItem.getId();
-        Path expectedPath = activeDownloads.remove(downloadId);
+        Path expectedPath;
+        synchronized (activeDownloadsLock) {
+            expectedPath = activeDownloads.remove(downloadId);
+        }
         String resolvedPath = expectedPath == null ? downloadItem.getFullPath() : expectedPath.toString();
         if (downloadItem.isComplete()) {
             if (LOGGER.isInfoEnabled()) {

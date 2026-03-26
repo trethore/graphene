@@ -278,7 +278,8 @@ val unpackSources by tasks.registering(UnpackSourcesTask::class) {
 	sourceDeps.from(configurations.named("sourceDeps"))
 	gitRepos.set(
 		listOf(
-			"https://github.com/trethore/jcef#master"
+			"https://github.com/trethore/jcef#master",
+			"https://github.com/chromiumembedded/cef"
 		)
 	)
 	outputDir.set(unpackedSourcesDir)

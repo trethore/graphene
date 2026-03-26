@@ -17,7 +17,7 @@ final class GrapheneCefLifeSpanHandler extends CefLifeSpanHandlerAdapter {
 
         if (targetUrl == null || targetUrl.isBlank()) {
             DEBUG_LOGGER.debug("Blocked popup without target URL");
-            return false;
+            return true;
         }
 
         McClient.runOnMainThread(() -> browser.loadURL(targetUrl));

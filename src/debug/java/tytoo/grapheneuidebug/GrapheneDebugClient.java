@@ -12,6 +12,17 @@ public class GrapheneDebugClient implements ClientModInitializer {
     public static final String ID = "graphene-ui-debug";
     private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneDebugClient.class);
 
+    private static void registerHandle() {
+        GrapheneCore.register(
+                GrapheneDebugClient.class,
+                GrapheneConfig.builder()
+                        .global(GrapheneGlobalConfig.builder()
+                                .allowFileSystemAccess()
+                                .build())
+                        .build()
+        );
+    }
+
     /* Debug entry point for testing purposes. */
     @Override
     public void onInitializeClient() {
@@ -22,16 +33,5 @@ public class GrapheneDebugClient implements ClientModInitializer {
             LOGGER.info("Graphene debug selector enabled: {}", debugSelector);
         }
         LOGGER.info("Graphene debug client initialized");
-    }
-
-    private static void registerHandle() {
-        GrapheneCore.register(
-                GrapheneDebugClient.class,
-                GrapheneConfig.builder()
-                        .global(GrapheneGlobalConfig.builder()
-                                .allowFileSystemAccess()
-                                .build())
-                        .build()
-        );
     }
 }

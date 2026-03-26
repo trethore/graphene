@@ -8,7 +8,6 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import org.cef.handler.CefJSDialogHandler;
 import org.jspecify.annotations.NonNull;
 
 final class GrapheneJsDialogScreen extends Screen {
@@ -26,7 +25,6 @@ final class GrapheneJsDialogScreen extends Screen {
     private static final Component ALERT_TITLE = Component.literal("JavaScript Alert");
     private static final Component CONFIRM_TITLE = Component.literal("JavaScript Confirm");
     private static final Component PROMPT_TITLE = Component.literal("JavaScript Prompt");
-    private static final Component DIALOG_TITLE = Component.literal("JavaScript Dialog");
 
     private final GrapheneJsDialogRequest request;
     private final Screen returnScreen;
@@ -40,26 +38,19 @@ final class GrapheneJsDialogScreen extends Screen {
             Screen returnScreen,
             GrapheneJsDialogCompletionHandler completionHandler
     ) {
-        super(titleFor(request.dialogType()));
+        super(titleFor(request));
         this.request = request;
         this.returnScreen = returnScreen;
         this.completionHandler = completionHandler;
     }
 
-    private static Component titleFor(CefJSDialogHandler.JSDialogType dialogType) {
-        if (dialogType == CefJSDialogHandler.JSDialogType.JSDIALOGTYPE_ALERT) {
-            return ALERT_TITLE;
-        }
-
-        if (dialogType == CefJSDialogHandler.JSDialogType.JSDIALOGTYPE_CONFIRM) {
-            return CONFIRM_TITLE;
-        }
-
-        if (dialogType == CefJSDialogHandler.JSDialogType.JSDIALOGTYPE_PROMPT) {
-            return PROMPT_TITLE;
-        }
-
-        return DIALOG_TITLE;
+    private static Component titleFor(GrapheneJsDialogRequest request) {
+        return switch (request.dialogKind()) {
+            case ALERT -> ALERT_TITLE;
+            case CONFIRM -> CONFIRM_TITLE;
+            case PROMPT -> PROMPT_TITLE;
+            case BEFORE_UNLOAD -> Component.literal("Leave Page?");
+        };
     }
 
     @Override
@@ -169,11 +160,11 @@ final class GrapheneJsDialogScreen extends Screen {
     }
 
     private boolean isAlertDialog() {
-        return request.dialogType() == CefJSDialogHandler.JSDialogType.JSDIALOGTYPE_ALERT;
+        return request.dialogKind() == GrapheneJsDialogRequest.DialogKind.ALERT;
     }
 
     private boolean isPromptDialog() {
-        return request.dialogType() == CefJSDialogHandler.JSDialogType.JSDIALOGTYPE_PROMPT;
+        return request.dialogKind() == GrapheneJsDialogRequest.DialogKind.PROMPT;
     }
 
     private boolean defaultAcceptedResult() {
