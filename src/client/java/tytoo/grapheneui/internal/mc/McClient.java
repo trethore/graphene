@@ -5,6 +5,11 @@ import net.minecraft.client.gui.screens.Overlay;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.resources.Identifier;
+import org.lwjgl.glfw.GLFWNativeCocoa;
+import org.lwjgl.glfw.GLFWNativeWin32;
+import org.lwjgl.glfw.GLFWNativeX11;
+import tytoo.grapheneui.internal.logging.GrapheneDebugLogger;
+import tytoo.grapheneui.internal.platform.GraphenePlatform;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -12,6 +17,9 @@ import java.util.function.Supplier;
 
 @SuppressWarnings({"resource", "java:S2095", "unused"})
 public final class McClient {
+    private static final long NO_WINDOW_HANDLE = 0L;
+    private static final GrapheneDebugLogger DEBUG_LOGGER = GrapheneDebugLogger.of(McClient.class);
+
     private McClient() {
     }
 
@@ -81,6 +89,32 @@ public final class McClient {
 
     public static int guiScaledHeight() {
         return mc().getWindow().getGuiScaledHeight();
+    }
+
+    public static long nativeWindowHandle() {
+        long glfwWindowHandle = mc().getWindow().handle();
+
+        try {
+            if (GraphenePlatform.isWindows()) {
+                return GLFWNativeWin32.glfwGetWin32Window(glfwWindowHandle);
+            }
+
+            if (GraphenePlatform.isMac()) {
+                return GLFWNativeCocoa.glfwGetCocoaWindow(glfwWindowHandle);
+            }
+
+            if (GraphenePlatform.isLinux()) {
+                return GLFWNativeX11.glfwGetX11Window(glfwWindowHandle);
+            }
+        } catch (RuntimeException | UnsatisfiedLinkError exception) {
+            DEBUG_LOGGER.debugIfEnabled(logger -> logger.debug(
+                    "Failed to resolve native platform window handle from GLFW window {}",
+                    glfwWindowHandle,
+                    exception
+            ));
+        }
+
+        return NO_WINDOW_HANDLE;
     }
 
     public static void registerTexture(Identifier textureId, DynamicTexture dynamicTexture) {
