@@ -17,6 +17,7 @@ import org.cef.input.CefMouseEvent;
 import org.cef.input.CefMouseWheelEvent;
 import tytoo.grapheneui.api.render.GrapheneRenderTarget;
 import tytoo.grapheneui.api.render.GrapheneRenderer;
+import tytoo.grapheneui.internal.mc.McClient;
 import tytoo.grapheneui.internal.render.GrapheneGuiRenderTarget;
 
 import java.awt.*;
@@ -27,7 +28,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public class GrapheneBrowser extends CefBrowserWindowless implements CefRenderHandler, AutoCloseable {
-    private static final long NO_WINDOW_HANDLE = 0L;
     private final GrapheneRenderer renderer;
     private final boolean transparent;
     private final GrapheneInputBridge inputBridge = new GrapheneInputBridge();
@@ -422,7 +422,7 @@ public class GrapheneBrowser extends CefBrowserWindowless implements CefRenderHa
         }
 
         if (getParentBrowser() == null) {
-            createBrowser(getClient(), NO_WINDOW_HANDLE, getUrl(), true, transparent, null, getRequestContext());
+            createBrowser(getClient(), McClient.nativeWindowHandle(), getUrl(), true, transparent, null, getRequestContext());
         }
     }
 

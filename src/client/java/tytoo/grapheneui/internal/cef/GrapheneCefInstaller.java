@@ -6,6 +6,7 @@ import com.google.gson.JsonParseException;
 import io.github.trethore.jcefgithub.CefAppBuilder;
 import io.github.trethore.jcefgithub.EnumPlatform;
 import io.github.trethore.jcefgithub.UnsupportedPlatformException;
+import org.cef.CefSettings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tytoo.grapheneui.api.config.GrapheneGlobalConfig;
@@ -62,12 +63,15 @@ public final class GrapheneCefInstaller {
             throw new IllegalStateException("Failed to create Graphene CEF cache directory", exception);
         }
 
+        cefAppBuilder.getCefSettings().log_file = installPath.resolve("logs.txt").toAbsolutePath().toString();
+        cefAppBuilder.getCefSettings().log_severity = CefSettings.LogSeverity.LOGSEVERITY_WARNING;
         cefAppBuilder.getCefSettings().windowless_rendering_enabled = true;
 
         DEBUG_LOGGER.debug(
-                "Configured CEF installDir={} cachePath={} remoteDebugPort={}",
+                "Configured CEF installDir={} cachePath={} logFile={} remoteDebugPort={}",
                 installDir.getAbsolutePath(),
                 cefAppBuilder.getCefSettings().cache_path,
+                cefAppBuilder.getCefSettings().log_file,
                 cefAppBuilder.getCefSettings().remote_debugging_port
         );
 
