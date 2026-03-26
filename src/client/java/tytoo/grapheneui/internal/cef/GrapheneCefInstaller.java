@@ -34,10 +34,6 @@ public final class GrapheneCefInstaller {
     private static final String JCEFGITHUB_BUILD_META_RESOURCE_PATH = "/jcefgithub_build_meta.json";
     private static final String JCEFGITHUB_VERSION_FIELD = "version";
 
-    private static final List<String> MIRRORS = List.of(
-            "https://github.com/trethore/jcefgithub/releases/download/{mvn_version}/jcef-natives-{platform}-{tag}.jar"
-    );
-
     private GrapheneCefInstaller() {
     }
 
@@ -49,7 +45,6 @@ public final class GrapheneCefInstaller {
         CefAppBuilder cefAppBuilder = new CefAppBuilder();
         cefAppBuilder.setInstallDir(installDir);
         configureRuntimePaths(cefAppBuilder, installDir);
-        cefAppBuilder.setMirrors(MIRRORS);
         configureExtensionLoading(cefAppBuilder, validatedConfig);
         configureRemoteDebugging(cefAppBuilder, validatedConfig);
         configurePlatformCompatibility(cefAppBuilder);
