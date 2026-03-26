@@ -49,7 +49,7 @@ final class GrapheneJsDialogScreen extends Screen {
             case ALERT -> ALERT_TITLE;
             case CONFIRM -> CONFIRM_TITLE;
             case PROMPT -> PROMPT_TITLE;
-            case BEFORE_UNLOAD -> Component.literal("Leave Page?");
+            case BEFORE_UNLOAD -> Component.literal("Confirm Page Navigation");
         };
     }
 
