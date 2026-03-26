@@ -104,21 +104,26 @@ final class GrapheneHttpServerRuntimeTest {
     }
 
     @Test
-    void mountedAssetsPathDoesNotOverrideClasspathAssets() throws IOException {
-        Path overridePath = tempDir.resolve("assets/graphene-ui/example.html");
-        Files.createDirectories(overridePath.getParent());
-        Files.writeString(overridePath, "<html><body>filesystem override</body></html>", StandardCharsets.UTF_8);
+    void mountedAssetsPathServesMountedFileSystemResourceBeforeSpaFallback() throws IOException {
+        Path stylesheetPath = tempDir.resolve("assets/index.css");
+        Files.createDirectories(stylesheetPath.getParent());
+        String stylesheetBody = "body { color: red; }";
+        Files.writeString(stylesheetPath, stylesheetBody, StandardCharsets.UTF_8);
+
+        Path fallbackPath = tempDir.resolve("index.html");
+        Files.writeString(fallbackPath, "<html><body>fallback</body></html>", StandardCharsets.UTF_8);
 
         GrapheneHttpConfig config = GrapheneHttpConfig.builder()
                 .randomPortInRange(30_000, 60_000)
                 .fileRoot(tempDir)
+                .spaFallback("/index.html")
                 .build();
 
         try (GrapheneHttpServerRuntime server = GrapheneHttpServerRuntime.start(Map.of("my-mod-id", config))) {
-            TestHttpResponse response = sendGet(server.baseUrl() + "/mods/my-mod-id/assets/graphene-ui/example.html");
+            TestHttpResponse response = sendGet(server.baseUrl() + "/mods/my-mod-id/assets/index.css");
 
             assertEquals(200, response.statusCode());
-            assertTrue(response.body().contains("<title>Graphene Widget Example</title>"));
+            assertEquals(stylesheetBody, response.body());
         }
     }
 

@@ -119,7 +119,6 @@ Important behavior:
   1. filesystem (`fileRoot/request-path`)
   2. classpath fallback under `assets/<mod-id>/<request-path>`
   3. optional SPA fallback
-- Requests under `/mods/<mod-id>/assets/...` are classpath-only and do not consult `fileRoot`.
 
 ## Recommendations
 

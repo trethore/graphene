@@ -439,10 +439,6 @@ public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, Auto
                 return new ResourceResponse(404, CONTENT_TYPE_TEXT_PLAIN, EMPTY_BYTES);
             }
 
-            if (normalizedPath.startsWith(ASSETS_PREFIX)) {
-                return loadClasspathResource(normalizedPath);
-            }
-
             ResourceResponse fileSystemResponse = loadFileResource(mount.fileRoot(), normalizedPath);
             if (fileSystemResponse.statusCode() != 404) {
                 return fileSystemResponse;
@@ -452,11 +448,24 @@ public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, Auto
         }
 
         private String toMountedClasspathPath(String modId, String normalizedPath) {
-            if (normalizedPath.startsWith(ASSETS_PREFIX)) {
-                return normalizedPath;
+            return ASSETS_PREFIX + modId + PATH_DELIMITER + normalizedPath;
+        }
+
+        private ResourceResponse loadSpaFallbackResource(String modId, HttpMount mount, String resourcePath) {
+            String normalizedPath = normalizeRequestPath(resourcePath);
+            if (normalizedPath.isBlank()) {
+                return new ResourceResponse(404, CONTENT_TYPE_TEXT_PLAIN, EMPTY_BYTES);
             }
 
-            return ASSETS_PREFIX + modId + PATH_DELIMITER + normalizedPath;
+            if (normalizedPath.startsWith(ASSETS_PREFIX)) {
+                return loadClasspathResource(normalizedPath);
+            }
+
+            if (normalizedPath.startsWith(MODS_PREFIX)) {
+                return loadResourceResponse(normalizedPath, false);
+            }
+
+            return loadMountedResource(modId, mount, normalizedPath);
         }
 
         @Override
@@ -481,7 +490,7 @@ public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, Auto
                 return directResponse;
             }
 
-            return loadMountedResource(modRequestPath.modId(), mount, spaFallbackResourcePath);
+            return loadSpaFallbackResource(modRequestPath.modId(), mount, spaFallbackResourcePath);
         }
 
         private ModRequestPath parseRequestPath(String requestPath) {
