@@ -9,6 +9,31 @@ final class GraphenePaintBuffer {
     private final MainFrameData mainFrameData = new MainFrameData();
     private final PopupFrameData popupFrameData = new PopupFrameData();
 
+    private static void copyBuffer(ByteBuffer sourceBuffer, ByteBuffer targetBuffer, int width, int height) {
+        int size = (width * height) << 2;
+        ByteBuffer sourceCopy = sourceBuffer.duplicate();
+        sourceCopy.position(0);
+        sourceCopy.limit(size);
+
+        targetBuffer.position(0);
+        targetBuffer.limit(size);
+        targetBuffer.put(sourceCopy);
+        targetBuffer.position(0);
+    }
+
+    private static Rectangle[] copyDirtyRects(Rectangle[] dirtyRects) {
+        if (dirtyRects == null || dirtyRects.length == 0) {
+            return dirtyRects;
+        }
+
+        Rectangle[] copy = new Rectangle[dirtyRects.length];
+        for (int index = 0; index < dirtyRects.length; index++) {
+            Rectangle rect = dirtyRects[index];
+            copy[index] = rect == null ? null : new Rectangle(rect);
+        }
+        return copy;
+    }
+
     void capture(boolean popup, Rectangle[] dirtyRects, ByteBuffer buffer, int width, int height) {
         if (popup) {
             capturePopup(buffer, width, height);
@@ -88,31 +113,6 @@ final class GraphenePaintBuffer {
         }
     }
 
-    private static void copyBuffer(ByteBuffer sourceBuffer, ByteBuffer targetBuffer, int width, int height) {
-        int size = (width * height) << 2;
-        ByteBuffer sourceCopy = sourceBuffer.duplicate();
-        sourceCopy.position(0);
-        sourceCopy.limit(size);
-
-        targetBuffer.position(0);
-        targetBuffer.limit(size);
-        targetBuffer.put(sourceCopy);
-        targetBuffer.position(0);
-    }
-
-    private static Rectangle[] copyDirtyRects(Rectangle[] dirtyRects) {
-        if (dirtyRects == null || dirtyRects.length == 0) {
-            return dirtyRects;
-        }
-
-        Rectangle[] copy = new Rectangle[dirtyRects.length];
-        for (int index = 0; index < dirtyRects.length; index++) {
-            Rectangle rect = dirtyRects[index];
-            copy[index] = rect == null ? null : new Rectangle(rect);
-        }
-        return copy;
-    }
-
     private FrameView createMainFrameView() {
         FrameSlot latestSlot = mainFrameData.latestSlot();
         if (latestSlot == null) {
@@ -152,6 +152,20 @@ final class GraphenePaintBuffer {
         );
     }
 
+    interface UploadView {
+        ByteBuffer buffer();
+
+        int width();
+
+        int height();
+
+        Rectangle[] dirtyRects();
+
+        boolean fullReRender();
+
+        long frameVersion();
+    }
+
     static final class Snapshot {
         private final FrameView mainFrame;
         private final PopupFrameView popupFrame;
@@ -168,20 +182,6 @@ final class GraphenePaintBuffer {
         public PopupFrameView popupFrame() {
             return popupFrame;
         }
-    }
-
-    interface UploadView {
-        ByteBuffer buffer();
-
-        int width();
-
-        int height();
-
-        Rectangle[] dirtyRects();
-
-        boolean fullReRender();
-
-        long frameVersion();
     }
 
     static final class FrameView implements UploadView {

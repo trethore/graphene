@@ -22,6 +22,23 @@ final class GrapheneBrowserFrameUploader {
         this.transparent = transparent;
     }
 
+    private static Rectangle clampDirtyRect(Rectangle dirtyRect, int frameWidth, int frameHeight) {
+        if (dirtyRect == null || dirtyRect.width <= 0 || dirtyRect.height <= 0) {
+            return null;
+        }
+
+        return GrapheneBrowserRenderBounds.intersect(
+                dirtyRect.x,
+                dirtyRect.y,
+                dirtyRect.width,
+                dirtyRect.height,
+                0,
+                0,
+                frameWidth,
+                frameHeight
+        );
+    }
+
     void uploadIfNeeded(GrapheneBrowserGpuTexture texture, GraphenePaintBuffer.UploadView frame) {
         if (texture.isUploaded(frame.frameVersion())) {
             return;
@@ -251,22 +268,5 @@ final class GrapheneBrowserFrameUploader {
         targetBuffer.put(green);
         targetBuffer.put(blue);
         targetBuffer.put(alpha);
-    }
-
-    private static Rectangle clampDirtyRect(Rectangle dirtyRect, int frameWidth, int frameHeight) {
-        if (dirtyRect == null || dirtyRect.width <= 0 || dirtyRect.height <= 0) {
-            return null;
-        }
-
-        return GrapheneBrowserRenderBounds.intersect(
-                dirtyRect.x,
-                dirtyRect.y,
-                dirtyRect.width,
-                dirtyRect.height,
-                0,
-                0,
-                frameWidth,
-                frameHeight
-        );
     }
 }
