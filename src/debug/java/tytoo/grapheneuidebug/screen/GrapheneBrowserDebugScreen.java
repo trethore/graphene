@@ -222,6 +222,8 @@ public final class GrapheneBrowserDebugScreen extends Screen {
         urlBox = addRenderableWidget(new EditBox(font, 168, controlsY, width - 176, controlHeight, Component.empty()));
         urlBox.setMaxLength(Integer.MAX_VALUE);
         urlBox.setValue(initialUrl);
+
+        webViewWidget.requestKeyboardFocus();
     }
 
     @Override

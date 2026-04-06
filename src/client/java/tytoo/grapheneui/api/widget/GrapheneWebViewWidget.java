@@ -117,6 +117,10 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
         surface.reload();
     }
 
+    public void requestKeyboardFocus() {
+        screen.setFocused(this);
+    }
+
     public String currentUrl() {
         return surface.currentUrl();
     }
@@ -173,7 +177,7 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
             return super.mouseClicked(mouseButtonEvent, isDoubleClick);
         }
 
-        setFocused(true);
+        requestKeyboardFocus();
         inputAdapter.mouseClicked(
                 mouseButtonEvent.button(),
                 isDoubleClick,
