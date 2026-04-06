@@ -118,6 +118,14 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
     }
 
     public void requestKeyboardFocus() {
+        // Screen#setFocused only updates the child when the focused widget changes.
+        // If this web view is already the screen's focused widget, clicking an input inside it
+        // still needs to reassert native CEF focus or some pages stop painting the caret.
+        if (screen.getFocused() == this) {
+            setFocused(true);
+            return;
+        }
+
         screen.setFocused(this);
     }
 
