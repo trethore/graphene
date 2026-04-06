@@ -7,14 +7,11 @@ import org.cef.CefClient;
 import org.cef.browser.CefRequestContext;
 import tytoo.grapheneui.api.GrapheneCore;
 import tytoo.grapheneui.api.bridge.GrapheneBridge;
-import tytoo.grapheneui.api.render.GrapheneRenderTarget;
-import tytoo.grapheneui.api.render.GrapheneRenderer;
 import tytoo.grapheneui.internal.browser.BrowserSurfaceLoadListenerScope;
 import tytoo.grapheneui.internal.browser.BrowserSurfaceSizingState;
 import tytoo.grapheneui.internal.browser.GrapheneBrowser;
 import tytoo.grapheneui.internal.core.GrapheneCoreServices;
 import tytoo.grapheneui.internal.mc.McWindowScale;
-import tytoo.grapheneui.internal.render.GrapheneLwjglRenderer;
 
 import java.awt.*;
 import java.util.Objects;
@@ -64,7 +61,6 @@ public final class BrowserSurface implements AutoCloseable {
         CefClient cefClient = builder.client != null ? builder.client : services.runtimeInternal().requireClient();
         CefRequestContext requestContext = builder.requestContext != null ? builder.requestContext : CefRequestContext.getGlobalContext();
         builder.requestContextCustomizer.accept(requestContext);
-        GrapheneRenderer renderer = builder.renderer != null ? builder.renderer : new GrapheneLwjglRenderer(builder.transparent);
         BrowserSurfaceConfig config = builder.config != null ? builder.config : BrowserSurfaceConfig.defaults();
 
         this.browser = new GrapheneBrowser(
@@ -72,7 +68,6 @@ public final class BrowserSurface implements AutoCloseable {
                 builder.url,
                 builder.transparent,
                 requestContext,
-                renderer,
                 config.toCefBrowserSettings()
         );
         this.bridge = services.runtimeInternal().attachBridge(this.browser);
@@ -228,14 +223,10 @@ public final class BrowserSurface implements AutoCloseable {
         render(guiGraphics, x, y, sizingState.surfaceWidth(), sizingState.surfaceHeight());
     }
 
-    public void render(GrapheneRenderTarget renderTarget, int x, int y) {
-        render(renderTarget, x, y, sizingState.surfaceWidth(), sizingState.surfaceHeight());
-    }
-
     public void render(GuiGraphics guiGraphics, int x, int y, int width, int height) {
         services.runtimeInternal().ensureBootstrap(browser);
-        browser.updateRendererFrame();
-        browser.renderTo(
+        browser.render(
+                guiGraphics,
                 x,
                 y,
                 width,
@@ -243,24 +234,7 @@ public final class BrowserSurface implements AutoCloseable {
                 sizingState.viewBoxX(),
                 sizingState.viewBoxY(),
                 sizingState.viewBoxWidth(),
-                sizingState.viewBoxHeight(),
-                guiGraphics
-        );
-    }
-
-    public void render(GrapheneRenderTarget renderTarget, int x, int y, int width, int height) {
-        services.runtimeInternal().ensureBootstrap(browser);
-        browser.updateRendererFrame();
-        browser.renderTo(
-                x,
-                y,
-                width,
-                height,
-                sizingState.viewBoxX(),
-                sizingState.viewBoxY(),
-                sizingState.viewBoxWidth(),
-                sizingState.viewBoxHeight(),
-                renderTarget
+                sizingState.viewBoxHeight()
         );
     }
 
@@ -313,7 +287,6 @@ public final class BrowserSurface implements AutoCloseable {
         private CefClient client;
         private CefRequestContext requestContext;
         private Consumer<CefRequestContext> requestContextCustomizer = NO_OP_REQUEST_CONTEXT_CUSTOMIZER;
-        private GrapheneRenderer renderer;
         private BrowserSurfaceConfig config = BrowserSurfaceConfig.defaults();
         private Object owner;
 
@@ -375,11 +348,6 @@ public final class BrowserSurface implements AutoCloseable {
             this.requestContextCustomizer = this.requestContextCustomizer.andThen(
                     Objects.requireNonNull(requestContextCustomizer, "requestContextCustomizer")
             );
-            return this;
-        }
-
-        public Builder renderer(GrapheneRenderer renderer) {
-            this.renderer = Objects.requireNonNull(renderer, "renderer");
             return this;
         }
 

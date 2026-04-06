@@ -15,10 +15,7 @@ import org.cef.handler.CefScreenInfo;
 import org.cef.input.CefKeyEvent;
 import org.cef.input.CefMouseEvent;
 import org.cef.input.CefMouseWheelEvent;
-import tytoo.grapheneui.api.render.GrapheneRenderTarget;
-import tytoo.grapheneui.api.render.GrapheneRenderer;
 import tytoo.grapheneui.internal.mc.McClient;
-import tytoo.grapheneui.internal.render.GrapheneGuiRenderTarget;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -28,7 +25,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public class GrapheneBrowser extends CefBrowserWindowless implements CefRenderHandler, AutoCloseable {
-    private final GrapheneRenderer renderer;
+    private final GrapheneBrowserGpuRenderer renderer;
     private final boolean transparent;
     private final GrapheneInputBridge inputBridge = new GrapheneInputBridge();
     private final GraphenePaintBuffer paintBuffer = new GraphenePaintBuffer();
@@ -44,8 +41,8 @@ public class GrapheneBrowser extends CefBrowserWindowless implements CefRenderHa
 
 
     @SuppressWarnings("unused") // Util constructor for simple browser creation with default settings.
-    public GrapheneBrowser(CefClient client, String url, boolean transparent, CefRequestContext context, GrapheneRenderer renderer) {
-        this(client, url, transparent, context, renderer, new CefBrowserSettings());
+    public GrapheneBrowser(CefClient client, String url, boolean transparent, CefRequestContext context) {
+        this(client, url, transparent, context, new CefBrowserSettings());
     }
 
     public GrapheneBrowser(
@@ -53,10 +50,9 @@ public class GrapheneBrowser extends CefBrowserWindowless implements CefRenderHa
             String url,
             boolean transparent,
             CefRequestContext context,
-            GrapheneRenderer renderer,
             CefBrowserSettings browserSettings
     ) {
-        this(client, url, transparent, context, renderer, browserSettings, null, null);
+        this(client, url, transparent, context, browserSettings, null, null);
     }
 
     private GrapheneBrowser(
@@ -64,14 +60,13 @@ public class GrapheneBrowser extends CefBrowserWindowless implements CefRenderHa
             String url,
             boolean transparent,
             CefRequestContext context,
-            GrapheneRenderer renderer,
             CefBrowserSettings browserSettings,
             CefBrowserWindowless parent,
             Point inspectAt
     ) {
         super(client, url, context, parent, inspectAt, Objects.requireNonNull(browserSettings, "browserSettings"));
         this.transparent = transparent;
-        this.renderer = renderer;
+        this.renderer = new GrapheneBrowserGpuRenderer(transparent);
     }
 
     private static int preferredDragOperation(int mask) {
@@ -99,7 +94,7 @@ public class GrapheneBrowser extends CefBrowserWindowless implements CefRenderHa
     @Override
     public synchronized void onBeforeClose() {
         super.onBeforeClose();
-        renderer.destroy();
+        renderer.close();
     }
 
     @Override
@@ -133,14 +128,14 @@ public class GrapheneBrowser extends CefBrowserWindowless implements CefRenderHa
     @Override
     public void onPopupShow(CefBrowser browser, boolean show) {
         if (!show) {
-            renderer.onPopupClosed();
+            paintBuffer.onPopupClosed();
             invalidate();
         }
     }
 
     @Override
     public void onPopupSize(CefBrowser browser, Rectangle size) {
-        renderer.onPopupSize(size);
+        paintBuffer.onPopupSize(size);
     }
 
     @Override
@@ -149,18 +144,18 @@ public class GrapheneBrowser extends CefBrowserWindowless implements CefRenderHa
     }
 
     @Override
-    public void addOnPaintListener(Consumer<CefPaintEvent> listener) {
-        // Not used by this browser implementation because rendering is pulled via updateRendererFrame().
+    public void addOnPaintListener(Consumer<CefPaintEvent> ignoredListener) {
+        // Graphene consumes paint frames directly in onPaint() and does not expose a secondary listener pipeline here.
     }
 
     @Override
-    public void setOnPaintListener(Consumer<CefPaintEvent> listener) {
-        // Not used by this browser implementation because rendering is pulled via updateRendererFrame().
+    public void setOnPaintListener(Consumer<CefPaintEvent> ignoredListener) {
+        // Graphene consumes paint frames directly in onPaint() and does not replace that flow with listener-based rendering.
     }
 
     @Override
-    public void removeOnPaintListener(Consumer<CefPaintEvent> listener) {
-        // Not used by this browser implementation because rendering is pulled via updateRendererFrame().
+    public void removeOnPaintListener(Consumer<CefPaintEvent> ignoredListener) {
+        // No listener state is stored because Graphene uses direct frame capture in onPaint().
     }
 
     @Override
@@ -191,8 +186,8 @@ public class GrapheneBrowser extends CefBrowserWindowless implements CefRenderHa
 
     // Note: in graphene we don't use nativeResolution
     @Override
-    public CompletableFuture<BufferedImage> createScreenshot(boolean nativeResolution) {
-        return renderer.createScreenshot();
+    public CompletableFuture<BufferedImage> createScreenshot(boolean ignoredNativeResolution) {
+        return renderer.createScreenshot(paintBuffer.snapshot());
     }
 
     @Override
@@ -208,7 +203,7 @@ public class GrapheneBrowser extends CefBrowserWindowless implements CefRenderHa
 
         cancelActiveDrag();
         closed = true;
-        renderer.destroy();
+        renderer.close();
         super.close(force);
     }
 
@@ -230,26 +225,14 @@ public class GrapheneBrowser extends CefBrowserWindowless implements CefRenderHa
                 url == null ? "about:blank" : url,
                 false,
                 context,
-                new NoopRenderer(),
                 new CefBrowserSettings(),
                 parent,
                 inspectAt
         );
     }
 
-    public void updateRendererFrame() {
-        paintBuffer.flushTo(renderer);
-    }
-
-    public void renderTo(int x, int y, int width, int height, GuiGraphics guiGraphics) {
-        renderer.render(GrapheneGuiRenderTarget.of(guiGraphics), x, y, width, height);
-    }
-
-    public void renderTo(int x, int y, int width, int height, GrapheneRenderTarget renderTarget) {
-        renderer.render(renderTarget, x, y, width, height);
-    }
-
-    public void renderTo(
+    public void render(
+            GuiGraphics guiGraphics,
             int x,
             int y,
             int width,
@@ -257,11 +240,11 @@ public class GrapheneBrowser extends CefBrowserWindowless implements CefRenderHa
             int sourceX,
             int sourceY,
             int sourceWidth,
-            int sourceHeight,
-            GuiGraphics guiGraphics
+            int sourceHeight
     ) {
-        renderer.renderRegion(
-                GrapheneGuiRenderTarget.of(guiGraphics),
+        renderer.render(
+                guiGraphics,
+                paintBuffer.snapshot(),
                 x,
                 y,
                 width,
@@ -271,20 +254,6 @@ public class GrapheneBrowser extends CefBrowserWindowless implements CefRenderHa
                 sourceWidth,
                 sourceHeight
         );
-    }
-
-    public void renderTo(
-            int x,
-            int y,
-            int width,
-            int height,
-            int sourceX,
-            int sourceY,
-            int sourceWidth,
-            int sourceHeight,
-            GrapheneRenderTarget renderTarget
-    ) {
-        renderer.renderRegion(renderTarget, x, y, width, height, sourceX, sourceY, sourceWidth, sourceHeight);
     }
 
     public void wasResizedTo(int width, int height) {
@@ -370,8 +339,8 @@ public class GrapheneBrowser extends CefBrowserWindowless implements CefRenderHa
         sendCefKeyEvent(event);
     }
 
-    public void onTitleChange(String title) {
-        renderer.onTitleChange(title);
+    public void onTitleChange(String ignoredTitle) {
+        // Title changes are currently not surfaced through Graphene's browser surface API.
     }
 
     public CursorType getRequestedCursor() {
@@ -449,35 +418,4 @@ public class GrapheneBrowser extends CefBrowserWindowless implements CefRenderHa
         dragTargetEntered = false;
     }
 
-    private static final class NoopRenderer implements GrapheneRenderer {
-        @Override
-        public void render(GrapheneRenderTarget renderTarget, int x, int y, int width, int height) {
-            // Intentionally empty: DevTools helper browser is not rendered in-game.
-        }
-
-        @Override
-        public void destroy() {
-            // Intentionally empty: no native resources are allocated by this renderer.
-        }
-
-        @Override
-        public void onPaint(boolean popup, Rectangle[] dirtyRects, ByteBuffer buffer, int width, int height, boolean completeReRender) {
-            // Intentionally empty: DevTools helper browser does not consume paint frames.
-        }
-
-        @Override
-        public void onPopupSize(Rectangle rect) {
-            // Intentionally empty: popup state is irrelevant for the DevTools helper browser.
-        }
-
-        @Override
-        public void onPopupClosed() {
-            // Intentionally empty: popup state is irrelevant for the DevTools helper browser.
-        }
-
-        @Override
-        public CompletableFuture<BufferedImage> createScreenshot() {
-            return CompletableFuture.failedFuture(new UnsupportedOperationException("Noop renderer"));
-        }
-    }
 }

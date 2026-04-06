@@ -13,7 +13,6 @@
 - `client(CefClient)` custom CEF client
 - `requestContext(CefRequestContext)` custom CEF request context
 - `requestContextCustomizer(Consumer<CefRequestContext>)` mutate context before use
-- `renderer(GrapheneRenderer)` custom renderer
 - `config(BrowserSurfaceConfig)` browser settings config
 - `maxFps(int)` convenience setter for windowless frame rate
 - `settingsCustomizer(Consumer<CefBrowserSettings>)` mutate low-level CEF settings
@@ -61,8 +60,7 @@ If you are not using `GrapheneWebViewWidget`, call `render(...)` every frame.
 surface.render(guiGraphics, x, y, width, height);
 ```
 
-Overloads are available for `GuiGraphics` and `GrapheneRenderTarget`.
-`render(...)` also triggers bridge bootstrap fallback checks and paint frame updates.
+`render(...)` also triggers bridge bootstrap fallback checks and submits the browser frame through Minecraft's GUI render pipeline.
 
 ## Navigation And State
 
