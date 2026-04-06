@@ -157,7 +157,7 @@ public final class GrapheneCefRuntime implements GrapheneRuntime {
     public CefClient requireClient() {
         synchronized (lock) {
             if (!initialized || cefClient == null) {
-                throw new IllegalStateException("Graphene is not initialized. Call GrapheneCore.register(anchorClass, config) first.");
+                throw new IllegalStateException("Graphene is not initialized. Call GrapheneCore.register(...) first.");
             }
 
             return cefClient;
@@ -171,7 +171,7 @@ public final class GrapheneCefRuntime implements GrapheneRuntime {
     public GrapheneBridge attachBridge(GrapheneBrowser browser) {
         synchronized (lock) {
             if (!initialized) {
-                throw new IllegalStateException("Graphene is not initialized. Call GrapheneCore.register(anchorClass, config) first.");
+                throw new IllegalStateException("Graphene is not initialized. Call GrapheneCore.register(...) first.");
             }
 
             GrapheneBridge bridge = bridgeRuntime.attach(browser);

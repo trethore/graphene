@@ -6,6 +6,7 @@ This page summarizes the current API shape and merge behavior.
 ## Registration Model
 
 Each consumer registers before first Graphene usage and can later resolve its scoped `GrapheneHandle` from the anchor class.
+Prefer the anchor-class form when possible, but explicit Fabric mod id registration is also supported for unusual project layouts.
 
 ```java
 GrapheneCore.register(
@@ -27,11 +28,21 @@ GrapheneCore.register(
 GrapheneHandle graphene = GrapheneCore.handle(MyModClient.class);
 ```
 
+Alternative registration form:
+
+```java
+GrapheneCore.register("my-mod-id", GrapheneConfig.defaults());
+GrapheneHandle graphene = GrapheneCore.handle("my-mod-id");
+```
+
 Entry points:
 
 - `GrapheneCore.register(Class<?> anchorClass)`
 - `GrapheneCore.register(Class<?> anchorClass, GrapheneConfig config)`
+- `GrapheneCore.register(String modId)`
+- `GrapheneCore.register(String modId, GrapheneConfig config)`
 - `GrapheneCore.handle(Class<?> anchorClass)`
+- `GrapheneCore.handle(String modId)`
 
 ## Config Split
 

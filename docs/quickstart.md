@@ -21,6 +21,14 @@ public final class MyModClient implements ClientModInitializer {
 For custom setup, use `GrapheneCore.register(MyModClient.class, GrapheneConfig)`.
 Later, access the scoped handle with `GrapheneCore.handle(MyModClient.class)`.
 
+Preferred usage is still the anchor-class form because it keeps registration and handle lookup tied to a real mod class.
+If a project has an unusual source-set or entrypoint layout, you can register explicitly by Fabric mod id instead:
+
+```java
+GrapheneCore.register("my-mod-id");
+GrapheneHandle graphene = GrapheneCore.handle("my-mod-id");
+```
+
 ## 2) Create A Screen With `GrapheneWebViewWidget`
 
 ```java
@@ -113,6 +121,8 @@ GrapheneConfig config = GrapheneConfig.builder()
         .build();
 
 GrapheneCore.register(MyModClient.class, config);
+// Alternative for unusual project layouts:
+// GrapheneCore.register("my-mod-id", config);
 ```
 
 Query runtime state:
@@ -143,6 +153,8 @@ GrapheneConfig config = GrapheneConfig.builder()
         .build();
 
 GrapheneCore.register(MyModClient.class, config);
+// Alternative for unusual project layouts:
+// GrapheneCore.register("my-mod-id", config);
 
 String classpathHttpUrl = GrapheneCore.handle(MyModClient.class).httpAssets().asset("web/index.html");
 String mountedHttpUrl = GrapheneCore.handle(MyModClient.class).httpUrl("web/index.html");

@@ -67,6 +67,16 @@ Trade-offs:
 Call `GrapheneCore.register(...)` once during client init.
 Later, access your scoped handle with `GrapheneCore.handle(MyModClient.class)`.
 
+Prefer the anchor-class form when possible:
+
+- `GrapheneCore.register(MyModClient.class)`
+- `GrapheneCore.handle(MyModClient.class)`
+
+If a project has an unusual source-set or entrypoint layout, you can register and resolve by explicit Fabric mod id instead:
+
+- `GrapheneCore.register("my-mod-id")`
+- `GrapheneCore.handle("my-mod-id")`
+
 ```java
 package com.example.mymod;
 

@@ -34,7 +34,7 @@ public final class GrapheneHttpUrls {
         GrapheneHttpServer server = GrapheneCore.runtime().httpServer();
         if (!server.isRunning()) {
             throw new IllegalStateException(
-                    "Graphene HTTP server is not running. Configure GrapheneContainerConfig.http(...) and register Graphene with GrapheneCore.register(anchorClass, config)."
+                    "Graphene HTTP server is not running. Configure GrapheneContainerConfig.http(...) and register Graphene with GrapheneCore.register(...)."
             );
         }
 

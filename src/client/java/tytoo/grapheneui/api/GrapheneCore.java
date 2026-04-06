@@ -19,12 +19,14 @@ import java.util.Objects;
 
 /**
  * The core class of the Graphene library.
- * Each consumer mod must register once from its {@code onInitializeClient()} entrypoint.
+ * Each consumer mod must register once from its {@code onInitializeClient()} entrypoint, either
+ * with an anchor class that belongs to the mod or with an explicit Fabric mod id.
  * Graphene closes registration before the first client tick and initializes lazily on first use,
  * or automatically after the Minecraft client startup has finished.
  */
 public final class GrapheneCore implements ClientModInitializer {
     public static final String ID = "graphene-ui";
+    private static final String ANCHOR_CLASS = "anchorClass";
     private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneCore.class);
     private static final GrapheneCoreServices SERVICES = GrapheneCoreServices.get();
     private static final Map<Class<?>, String> RESOLVED_MOD_IDS_BY_ANCHOR_CLASS = new IdentityHashMap<>();
@@ -38,39 +40,25 @@ public final class GrapheneCore implements ClientModInitializer {
 
     public static synchronized GrapheneHandle register(Class<?> anchorClass, GrapheneConfig config) {
         ensureRegistrationOpen();
-
-        String modId = resolveModId(anchorClass);
+        Class<?> validatedAnchorClass = Objects.requireNonNull(anchorClass, ANCHOR_CLASS);
+        String modId = resolveModId(validatedAnchorClass);
         GrapheneConfig validatedConfig = Objects.requireNonNull(config, "config");
+        return registerConsumer(modId, validatedConfig);
+    }
 
-        GrapheneMod existingConsumer = CONSUMERS.get(modId);
-        if (existingConsumer != null) {
-            GrapheneConfig existingConfig = CONSUMER_CONFIGS.get(modId);
-            if (!Objects.equals(existingConfig, validatedConfig)) {
-                throw new IllegalStateException(
-                        "Graphene consumer "
-                                + modId
-                                + " is already registered with a different config"
-                );
-            }
+    public static synchronized GrapheneHandle register(String modId) {
+        return register(modId, GrapheneConfig.defaults());
+    }
 
-            return existingConsumer;
-        }
-
-        if (SERVICES.runtimeInternal().isInitialized()) {
-            throw new IllegalStateException(
-                    "Graphene runtime is already initialized; register all consumers before Graphene starts"
-            );
-        }
-
-        GrapheneMod consumer = new GrapheneMod(modId, validatedConfig);
-        CONSUMERS.put(modId, consumer);
-        CONSUMER_CONFIGS.put(modId, validatedConfig);
-        LOGGER.info("Registered Graphene consumer {}", modId);
-        return consumer;
+    public static synchronized GrapheneHandle register(String modId, GrapheneConfig config) {
+        ensureRegistrationOpen();
+        String validatedModId = validateRegisteredModId(modId);
+        GrapheneConfig validatedConfig = Objects.requireNonNull(config, "config");
+        return registerConsumer(validatedModId, validatedConfig);
     }
 
     public static synchronized GrapheneHandle handle(Class<?> anchorClass) {
-        Class<?> validatedAnchorClass = Objects.requireNonNull(anchorClass, "anchorClass");
+        Class<?> validatedAnchorClass = Objects.requireNonNull(anchorClass, ANCHOR_CLASS);
         String modId = resolveModId(validatedAnchorClass);
         GrapheneMod consumer = CONSUMERS.get(modId);
         if (consumer != null) {
@@ -80,7 +68,22 @@ public final class GrapheneCore implements ClientModInitializer {
         throw new IllegalStateException(
                 "No Graphene consumer registered for anchor class "
                         + validatedAnchorClass.getName()
-                        + ". Call GrapheneCore.register(anchorClass, config) from onInitializeClient() before requesting its handle"
+                        + ". Call GrapheneCore.register(anchorClass, config) or GrapheneCore.register(modId, config)"
+                        + " from onInitializeClient() before requesting its handle"
+        );
+    }
+
+    public static synchronized GrapheneHandle handle(String modId) {
+        String normalizedModId = normalizeModId(modId);
+        GrapheneMod consumer = CONSUMERS.get(normalizedModId);
+        if (consumer != null) {
+            return consumer;
+        }
+
+        throw new IllegalStateException(
+                "No Graphene consumer registered for mod id "
+                        + normalizedModId
+                        + ". Call GrapheneCore.register(modId, config) from onInitializeClient() before requesting its handle"
         );
     }
 
@@ -101,6 +104,34 @@ public final class GrapheneCore implements ClientModInitializer {
             ensureInitialized();
         }
         return SERVICES.runtime();
+    }
+
+    private static GrapheneHandle registerConsumer(String modId, GrapheneConfig config) {
+        GrapheneMod existingConsumer = CONSUMERS.get(modId);
+        if (existingConsumer != null) {
+            GrapheneConfig existingConfig = CONSUMER_CONFIGS.get(modId);
+            if (!Objects.equals(existingConfig, config)) {
+                throw new IllegalStateException(
+                        "Graphene consumer "
+                                + modId
+                                + " is already registered with a different config"
+                );
+            }
+
+            return existingConsumer;
+        }
+
+        if (SERVICES.runtimeInternal().isInitialized()) {
+            throw new IllegalStateException(
+                    "Graphene runtime is already initialized; register all consumers before Graphene starts"
+            );
+        }
+
+        GrapheneMod consumer = new GrapheneMod(modId, config);
+        CONSUMERS.put(modId, consumer);
+        CONSUMER_CONFIGS.put(modId, config);
+        LOGGER.info("Registered Graphene consumer {}", modId);
+        return consumer;
     }
 
     private static synchronized void startIfConsumersRegistered() {
@@ -128,13 +159,12 @@ public final class GrapheneCore implements ClientModInitializer {
     }
 
     private static String resolveModId(Class<?> anchorClass) {
-        Class<?> validatedAnchorClass = Objects.requireNonNull(anchorClass, "anchorClass");
-        String cachedModId = RESOLVED_MOD_IDS_BY_ANCHOR_CLASS.get(validatedAnchorClass);
+        String cachedModId = RESOLVED_MOD_IDS_BY_ANCHOR_CLASS.get(anchorClass);
         if (cachedModId != null) {
             return cachedModId;
         }
 
-        String classFilePath = validatedAnchorClass.getName().replace('.', '/') + ".class";
+        String classFilePath = anchorClass.getName().replace('.', '/') + ".class";
         String resolvedModId = null;
 
         for (ModContainer modContainer : FabricLoader.getInstance().getAllMods()) {
@@ -145,7 +175,7 @@ public final class GrapheneCore implements ClientModInitializer {
                 } else if (!resolvedModId.equals(candidateModId)) {
                     throw new IllegalStateException(
                             "Graphene anchor class "
-                                    + validatedAnchorClass.getName()
+                                    + anchorClass.getName()
                                     + " resolved to multiple mod containers: "
                                     + resolvedModId
                                     + " and "
@@ -157,12 +187,23 @@ public final class GrapheneCore implements ClientModInitializer {
 
         if (resolvedModId == null) {
             throw new IllegalArgumentException(
-                    "Failed to resolve Graphene consumer mod id for anchor class " + validatedAnchorClass.getName()
+                    "Failed to resolve Graphene consumer mod id for anchor class " + anchorClass.getName()
             );
         }
 
-        RESOLVED_MOD_IDS_BY_ANCHOR_CLASS.put(validatedAnchorClass, resolvedModId);
+        RESOLVED_MOD_IDS_BY_ANCHOR_CLASS.put(anchorClass, resolvedModId);
         return resolvedModId;
+    }
+
+    private static String validateRegisteredModId(String modId) {
+        String validatedModId = normalizeModId(modId);
+        if (FabricLoader.getInstance().getModContainer(validatedModId).isEmpty()) {
+            throw new IllegalArgumentException(
+                    "No loaded Fabric mod with id " + validatedModId + " is available for Graphene registration"
+            );
+        }
+
+        return validatedModId;
     }
 
     private static String normalizeModId(String modId) {
@@ -187,7 +228,7 @@ public final class GrapheneCore implements ClientModInitializer {
 
         if (CONSUMERS.isEmpty()) {
             throw new IllegalStateException(
-                    "No Graphene consumer registered. Call GrapheneCore.register(anchorClass, config) before Graphene is used"
+                    "No Graphene consumer registered. Call GrapheneCore.register(...) before Graphene is used"
             );
         }
 
