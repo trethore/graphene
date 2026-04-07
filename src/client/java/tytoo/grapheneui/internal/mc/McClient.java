@@ -8,12 +8,16 @@ import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFWNativeCocoa;
 import org.lwjgl.glfw.GLFWNativeWin32;
 import org.lwjgl.glfw.GLFWNativeX11;
+import org.lwjgl.system.macosx.ObjCRuntime;
 import tytoo.grapheneui.internal.logging.GrapheneDebugLogger;
 import tytoo.grapheneui.internal.platform.GraphenePlatform;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
+
+import static org.lwjgl.system.JNI.invokePPP;
+import static org.lwjgl.system.JNI.invokePPPZ;
 
 @SuppressWarnings({"resource", "java:S2095", "unused"})
 public final class McClient {
@@ -100,7 +104,7 @@ public final class McClient {
             }
 
             if (GraphenePlatform.isMac()) {
-                return GLFWNativeCocoa.glfwGetCocoaWindow(glfwWindowHandle);
+                return nativeMacViewHandle(glfwWindowHandle);
             }
 
             if (GraphenePlatform.isLinux()) {
@@ -117,11 +121,56 @@ public final class McClient {
         return NO_WINDOW_HANDLE;
     }
 
+    private static long nativeMacViewHandle(long glfwWindowHandle) {
+        long cocoaWindowHandle = GLFWNativeCocoa.glfwGetCocoaWindow(glfwWindowHandle);
+        if (cocoaWindowHandle == NO_WINDOW_HANDLE) {
+            return NO_WINDOW_HANDLE;
+        }
+
+        if (!respondsToContentViewSelector(cocoaWindowHandle)) {
+            DEBUG_LOGGER.debugIfEnabled(logger -> logger.debug(
+                    "GLFW Cocoa window {} does not expose contentView; returning no handle",
+                    cocoaWindowHandle
+            ));
+            return NO_WINDOW_HANDLE;
+        }
+
+        long contentViewHandle = invokePPP(cocoaWindowHandle, MacObjc.SELECTOR_CONTENT_VIEW, MacObjc.OBJC_MSG_SEND);
+        if (contentViewHandle != NO_WINDOW_HANDLE) {
+            return contentViewHandle;
+        }
+
+        DEBUG_LOGGER.debugIfEnabled(logger -> logger.debug(
+                "Failed to resolve NSView contentView from Cocoa window {}; returning no handle",
+                cocoaWindowHandle
+        ));
+        return NO_WINDOW_HANDLE;
+    }
+
+    private static boolean respondsToContentViewSelector(long objectHandle) {
+        return objectHandle != NO_WINDOW_HANDLE
+                && invokePPPZ(
+                        objectHandle,
+                        MacObjc.SELECTOR_RESPONDS_TO_SELECTOR,
+                        MacObjc.SELECTOR_CONTENT_VIEW,
+                        MacObjc.OBJC_MSG_SEND
+                );
+    }
+
     public static void registerTexture(Identifier textureId, DynamicTexture dynamicTexture) {
         mc().getTextureManager().register(textureId, dynamicTexture);
     }
 
     public static void releaseTexture(Identifier textureId) {
         mc().getTextureManager().release(textureId);
+    }
+
+    private static final class MacObjc {
+        private static final long OBJC_MSG_SEND = ObjCRuntime.getLibrary().getFunctionAddress("objc_msgSend");
+        private static final long SELECTOR_CONTENT_VIEW = ObjCRuntime.sel_getUid("contentView");
+        private static final long SELECTOR_RESPONDS_TO_SELECTOR = ObjCRuntime.sel_getUid("respondsToSelector:");
+
+        private MacObjc() {
+        }
     }
 }
