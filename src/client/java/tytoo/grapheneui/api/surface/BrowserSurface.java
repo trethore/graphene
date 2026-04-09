@@ -2,6 +2,8 @@ package tytoo.grapheneui.api.surface;
 
 import com.mojang.blaze3d.platform.cursor.CursorType;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.util.profiling.Profiler;
+import net.minecraft.util.profiling.ProfilerFiller;
 import org.cef.CefBrowserSettings;
 import org.cef.CefClient;
 import org.cef.browser.CefRequestContext;
@@ -224,18 +226,14 @@ public final class BrowserSurface implements AutoCloseable {
     }
 
     public void render(GuiGraphics guiGraphics, int x, int y, int width, int height) {
-        services.runtimeInternal().ensureBootstrap(browser);
-        browser.render(
-                guiGraphics,
-                x,
-                y,
-                width,
-                height,
-                sizingState.viewBoxX(),
-                sizingState.viewBoxY(),
-                sizingState.viewBoxWidth(),
-                sizingState.viewBoxHeight()
-        );
+        ProfilerFiller profiler = Profiler.get();
+        profiler.push("graphene");
+        try {
+            pushBootstrap(profiler);
+            pushRender(profiler, guiGraphics, x, y, width, height);
+        } finally {
+            profiler.pop();
+        }
     }
 
     @Override
@@ -257,6 +255,34 @@ public final class BrowserSurface implements AutoCloseable {
         }
 
         browser.wasResizedTo(resizeInstruction.width(), resizeInstruction.height());
+    }
+
+    private void pushBootstrap(ProfilerFiller profiler) {
+        profiler.push("bootstrap");
+        try {
+            services.runtimeInternal().ensureBootstrap(browser);
+        } finally {
+            profiler.pop();
+        }
+    }
+
+    private void pushRender(ProfilerFiller profiler, GuiGraphics guiGraphics, int x, int y, int width, int height) {
+        profiler.push("render");
+        try {
+            browser.render(
+                    guiGraphics,
+                    x,
+                    y,
+                    width,
+                    height,
+                    sizingState.viewBoxX(),
+                    sizingState.viewBoxY(),
+                    sizingState.viewBoxWidth(),
+                    sizingState.viewBoxHeight()
+            );
+        } finally {
+            profiler.pop();
+        }
     }
 
     private void ensureOpen() {
