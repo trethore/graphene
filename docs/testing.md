@@ -47,9 +47,10 @@ Run from repository root:
 ./gradlew runDebugClient
 ./gradlew runDebugClient -PgrapheneDebug=*
 ./gradlew runDebugClient -PgrapheneDebug=tytoo.grapheneui.internal.bridge
+./gradlew runDebugClient -PgrapheneDebug=tytoo.grapheneui.internal.bridge.GrapheneBridgeRuntime
 ```
 
-For logging checks, run one pass without `-PgrapheneDebug` and one with a selector.
+For logging checks, run one pass without `-PgrapheneDebug` and one with a selector. Remove `-PgrapheneDebug` again to disable Graphene debug logs.
 
 ## When Adding Features
 

@@ -54,27 +54,53 @@ Classpath equivalents also work.
 
 ![Debug screen overview](images/debug-screen-overview.png)
 
+## Debug Runs
+
+For repository integration work, use the debug client run configuration:
+
+```bash
+./gradlew runDebugClient
+```
+
+Then in-game:
+
+- press `F10` to open `GrapheneBrowserDebugScreen`
+- use the bundled pages to validate loading, navigation, and bridge behavior
+- use the `DevTools` button if remote debugging is enabled for the current Graphene runtime
+
+To enable Graphene debug logs for the repository debug run:
+
+```bash
+./gradlew runDebugClient -PgrapheneDebug=*
+./gradlew runDebugClient -PgrapheneDebug=tytoo.grapheneui.internal.bridge
+./gradlew runDebugClient -PgrapheneDebug=tytoo.grapheneui.internal.bridge.GrapheneBridgeRuntime
+./gradlew runDebugClient -PgrapheneDebug=tytoo.grapheneui.internal.cef,tytoo.grapheneuidebug
+```
+
+To disable Graphene debug logs again, run without `-PgrapheneDebug`.
+
+When `-PgrapheneDebug=...` is set for `runDebugClient`, the run configuration also enables `fabric.log.level=debug`.
+
 ## Logging
 
-Graphene supports package-prefix debug selectors via the JVM property `graphene.debug`.
+Graphene supports debug selectors via the JVM property `graphene.debug`.
 
 Examples:
 
 - `-Dgraphene.debug=*`
 - `-Dgraphene.debug=tytoo.grapheneui.internal.bridge`
+- `-Dgraphene.debug=tytoo.grapheneui.internal.bridge.GrapheneBridgeRuntime`
 - `-Dgraphene.debug=tytoo.grapheneui.internal.cef,tytoo.grapheneuidebug`
 
 Selector behavior:
 
 - `*` enables all Graphene debug logs
-- comma-separated prefixes enable matching package/subpackage logs
+- a fully qualified class name enables logs for that exact class
+- a package prefix enables logs for that package and its subpackages
+- comma-separated selectors enable multiple classes and packages at once
+- blank or missing values disable Graphene debug logs
 
-Repository convenience for debug run config:
-
-- `./gradlew runDebugClient -PgrapheneDebug=*`
-- `./gradlew runDebugClient -PgrapheneDebug=tytoo.grapheneui.internal.bridge`
-
-When `-PgrapheneDebug=...` is set for `runDebugClient`, the run configuration also enables `fabric.log.level=debug`.
+For non-repository launch setups, pass `-Dgraphene.debug=...` to the JVM and ensure your logging backend is configured to emit DEBUG-level logs.
 
 ## Quick Checks
 
