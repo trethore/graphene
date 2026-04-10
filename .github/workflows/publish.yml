@@ -266,7 +266,7 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: github-packages-publication
-          path: .
+          path: build
 
       - name: verify github packages publication artifacts
         run: |
