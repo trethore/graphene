@@ -1,0 +1,129 @@
+name: Bug report
+description: Report a reproducible bug in Graphene
+title: "fix: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug.
+
+        Do not use this form for security vulnerabilities.
+        Follow `SECURITY.md` instead.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: I searched existing issues and did not find a duplicate
+          required: true
+        - label: I can reproduce this on a supported Graphene version
+          required: true
+        - label: I included enough detail for someone else to reproduce the problem
+          required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Describe the bug and the impact.
+      placeholder: A short description of the problem.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List the exact steps needed to reproduce the issue.
+      placeholder: |
+        1. Run ...
+        2. Open ...
+        3. Click ...
+        4. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: What should have happened instead?
+    validations:
+      required: true
+
+  - type: input
+    id: graphene_version
+    attributes:
+      label: Graphene version
+      placeholder: 1.7.2
+    validations:
+      required: true
+
+  - type: input
+    id: minecraft_version
+    attributes:
+      label: Minecraft version
+      placeholder: 1.21.11
+    validations:
+      required: true
+
+  - type: input
+    id: loader_version
+    attributes:
+      label: Fabric Loader version
+      placeholder: 0.18.4
+    validations:
+      required: true
+
+  - type: input
+    id: fabric_api_version
+    attributes:
+      label: Fabric API version
+      placeholder: 0.141.3+1.21.11
+    validations:
+      required: false
+
+  - type: input
+    id: java_version
+    attributes:
+      label: Java version
+      placeholder: "21"
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: Windows 11 / Linux / macOS
+    validations:
+      required: true
+
+  - type: textarea
+    id: code_or_config
+    attributes:
+      label: Relevant code or config
+      description: Include Graphene config, reproduction code, or both.
+      render: java
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs, screenshots, or crash reports
+      description: Paste logs or attach screenshots if they help.
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional context
+      placeholder: Anything else that might help.
+    validations:
+      required: false
