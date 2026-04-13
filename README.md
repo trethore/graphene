@@ -164,6 +164,7 @@ Start [HERE](docs/README.md)!
 
 Contributions are welcome!
 
+- Read the contributor guide in [CONTRIBUTING.md](CONTRIBUTING.md).
 - Report bugs or request features in [Issues](https://github.com/trethore/graphene/issues).
 - Open changes through [Pull Requests](https://github.com/trethore/graphene/pulls).
 - All pull requests must be tested before being submitted.
