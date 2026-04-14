@@ -7,12 +7,12 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.util.Optional;
 
-final class GrapheneInputLockState {
+public final class GrapheneInputLockState {
     private boolean lockKeyModifiersEnabled;
     private boolean cachedNumLockState;
     private boolean cachedNumLockStateKnown;
 
-    GrapheneInputLockState() {
+    public GrapheneInputLockState() {
         ensureLockKeyModifiersEnabled();
         Optional<Boolean> toolkitNumLockState = readToolkitNumLockState();
         if (toolkitNumLockState.isPresent()) {
@@ -30,7 +30,7 @@ final class GrapheneInputLockState {
         }
     }
 
-    boolean isNumLockEnabled(int modifiers) {
+    public boolean isNumLockEnabled(int modifiers) {
         boolean numLockModifierSet = (modifiers & GLFW.GLFW_MOD_NUM_LOCK) != 0;
         if (numLockModifierSet) {
             cachedNumLockState = true;
@@ -52,7 +52,7 @@ final class GrapheneInputLockState {
         return false;
     }
 
-    void updateCachedNumLockState(int keyCode, boolean pressed) {
+    public void updateCachedNumLockState(int keyCode, boolean pressed) {
         if (!pressed || keyCode != GLFW.GLFW_KEY_NUM_LOCK) {
             return;
         }
@@ -61,7 +61,7 @@ final class GrapheneInputLockState {
         cachedNumLockStateKnown = true;
     }
 
-    void ensureLockKeyModifiersEnabled() {
+    public void ensureLockKeyModifiersEnabled() {
         if (lockKeyModifiersEnabled) {
             return;
         }

@@ -108,7 +108,7 @@ public final class BrowserSurfaceInputAdapter {
             return false;
         }
 
-        surface.internalBrowser().keyEventByKeyCode(keyCode, scanCode, modifiers, true);
+        surface.internalBrowser().keyPressed(keyCode, scanCode, modifiers);
         return true;
     }
 
@@ -117,7 +117,7 @@ public final class BrowserSurfaceInputAdapter {
             return false;
         }
 
-        surface.internalBrowser().keyEventByKeyCode(keyCode, scanCode, modifiers, false);
+        surface.internalBrowser().keyReleased(keyCode, scanCode, modifiers);
         return true;
     }
 
@@ -126,7 +126,7 @@ public final class BrowserSurfaceInputAdapter {
             return false;
         }
 
-        surface.internalBrowser().keyTyped((char) codePoint, modifiers);
+        surface.internalBrowser().textInput(new String(Character.toChars(codePoint)), modifiers);
         return true;
     }
 

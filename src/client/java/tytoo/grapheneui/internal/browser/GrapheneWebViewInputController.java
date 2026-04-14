@@ -113,15 +113,15 @@ public final class GrapheneWebViewInputController {
     }
 
     public void onKeyPressed(KeyEvent keyEvent) {
-        browser.keyEventByKeyCode(keyEvent.key(), keyEvent.scancode(), keyEvent.modifiers(), true);
+        browser.keyPressed(keyEvent.key(), keyEvent.scancode(), keyEvent.modifiers());
     }
 
     public void onKeyReleased(KeyEvent keyEvent) {
-        browser.keyEventByKeyCode(keyEvent.key(), keyEvent.scancode(), keyEvent.modifiers(), false);
+        browser.keyReleased(keyEvent.key(), keyEvent.scancode(), keyEvent.modifiers());
     }
 
     public void onCharacterTyped(CharacterEvent characterEvent) {
-        browser.keyTyped((char) characterEvent.codepoint(), characterEvent.modifiers());
+        browser.textInput(new String(Character.toChars(characterEvent.codepoint())), characterEvent.modifiers());
     }
 
     public void onFocusChanged(boolean focused) {
@@ -130,6 +130,7 @@ public final class GrapheneWebViewInputController {
         }
 
         browser.cancelActiveDrag();
+        browser.resetKeyboardState();
         primaryPointerButtonDown = false;
         pressedButton = -1;
         pressedClickCount = 1;

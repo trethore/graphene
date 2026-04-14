@@ -296,57 +296,6 @@ final class GrapheneKeyboardMappings {
             {GLFW.GLFW_KEY_KP_9},
             {GLFW.GLFW_KEY_KP_DECIMAL}
     };
-    private static final int[][] LAYOUT_DEPENDENT_KEYS = {
-            {GLFW.GLFW_KEY_A},
-            {GLFW.GLFW_KEY_B},
-            {GLFW.GLFW_KEY_C},
-            {GLFW.GLFW_KEY_D},
-            {GLFW.GLFW_KEY_E},
-            {GLFW.GLFW_KEY_F},
-            {GLFW.GLFW_KEY_G},
-            {GLFW.GLFW_KEY_H},
-            {GLFW.GLFW_KEY_I},
-            {GLFW.GLFW_KEY_J},
-            {GLFW.GLFW_KEY_K},
-            {GLFW.GLFW_KEY_L},
-            {GLFW.GLFW_KEY_M},
-            {GLFW.GLFW_KEY_N},
-            {GLFW.GLFW_KEY_O},
-            {GLFW.GLFW_KEY_P},
-            {GLFW.GLFW_KEY_Q},
-            {GLFW.GLFW_KEY_R},
-            {GLFW.GLFW_KEY_S},
-            {GLFW.GLFW_KEY_T},
-            {GLFW.GLFW_KEY_U},
-            {GLFW.GLFW_KEY_V},
-            {GLFW.GLFW_KEY_W},
-            {GLFW.GLFW_KEY_X},
-            {GLFW.GLFW_KEY_Y},
-            {GLFW.GLFW_KEY_Z},
-            {GLFW.GLFW_KEY_0},
-            {GLFW.GLFW_KEY_1},
-            {GLFW.GLFW_KEY_2},
-            {GLFW.GLFW_KEY_3},
-            {GLFW.GLFW_KEY_4},
-            {GLFW.GLFW_KEY_5},
-            {GLFW.GLFW_KEY_6},
-            {GLFW.GLFW_KEY_7},
-            {GLFW.GLFW_KEY_8},
-            {GLFW.GLFW_KEY_9},
-            {GLFW.GLFW_KEY_GRAVE_ACCENT},
-            {GLFW.GLFW_KEY_MINUS},
-            {GLFW.GLFW_KEY_EQUAL},
-            {GLFW.GLFW_KEY_LEFT_BRACKET},
-            {GLFW.GLFW_KEY_RIGHT_BRACKET},
-            {GLFW.GLFW_KEY_BACKSLASH},
-            {GLFW.GLFW_KEY_SEMICOLON},
-            {GLFW.GLFW_KEY_APOSTROPHE},
-            {GLFW.GLFW_KEY_COMMA},
-            {GLFW.GLFW_KEY_PERIOD},
-            {GLFW.GLFW_KEY_SLASH},
-            {GLFW.GLFW_KEY_WORLD_1},
-            {GLFW.GLFW_KEY_WORLD_2}
-    };
     private static final int[][] MAC_NATIVE_FROM_GLFW = {
             {GLFW.GLFW_KEY_A, 0x00},
             {GLFW.GLFW_KEY_S, 0x01},
@@ -558,14 +507,234 @@ final class GrapheneKeyboardMappings {
             {'\r', 0x24},
             {0x1B, 0x35}
     };
+    private static final Object[][] DOM_CODE_FROM_GLFW = {
+            {GLFW.GLFW_KEY_SPACE, "Space"},
+            {GLFW.GLFW_KEY_APOSTROPHE, "Quote"},
+            {GLFW.GLFW_KEY_COMMA, "Comma"},
+            {GLFW.GLFW_KEY_MINUS, "Minus"},
+            {GLFW.GLFW_KEY_PERIOD, "Period"},
+            {GLFW.GLFW_KEY_SLASH, "Slash"},
+            {GLFW.GLFW_KEY_0, "Digit0"},
+            {GLFW.GLFW_KEY_1, "Digit1"},
+            {GLFW.GLFW_KEY_2, "Digit2"},
+            {GLFW.GLFW_KEY_3, "Digit3"},
+            {GLFW.GLFW_KEY_4, "Digit4"},
+            {GLFW.GLFW_KEY_5, "Digit5"},
+            {GLFW.GLFW_KEY_6, "Digit6"},
+            {GLFW.GLFW_KEY_7, "Digit7"},
+            {GLFW.GLFW_KEY_8, "Digit8"},
+            {GLFW.GLFW_KEY_9, "Digit9"},
+            {GLFW.GLFW_KEY_SEMICOLON, "Semicolon"},
+            {GLFW.GLFW_KEY_EQUAL, "Equal"},
+            {GLFW.GLFW_KEY_A, "KeyA"},
+            {GLFW.GLFW_KEY_B, "KeyB"},
+            {GLFW.GLFW_KEY_C, "KeyC"},
+            {GLFW.GLFW_KEY_D, "KeyD"},
+            {GLFW.GLFW_KEY_E, "KeyE"},
+            {GLFW.GLFW_KEY_F, "KeyF"},
+            {GLFW.GLFW_KEY_G, "KeyG"},
+            {GLFW.GLFW_KEY_H, "KeyH"},
+            {GLFW.GLFW_KEY_I, "KeyI"},
+            {GLFW.GLFW_KEY_J, "KeyJ"},
+            {GLFW.GLFW_KEY_K, "KeyK"},
+            {GLFW.GLFW_KEY_L, "KeyL"},
+            {GLFW.GLFW_KEY_M, "KeyM"},
+            {GLFW.GLFW_KEY_N, "KeyN"},
+            {GLFW.GLFW_KEY_O, "KeyO"},
+            {GLFW.GLFW_KEY_P, "KeyP"},
+            {GLFW.GLFW_KEY_Q, "KeyQ"},
+            {GLFW.GLFW_KEY_R, "KeyR"},
+            {GLFW.GLFW_KEY_S, "KeyS"},
+            {GLFW.GLFW_KEY_T, "KeyT"},
+            {GLFW.GLFW_KEY_U, "KeyU"},
+            {GLFW.GLFW_KEY_V, "KeyV"},
+            {GLFW.GLFW_KEY_W, "KeyW"},
+            {GLFW.GLFW_KEY_X, "KeyX"},
+            {GLFW.GLFW_KEY_Y, "KeyY"},
+            {GLFW.GLFW_KEY_Z, "KeyZ"},
+            {GLFW.GLFW_KEY_LEFT_BRACKET, "BracketLeft"},
+            {GLFW.GLFW_KEY_BACKSLASH, "Backslash"},
+            {GLFW.GLFW_KEY_RIGHT_BRACKET, "BracketRight"},
+            {GLFW.GLFW_KEY_GRAVE_ACCENT, "Backquote"},
+            {GLFW.GLFW_KEY_WORLD_1, "IntlBackslash"},
+            {GLFW.GLFW_KEY_WORLD_2, "IntlRo"},
+            {GLFW.GLFW_KEY_ESCAPE, "Escape"},
+            {GLFW.GLFW_KEY_ENTER, "Enter"},
+            {GLFW.GLFW_KEY_TAB, "Tab"},
+            {GLFW.GLFW_KEY_BACKSPACE, "Backspace"},
+            {GLFW.GLFW_KEY_INSERT, "Insert"},
+            {GLFW.GLFW_KEY_DELETE, "Delete"},
+            {GLFW.GLFW_KEY_RIGHT, "ArrowRight"},
+            {GLFW.GLFW_KEY_LEFT, "ArrowLeft"},
+            {GLFW.GLFW_KEY_DOWN, "ArrowDown"},
+            {GLFW.GLFW_KEY_UP, "ArrowUp"},
+            {GLFW.GLFW_KEY_PAGE_UP, "PageUp"},
+            {GLFW.GLFW_KEY_PAGE_DOWN, "PageDown"},
+            {GLFW.GLFW_KEY_HOME, "Home"},
+            {GLFW.GLFW_KEY_END, "End"},
+            {GLFW.GLFW_KEY_CAPS_LOCK, "CapsLock"},
+            {GLFW.GLFW_KEY_SCROLL_LOCK, "ScrollLock"},
+            {GLFW.GLFW_KEY_NUM_LOCK, "NumLock"},
+            {GLFW.GLFW_KEY_PRINT_SCREEN, "PrintScreen"},
+            {GLFW.GLFW_KEY_PAUSE, "Pause"},
+            {GLFW.GLFW_KEY_F1, "F1"},
+            {GLFW.GLFW_KEY_F2, "F2"},
+            {GLFW.GLFW_KEY_F3, "F3"},
+            {GLFW.GLFW_KEY_F4, "F4"},
+            {GLFW.GLFW_KEY_F5, "F5"},
+            {GLFW.GLFW_KEY_F6, "F6"},
+            {GLFW.GLFW_KEY_F7, "F7"},
+            {GLFW.GLFW_KEY_F8, "F8"},
+            {GLFW.GLFW_KEY_F9, "F9"},
+            {GLFW.GLFW_KEY_F10, "F10"},
+            {GLFW.GLFW_KEY_F11, "F11"},
+            {GLFW.GLFW_KEY_F12, "F12"},
+            {GLFW.GLFW_KEY_F13, "F13"},
+            {GLFW.GLFW_KEY_F14, "F14"},
+            {GLFW.GLFW_KEY_F15, "F15"},
+            {GLFW.GLFW_KEY_F16, "F16"},
+            {GLFW.GLFW_KEY_F17, "F17"},
+            {GLFW.GLFW_KEY_F18, "F18"},
+            {GLFW.GLFW_KEY_F19, "F19"},
+            {GLFW.GLFW_KEY_F20, "F20"},
+            {GLFW.GLFW_KEY_F21, "F21"},
+            {GLFW.GLFW_KEY_F22, "F22"},
+            {GLFW.GLFW_KEY_F23, "F23"},
+            {GLFW.GLFW_KEY_F24, "F24"},
+            {GLFW.GLFW_KEY_F25, "F25"},
+            {GLFW.GLFW_KEY_KP_0, "Numpad0"},
+            {GLFW.GLFW_KEY_KP_1, "Numpad1"},
+            {GLFW.GLFW_KEY_KP_2, "Numpad2"},
+            {GLFW.GLFW_KEY_KP_3, "Numpad3"},
+            {GLFW.GLFW_KEY_KP_4, "Numpad4"},
+            {GLFW.GLFW_KEY_KP_5, "Numpad5"},
+            {GLFW.GLFW_KEY_KP_6, "Numpad6"},
+            {GLFW.GLFW_KEY_KP_7, "Numpad7"},
+            {GLFW.GLFW_KEY_KP_8, "Numpad8"},
+            {GLFW.GLFW_KEY_KP_9, "Numpad9"},
+            {GLFW.GLFW_KEY_KP_DECIMAL, "NumpadDecimal"},
+            {GLFW.GLFW_KEY_KP_DIVIDE, "NumpadDivide"},
+            {GLFW.GLFW_KEY_KP_MULTIPLY, "NumpadMultiply"},
+            {GLFW.GLFW_KEY_KP_SUBTRACT, "NumpadSubtract"},
+            {GLFW.GLFW_KEY_KP_ADD, "NumpadAdd"},
+            {GLFW.GLFW_KEY_KP_ENTER, "NumpadEnter"},
+            {GLFW.GLFW_KEY_KP_EQUAL, "NumpadEqual"},
+            {GLFW.GLFW_KEY_LEFT_SHIFT, "ShiftLeft"},
+            {GLFW.GLFW_KEY_LEFT_CONTROL, "ControlLeft"},
+            {GLFW.GLFW_KEY_LEFT_ALT, "AltLeft"},
+            {GLFW.GLFW_KEY_LEFT_SUPER, "MetaLeft"},
+            {GLFW.GLFW_KEY_RIGHT_SHIFT, "ShiftRight"},
+            {GLFW.GLFW_KEY_RIGHT_CONTROL, "ControlRight"},
+            {GLFW.GLFW_KEY_RIGHT_ALT, "AltRight"},
+            {GLFW.GLFW_KEY_RIGHT_SUPER, "MetaRight"},
+            {GLFW.GLFW_KEY_MENU, "ContextMenu"}
+    };
+    private static final Object[][] DOM_KEY_FROM_GLFW = {
+            {GLFW.GLFW_KEY_BACKSPACE, "Backspace"},
+            {GLFW.GLFW_KEY_TAB, "Tab"},
+            {GLFW.GLFW_KEY_ENTER, "Enter"},
+            {GLFW.GLFW_KEY_KP_ENTER, "Enter"},
+            {GLFW.GLFW_KEY_LEFT_SHIFT, "Shift"},
+            {GLFW.GLFW_KEY_RIGHT_SHIFT, "Shift"},
+            {GLFW.GLFW_KEY_LEFT_CONTROL, "Control"},
+            {GLFW.GLFW_KEY_RIGHT_CONTROL, "Control"},
+            {GLFW.GLFW_KEY_LEFT_ALT, "Alt"},
+            {GLFW.GLFW_KEY_RIGHT_ALT, "Alt"},
+            {GLFW.GLFW_KEY_LEFT_SUPER, "Meta"},
+            {GLFW.GLFW_KEY_RIGHT_SUPER, "Meta"},
+            {GLFW.GLFW_KEY_ESCAPE, "Escape"},
+            {GLFW.GLFW_KEY_SPACE, " "},
+            {GLFW.GLFW_KEY_INSERT, "Insert"},
+            {GLFW.GLFW_KEY_DELETE, "Delete"},
+            {GLFW.GLFW_KEY_LEFT, "ArrowLeft"},
+            {GLFW.GLFW_KEY_RIGHT, "ArrowRight"},
+            {GLFW.GLFW_KEY_UP, "ArrowUp"},
+            {GLFW.GLFW_KEY_DOWN, "ArrowDown"},
+            {GLFW.GLFW_KEY_HOME, "Home"},
+            {GLFW.GLFW_KEY_END, "End"},
+            {GLFW.GLFW_KEY_PAGE_UP, "PageUp"},
+            {GLFW.GLFW_KEY_PAGE_DOWN, "PageDown"},
+            {GLFW.GLFW_KEY_CAPS_LOCK, "CapsLock"},
+            {GLFW.GLFW_KEY_SCROLL_LOCK, "ScrollLock"},
+            {GLFW.GLFW_KEY_NUM_LOCK, "NumLock"},
+            {GLFW.GLFW_KEY_PRINT_SCREEN, "PrintScreen"},
+            {GLFW.GLFW_KEY_PAUSE, "Pause"},
+            {GLFW.GLFW_KEY_MENU, "ContextMenu"},
+            {GLFW.GLFW_KEY_F1, "F1"},
+            {GLFW.GLFW_KEY_F2, "F2"},
+            {GLFW.GLFW_KEY_F3, "F3"},
+            {GLFW.GLFW_KEY_F4, "F4"},
+            {GLFW.GLFW_KEY_F5, "F5"},
+            {GLFW.GLFW_KEY_F6, "F6"},
+            {GLFW.GLFW_KEY_F7, "F7"},
+            {GLFW.GLFW_KEY_F8, "F8"},
+            {GLFW.GLFW_KEY_F9, "F9"},
+            {GLFW.GLFW_KEY_F10, "F10"},
+            {GLFW.GLFW_KEY_F11, "F11"},
+            {GLFW.GLFW_KEY_F12, "F12"},
+            {GLFW.GLFW_KEY_F13, "F13"},
+            {GLFW.GLFW_KEY_F14, "F14"},
+            {GLFW.GLFW_KEY_F15, "F15"},
+            {GLFW.GLFW_KEY_F16, "F16"},
+            {GLFW.GLFW_KEY_F17, "F17"},
+            {GLFW.GLFW_KEY_F18, "F18"},
+            {GLFW.GLFW_KEY_F19, "F19"},
+            {GLFW.GLFW_KEY_F20, "F20"},
+            {GLFW.GLFW_KEY_F21, "F21"},
+            {GLFW.GLFW_KEY_F22, "F22"},
+            {GLFW.GLFW_KEY_F23, "F23"},
+            {GLFW.GLFW_KEY_F24, "F24"},
+            {GLFW.GLFW_KEY_F25, "F25"}
+    };
+    private static final Object[][] NUMPAD_DOM_KEY_WITH_NUM_LOCK = {
+            {GLFW.GLFW_KEY_KP_0, "0"},
+            {GLFW.GLFW_KEY_KP_1, "1"},
+            {GLFW.GLFW_KEY_KP_2, "2"},
+            {GLFW.GLFW_KEY_KP_3, "3"},
+            {GLFW.GLFW_KEY_KP_4, "4"},
+            {GLFW.GLFW_KEY_KP_5, "5"},
+            {GLFW.GLFW_KEY_KP_6, "6"},
+            {GLFW.GLFW_KEY_KP_7, "7"},
+            {GLFW.GLFW_KEY_KP_8, "8"},
+            {GLFW.GLFW_KEY_KP_9, "9"},
+            {GLFW.GLFW_KEY_KP_DECIMAL, "."},
+            {GLFW.GLFW_KEY_KP_DIVIDE, "/"},
+            {GLFW.GLFW_KEY_KP_MULTIPLY, "*"},
+            {GLFW.GLFW_KEY_KP_SUBTRACT, "-"},
+            {GLFW.GLFW_KEY_KP_ADD, "+"},
+            {GLFW.GLFW_KEY_KP_ENTER, "Enter"},
+            {GLFW.GLFW_KEY_KP_EQUAL, "="}
+    };
+    private static final Object[][] NUMPAD_DOM_KEY_WITHOUT_NUM_LOCK = {
+            {GLFW.GLFW_KEY_KP_0, "Insert"},
+            {GLFW.GLFW_KEY_KP_1, "End"},
+            {GLFW.GLFW_KEY_KP_2, "ArrowDown"},
+            {GLFW.GLFW_KEY_KP_3, "PageDown"},
+            {GLFW.GLFW_KEY_KP_4, "ArrowLeft"},
+            {GLFW.GLFW_KEY_KP_5, "Clear"},
+            {GLFW.GLFW_KEY_KP_6, "ArrowRight"},
+            {GLFW.GLFW_KEY_KP_7, "Home"},
+            {GLFW.GLFW_KEY_KP_8, "ArrowUp"},
+            {GLFW.GLFW_KEY_KP_9, "PageUp"},
+            {GLFW.GLFW_KEY_KP_DECIMAL, "Delete"},
+            {GLFW.GLFW_KEY_KP_DIVIDE, "/"},
+            {GLFW.GLFW_KEY_KP_MULTIPLY, "*"},
+            {GLFW.GLFW_KEY_KP_SUBTRACT, "-"},
+            {GLFW.GLFW_KEY_KP_ADD, "+"},
+            {GLFW.GLFW_KEY_KP_ENTER, "Enter"},
+            {GLFW.GLFW_KEY_KP_EQUAL, "="}
+    };
     private static final Map<Integer, Integer> UNSHIFTED_CHARACTER_BY_GLFW_KEY = createByFirstColumn(GLFW_KEY_TO_CHARACTER, 1);
     private static final Map<Integer, Integer> SHIFTED_CHARACTER_BY_GLFW_KEY = createByFirstColumn(GLFW_KEY_TO_CHARACTER, 2);
     private static final Set<Integer> NUMPAD_KEYS_SET = createSetByFirstColumn(NUMPAD_KEYS);
     private static final Set<Integer> NUMPAD_TEXT_KEYS_SET = createSetByFirstColumn(NUMPAD_TEXT_KEYS);
     private static final Set<Integer> NUMPAD_TEXT_REQUIRING_NUM_LOCK_SET = createSetByFirstColumn(NUMPAD_TEXT_REQUIRING_NUM_LOCK);
-    private static final Set<Integer> LAYOUT_DEPENDENT_KEYS_SET = createSetByFirstColumn(LAYOUT_DEPENDENT_KEYS);
     private static final Map<Integer, Integer> MAC_NATIVE_KEY_CODES_BY_GLFW = createByFirstColumn(MAC_NATIVE_FROM_GLFW, 1);
     private static final Map<Integer, Integer> MAC_NATIVE_KEY_CODES_BY_CHARACTER = createByFirstColumn(MAC_NATIVE_FROM_CHARACTER, 1);
+    private static final Map<Integer, String> DOM_CODE_BY_GLFW = createStringByFirstColumn(DOM_CODE_FROM_GLFW);
+    private static final Map<Integer, String> DOM_KEY_BY_GLFW = createStringByFirstColumn(DOM_KEY_FROM_GLFW);
+    private static final Map<Integer, String> NUMPAD_DOM_KEY_WITH_NUM_LOCK_BY_GLFW = createStringByFirstColumn(NUMPAD_DOM_KEY_WITH_NUM_LOCK);
+    private static final Map<Integer, String> NUMPAD_DOM_KEY_WITHOUT_NUM_LOCK_BY_GLFW = createStringByFirstColumn(NUMPAD_DOM_KEY_WITHOUT_NUM_LOCK);
 
     private GrapheneKeyboardMappings() {
     }
@@ -610,8 +779,39 @@ final class GrapheneKeyboardMappings {
         return NUMPAD_TEXT_REQUIRING_NUM_LOCK_SET.contains(keyCode);
     }
 
-    static boolean isLayoutDependentKey(int keyCode) {
-        return LAYOUT_DEPENDENT_KEYS_SET.contains(keyCode);
+    static String domCodeFromGlfw(int keyCode) {
+        return DOM_CODE_BY_GLFW.getOrDefault(keyCode, "");
+    }
+
+    static String domKeyFromGlfw(int keyCode) {
+        return DOM_KEY_BY_GLFW.getOrDefault(keyCode, "");
+    }
+
+    static String domKeyFromNumpadKey(int keyCode, boolean numLockEnabled) {
+        Map<Integer, String> keyMap = numLockEnabled
+                ? NUMPAD_DOM_KEY_WITH_NUM_LOCK_BY_GLFW
+                : NUMPAD_DOM_KEY_WITHOUT_NUM_LOCK_BY_GLFW;
+        return keyMap.getOrDefault(keyCode, "");
+    }
+
+    static boolean isLeftModifierKey(int keyCode) {
+        return switch (keyCode) {
+            case GLFW.GLFW_KEY_LEFT_SHIFT,
+                 GLFW.GLFW_KEY_LEFT_CONTROL,
+                 GLFW.GLFW_KEY_LEFT_ALT,
+                 GLFW.GLFW_KEY_LEFT_SUPER -> true;
+            default -> false;
+        };
+    }
+
+    static boolean isRightModifierKey(int keyCode) {
+        return switch (keyCode) {
+            case GLFW.GLFW_KEY_RIGHT_SHIFT,
+                 GLFW.GLFW_KEY_RIGHT_CONTROL,
+                 GLFW.GLFW_KEY_RIGHT_ALT,
+                 GLFW.GLFW_KEY_RIGHT_SUPER -> true;
+            default -> false;
+        };
     }
 
     static char charFromKeyCode(int keyCode, boolean shift) {
@@ -640,6 +840,15 @@ final class GrapheneKeyboardMappings {
         }
 
         return Set.copyOf(values);
+    }
+
+    private static Map<Integer, String> createStringByFirstColumn(Object[][] rows) {
+        Map<Integer, String> mappings = new HashMap<>();
+        for (Object[] row : rows) {
+            mappings.put((Integer) row[0], (String) row[1]);
+        }
+
+        return Map.copyOf(mappings);
     }
 
     private static Map<Long, Integer> createByKeyAndCharacter(int[][] rows) {

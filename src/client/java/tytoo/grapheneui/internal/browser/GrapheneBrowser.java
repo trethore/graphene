@@ -12,7 +12,6 @@ import org.cef.browser.CefRequestContext;
 import org.cef.callback.CefDragData;
 import org.cef.handler.CefRenderHandler;
 import org.cef.handler.CefScreenInfo;
-import org.cef.input.CefKeyEvent;
 import org.cef.input.CefMouseEvent;
 import org.cef.input.CefMouseWheelEvent;
 import tytoo.grapheneui.internal.mc.McClient;
@@ -28,6 +27,7 @@ public class GrapheneBrowser extends CefBrowserWindowless implements CefRenderHa
     private final GrapheneBrowserGpuRenderer renderer;
     private final boolean transparent;
     private final GrapheneInputBridge inputBridge = new GrapheneInputBridge();
+    private final GrapheneDomKeyboardDispatcher keyboardDispatcher = new GrapheneDomKeyboardDispatcher(this);
     private final GraphenePaintBuffer paintBuffer = new GraphenePaintBuffer();
     private final GrapheneFocusUtil focusUtil = new GrapheneFocusUtil(this::setNativeFocus);
     private final Object dragSessionLock = new Object();
@@ -319,12 +319,20 @@ public class GrapheneBrowser extends CefBrowserWindowless implements CefRenderHa
         inputBridge.mouseScrolled(this, x, y, modifiers, amount, rotation);
     }
 
-    public void keyTyped(char character, int modifiers) {
-        inputBridge.keyTyped(this, character, modifiers);
+    public void keyPressed(int keyCode, int scanCode, int modifiers) {
+        keyboardDispatcher.keyPressed(keyCode, scanCode, modifiers);
     }
 
-    public void keyEventByKeyCode(int keyCode, int scanCode, int modifiers, boolean pressed) {
-        inputBridge.keyEventByKeyCode(this, keyCode, scanCode, modifiers, pressed);
+    public void keyReleased(int keyCode, int scanCode, int modifiers) {
+        keyboardDispatcher.keyReleased(keyCode, scanCode, modifiers);
+    }
+
+    public void textInput(String text, int modifiers) {
+        keyboardDispatcher.textInput(text, modifiers);
+    }
+
+    public void resetKeyboardState() {
+        keyboardDispatcher.resetState();
     }
 
     void dispatchMouseEvent(CefMouseEvent event) {
@@ -333,10 +341,6 @@ public class GrapheneBrowser extends CefBrowserWindowless implements CefRenderHa
 
     void dispatchMouseWheelEvent(CefMouseWheelEvent event) {
         sendCefMouseWheelEvent(event);
-    }
-
-    void dispatchCefKeyEvent(CefKeyEvent event) {
-        sendCefKeyEvent(event);
     }
 
     public void onTitleChange(String ignoredTitle) {

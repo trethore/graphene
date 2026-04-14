@@ -3,7 +3,6 @@ package tytoo.grapheneui.internal.input.keyboard;
 import org.cef.input.CefKeyEvent;
 import org.lwjgl.glfw.GLFW;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -21,22 +20,6 @@ final class GrapheneWindowsKeyEventPlatformResolver implements GrapheneKeyEventP
             {GLFW.GLFW_KEY_NUM_LOCK},
             {GLFW.GLFW_KEY_PAUSE},
             {GLFW.GLFW_KEY_INSERT}
-    };
-
-    private static final int[][] REMAPPED_WINDOWS_SCAN_CODES = {
-            {GLFW.GLFW_KEY_LEFT_CONTROL, 29},
-            {GLFW.GLFW_KEY_RIGHT_CONTROL, 29},
-            {GLFW.GLFW_KEY_DELETE, 83},
-            {GLFW.GLFW_KEY_LEFT, 75},
-            {GLFW.GLFW_KEY_DOWN, 80},
-            {GLFW.GLFW_KEY_UP, 72},
-            {GLFW.GLFW_KEY_RIGHT, 77},
-            {GLFW.GLFW_KEY_PAGE_DOWN, 81},
-            {GLFW.GLFW_KEY_PAGE_UP, 73},
-            {GLFW.GLFW_KEY_END, 79},
-            {GLFW.GLFW_KEY_HOME, 71},
-            {GLFW.GLFW_KEY_ENTER, 28},
-            {GLFW.GLFW_KEY_KP_ENTER, 28}
     };
 
     private static final int[][] WINDOWS_EXTENDED_KEYS = {
@@ -59,7 +42,21 @@ final class GrapheneWindowsKeyEventPlatformResolver implements GrapheneKeyEventP
     };
 
     private static final Set<Integer> GLFW_SCAN_CODE_PREFERRED_KEY_SET = createSetByFirstColumn(GLFW_SCAN_CODE_PREFERRED_KEYS);
-    private static final Map<Integer, Integer> REMAPPED_WINDOWS_SCAN_CODE_BY_KEY = createByFirstColumn(REMAPPED_WINDOWS_SCAN_CODES);
+    private static final Map<Integer, Integer> REMAPPED_WINDOWS_SCAN_CODE_BY_KEY = Map.ofEntries(
+            Map.entry(GLFW.GLFW_KEY_LEFT_CONTROL, 29),
+            Map.entry(GLFW.GLFW_KEY_RIGHT_CONTROL, 29),
+            Map.entry(GLFW.GLFW_KEY_DELETE, 83),
+            Map.entry(GLFW.GLFW_KEY_LEFT, 75),
+            Map.entry(GLFW.GLFW_KEY_DOWN, 80),
+            Map.entry(GLFW.GLFW_KEY_UP, 72),
+            Map.entry(GLFW.GLFW_KEY_RIGHT, 77),
+            Map.entry(GLFW.GLFW_KEY_PAGE_DOWN, 81),
+            Map.entry(GLFW.GLFW_KEY_PAGE_UP, 73),
+            Map.entry(GLFW.GLFW_KEY_END, 79),
+            Map.entry(GLFW.GLFW_KEY_HOME, 71),
+            Map.entry(GLFW.GLFW_KEY_ENTER, 28),
+            Map.entry(GLFW.GLFW_KEY_KP_ENTER, 28)
+    );
     private static final Set<Integer> WINDOWS_EXTENDED_KEY_SET = createSetByFirstColumn(WINDOWS_EXTENDED_KEYS);
 
     private static boolean isGlfwScanCodePreferredKey(int keyCode) {
@@ -72,15 +69,6 @@ final class GrapheneWindowsKeyEventPlatformResolver implements GrapheneKeyEventP
 
     private static boolean isWindowsExtendedKey(int keyCode) {
         return WINDOWS_EXTENDED_KEY_SET.contains(keyCode);
-    }
-
-    private static Map<Integer, Integer> createByFirstColumn(int[][] rows) {
-        Map<Integer, Integer> mappings = new HashMap<>();
-        for (int[] row : rows) {
-            mappings.put(row[0], row[1]);
-        }
-
-        return Map.copyOf(mappings);
     }
 
     private static Set<Integer> createSetByFirstColumn(int[][] rows) {
@@ -110,7 +98,7 @@ final class GrapheneWindowsKeyEventPlatformResolver implements GrapheneKeyEventP
     }
 
     @Override
-    public int getNativeKeyCode(int keyCode, int scanCode, char character, boolean pressed) {
+    public int getNativeVirtualKeyCode(int keyCode, int scanCode, char character, boolean pressed) {
         if (scanCode <= 0) {
             return 0;
         }
@@ -119,21 +107,7 @@ final class GrapheneWindowsKeyEventPlatformResolver implements GrapheneKeyEventP
     }
 
     @Override
-    public long getScanCode(int scanCode) {
-        if (scanCode <= 0) {
-            return 0L;
-        }
-
-        return scanCode & 0xFFL;
-    }
-
-    @Override
-    public int getCharNativeKeyCode(char character) {
-        return 0;
-    }
-
-    @Override
-    public int sanitizeCharEventModifiers(int modifiers, boolean rightAltPressed) {
+    public int sanitizeTextModifiers(int modifiers, boolean rightAltPressed) {
         boolean hasControlModifier = (modifiers & GLFW.GLFW_MOD_CONTROL) != 0;
         boolean hasAltModifier = (modifiers & GLFW.GLFW_MOD_ALT) != 0;
         if (rightAltPressed && hasControlModifier && hasAltModifier) {

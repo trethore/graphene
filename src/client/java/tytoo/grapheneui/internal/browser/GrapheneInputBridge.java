@@ -5,7 +5,6 @@ import org.cef.input.CefMouseWheelEvent;
 import org.cef.misc.EventFlags;
 import org.lwjgl.glfw.GLFW;
 import tytoo.grapheneui.internal.input.GrapheneInputModifierUtil;
-import tytoo.grapheneui.internal.input.keyboard.GrapheneKeyboardInputBridge;
 
 import java.awt.*;
 
@@ -16,7 +15,6 @@ final class GrapheneInputBridge {
 
     private final Component uiComponent = new Component() {
     };
-    private final GrapheneKeyboardInputBridge keyboardInputBridge = new GrapheneKeyboardInputBridge();
 
     private static int remapMouseCode(int button) {
         return switch (button) {
@@ -109,13 +107,5 @@ final class GrapheneInputBridge {
                 deltaY
         );
         browser.dispatchMouseWheelEvent(event);
-    }
-
-    void keyTyped(GrapheneBrowser browser, char character, int modifiers) {
-        keyboardInputBridge.keyTyped(browser::dispatchCefKeyEvent, character, modifiers);
-    }
-
-    void keyEventByKeyCode(GrapheneBrowser browser, int keyCode, int scanCode, int modifiers, boolean pressed) {
-        keyboardInputBridge.keyEventByKeyCode(browser::dispatchCefKeyEvent, keyCode, scanCode, modifiers, pressed);
     }
 }

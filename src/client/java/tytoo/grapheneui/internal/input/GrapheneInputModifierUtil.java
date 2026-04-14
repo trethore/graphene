@@ -29,6 +29,27 @@ public final class GrapheneInputModifierUtil {
         return cefModifiers;
     }
 
+    public static int toDevToolsModifiers(int modifiers) {
+        int devToolsModifiers = 0;
+        if ((modifiers & GLFW.GLFW_MOD_ALT) != 0) {
+            devToolsModifiers |= 1;
+        }
+
+        if ((modifiers & GLFW.GLFW_MOD_CONTROL) != 0) {
+            devToolsModifiers |= 2;
+        }
+
+        if ((modifiers & GLFW.GLFW_MOD_SUPER) != 0) {
+            devToolsModifiers |= 4;
+        }
+
+        if ((modifiers & GLFW.GLFW_MOD_SHIFT) != 0) {
+            devToolsModifiers |= 8;
+        }
+
+        return devToolsModifiers;
+    }
+
     public static int currentModifiers() {
         long windowHandle = GLFW.glfwGetCurrentContext();
         if (windowHandle == 0L) {

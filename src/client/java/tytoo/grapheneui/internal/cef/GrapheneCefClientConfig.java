@@ -23,7 +23,6 @@ public final class GrapheneCefClientConfig {
         GrapheneJsDialogManager jsDialogManager = new GrapheneJsDialogManager();
         GrapheneFolderUploadDialogManager folderUploadDialogManager = new GrapheneFolderUploadDialogManager();
         GrapheneCefDownloadHandler downloadHandler = new GrapheneCefDownloadHandler();
-        GrapheneCefKeyboardHandler keyboardHandler = new GrapheneCefKeyboardHandler();
         GrapheneCefLifeSpanHandler lifeSpanHandler = new GrapheneCefLifeSpanHandler();
         GrapheneCefRequestHandler requestHandler = new GrapheneCefRequestHandler();
 
@@ -33,7 +32,6 @@ public final class GrapheneCefClientConfig {
         validatedClient.addJSDialogHandler(new GrapheneCefJsDialogHandler(jsDialogManager));
         validatedClient.addDialogHandler(new GrapheneCefFileDialogHandler(folderUploadDialogManager));
         validatedClient.addDownloadHandler(downloadHandler);
-        validatedClient.addKeyboardHandler(keyboardHandler);
         validatedClient.addLifeSpanHandler(lifeSpanHandler);
         validatedClient.addRequestHandler(requestHandler);
 

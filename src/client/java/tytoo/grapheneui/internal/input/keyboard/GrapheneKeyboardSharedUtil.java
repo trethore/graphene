@@ -1,8 +1,6 @@
 package tytoo.grapheneui.internal.input.keyboard;
 
-import org.cef.misc.EventFlags;
 import org.lwjgl.glfw.GLFW;
-import tytoo.grapheneui.internal.input.GrapheneInputModifierUtil;
 
 import java.awt.event.KeyEvent;
 
@@ -13,34 +11,11 @@ final class GrapheneKeyboardSharedUtil {
     private GrapheneKeyboardSharedUtil() {
     }
 
-    static int toCefKeyboardModifiers(int modifiers, int keyCode, boolean numLockEnabled) {
-        int cefModifiers = GrapheneInputModifierUtil.toCefCommonModifiers(modifiers);
-
-        if ((modifiers & GLFW.GLFW_MOD_CAPS_LOCK) != 0) {
-            cefModifiers |= EventFlags.EVENTFLAG_CAPS_LOCK_ON;
-        }
-
-        if (numLockEnabled) {
-            cefModifiers |= EventFlags.EVENTFLAG_NUM_LOCK_ON;
-        }
-
-        if (GrapheneKeyboardMappings.isNumpadKey(keyCode)) {
-            cefModifiers |= EventFlags.EVENTFLAG_IS_KEY_PAD;
-        }
-
-        if (isLeftModifierKey(keyCode)) {
-            cefModifiers |= EventFlags.EVENTFLAG_IS_LEFT;
-        } else if (isRightModifierKey(keyCode)) {
-            cefModifiers |= EventFlags.EVENTFLAG_IS_RIGHT;
-        }
-
-        return cefModifiers;
-    }
-
     static char resolveLayoutCharacter(int keyCode, int scanCode, int modifiers) {
         boolean shift = (modifiers & GLFW.GLFW_MOD_SHIFT) != 0;
+        char fallbackCharacter = GrapheneKeyboardMappings.charFromKeyCode(keyCode, shift);
         if (GrapheneKeyboardMappings.isNumpadKey(keyCode)) {
-            return GrapheneKeyboardMappings.charFromKeyCode(keyCode, shift);
+            return fallbackCharacter;
         }
 
         String keyName = null;
@@ -53,15 +28,22 @@ final class GrapheneKeyboardSharedUtil {
         }
 
         if (keyName == null || keyName.isBlank()) {
-            return GrapheneKeyboardMappings.charFromKeyCode(keyCode, shift);
+            return fallbackCharacter;
         }
 
         int codePoint = keyName.codePointAt(0);
         if (!Character.isValidCodePoint(codePoint) || Character.isSupplementaryCodePoint(codePoint)) {
-            return GrapheneKeyboardMappings.charFromKeyCode(keyCode, shift);
+            return fallbackCharacter;
         }
 
         char layoutCharacter = (char) codePoint;
+        if (shift && fallbackCharacter != KeyEvent.CHAR_UNDEFINED) {
+            char unshiftedFallbackCharacter = GrapheneKeyboardMappings.charFromKeyCode(keyCode, false);
+            if (layoutCharacter == unshiftedFallbackCharacter) {
+                return fallbackCharacter;
+            }
+        }
+
         if (shift && Character.isLetter(layoutCharacter)) {
             return Character.toUpperCase(layoutCharacter);
         }
@@ -69,12 +51,28 @@ final class GrapheneKeyboardSharedUtil {
         return layoutCharacter;
     }
 
-    static int resolveDomKeyCode(int keyCode, char character, boolean numLockEnabled) {
-        if (GrapheneKeyboardMappings.isNumpadKey(keyCode)) {
-            if (GrapheneKeyboardMappings.requiresNumLockForText(keyCode) && !numLockEnabled) {
-                return 0;
+    static int resolveWindowsVirtualKeyCode(int keyCode, char character, boolean numLockEnabled) {
+        if (GrapheneKeyboardMappings.isNumpadKey(keyCode) && !numLockEnabled) {
+            int mappedLogicalKeyCode = switch (keyCode) {
+                case GLFW.GLFW_KEY_KP_0 -> KeyEvent.VK_INSERT;
+                case GLFW.GLFW_KEY_KP_1 -> KeyEvent.VK_END;
+                case GLFW.GLFW_KEY_KP_2 -> KeyEvent.VK_DOWN;
+                case GLFW.GLFW_KEY_KP_3 -> KeyEvent.VK_PAGE_DOWN;
+                case GLFW.GLFW_KEY_KP_4 -> KeyEvent.VK_LEFT;
+                case GLFW.GLFW_KEY_KP_5 -> KeyEvent.VK_CLEAR;
+                case GLFW.GLFW_KEY_KP_6 -> KeyEvent.VK_RIGHT;
+                case GLFW.GLFW_KEY_KP_7 -> KeyEvent.VK_HOME;
+                case GLFW.GLFW_KEY_KP_8 -> KeyEvent.VK_UP;
+                case GLFW.GLFW_KEY_KP_9 -> KeyEvent.VK_PAGE_UP;
+                case GLFW.GLFW_KEY_KP_DECIMAL -> KeyEvent.VK_DELETE;
+                default -> 0;
+            };
+            if (mappedLogicalKeyCode != 0) {
+                return mappedLogicalKeyCode;
             }
+        }
 
+        if (GrapheneKeyboardMappings.isNumpadKey(keyCode)) {
             int mappedKeyCode = GrapheneKeyboardMappings.windowsVkFromGlfw(keyCode);
             if (mappedKeyCode != 0) {
                 return mappedKeyCode;
@@ -95,8 +93,34 @@ final class GrapheneKeyboardSharedUtil {
             return mappedKeyCode;
         }
 
+        if (character == KeyEvent.CHAR_UNDEFINED) {
+            return 0;
+        }
+
         int charMappedKeyCode = GrapheneKeyboardMappings.windowsVkFromCharacter(character);
         return charMappedKeyCode != 0 ? charMappedKeyCode : character;
+    }
+
+    static String normalizeTypedText(String text) {
+        if (text == null || text.isEmpty()) {
+            return "";
+        }
+
+        if (text.codePointCount(0, text.length()) != 1) {
+            return text;
+        }
+
+        int codePoint = text.codePointAt(0);
+        if (!Character.isSupplementaryCodePoint(codePoint)) {
+            char normalizedCharacter = normalizeTypedCharacter((char) codePoint);
+            if (normalizedCharacter == KeyEvent.CHAR_UNDEFINED) {
+                return "";
+            }
+
+            return String.valueOf(normalizedCharacter);
+        }
+
+        return isUnsupportedTypedCodePoint(codePoint) ? "" : text;
     }
 
     static char normalizeTypedCharacter(char character) {
@@ -115,38 +139,22 @@ final class GrapheneKeyboardSharedUtil {
         return character;
     }
 
-    private static boolean isLeftModifierKey(int keyCode) {
-        return switch (keyCode) {
-            case GLFW.GLFW_KEY_LEFT_SHIFT,
-                 GLFW.GLFW_KEY_LEFT_CONTROL,
-                 GLFW.GLFW_KEY_LEFT_ALT,
-                 GLFW.GLFW_KEY_LEFT_SUPER -> true;
-            default -> false;
-        };
-    }
-
-    private static boolean isRightModifierKey(int keyCode) {
-        return switch (keyCode) {
-            case GLFW.GLFW_KEY_RIGHT_SHIFT,
-                 GLFW.GLFW_KEY_RIGHT_CONTROL,
-                 GLFW.GLFW_KEY_RIGHT_ALT,
-                 GLFW.GLFW_KEY_RIGHT_SUPER -> true;
-            default -> false;
-        };
-    }
-
     private static boolean isAsciiLetter(char character) {
         return (character >= 'a' && character <= 'z') || (character >= 'A' && character <= 'Z');
     }
 
     private static boolean isUnsupportedTypedCharacter(char character) {
-        if (character >= MAC_FUNCTION_KEY_START && character <= MAC_FUNCTION_KEY_END) {
+        return isUnsupportedTypedCodePoint(character);
+    }
+
+    private static boolean isUnsupportedTypedCodePoint(int codePoint) {
+        if (codePoint >= MAC_FUNCTION_KEY_START && codePoint <= MAC_FUNCTION_KEY_END) {
             return true;
         }
 
-        return Character.isISOControl(character)
-                && character != '\b'
-                && character != '\t'
-                && character != '\r';
+        return Character.isISOControl(codePoint)
+                && codePoint != '\b'
+                && codePoint != '\t'
+                && codePoint != '\r';
     }
 }
