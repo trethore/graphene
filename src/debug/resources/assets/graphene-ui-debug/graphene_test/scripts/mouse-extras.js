@@ -1,6 +1,4 @@
 (function () {
-    let removeListener = null;
-
     function statusElement() {
         return document.getElementById("status");
     }
@@ -23,8 +21,7 @@
 
     function renderMouseEvent(mouseExtrasApi, eventPayload) {
         const action = eventPayload.pressed ? "pressed" : "released";
-        statusElement().innerHTML =
-            "<span class=\"ok\">Bridge connected:</span> button " + eventPayload.button + " " + action;
+        statusElement().textContent = "Bridge connected: button " + eventPayload.button + " " + action;
         renderSnapshot(mouseExtrasApi);
     }
 
@@ -35,13 +32,9 @@
             return;
         }
 
-        if (typeof removeListener === "function") {
-            removeListener();
-        }
-
-        statusElement().innerHTML = "<span class=\"ok\">Bridge connected:</span> press an extra mouse button";
+        statusElement().textContent = "Bridge connected: press an extra mouse button";
         renderSnapshot(mouseExtrasApi);
-        removeListener = mouseExtrasApi.on(function (eventPayload) {
+        mouseExtrasApi.on(function (eventPayload) {
             renderMouseEvent(mouseExtrasApi, eventPayload);
         });
     }

@@ -4,16 +4,20 @@ body {
     margin: 1rem;
     line-height: 1.5;
     color: black;
-    padding: 0.5rem;
-    border-radius: 1em;
 }
 
-tr, #response-log {
-    background-color: white;
+pre {
+    white-space: pre-wrap;
 }
 
-tr {
-    border: medium black;
+table {
+    border-collapse: collapse;
 }
 
-
+th,
+td {
+    border: 1px solid black;
+    padding: 0.25rem 0.5rem;
+    text-align: left;
+    vertical-align: top;
+}

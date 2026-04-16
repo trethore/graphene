@@ -19,7 +19,12 @@
     }
 
     function renderNoResults(message) {
-        resultsBodyElement().innerHTML = "<tr><td colspan=\"4\">" + message + "</td></tr>";
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+        cell.colSpan = 4;
+        cell.textContent = message;
+        row.appendChild(cell);
+        resultsBodyElement().replaceChildren(row);
     }
 
     function renderSummary(report) {
@@ -53,27 +58,30 @@
             return;
         }
 
-        const rowsHtml = results.map(renderResultRow).join("");
-
-        resultsBodyElement().innerHTML = rowsHtml;
+        resultsBodyElement().replaceChildren(...results.map(createResultRow));
     }
 
-    function renderResultRow(result) {
+    function createCell(text) {
+        const cell = document.createElement("td");
+        cell.textContent = text;
+        return cell;
+    }
+
+    function createResultRow(result) {
         const passed = Boolean(result?.passed);
         const statusLabel = passed ? "PASS" : "FAIL";
-        const statusClass = passed ? "pass" : "fail";
         const durationMs = Number(result?.durationMs ?? 0);
         const testName = String(result?.name ?? "unknown");
         const detailText = !passed && result?.error
             ? ((result.error?.type || "Error") + ": " + (result.error?.message || "Unknown error"))
             : "-";
 
-        return "<tr>" +
-            "<td>" + testName + "</td>" +
-            "<td class=\"" + statusClass + "\">" + statusLabel + "</td>" +
-            "<td>" + durationMs + "</td>" +
-            "<td>" + detailText + "</td>" +
-            "</tr>";
+        const row = document.createElement("tr");
+        row.appendChild(createCell(testName));
+        row.appendChild(createCell(statusLabel));
+        row.appendChild(createCell(String(durationMs)));
+        row.appendChild(createCell(detailText));
+        return row;
     }
 
     function parseReport(payload) {
