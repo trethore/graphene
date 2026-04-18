@@ -25,6 +25,26 @@ public final class GrapheneRemoteDebugConfig {
         this.allowedOrigins = builder.allowedOrigins == null ? null : normalizeAllowedOrigins(builder.allowedOrigins);
     }
 
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) {
+            return true;
+        }
+
+        if (!(object instanceof GrapheneRemoteDebugConfig other)) {
+            return false;
+        }
+
+        return enabled == other.enabled
+                && Objects.equals(fixedPort, other.fixedPort)
+                && Objects.equals(allowedOrigins, other.allowedOrigins);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(enabled, fixedPort, allowedOrigins);
+    }
+
     public static GrapheneRemoteDebugConfig disabled() {
         return DISABLED;
     }
@@ -48,38 +68,6 @@ public final class GrapheneRemoteDebugConfig {
         }
 
         return port;
-    }
-
-    public boolean enabled() {
-        return enabled;
-    }
-
-    public Optional<Integer> fixedPort() {
-        return Optional.ofNullable(fixedPort);
-    }
-
-    public Optional<String> allowedOrigins() {
-        return Optional.ofNullable(allowedOrigins);
-    }
-
-    @Override
-    public boolean equals(Object object) {
-        if (this == object) {
-            return true;
-        }
-
-        if (!(object instanceof GrapheneRemoteDebugConfig other)) {
-            return false;
-        }
-
-        return enabled == other.enabled
-                && Objects.equals(fixedPort, other.fixedPort)
-                && Objects.equals(allowedOrigins, other.allowedOrigins);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(enabled, fixedPort, allowedOrigins);
     }
 
     public static final class Builder {
@@ -123,5 +111,17 @@ public final class GrapheneRemoteDebugConfig {
         public GrapheneRemoteDebugConfig build() {
             return new GrapheneRemoteDebugConfig(this);
         }
+    }
+
+    public boolean enabled() {
+        return enabled;
+    }
+
+    public Optional<Integer> fixedPort() {
+        return Optional.ofNullable(fixedPort);
+    }
+
+    public Optional<String> allowedOrigins() {
+        return Optional.ofNullable(allowedOrigins);
     }
 }

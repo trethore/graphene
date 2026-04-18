@@ -34,6 +34,11 @@ public final class GrapheneCore implements ClientModInitializer {
     private static final Map<String, GrapheneMod> CONSUMERS = new LinkedHashMap<>();
     private static volatile boolean registrationClosed;
 
+    @Override
+    public void onInitializeClient() {
+        ClientLifecycleEvents.CLIENT_STARTED.register(ignoredClient -> startIfConsumersRegistered());
+    }
+
     public static synchronized GrapheneHandle register(Class<?> anchorClass) {
         return register(anchorClass, GrapheneConfig.defaults());
     }
@@ -340,11 +345,6 @@ public final class GrapheneCore implements ClientModInitializer {
         }
 
         return GrapheneFileSystemAccessMode.DENY;
-    }
-
-    @Override
-    public void onInitializeClient() {
-        ClientLifecycleEvents.CLIENT_STARTED.register(ignoredClient -> startIfConsumersRegistered());
     }
 
     private record OwnedValue<T>(T value, String owner) {

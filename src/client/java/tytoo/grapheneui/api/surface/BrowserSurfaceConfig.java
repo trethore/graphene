@@ -44,12 +44,6 @@ public final class BrowserSurfaceConfig {
         return new Builder();
     }
 
-    private static void validateFrameRate(int maxFps) {
-        if (maxFps <= 0) {
-            throw new IllegalArgumentException("maxFps must be > 0");
-        }
-    }
-
     public BrowserSurfaceConfig withMaxFps(int maxFps) {
         validateFrameRate(maxFps);
         int mergedFrameRate = windowlessFrameRateExplicit
@@ -75,6 +69,12 @@ public final class BrowserSurfaceConfig {
 
         settingsCustomizer.accept(cefBrowserSettings);
         return cefBrowserSettings;
+    }
+
+    private static void validateFrameRate(int maxFps) {
+        if (maxFps <= 0) {
+            throw new IllegalArgumentException("maxFps must be > 0");
+        }
     }
 
     public static final class Builder {

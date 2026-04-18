@@ -82,51 +82,22 @@ public final class BrowserSurface implements AutoCloseable {
         }
     }
 
+    @Override
+    public void close() {
+        if (closed) {
+            return;
+        }
+
+        closed = true;
+        services.surfaceManager().unregister(this);
+        loadListenerScope.close();
+        titleListenerScope.close();
+        services.runtimeInternal().detachBridge(browser);
+        browser.close();
+    }
+
     public static Builder builder() {
         return new Builder();
-    }
-
-    GrapheneBrowser internalBrowser() {
-        return browser;
-    }
-
-    public boolean isClosed() {
-        return closed;
-    }
-
-    public GrapheneBridge bridge() {
-        ensureOpen();
-        return bridge;
-    }
-
-    public boolean canGoBack() {
-        ensureOpen();
-        return browser.canGoBack();
-    }
-
-    public boolean canGoForward() {
-        ensureOpen();
-        return browser.canGoForward();
-    }
-
-    public boolean isLoading() {
-        ensureOpen();
-        return browser.isLoading();
-    }
-
-    public CursorType getRequestedCursor() {
-        ensureOpen();
-        return browser.getRequestedCursor();
-    }
-
-    public String currentUrl() {
-        ensureOpen();
-        return browser.currentUrl();
-    }
-
-    public String currentTitle() {
-        ensureOpen();
-        return browser.currentTitle();
     }
 
     public void loadUrl(String url) {
@@ -151,36 +122,6 @@ public final class BrowserSurface implements AutoCloseable {
         ensureOpen();
         services.runtimeInternal().onNavigationRequested(browser);
         browser.reload();
-    }
-
-    public int getSurfaceWidth() {
-        ensureOpen();
-        return sizingState.surfaceWidth();
-    }
-
-    public int getSurfaceHeight() {
-        ensureOpen();
-        return sizingState.surfaceHeight();
-    }
-
-    public int getResolutionWidth() {
-        ensureOpen();
-        return sizingState.resolutionWidth();
-    }
-
-    public int getResolutionHeight() {
-        ensureOpen();
-        return sizingState.resolutionHeight();
-    }
-
-    public Rectangle getViewBox() {
-        ensureOpen();
-        return sizingState.viewBox();
-    }
-
-    public boolean isAutoResolution() {
-        ensureOpen();
-        return sizingState.isAutoResolution();
     }
 
     public void setOwner(Object owner) {
@@ -293,18 +234,8 @@ public final class BrowserSurface implements AutoCloseable {
         }
     }
 
-    @Override
-    public void close() {
-        if (closed) {
-            return;
-        }
-
-        closed = true;
-        services.surfaceManager().unregister(this);
-        loadListenerScope.close();
-        titleListenerScope.close();
-        services.runtimeInternal().detachBridge(browser);
-        browser.close();
+    GrapheneBrowser internalBrowser() {
+        return browser;
     }
 
     private void applyResizeInstruction(BrowserSurfaceSizingState.ResizeInstruction resizeInstruction) {
@@ -375,14 +306,6 @@ public final class BrowserSurface implements AutoCloseable {
         private Builder() {
         }
 
-        private static int requirePositive(int value, String name) {
-            if (value <= 0) {
-                throw new IllegalArgumentException(name + " must be > 0");
-            }
-
-            return value;
-        }
-
         public Builder url(String url) {
             this.url = Objects.requireNonNull(url, "url");
             return this;
@@ -446,5 +369,82 @@ public final class BrowserSurface implements AutoCloseable {
         public BrowserSurface build() {
             return new BrowserSurface(this);
         }
+
+        private static int requirePositive(int value, String name) {
+            if (value <= 0) {
+                throw new IllegalArgumentException(name + " must be > 0");
+            }
+
+            return value;
+        }
+    }
+
+    public boolean isClosed() {
+        return closed;
+    }
+
+    public GrapheneBridge bridge() {
+        ensureOpen();
+        return bridge;
+    }
+
+    public boolean canGoBack() {
+        ensureOpen();
+        return browser.canGoBack();
+    }
+
+    public boolean canGoForward() {
+        ensureOpen();
+        return browser.canGoForward();
+    }
+
+    public boolean isLoading() {
+        ensureOpen();
+        return browser.isLoading();
+    }
+
+    public CursorType getRequestedCursor() {
+        ensureOpen();
+        return browser.getRequestedCursor();
+    }
+
+    public String currentUrl() {
+        ensureOpen();
+        return browser.currentUrl();
+    }
+
+    public String currentTitle() {
+        ensureOpen();
+        return browser.currentTitle();
+    }
+
+    public int getSurfaceWidth() {
+        ensureOpen();
+        return sizingState.surfaceWidth();
+    }
+
+    public int getSurfaceHeight() {
+        ensureOpen();
+        return sizingState.surfaceHeight();
+    }
+
+    public int getResolutionWidth() {
+        ensureOpen();
+        return sizingState.resolutionWidth();
+    }
+
+    public int getResolutionHeight() {
+        ensureOpen();
+        return sizingState.resolutionHeight();
+    }
+
+    public Rectangle getViewBox() {
+        ensureOpen();
+        return sizingState.viewBox();
+    }
+
+    public boolean isAutoResolution() {
+        ensureOpen();
+        return sizingState.isAutoResolution();
     }
 }

@@ -46,13 +46,13 @@ public final class GrapheneClasspathUrls {
             super(SCHEME, defaultNamespace);
         }
 
-        private String normalizeResourcePath(String url) {
-            return normalizeAssetResourcePath(url);
-        }
-
         @Override
         protected String rootPrefix() {
             return ROOT_PREFIX;
+        }
+
+        private String normalizeResourcePath(String url) {
+            return normalizeAssetResourcePath(url);
         }
     }
 }

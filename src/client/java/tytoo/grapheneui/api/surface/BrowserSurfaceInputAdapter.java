@@ -29,18 +29,6 @@ public final class BrowserSurfaceInputAdapter {
         this.focusUtil.syncNativeFocus();
     }
 
-    public boolean isFocused() {
-        return focusUtil.isFocused();
-    }
-
-    public void setFocused(boolean focused) {
-        focusUtil.setFocused(focused);
-    }
-
-    public boolean isPrimaryPointerButtonDown() {
-        return inputController.isPrimaryPointerButtonDown();
-    }
-
     public void mouseMoved(double surfaceX, double surfaceY, int renderedWidth, int renderedHeight) {
         inputController.updateMousePosition(toBrowserPoint(surfaceX, surfaceY, renderedWidth, renderedHeight));
     }
@@ -132,5 +120,17 @@ public final class BrowserSurfaceInputAdapter {
 
     private Point toBrowserPoint(double surfaceX, double surfaceY, int renderedWidth, int renderedHeight) {
         return surface.toBrowserPoint(surfaceX, surfaceY, renderedWidth, renderedHeight);
+    }
+
+    public boolean isFocused() {
+        return focusUtil.isFocused();
+    }
+
+    public void setFocused(boolean focused) {
+        focusUtil.setFocused(focused);
+    }
+
+    public boolean isPrimaryPointerButtonDown() {
+        return inputController.isPrimaryPointerButtonDown();
     }
 }

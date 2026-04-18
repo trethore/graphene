@@ -14,18 +14,6 @@ public final class GrapheneContainerConfig {
         this.httpConfig = builder.httpConfig;
     }
 
-    public static GrapheneContainerConfig defaults() {
-        return DEFAULT;
-    }
-
-    public static Builder builder() {
-        return new Builder();
-    }
-
-    public Optional<GrapheneHttpConfig> http() {
-        return Optional.ofNullable(httpConfig);
-    }
-
     @Override
     public boolean equals(Object object) {
         if (this == object) {
@@ -42,6 +30,14 @@ public final class GrapheneContainerConfig {
     @Override
     public int hashCode() {
         return Objects.hash(httpConfig);
+    }
+
+    public static GrapheneContainerConfig defaults() {
+        return DEFAULT;
+    }
+
+    public static Builder builder() {
+        return new Builder();
     }
 
     public static final class Builder {
@@ -63,5 +59,9 @@ public final class GrapheneContainerConfig {
         public GrapheneContainerConfig build() {
             return new GrapheneContainerConfig(this);
         }
+    }
+
+    public Optional<GrapheneHttpConfig> http() {
+        return Optional.ofNullable(httpConfig);
     }
 }

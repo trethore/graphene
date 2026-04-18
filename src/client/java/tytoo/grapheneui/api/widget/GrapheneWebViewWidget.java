@@ -78,104 +78,6 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
         this.surface.setSurfaceSize(width, height);
     }
 
-    public BrowserSurface getSurface() {
-        ensureOpen();
-        return surface;
-    }
-
-    public boolean isClosed() {
-        return closed || surface.isClosed();
-    }
-
-    public GrapheneBridge bridge() {
-        ensureOpen();
-        return surface.bridge();
-    }
-
-    @SuppressWarnings("unused")
-    public void addLoadListener(GrapheneLoadListener loadListener) {
-        ensureOpen();
-        surface.addLoadListener(loadListener);
-    }
-
-    public BrowserSurface.Subscription subscribeLoadListener(GrapheneLoadListener loadListener) {
-        ensureOpen();
-        return surface.subscribeLoadListener(loadListener);
-    }
-
-    public void removeLoadListener(GrapheneLoadListener loadListener) {
-        ensureOpen();
-        surface.removeLoadListener(loadListener);
-    }
-
-    public BrowserSurface.Subscription subscribeTitleListener(GrapheneTitleListener titleListener) {
-        ensureOpen();
-        return surface.subscribeTitleListener(titleListener);
-    }
-
-    public void addTitleListener(GrapheneTitleListener titleListener) {
-        ensureOpen();
-        surface.addTitleListener(titleListener);
-    }
-
-    public void removeTitleListener(GrapheneTitleListener titleListener) {
-        ensureOpen();
-        surface.removeTitleListener(titleListener);
-    }
-
-    public void loadUrl(String url) {
-        ensureOpen();
-        surface.loadUrl(url);
-    }
-
-    public void goBack() {
-        ensureOpen();
-        surface.goBack();
-    }
-
-    public void goForward() {
-        ensureOpen();
-        surface.goForward();
-    }
-
-    public void reload() {
-        ensureOpen();
-        surface.reload();
-    }
-
-    public void requestKeyboardFocus() {
-        ensureOpen();
-        // Screen#setFocused only updates the child when the focused widget changes.
-        // If this web view is already the screen's focused widget, clicking an input inside it
-        // still needs to reassert native CEF focus or some pages stop painting the caret.
-        if (screen.getFocused() == this) {
-            setFocused(true);
-            return;
-        }
-
-        screen.setFocused(this);
-    }
-
-    public String currentUrl() {
-        ensureOpen();
-        return surface.currentUrl();
-    }
-
-    public String currentTitle() {
-        ensureOpen();
-        return surface.currentTitle();
-    }
-
-    public boolean canGoBack() {
-        ensureOpen();
-        return surface.canGoBack();
-    }
-
-    public boolean canGoForward() {
-        ensureOpen();
-        return surface.canGoForward();
-    }
-
     @Override
     protected void renderWidget(@NonNull GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         if (isClosed()) {
@@ -195,16 +97,6 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
         if (isMouseOver(mouseX, mouseY)) {
             guiGraphics.requestCursor(surface.getRequestedCursor());
         }
-    }
-
-    /**
-     * Draws a loading overlay while the browser surface is loading.
-     *
-     * <p>The default implementation is a no-op. Override this method to provide a custom loading
-     * indicator.</p>
-     */
-    protected void drawLoadingOverlay(@SuppressWarnings("unused") @NonNull GuiGraphics guiGraphics) {
-        // Intentionally empty: subclasses can override this hook to draw custom loading UI.
     }
 
     @Override
@@ -347,14 +239,6 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
         surface.setSurfaceSize(getWidth(), height);
     }
 
-    public void handleScreenResize() {
-        if (isClosed()) {
-            return;
-        }
-
-        surface.setSurfaceSize(getWidth(), getHeight());
-    }
-
     @Override
     public void close() {
         if (closed) {
@@ -378,6 +262,88 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
         GrapheneCore.closeOwnedSurfaces(this);
     }
 
+    @SuppressWarnings("unused")
+    public void addLoadListener(GrapheneLoadListener loadListener) {
+        ensureOpen();
+        surface.addLoadListener(loadListener);
+    }
+
+    public BrowserSurface.Subscription subscribeLoadListener(GrapheneLoadListener loadListener) {
+        ensureOpen();
+        return surface.subscribeLoadListener(loadListener);
+    }
+
+    public void removeLoadListener(GrapheneLoadListener loadListener) {
+        ensureOpen();
+        surface.removeLoadListener(loadListener);
+    }
+
+    public BrowserSurface.Subscription subscribeTitleListener(GrapheneTitleListener titleListener) {
+        ensureOpen();
+        return surface.subscribeTitleListener(titleListener);
+    }
+
+    public void addTitleListener(GrapheneTitleListener titleListener) {
+        ensureOpen();
+        surface.addTitleListener(titleListener);
+    }
+
+    public void removeTitleListener(GrapheneTitleListener titleListener) {
+        ensureOpen();
+        surface.removeTitleListener(titleListener);
+    }
+
+    public void loadUrl(String url) {
+        ensureOpen();
+        surface.loadUrl(url);
+    }
+
+    public void goBack() {
+        ensureOpen();
+        surface.goBack();
+    }
+
+    public void goForward() {
+        ensureOpen();
+        surface.goForward();
+    }
+
+    public void reload() {
+        ensureOpen();
+        surface.reload();
+    }
+
+    public void requestKeyboardFocus() {
+        ensureOpen();
+        // Screen#setFocused only updates the child when the focused widget changes.
+        // If this web view is already the screen's focused widget, clicking an input inside it
+        // still needs to reassert native CEF focus or some pages stop painting the caret.
+        if (screen.getFocused() == this) {
+            setFocused(true);
+            return;
+        }
+
+        screen.setFocused(this);
+    }
+
+    public void handleScreenResize() {
+        if (isClosed()) {
+            return;
+        }
+
+        surface.setSurfaceSize(getWidth(), getHeight());
+    }
+
+    /**
+     * Draws a loading overlay while the browser surface is loading.
+     *
+     * <p>The default implementation is a no-op. Override this method to provide a custom loading
+     * indicator.</p>
+     */
+    protected void drawLoadingOverlay(@SuppressWarnings("unused") @NonNull GuiGraphics guiGraphics) {
+        // Intentionally empty: subclasses can override this hook to draw custom loading UI.
+    }
+
     private void ensureOpen() {
         if (isClosed()) {
             throw new IllegalStateException("GrapheneWebViewWidget is closed");
@@ -390,5 +356,39 @@ public class GrapheneWebViewWidget extends AbstractWidget implements Closeable {
 
     private double localY(double mouseY) {
         return mouseY - getY();
+    }
+
+    public BrowserSurface getSurface() {
+        ensureOpen();
+        return surface;
+    }
+
+    public boolean isClosed() {
+        return closed || surface.isClosed();
+    }
+
+    public GrapheneBridge bridge() {
+        ensureOpen();
+        return surface.bridge();
+    }
+
+    public String currentUrl() {
+        ensureOpen();
+        return surface.currentUrl();
+    }
+
+    public String currentTitle() {
+        ensureOpen();
+        return surface.currentTitle();
+    }
+
+    public boolean canGoBack() {
+        ensureOpen();
+        return surface.canGoBack();
+    }
+
+    public boolean canGoForward() {
+        ensureOpen();
+        return surface.canGoForward();
     }
 }
