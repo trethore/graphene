@@ -35,4 +35,19 @@ final class GrapheneKeyboardSharedUtilTest {
 
         assertEquals(KeyEvent.CHAR_UNDEFINED, character);
     }
+
+    @Test
+    void resolveWindowsVirtualKeyCodeKeepsQwertyPrintableKeysPhysical() {
+        assertEquals(0xBC, GrapheneKeyboardSharedUtil.resolveWindowsVirtualKeyCode(GLFW.GLFW_KEY_COMMA, '<', true));
+        assertEquals(0xBE, GrapheneKeyboardSharedUtil.resolveWindowsVirtualKeyCode(GLFW.GLFW_KEY_PERIOD, '>', true));
+        assertEquals(0xC0, GrapheneKeyboardSharedUtil.resolveWindowsVirtualKeyCode(GLFW.GLFW_KEY_GRAVE_ACCENT, '`', true));
+    }
+
+    @Test
+    void resolveWindowsVirtualKeyCodeMapsAzertyPrintableKeysByLayout() {
+        assertEquals(0xDE, GrapheneKeyboardSharedUtil.resolveWindowsVirtualKeyCode(GLFW.GLFW_KEY_GRAVE_ACCENT, (char) 0x00B2, true));
+        assertEquals(0xC0, GrapheneKeyboardSharedUtil.resolveWindowsVirtualKeyCode(GLFW.GLFW_KEY_APOSTROPHE, (char) 0x00F9, true));
+        assertEquals(0xBA, GrapheneKeyboardSharedUtil.resolveWindowsVirtualKeyCode(GLFW.GLFW_KEY_RIGHT_BRACKET, '$', true));
+        assertEquals(0xE2, GrapheneKeyboardSharedUtil.resolveWindowsVirtualKeyCode(GLFW.GLFW_KEY_WORLD_1, '>', true));
+    }
 }

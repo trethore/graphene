@@ -27,18 +27,6 @@ public final class GrapheneDevToolsResolver {
         this.httpClient = Objects.requireNonNull(httpClient, "httpClient");
     }
 
-    public CompletableFuture<URI> resolveUri(int debugPort, String targetUrl) {
-        if (debugPort <= 0) {
-            return CompletableFuture.failedFuture(new IllegalStateException("CEF remote debugging is disabled"));
-        }
-
-        HttpRequest request = HttpRequest.newBuilder(targetListUri(debugPort))
-                .GET()
-                .build();
-        return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-                .thenApply(response -> resolveUriFromTargetList(debugPort, targetUrl, response));
-    }
-
     private static URI targetListUri(int debugPort) {
         return URI.create(localDevToolsOrigin(debugPort) + DEVTOOLS_LIST_PATH);
     }
@@ -125,5 +113,17 @@ public final class GrapheneDevToolsResolver {
         }
 
         return object.get(name).getAsString();
+    }
+
+    public CompletableFuture<URI> resolveUri(int debugPort, String targetUrl) {
+        if (debugPort <= 0) {
+            return CompletableFuture.failedFuture(new IllegalStateException("CEF remote debugging is disabled"));
+        }
+
+        HttpRequest request = HttpRequest.newBuilder(targetListUri(debugPort))
+                .GET()
+                .build();
+        return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenApply(response -> resolveUriFromTargetList(debugPort, targetUrl, response));
     }
 }

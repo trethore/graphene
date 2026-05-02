@@ -12,17 +12,19 @@ public final class GrapheneDomKeyboardMapper {
     public GrapheneDomKeyData mapKeyEvent(int keyCode, int scanCode, int modifiers, boolean pressed, boolean numLockEnabled) {
         int resolvedScanCode = platformResolver.resolveScanCode(keyCode, scanCode);
         char layoutCharacter = GrapheneKeyboardSharedUtil.resolveLayoutCharacter(keyCode, resolvedScanCode, modifiers);
-        char normalizedCharacter = GrapheneKeyboardSharedUtil.normalizeTypedCharacter(layoutCharacter);
-        return new GrapheneDomKeyData(
-                GrapheneKeyboardMappings.domCodeFromGlfw(keyCode),
-                resolveDomKey(keyCode, normalizedCharacter, numLockEnabled),
-                GrapheneKeyboardSharedUtil.resolveWindowsVirtualKeyCode(keyCode, normalizedCharacter, numLockEnabled),
-                platformResolver.getNativeVirtualKeyCode(keyCode, resolvedScanCode, normalizedCharacter, pressed),
-                resolveLocation(keyCode),
-                GrapheneKeyboardMappings.isNumpadKey(keyCode),
-                platformResolver.isSystemKey(modifiers),
-                GrapheneInputModifierUtil.toDevToolsModifiers(modifiers)
-        );
+        return mapResolvedKeyEvent(keyCode, resolvedScanCode, modifiers, pressed, numLockEnabled, layoutCharacter);
+    }
+
+    public GrapheneDomKeyData mapKeyEventWithCharacter(
+            int keyCode,
+            int scanCode,
+            int modifiers,
+            boolean pressed,
+            boolean numLockEnabled,
+            char character
+    ) {
+        int resolvedScanCode = platformResolver.resolveScanCode(keyCode, scanCode);
+        return mapResolvedKeyEvent(keyCode, resolvedScanCode, modifiers, pressed, numLockEnabled, character);
     }
 
     public String normalizeTypedText(String text) {
@@ -40,6 +42,27 @@ public final class GrapheneDomKeyboardMapper {
 
         String key = keyData.key();
         return key.length() == 1 ? key : "";
+    }
+
+    private GrapheneDomKeyData mapResolvedKeyEvent(
+            int keyCode,
+            int resolvedScanCode,
+            int modifiers,
+            boolean pressed,
+            boolean numLockEnabled,
+            char character
+    ) {
+        char normalizedCharacter = GrapheneKeyboardSharedUtil.normalizeTypedCharacter(character);
+        return new GrapheneDomKeyData(
+                GrapheneKeyboardMappings.domCodeFromGlfw(keyCode),
+                resolveDomKey(keyCode, normalizedCharacter, numLockEnabled),
+                GrapheneKeyboardSharedUtil.resolveWindowsVirtualKeyCode(keyCode, normalizedCharacter, numLockEnabled),
+                platformResolver.getNativeVirtualKeyCode(keyCode, resolvedScanCode, normalizedCharacter, pressed),
+                resolveLocation(keyCode),
+                GrapheneKeyboardMappings.isNumpadKey(keyCode),
+                platformResolver.isSystemKey(modifiers),
+                GrapheneInputModifierUtil.toDevToolsModifiers(modifiers)
+        );
     }
 
     private String resolveDomKey(int keyCode, char character, boolean numLockEnabled) {
