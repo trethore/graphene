@@ -1,10 +1,11 @@
 package tytoo.grapheneui.internal.input.keyboard;
 
 import org.lwjgl.glfw.GLFW;
+import tytoo.grapheneui.internal.input.keyboard.mapping.GrapheneKeyboardMappings;
 
 import java.awt.event.KeyEvent;
 
-final class GrapheneKeyboardSharedUtil {
+public final class GrapheneKeyboardSharedUtil {
     private static final char MAC_FUNCTION_KEY_START = '\uF700';
     private static final char MAC_FUNCTION_KEY_END = '\uF8FF';
 
@@ -111,7 +112,7 @@ final class GrapheneKeyboardSharedUtil {
         return isUnsupportedTypedCodePoint(codePoint) ? "" : text;
     }
 
-    static char normalizeTypedCharacter(char character) {
+    public static char normalizeTypedCharacter(char character) {
         if (character == 0x7F) {
             return '\b';
         }

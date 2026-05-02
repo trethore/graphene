@@ -3,7 +3,7 @@ package tytoo.grapheneui.api.surface;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import tytoo.grapheneui.internal.browser.GrapheneFocusUtil;
-import tytoo.grapheneui.internal.browser.GrapheneWebViewInputController;
+import tytoo.grapheneui.internal.browser.input.GrapheneWebViewInputController;
 
 import java.awt.*;
 import java.util.Objects;

@@ -2,6 +2,8 @@ package tytoo.grapheneui.internal.input.keyboard;
 
 import org.lwjgl.glfw.GLFW;
 import tytoo.grapheneui.internal.input.GrapheneInputModifierUtil;
+import tytoo.grapheneui.internal.input.keyboard.mapping.GrapheneKeyboardMappings;
+import tytoo.grapheneui.internal.input.keyboard.platform.GrapheneKeyEventPlatformResolver;
 import tytoo.grapheneui.internal.platform.GraphenePlatform;
 
 import java.awt.event.KeyEvent;

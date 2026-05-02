@@ -19,7 +19,7 @@ import tytoo.grapheneui.api.surface.BrowserSurface;
 import tytoo.grapheneui.internal.bridge.GrapheneBridgeOptions;
 import tytoo.grapheneui.internal.bridge.GrapheneBridgeRuntime;
 import tytoo.grapheneui.internal.browser.GrapheneBrowser;
-import tytoo.grapheneui.internal.browser.GrapheneBrowserSurfaceManager;
+import tytoo.grapheneui.internal.browser.surface.GrapheneBrowserSurfaceManager;
 import tytoo.grapheneui.internal.cef.startup.GrapheneCefStartupProgressHandler;
 import tytoo.grapheneui.internal.cef.startup.GrapheneNativeDownloadOverlay;
 import tytoo.grapheneui.internal.cef.startup.GrapheneNativeDownloadState;
