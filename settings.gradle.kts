@@ -15,3 +15,6 @@ pluginManagement {
 }
 
 rootProject.name = "graphene-ui"
+
+include("common")
+include("fabric-1.21.11")

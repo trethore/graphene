@@ -1,0 +1,57 @@
+package tytoo.grapheneui.api.url;
+
+import tytoo.grapheneui.api.GrapheneConstants;
+import tytoo.grapheneui.internal.url.AbstractGrapheneSchemedAssetUrls;
+
+/**
+ * Utility class for constructing and normalizing "classpath:" URLs for loading assets from the classpath.
+ * The URLs have the format "classpath:///assets/{namespace}/{path}".
+ */
+public final class GrapheneClasspathUrls {
+    public static final String SCHEME = "classpath";
+
+    private static final GrapheneClasspathUrlsSupport SUPPORT = new GrapheneClasspathUrlsSupport(GrapheneConstants.ID);
+
+    private GrapheneClasspathUrls() {
+    }
+
+    /**
+     * Constructs a classpath URL for an asset with the specified namespace and path.
+     */
+    public static String asset(String namespace, String path) {
+        return SUPPORT.asset(namespace, path);
+    }
+
+    public static String asset(Object assetId) {
+        return SUPPORT.asset(assetId);
+    }
+
+    public static GrapheneAssetUrls assets() {
+        return SUPPORT;
+    }
+
+    public static GrapheneAssetUrls assets(String namespace) {
+        return new GrapheneClasspathUrlsSupport(namespace);
+    }
+
+    public static String normalizeResourcePath(String url) {
+        return SUPPORT.normalizeResourcePath(url);
+    }
+
+    private static final class GrapheneClasspathUrlsSupport extends AbstractGrapheneSchemedAssetUrls {
+        private static final String ROOT_PREFIX = SCHEME + ":///" + ASSET_HOST + "/";
+
+        private GrapheneClasspathUrlsSupport(String defaultNamespace) {
+            super(SCHEME, defaultNamespace);
+        }
+
+        @Override
+        protected String rootPrefix() {
+            return ROOT_PREFIX;
+        }
+
+        private String normalizeResourcePath(String url) {
+            return normalizeAssetResourcePath(url);
+        }
+    }
+}
