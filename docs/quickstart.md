@@ -85,7 +85,7 @@ Notes:
 
 ## Put Assets Under Your Namespace
 
-Typical layout:
+Typical layout in a consumer Fabric mod:
 
 ```text
 src/client/resources/
@@ -96,6 +96,9 @@ src/client/resources/
         app.js
         styles.css
 ```
+
+In this repository, version-specific assets live under `fabric-1.21.11/src/client/resources/` or the matching
+`fabric-<minecraft-version>/src/client/resources/` module.
 
 Then load with:
 

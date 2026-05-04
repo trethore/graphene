@@ -82,7 +82,7 @@ Classpath equivalents also work.
 For repository integration work, use the debug client run configuration:
 
 ```bash
-./gradlew runDebugClient
+./gradlew :fabric-1.21.11:runDebugClient
 ```
 
 Then in-game:
@@ -94,15 +94,15 @@ Then in-game:
 To enable Graphene debug logs for the repository debug run:
 
 ```bash
-./gradlew runDebugClient -PgrapheneDebug=*
-./gradlew runDebugClient -PgrapheneDebug=tytoo.grapheneui.internal.bridge
-./gradlew runDebugClient -PgrapheneDebug=tytoo.grapheneui.internal.bridge.GrapheneBridgeRuntime
-./gradlew runDebugClient -PgrapheneDebug=tytoo.grapheneui.internal.cef,tytoo.grapheneuidebug
+./gradlew :fabric-1.21.11:runDebugClient -PgrapheneDebug=*
+./gradlew :fabric-1.21.11:runDebugClient -PgrapheneDebug=tytoo.grapheneui.internal.bridge
+./gradlew :fabric-1.21.11:runDebugClient -PgrapheneDebug=tytoo.grapheneui.internal.bridge.GrapheneBridgeRuntime
+./gradlew :fabric-1.21.11:runDebugClient -PgrapheneDebug=tytoo.grapheneui.internal.cef,tytoo.grapheneuidebug
 ```
 
 To disable Graphene debug logs again, run without `-PgrapheneDebug`.
 
-When `-PgrapheneDebug=...` is set for `runDebugClient`, the run configuration also enables `fabric.log.level=debug`.
+When `-PgrapheneDebug=...` is set for the version module's `runDebugClient`, the run configuration also enables `fabric.log.level=debug`.
 
 ## Logging
 

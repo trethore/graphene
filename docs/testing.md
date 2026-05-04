@@ -1,15 +1,15 @@
 # Testing
 
-Graphene has two practical validation layers: unit tests under `src/test/java/...` and in-game debug flows in the debug
-module.
+Graphene has two practical validation layers: unit tests in `common/src/test/java/...` and version modules, plus
+in-game debug flows in the version-specific debug module.
 
 **Validation layers**
 
-| Layer        | Command / action           | Covers                                               |
-|--------------|----------------------------|------------------------------------------------------|
-| Unit tests   | `./gradlew test`           | Serialization, URLs, HTTP config, mapping, selectors |
-| Build checks | `./gradlew build`          | Compilation, tests, packaging checks                 |
-| Debug client | `./gradlew runDebugClient` | In-game loading, navigation, bridge behavior         |
+| Layer        | Command / action                            | Covers                                               |
+|--------------|---------------------------------------------|------------------------------------------------------|
+| Unit tests   | `./gradlew test`                            | Serialization, URLs, HTTP config, mapping, selectors |
+| Build checks | `./gradlew check`                           | Compilation, tests, packaging, common guards         |
+| Debug client | `./gradlew :fabric-1.21.11:runDebugClient` | In-game loading, navigation, bridge behavior         |
 
 ## Unit Test Coverage
 
@@ -36,7 +36,7 @@ viewport/input mapping, and debug selector parsing.
 
 Use the debug client and bundled pages to validate end-to-end behavior:
 
-1. Run `./gradlew runDebugClient`.
+1. Run `./gradlew :fabric-1.21.11:runDebugClient`.
 2. Press `F10` to open `GrapheneBrowserDebugScreen`.
 3. Visit `graphene_test/pages/tests.html` and `graphene_test/pages/automated-tests.html`.
 4. Trigger bridge interactions and automated test runs from the page UI.
@@ -49,13 +49,14 @@ results.
 Run from repository root:
 
 ```bash
-./gradlew compileJava
+./gradlew :common:compileJava :fabric-1.21.11:compileClientJava
 ./gradlew test
-./gradlew build
-./gradlew runDebugClient
-./gradlew runDebugClient -PgrapheneDebug=*
-./gradlew runDebugClient -PgrapheneDebug=tytoo.grapheneui.internal.bridge
-./gradlew runDebugClient -PgrapheneDebug=tytoo.grapheneui.internal.bridge.GrapheneBridgeRuntime
+./gradlew check
+./gradlew :common:checkNoMinecraftImports
+./gradlew :fabric-1.21.11:runDebugClient
+./gradlew :fabric-1.21.11:runDebugClient -PgrapheneDebug=*
+./gradlew :fabric-1.21.11:runDebugClient -PgrapheneDebug=tytoo.grapheneui.internal.bridge
+./gradlew :fabric-1.21.11:runDebugClient -PgrapheneDebug=tytoo.grapheneui.internal.bridge.GrapheneBridgeRuntime
 ```
 
 For logging checks, run one pass without `-PgrapheneDebug` and one with a selector. Remove `-PgrapheneDebug` again to

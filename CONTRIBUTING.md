@@ -15,32 +15,50 @@ Here is the recommended development setup that ensures consistency and compatibi
 ### Development Setup
 
 - Java `21`
-- Minecraft `1.21.11`
 - Fabric Loader `0.18.4`
-- Fabric API `0.141.3+1.21.11`
+
+Supported version modules:
+
+| Module            | Minecraft  | Fabric API             |
+|-------------------|------------|------------------------|
+| `fabric-1.21.11` | `1.21.11` | `0.141.3+1.21.11` |
 
 ### Public API and Internal Code
 
-- `tytoo.grapheneui.api.*` -> supported public API for consumers
+- `common/src/main/java/tytoo/grapheneui/api/*` -> shared public API for consumers
+- `fabric-<minecraft-version>/src/client/java/tytoo/grapheneui/api/*` -> version-specific public API that may mention Minecraft or Fabric types
 - `tytoo.grapheneui.internal.*` -> internal implementation details that may change without notice
 
 Changes under `api/` should be reviewed as public API changes.
+Keep Minecraft, Mojang, Fabric, and Mixin imports out of `common/`; put version-specific integration in the matching
+`fabric-<minecraft-version>/` module.
 If a pull request changes public behavior, update the relevant documentation in `README.md` and `docs/`.
+
+### Adding or Updating Version Modules
+
+When adding support for another Minecraft version:
+
+1. Add a new `fabric-<minecraft-version>/` module.
+2. Include it in `settings.gradle.kts`.
+3. Put Minecraft and Fabric API versions in that module's `gradle.properties`.
+4. Keep reusable logic in `common/` and only move version-specific integration into the new Fabric module.
+5. Update the supported-version tables in `README.md`, `docs/README.md`, and `docs/installation.md`.
+6. Update validation commands and CI references if the new module should run by default.
 
 ### Testing and Manual Validation
 
 Run these commands from the repository root:
 
 ```bash
-./gradlew compileJava
+./gradlew :common:compileJava :fabric-1.21.11:compileClientJava
 ./gradlew test
-./gradlew build
-./gradlew runDebugClient
+./gradlew check
+./gradlew :fabric-1.21.11:runDebugClient
 ```
 
 When changing browser runtime, bridge, input, rendering, or loading behavior, also validate in game:
 
-1. Run `./gradlew runDebugClient`.
+1. Run `./gradlew :fabric-1.21.11:runDebugClient`.
 2. Press `F10` to open `GrapheneBrowserDebugScreen`.
 3. Validate the manual test pages pass.
 4. Record the manual steps you ran in the pull request.

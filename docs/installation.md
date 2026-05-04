@@ -1,13 +1,13 @@
 # Installation
 
-Graphene is published as a Fabric mod on Maven Central. Recommended integration is to depend on Graphene as a separate
-runtime mod.
+Graphene is published as version-specific Fabric mod artifacts on Maven Central. Recommended integration is to depend
+on the matching Graphene artifact as a separate runtime mod.
 
 **Integration modes**
 
 | Mode                   | Use when                       | Trade-off                                                 |
 |------------------------|--------------------------------|-----------------------------------------------------------|
-| Standalone runtime mod | Most mods                      | Users install `graphene-ui-<version>.jar` beside your mod |
+| Standalone runtime mod | Most mods                      | Users install the matching Graphene Fabric jar beside your mod |
 | Jar-in-jar             | You need one distributable jar | Higher risk of version conflicts                          |
 
 **Main API**
@@ -19,12 +19,12 @@ runtime mod.
 ## Dependency Coordinates
 
 - Group: `io.github.trethore`
-- Artifact: `graphene-ui`
+- Artifact for Minecraft `1.21.11`: `graphene-ui-fabric-1.21.11`
 - Version: `<version>`
 
 Maven Central artifact path:
 
-- `https://repo1.maven.org/maven2/io/github/trethore/graphene-ui/<version>/`
+- `https://repo1.maven.org/maven2/io/github/trethore/graphene-ui-fabric-1.21.11/<version>/`
 
 Releases:
 
@@ -40,11 +40,12 @@ repositories {
 }
 
 dependencies {
-    modImplementation("io.github.trethore:graphene-ui:<version>")
+    modImplementation("io.github.trethore:graphene-ui-fabric-1.21.11:<version>")
 }
 ```
 
-In your `fabric.mod.json`, declare Graphene as a dependency:
+In your `fabric.mod.json`, declare Graphene as a dependency. The Fabric mod id remains `graphene-ui` even though Maven
+artifact ids are version-specific:
 
 ```json
 {
@@ -57,7 +58,7 @@ In your `fabric.mod.json`, declare Graphene as a dependency:
 Runtime packaging model:
 
 1. Ship your mod.
-2. Install `graphene-ui-<version>.jar` in the same `mods/` directory.
+2. Install the matching `graphene-ui-fabric-<minecraft-version>-<version>.jar` in the same `mods/` directory.
 
 ## Optional Jar-In-Jar Model
 
@@ -65,8 +66,8 @@ If you need one distributable jar, you can embed Graphene:
 
 ```kotlin
 dependencies {
-    modImplementation("io.github.trethore:graphene-ui:<version>")
-    include("io.github.trethore:graphene-ui:<version>")
+    modImplementation("io.github.trethore:graphene-ui-fabric-1.21.11:<version>")
+    include("io.github.trethore:graphene-ui-fabric-1.21.11:<version>")
 }
 ```
 
@@ -177,9 +178,10 @@ Conflicts throw a startup `IllegalStateException` that names both conflicting co
 
 ## Compatibility Baseline
 
-Current repository baseline:
+Current supported Fabric modules:
 
-- Minecraft `1.21.11`
-- Fabric Loader `0.18.4`
-- Fabric API `0.141.3+1.21.11`
-- Java `21`
+| Module            | Minecraft  | Fabric Loader | Fabric API             | Artifact                                                    |
+|-------------------|------------|---------------|------------------------|-------------------------------------------------------------|
+| `fabric-1.21.11` | `1.21.11` | `0.18.4`      | `0.141.3+1.21.11` | `io.github.trethore:graphene-ui-fabric-1.21.11:<version>` |
+
+Java baseline: `21`.

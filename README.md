@@ -5,21 +5,24 @@
 [![Minecraft: 1.21.11](https://img.shields.io/badge/Minecraft-1.21.11-5E8C31?style=for-the-badge&logo=minecraft)](https://www.minecraft.net/)
 [![Modrinth](https://img.shields.io/badge/Modrinth-Graphene-1BD96A?style=for-the-badge&logo=modrinth)](https://modrinth.com/mod/grapheneui)
 
-Graphene is a client-side UI library for Minecraft `1.21.11` on Fabric. It embeds Chromium through JCEF so mod
-developers can render HTML/CSS/JavaScript UIs in-game while keeping a clean Java integration API.
+Graphene is a client-side UI library for Fabric Minecraft mods. It embeds Chromium through JCEF so mod developers
+can render HTML/CSS/JavaScript UIs in-game while keeping a clean Java integration API.
 
 ![Graphene demo](docs/images/demo.png)
 
 **At a glance**
 
-| Area          | Details                                    |
-|---------------|--------------------------------------------|
-| Minecraft     | `1.21.11`                                  |
-| Loader        | Fabric                                     |
-| Runtime       | Client-side                                |
-| UI engine     | Chromium via JCEF                          |
-| Java baseline | `21`                                       |
-| Artifact      | `io.github.trethore:graphene-ui:<version>` |
+| Area          | Details           |
+|---------------|-------------------|
+| Runtime       | Client-side       |
+| UI engine     | Chromium via JCEF |
+| Java baseline | `21`              |
+
+**Supported versions**
+
+| Module            | Minecraft  | Loader | Artifact                                                    |
+|-------------------|------------|--------|-------------------------------------------------------------|
+| `fabric-1.21.11` | `1.21.11` | Fabric | `io.github.trethore:graphene-ui-fabric-1.21.11:<version>` |
 
 **Documentation**
 
@@ -31,8 +34,8 @@ developers can render HTML/CSS/JavaScript UIs in-game while keeping a clean Java
 ## What is Graphene?
 
 Graphene bridges Minecraft modding and modern web UI development. Instead of writing every screen directly with
-Minecraft rendering primitives, you can use browser capabilities while keeping your integration focused on Fabric +
-Minecraft `1.21.11`.
+Minecraft rendering primitives, you can use browser capabilities while keeping your integration focused on Fabric and
+the Minecraft version you target.
 
 **Use Graphene to**
 
@@ -65,14 +68,14 @@ Minecraft `1.21.11`.
 
 ## Installation
 
-Graphene is published on Maven Central and GitHub Packages. Maven Central is recommended because it does not require
-authentication.
+Graphene is published as version-specific Fabric artifacts on Maven Central and GitHub Packages. Maven Central is
+recommended because it does not require authentication.
 
 **Release locations**
 
 | Source          | Link                                                                                             |
 |-----------------|--------------------------------------------------------------------------------------------------|
-| Maven Central   | [io/github/trethore/graphene-ui](https://repo1.maven.org/maven2/io/github/trethore/graphene-ui/) |
+| Maven Central   | [io/github/trethore/graphene-ui-fabric-1.21.11](https://repo1.maven.org/maven2/io/github/trethore/graphene-ui-fabric-1.21.11/) |
 | GitHub releases | [trethore/graphene releases](https://github.com/trethore/graphene/releases)                      |
 
 ### Maven Coordinates
@@ -80,7 +83,7 @@ authentication.
 ```xml
 <dependency>
   <groupId>io.github.trethore</groupId>
-  <artifactId>graphene-ui</artifactId>
+  <artifactId>graphene-ui-fabric-1.21.11</artifactId>
   <version>&lt;version&gt;</version>
 </dependency>
 ```
@@ -91,7 +94,7 @@ Primary model: keep Graphene as a separate mod dependency.
 
 | Model                | Recommendation | Notes                                                                       |
 |----------------------|----------------|-----------------------------------------------------------------------------|
-| Separate runtime mod | Recommended    | Install your mod jar and `graphene-ui-<version>.jar` in `mods/`             |
+| Separate runtime mod | Recommended    | Install your mod jar and the matching Graphene Fabric jar in `mods/`        |
 | Jar-in-jar           | Optional       | Higher risk of conflicts if multiple mods embed different Graphene versions |
 
 ```kotlin
@@ -100,13 +103,13 @@ repositories {
 }
 
 dependencies {
-    modImplementation("io.github.trethore:graphene-ui:<version>")
+    modImplementation("io.github.trethore:graphene-ui-fabric-1.21.11:<version>")
 }
 ```
 
 Note: Graphene is also available on GitHub Packages.
 
-In your `fabric.mod.json`, declare:
+In your `fabric.mod.json`, declare the Fabric mod id `graphene-ui`:
 
 ```json
 {

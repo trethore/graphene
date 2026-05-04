@@ -49,6 +49,8 @@ String mountedHttpUrl = grapheneHandle.httpUrl("web/index.html");
 
 ## Resource Layout
 
+Typical layout in a consumer Fabric mod:
+
 ```text
 src/client/resources/
   assets/
@@ -59,6 +61,9 @@ src/client/resources/
         styles.css
         images/logo.png
 ```
+
+In this repository, version-specific assets live under `fabric-1.21.11/src/client/resources/` or the matching
+`fabric-<minecraft-version>/src/client/resources/` module.
 
 Load with:
 
