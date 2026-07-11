@@ -8,6 +8,7 @@ plugins {
 val minecraftVersion = "1.21.11"
 val loaderVersion = providers.gradleProperty("loader_version").get()
 val fabricApiVersion = "0.141.4+1.21.11"
+val jcefGithubVersion = providers.gradleProperty("jcefgithub_version").get()
 
 base {
   archivesName = rootProject.name
@@ -31,17 +32,67 @@ loom {
   }
 }
 
-configurations.implementation {
-  extendsFrom(configurations.include.get())
-}
-
 dependencies {
   unpack(minecraft("com.mojang:minecraft:$minecraftVersion"))
   mappings(loom.officialMojangMappings())
   modImplementation("net.fabricmc:fabric-loader:$loaderVersion")
   unpack(modImplementation("net.fabricmc.fabric-api:fabric-api:$fabricApiVersion"))
 
+  implementation(project(":packages:common"))
   include(project(":packages:common"))
+  include("io.github.trethore:jcefgithub:${jcefGithubVersion}") {
+    isTransitive = false
+    artifact {
+      classifier = "all-relocated"
+    }
+  }
+}
+
+val checkFabricArchitecture by tasks.registering {
+  group = "verification"
+  description = "Ensures Fabric source code does not access JCEF directly."
+
+  val javaSources =
+      fileTree("src") {
+        include("**/*.java")
+      }
+
+  inputs.files(javaSources)
+
+  doLast {
+    val forbiddenImports =
+        listOf(
+            "org.cef.",
+            "io.github.trethore.jcefgithub.",
+        )
+
+    val violations =
+        javaSources.files.flatMap { sourceFile ->
+          sourceFile.readLines().mapIndexedNotNull { index, line ->
+            val trimmedLine = line.trim()
+            val forbiddenImport = forbiddenImports.firstOrNull { packageName ->
+              trimmedLine.startsWith("import $packageName")
+            }
+
+            forbiddenImport?.let {
+              "${sourceFile.relativeTo(projectDir)}:${index + 1}: $trimmedLine"
+            }
+          }
+        }
+
+    check(violations.isEmpty()) {
+      buildString {
+        appendLine("Fabric code must not import JCEF directly.")
+        appendLine("JCEF can only be accessed from packages/common.")
+        appendLine()
+        violations.forEach(::appendLine)
+      }
+    }
+  }
+}
+
+tasks.named("check") {
+  dependsOn(checkFabricArchitecture)
 }
 
 tasks.processResources {

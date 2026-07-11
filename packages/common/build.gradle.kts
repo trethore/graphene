@@ -5,7 +5,7 @@ plugins {
   `maven-publish`
 }
 
-val jcefGithubVersion = "146.0.10.3"
+val jcefGithubVersion = providers.gradleProperty("jcefgithub_version").get()
 
 dependencies {
   implementation("io.github.trethore:jcefgithub:${jcefGithubVersion}:all-relocated") {
