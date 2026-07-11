@@ -1,0 +1,49 @@
+body {
+    font-family: sans-serif;
+    margin: 16px;
+    line-height: 1.4;
+}
+
+button {
+    font: inherit;
+    padding: 7px 10px;
+}
+
+#status {
+    margin: 12px 0;
+    font-weight: 700;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+}
+
+th,
+td {
+    border: 1px solid #bbb;
+    padding: 8px;
+    text-align: left;
+    vertical-align: top;
+    word-break: break-word;
+}
+
+th {
+    background: #f2f2f2;
+}
+
+.pass {
+    color: #0a6f26;
+    font-weight: 700;
+}
+
+.fail {
+    color: #9a1b1b;
+    font-weight: 700;
+}
+
+#run-summary {
+    margin-top: 8px;
+    white-space: pre-wrap;
+}

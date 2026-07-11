@@ -21,3 +21,9 @@ rootProject.name = "graphene"
 include("packages:common")
 
 include("packages:fabric-1.21.11")
+
+include("tools:debug-client-fabric-1.21.11")
+
+project(":tools").projectDir = file("debug-client")
+
+project(":tools:debug-client-fabric-1.21.11").projectDir = file("debug-client/fabric-1.21.11")

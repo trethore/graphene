@@ -68,6 +68,34 @@ public class GrapheneWebViewWidget extends AbstractWidget implements AutoCloseab
     return surface.browser().bridge();
   }
 
+  public String currentUrl() {
+    return surface.browser().currentUrl();
+  }
+
+  public boolean canGoBack() {
+    return surface.browser().canGoBack();
+  }
+
+  public boolean canGoForward() {
+    return surface.browser().canGoForward();
+  }
+
+  public void navigate(String url) {
+    surface.browser().navigate(url);
+  }
+
+  public void goBack() {
+    surface.browser().goBack();
+  }
+
+  public void goForward() {
+    surface.browser().goForward();
+  }
+
+  public void reload() {
+    surface.browser().reload();
+  }
+
   @Override
   protected void renderWidget(
       @NonNull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {

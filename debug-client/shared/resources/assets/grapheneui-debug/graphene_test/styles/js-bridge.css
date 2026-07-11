@@ -1,0 +1,38 @@
+body {
+    font-family: sans-serif;
+    margin: 16px;
+    line-height: 1.4;
+}
+
+.row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+input,
+button {
+    font: inherit;
+    padding: 6px 8px;
+}
+
+input[type="text"],
+input[type="number"] {
+    min-width: 220px;
+}
+
+#bridge-status {
+    font-weight: 700;
+    margin: 8px 0 16px;
+}
+
+pre {
+    background: #111;
+    color: #eee;
+    padding: 10px;
+    border-radius: 6px;
+    overflow: auto;
+    max-height: 320px;
+}

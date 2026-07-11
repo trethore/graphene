@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "id": "grapheneui-debug",
+  "version": "${version}",
+  "name": "Graphene Debug Client",
+  "description": "Development client and smoke tests for Graphene on Minecraft ${minecraftVersion}.",
+  "authors": [
+    "trethore"
+  ],
+  "license": "MIT",
+  "icon": "assets/grapheneui-debug/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "io.github.trethore.graphene.debug.GrapheneDebugClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=${loaderVersion}",
+    "minecraft": "~${minecraftVersion}",
+    "java": ">=21",
+    "fabric-api": ">=${fabricApiVersion}",
+    "grapheneui": "*"
+  }
+}

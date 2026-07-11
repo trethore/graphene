@@ -31,3 +31,18 @@ If IntelliJ does not create the Minecraft run configurations automatically after
 ```sh
 ./gradlew :packages:fabric-1.21.11:ideaSyncTask
 ```
+
+## Debug client
+
+Each supported Minecraft version can provide a separate debug-client project. The debug client loads the production
+Graphene source set together with a standalone `grapheneui-debug` Fabric mod, while shared static smoke-test pages live
+under `debug-client/shared/resources`.
+
+Run the Minecraft 1.21.11 debug client with:
+
+```sh
+./gradlew :tools:debug-client-fabric-1.21.11:runDebugClient
+```
+
+Press F10 in game to open the browser test screen. Debug classes and resources are not included in the production
+Graphene JAR.

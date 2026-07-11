@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+    <title>Graphene JS Bridge Test</title>
+    <link href="../styles/js-bridge.css" rel="stylesheet">
+    <script defer src="../scripts/js-bridge.js"></script>
+</head>
+<body>
+<h1>JS Bridge</h1>
+<p><a href="tests.html">Back to tests page</a></p>
+
+<div id="bridge-status">Bridge status: connecting...</div>
+
+<h2>JS -&gt; Java Event</h2>
+<div class="row">
+    <label for="event-text">Event text</label>
+    <input id="event-text" placeholder="Type a text message" type="text" value="Hello from JS event">
+    <button id="send-event" type="button">Emit debug:event</button>
+</div>
+
+<h2>JS -&gt; Java Request (Echo)</h2>
+<div class="row">
+    <label for="echo-text">Echo text</label>
+    <input id="echo-text" placeholder="Text to echo" type="text" value="Hello from JS request">
+    <button id="send-echo" type="button">Request debug:echo</button>
+</div>
+
+<h2>JS -&gt; Java Request (Sum)</h2>
+<div class="row">
+    <label for="sum-a">A</label>
+    <input id="sum-a" step="any" type="number" value="5">
+    <label for="sum-b">B</label>
+    <input id="sum-b" step="any" type="number" value="7">
+    <button id="send-sum" type="button">Request debug:sum</button>
+</div>
+
+<h2>Java -&gt; JS Round Trip</h2>
+<div class="row">
+    <label for="java-probe">Probe</label>
+    <input id="java-probe" placeholder="Payload sent into Java and back" type="text" value="roundtrip-probe">
+    <button id="run-java-to-js" type="button">Trigger from Java</button>
+</div>
+
+<h2>Log</h2>
+<pre id="response-log">No messages yet.</pre>
+</body>
+</html>
