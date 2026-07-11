@@ -5,8 +5,13 @@ plugins {
   `maven-publish`
 }
 
+val jcefGithubVersion = "146.0.10.3"
+
 dependencies {
-  unpack(implementation("io.github.trethore:jcefgithub:146.0.10.3"))
+  implementation("io.github.trethore:jcefgithub:${jcefGithubVersion}:all-relocated") {
+    isTransitive = false
+  }
+  unpack(create("io.github.trethore:jcefgithub:${jcefGithubVersion}:source"))
 }
 
 tasks.withType<JavaCompile>().configureEach {

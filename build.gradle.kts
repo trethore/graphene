@@ -69,6 +69,14 @@ references {
       url = "git@github.com:trethore/graphene.git",
       branch = "main",
   )
+  git(
+      url = "https://github.com/trethore/jcef.git",
+      branch = "master",
+  )
+  git(
+      url = "https://github.com/chromiumembedded/cef.git",
+      branch = "master",
+  )
 
   // Optional Git references can be added like this:
   // git(
