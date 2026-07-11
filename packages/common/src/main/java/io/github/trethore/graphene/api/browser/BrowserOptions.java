@@ -1,0 +1,83 @@
+package io.github.trethore.graphene.api.browser;
+
+@SuppressWarnings("unused")
+public final class BrowserOptions {
+  private static final int DEFAULT_FRAME_RATE = 60;
+  private static final BrowserOptions DEFAULT = builder().build();
+
+  private final int maximumFrameRate;
+  private final boolean transparent;
+  private final int backgroundColor;
+  private final boolean javascriptEnabled;
+
+  private BrowserOptions(Builder builder) {
+    this.maximumFrameRate = requireFrameRate(builder.maximumFrameRate);
+    this.transparent = builder.transparent;
+    this.backgroundColor = builder.backgroundColor;
+    this.javascriptEnabled = builder.javascriptEnabled;
+  }
+
+  public static BrowserOptions defaults() {
+    return DEFAULT;
+  }
+
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  public int maximumFrameRate() {
+    return maximumFrameRate;
+  }
+
+  public boolean transparent() {
+    return transparent;
+  }
+
+  public int backgroundColor() {
+    return backgroundColor;
+  }
+
+  public boolean javascriptEnabled() {
+    return javascriptEnabled;
+  }
+
+  private static int requireFrameRate(int frameRate) {
+    if (frameRate < 1 || frameRate > 60) {
+      throw new IllegalArgumentException("maximumFrameRate must be between 1 and 60");
+    }
+    return frameRate;
+  }
+
+  public static final class Builder {
+    private int maximumFrameRate = DEFAULT_FRAME_RATE;
+    private boolean transparent = true;
+    private int backgroundColor;
+    private boolean javascriptEnabled = true;
+
+    private Builder() {}
+
+    public Builder maximumFrameRate(int maximumFrameRate) {
+      this.maximumFrameRate = requireFrameRate(maximumFrameRate);
+      return this;
+    }
+
+    public Builder transparent(boolean transparent) {
+      this.transparent = transparent;
+      return this;
+    }
+
+    public Builder backgroundColor(int backgroundColor) {
+      this.backgroundColor = backgroundColor;
+      return this;
+    }
+
+    public Builder javascriptEnabled(boolean javascriptEnabled) {
+      this.javascriptEnabled = javascriptEnabled;
+      return this;
+    }
+
+    public BrowserOptions build() {
+      return new BrowserOptions(this);
+    }
+  }
+}
