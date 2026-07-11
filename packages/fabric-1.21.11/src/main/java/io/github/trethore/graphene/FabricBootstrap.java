@@ -4,16 +4,16 @@ import io.github.trethore.graphene.fabric.internal.platform.FabricPlatformServic
 import io.github.trethore.graphene.internal.cef.GrapheneCefRuntime;
 import io.github.trethore.graphene.internal.platform.GraphenePlatformServices;
 import io.github.trethore.graphene.internal.runtime.GrapheneRuntimeController;
-import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.api.ModInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class FabricBootstrap implements ClientModInitializer {
+public final class FabricBootstrap implements ModInitializer {
   public static final String MOD_ID = "grapheneui";
   public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
   @Override
-  public void onInitializeClient() {
+  public void onInitialize() {
     GraphenePlatformServices platformServices = FabricPlatformServices.create();
     GrapheneRuntimeController controller = GrapheneRuntimeController.instance();
     controller.install(platformServices);

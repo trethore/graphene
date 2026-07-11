@@ -19,6 +19,9 @@ decisions apply to the `io.github.trethore.graphene` API and all version-specifi
 ## Registration and Context
 
 The main common entry point is `Graphene`. The consumer-scoped object is `GrapheneContext`.
+Fabric consumers must register from their `ClientModInitializer` entrypoint. Graphene installs its lightweight platform
+backend from its client-only `main` entrypoint before Fabric invokes consumer `client` entrypoints. Native JCEF
+installation and runtime startup remain deferred until Minecraft has started and at least one consumer is registered.
 
 ```java
 GrapheneContext context = Graphene.register(MyModClient.class, config);
