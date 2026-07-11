@@ -1,14 +1,13 @@
 package io.github.trethore.graphene.fabric.api.surface;
 
 import io.github.trethore.graphene.api.browser.BrowserSession;
-import io.github.trethore.graphene.api.browser.input.BrowserKeyAction;
-import io.github.trethore.graphene.api.browser.input.BrowserKeyInput;
 import io.github.trethore.graphene.api.browser.input.BrowserModifier;
 import io.github.trethore.graphene.api.browser.input.BrowserPointerAction;
 import io.github.trethore.graphene.api.browser.input.BrowserPointerButton;
 import io.github.trethore.graphene.api.browser.input.BrowserPointerInput;
 import io.github.trethore.graphene.api.browser.input.BrowserScrollInput;
 import io.github.trethore.graphene.api.browser.input.BrowserTextInput;
+import io.github.trethore.graphene.fabric.internal.input.GrapheneKeyboardMapper;
 import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Set;
@@ -100,13 +99,8 @@ public final class BrowserSurfaceInputAdapter {
     surface
         .browser()
         .sendKeyInput(
-            new BrowserKeyInput(
-                pressed ? BrowserKeyAction.PRESS : BrowserKeyAction.RELEASE,
-                keyCode,
-                keyCode,
-                scanCode,
-                false,
-                modifiers(modifiers)));
+            GrapheneKeyboardMapper.map(
+                keyCode, scanCode, pressed, modifiers, modifiers(modifiers)));
   }
 
   public void text(char character, int modifiers) {

@@ -125,15 +125,29 @@ public final class FabricPlatformServices {
   }
 
   private static GrapheneStartupPresenter startupPresenter() {
+    GrapheneStartupOverlay overlay = new GrapheneStartupOverlay();
     return new GrapheneStartupPresenter() {
       @Override
       public void update(String stage, double progress) {
-        // The Fabric startup overlay is introduced with the JCEF installer migration.
+        overlay.update(stage, progress);
+        Minecraft minecraft = Minecraft.getInstance();
+        minecraft.execute(
+            () -> {
+              if (minecraft.getOverlay() == null || minecraft.getOverlay() == overlay) {
+                minecraft.setOverlay(overlay);
+              }
+            });
       }
 
       @Override
       public void close() {
-        // No overlay exists until the JCEF installer migration creates one.
+        Minecraft minecraft = Minecraft.getInstance();
+        minecraft.execute(
+            () -> {
+              if (minecraft.getOverlay() == overlay) {
+                minecraft.setOverlay(null);
+              }
+            });
       }
     };
   }

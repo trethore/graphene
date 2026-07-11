@@ -128,12 +128,16 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
   @Override
   public void onPopupShow(CefBrowser browser, boolean show) {
     if (!show) {
+      frameBuffer.closePopup();
       invalidate();
     }
   }
 
   @Override
   public void onPopupSize(CefBrowser browser, Rectangle size) {
+    if (size != null && size.x >= 0 && size.y >= 0 && size.width > 0 && size.height > 0) {
+      frameBuffer.setPopupBounds(new BrowserDirtyRegion(size.x, size.y, size.width, size.height));
+    }
     invalidate();
   }
 
@@ -145,7 +149,14 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
       ByteBuffer buffer,
       int width,
       int height) {
-    if (popup || closed) {
+    if (closed) {
+      return;
+    }
+    ByteBuffer pixels = buffer.duplicate();
+    pixels.position(0);
+    pixels.limit(Math.multiplyExact(Math.multiplyExact(width, height), 4));
+    if (popup) {
+      frameBuffer.capturePopup(width, height, pixels);
       return;
     }
     List<BrowserDirtyRegion> regions =
@@ -158,9 +169,6 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
                         new BrowserDirtyRegion(
                             rectangle.x, rectangle.y, rectangle.width, rectangle.height))
                 .toList();
-    ByteBuffer pixels = buffer.duplicate();
-    pixels.position(0);
-    pixels.limit(Math.multiplyExact(Math.multiplyExact(width, height), 4));
     frameBuffer.capture(width, height, regions, pixels);
   }
 

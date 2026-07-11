@@ -28,4 +28,26 @@ class GrapheneFrameBufferTest {
     assertTrue(first.pixels().isReadOnly());
     assertEquals(second, frameBuffer.latestFrame());
   }
+
+  @Test
+  void compositesPopupFramesAndRestoresMainFrameWhenClosed() {
+    GrapheneFrameBuffer frameBuffer = new GrapheneFrameBuffer();
+    ByteBuffer main = ByteBuffer.allocateDirect(16);
+    main.put(new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}).flip();
+    frameBuffer.capture(2, 2, List.of(new BrowserDirtyRegion(0, 0, 2, 2)), main);
+
+    frameBuffer.setPopupBounds(new BrowserDirtyRegion(1, 0, 1, 1));
+    ByteBuffer popup = ByteBuffer.allocateDirect(4);
+    popup.put(new byte[] {20, 21, 22, 23}).flip();
+    BrowserFrame composited = frameBuffer.capturePopup(1, 1, popup);
+
+    assertEquals(20, composited.pixels().get(4));
+    assertEquals(List.of(new BrowserDirtyRegion(1, 0, 1, 1)), composited.dirtyRegions());
+
+    frameBuffer.closePopup();
+
+    assertEquals(5, frameBuffer.latestFrame().pixels().get(4));
+    assertEquals(
+        List.of(new BrowserDirtyRegion(1, 0, 1, 1)), frameBuffer.latestFrame().dirtyRegions());
+  }
 }
