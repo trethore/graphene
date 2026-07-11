@@ -1,6 +1,8 @@
 package io.github.trethore.graphene;
 
 import io.github.trethore.graphene.fabric.internal.platform.FabricPlatformServices;
+import io.github.trethore.graphene.internal.cef.GrapheneCefRuntime;
+import io.github.trethore.graphene.internal.platform.GraphenePlatformServices;
 import io.github.trethore.graphene.internal.runtime.GrapheneRuntimeController;
 import net.fabricmc.api.ClientModInitializer;
 import org.slf4j.Logger;
@@ -12,7 +14,10 @@ public final class FabricBootstrap implements ClientModInitializer {
 
   @Override
   public void onInitializeClient() {
-    GrapheneRuntimeController.instance().install(FabricPlatformServices.create());
+    GraphenePlatformServices platformServices = FabricPlatformServices.create();
+    GrapheneRuntimeController controller = GrapheneRuntimeController.instance();
+    controller.install(platformServices);
+    controller.installBrowserRuntime(new GrapheneCefRuntime(platformServices.startupPresenter()));
     LOGGER.info("Installed {} platform services", MOD_ID);
   }
 }

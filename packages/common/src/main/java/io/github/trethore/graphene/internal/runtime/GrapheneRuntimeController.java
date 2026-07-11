@@ -37,12 +37,14 @@ public final class GrapheneRuntimeController implements GrapheneRuntime, Graphen
   private final Map<String, GrapheneConfig> configs = new LinkedHashMap<>();
   private final GrapheneHttpUrls httpUrls = new GrapheneHttpUrls(this::httpBaseUrl);
   private GraphenePlatformServices platformServices;
+  private GrapheneBrowserRuntime browserRuntime = GrapheneBrowserRuntime.disabled();
   private GrapheneRuntimeState state = GrapheneRuntimeState.NEW;
   private GrapheneHttpServerRuntime httpServer = GrapheneHttpServerRuntime.disabled();
   private CompletableFuture<Void> initialization = new CompletableFuture<>();
   private CompletableFuture<Void> shutdown = CompletableFuture.completedFuture(null);
   private ExecutorService startupExecutor;
   private boolean registrationClosed;
+  private boolean browserRuntimeInstalled;
 
   private GrapheneRuntimeController() {
     GrapheneBackendRegistry.install(this);
@@ -61,6 +63,18 @@ public final class GrapheneRuntimeController implements GrapheneRuntime, Graphen
     platformServices = services;
     services.lifecycle().onStarted(this::startRegisteredConsumers);
     services.lifecycle().onStopping(this::shutdownAsync);
+  }
+
+  public synchronized void installBrowserRuntime(GrapheneBrowserRuntime installedBrowserRuntime) {
+    Objects.requireNonNull(installedBrowserRuntime, "installedBrowserRuntime");
+    if (browserRuntimeInstalled) {
+      throw new IllegalStateException("Graphene browser runtime is already installed");
+    }
+    if (state != GrapheneRuntimeState.NEW) {
+      throw new IllegalStateException("Graphene browser runtime must be installed before startup");
+    }
+    browserRuntime = installedBrowserRuntime;
+    browserRuntimeInstalled = true;
   }
 
   public synchronized GrapheneContext register(Class<?> anchorClass, GrapheneConfig config) {
@@ -206,12 +220,7 @@ public final class GrapheneRuntimeController implements GrapheneRuntime, Graphen
     if (state != GrapheneRuntimeState.RUNNING) {
       return OptionalInt.empty();
     }
-    return mergeGlobalConfig()
-        .remoteDebugging()
-        .filter(GrapheneRemoteDebugConfig::enabled)
-        .flatMap(GrapheneRemoteDebugConfig::fixedPort)
-        .map(OptionalInt::of)
-        .orElseGet(OptionalInt::empty);
+    return browserRuntime.remoteDebuggingPort();
   }
 
   @Override
@@ -260,6 +269,7 @@ public final class GrapheneRuntimeController implements GrapheneRuntime, Graphen
           httpConfigs.isEmpty()
               ? GrapheneHttpServerRuntime.disabled()
               : GrapheneHttpServerRuntime.start(httpConfigs);
+      initializeBrowserRuntime(startedHttpServer);
       synchronized (this) {
         httpServer = startedHttpServer;
         state = GrapheneRuntimeState.RUNNING;
@@ -277,12 +287,30 @@ public final class GrapheneRuntimeController implements GrapheneRuntime, Graphen
     }
   }
 
+  private void initializeBrowserRuntime(GrapheneHttpServerRuntime startedHttpServer) {
+    try {
+      browserRuntime.initialize(globalConfig());
+    } catch (RuntimeException exception) {
+      startedHttpServer.close();
+      throw exception;
+    }
+  }
+
   private void shutdownRuntime() {
+    RuntimeException shutdownFailure = null;
     synchronized (this) {
       httpServer.close();
       httpServer = GrapheneHttpServerRuntime.disabled();
+      try {
+        browserRuntime.shutdown();
+      } catch (RuntimeException exception) {
+        shutdownFailure = exception;
+      }
       closeStartupExecutor();
       state = GrapheneRuntimeState.STOPPED;
+    }
+    if (shutdownFailure != null) {
+      throw shutdownFailure;
     }
   }
 
