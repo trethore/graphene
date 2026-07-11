@@ -31,6 +31,47 @@ class GrapheneLoadEventBusTest {
     assertEquals(List.of(loadingState, started, completed, failed), receivedEvents);
   }
 
+  @Test
+  void unregisterAndClearStopListenerDelivery() {
+    GrapheneLoadEventBus eventBus = new GrapheneLoadEventBus();
+    List<Object> firstEvents = new ArrayList<>();
+    List<Object> secondEvents = new ArrayList<>();
+    BrowserLoadListener first = new RecordingListener(firstEvents);
+    BrowserLoadListener second = new RecordingListener(secondEvents);
+    eventBus.register(first);
+    eventBus.register(second);
+
+    BrowserLoadingState beforeUnregister = new BrowserLoadingState(1, true, false, false);
+    eventBus.publish(beforeUnregister);
+    eventBus.unregister(first);
+    BrowserLoadingState afterUnregister = new BrowserLoadingState(1, false, false, false);
+    eventBus.publish(afterUnregister);
+    eventBus.clear();
+    eventBus.publish(new BrowserLoadingState(1, true, false, false));
+
+    assertEquals(List.of(beforeUnregister), firstEvents);
+    assertEquals(List.of(beforeUnregister, afterUnregister), secondEvents);
+  }
+
+  @Test
+  void listenerFailureDoesNotPreventRemainingListeners() {
+    GrapheneLoadEventBus eventBus = new GrapheneLoadEventBus();
+    List<Object> receivedEvents = new ArrayList<>();
+    eventBus.register(
+        new BrowserLoadListener() {
+          @Override
+          public void onLoadingStateChanged(BrowserLoadingState state) {
+            throw new IllegalStateException("listener failed");
+          }
+        });
+    eventBus.register(new RecordingListener(receivedEvents));
+    BrowserLoadingState state = new BrowserLoadingState(2, true, false, false);
+
+    eventBus.publish(state);
+
+    assertEquals(List.of(state), receivedEvents);
+  }
+
   private record RecordingListener(List<Object> events) implements BrowserLoadListener {
     @Override
     public void onLoadingStateChanged(BrowserLoadingState state) {
