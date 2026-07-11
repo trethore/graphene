@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "example-mod",
+  "version": "${version}",
+  "name": "Example Mod",
+  "description": "This is an example description! Tell everyone what your mod is about!",
+  "authors": [
+    "Me!"
+  ],
+  "contact": {
+    "sources": "https://github.com/trethore/example-mod"
+  },
+  "license": "MIT",
+  "icon": "assets/example-mod/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.example.FabricBootstrap"
+    ]
+  },
+  "mixins": [
+    "example-mod.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loaderVersion}",
+    "minecraft": "~${minecraftVersion}",
+    "java": ">=21",
+    "fabric-api": ">=${fabricApiVersion}"
+  }
+}

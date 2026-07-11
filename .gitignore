@@ -1,0 +1,39 @@
+# eclipse
+bin/
+.settings/
+.classpath
+.project
+*.launch
+
+# fabric
+run/
+
+# gradle
+.gradle/
+build/
+classes/
+out/
+
+# local environment
+.env
+
+# generated references
+references/
+
+# idea
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# java
+*.hprof
+*.jfr
+hs_err_*.log
+replay_*.log
+
+# macos
+*.DS_Store
+
+# vscode
+.vscode/
