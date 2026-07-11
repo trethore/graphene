@@ -75,7 +75,7 @@ class GrapheneRuntimeControllerTest {
     GrapheneFileDialogPresenter fileDialogPresenter =
         (foldersOnly, multiple) -> CompletableFuture.completedFuture(List.<Path>of());
     GrapheneJsDialogPresenter jsDialogPresenter =
-        (originUrl, message, defaultPrompt) ->
+        (type, originUrl, message, defaultPrompt) ->
             CompletableFuture.completedFuture(new GrapheneJsDialogPresenter.Result(false, ""));
     return new GraphenePlatformServices(
         lifecycle,

@@ -25,6 +25,7 @@ final class GrapheneCefClientConfig {
     validatedClient.addContextMenuHandler(new GrapheneCefContextMenuHandler());
     validatedClient.addLifeSpanHandler(new GrapheneCefLifeSpanHandler(mainThreadExecutor));
     validatedClient.addRequestHandler(new GrapheneCefRequestHandler(mainThreadExecutor));
+    validatedClient.addDownloadHandler(new GrapheneCefDownloadHandler());
     validatedClient.addDialogHandler(
         new GrapheneCefFileDialogHandler(fileDialogPresenter, mainThreadExecutor));
     validatedClient.addJSDialogHandler(

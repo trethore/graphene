@@ -35,7 +35,7 @@ final class GrapheneCefJsDialogHandler extends CefJSDialogHandlerAdapter {
       return false;
     }
     presenter
-        .show(originUrl, messageText, defaultPromptText)
+        .show(dialogType(dialogType), originUrl, messageText, defaultPromptText)
         .whenComplete(
             (result, failure) ->
                 mainThreadExecutor.execute(
@@ -59,7 +59,7 @@ final class GrapheneCefJsDialogHandler extends CefJSDialogHandlerAdapter {
       return true;
     }
     presenter
-        .show(browser.getURL(), messageText, "")
+        .show(GrapheneJsDialogPresenter.DialogType.BEFORE_UNLOAD, browser.getURL(), messageText, "")
         .whenComplete(
             (result, failure) ->
                 mainThreadExecutor.execute(
@@ -67,5 +67,17 @@ final class GrapheneCefJsDialogHandler extends CefJSDialogHandlerAdapter {
                         callback.Continue(
                             failure == null && result != null && result.accepted(), "")));
     return true;
+  }
+
+  private static GrapheneJsDialogPresenter.DialogType dialogType(
+      CefJSDialogHandler.JSDialogType dialogType) {
+    if (dialogType == null) {
+      return GrapheneJsDialogPresenter.DialogType.ALERT;
+    }
+    return switch (dialogType) {
+      case JSDIALOGTYPE_ALERT -> GrapheneJsDialogPresenter.DialogType.ALERT;
+      case JSDIALOGTYPE_CONFIRM -> GrapheneJsDialogPresenter.DialogType.CONFIRM;
+      case JSDIALOGTYPE_PROMPT -> GrapheneJsDialogPresenter.DialogType.PROMPT;
+    };
   }
 }
