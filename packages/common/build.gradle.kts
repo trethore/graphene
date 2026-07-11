@@ -9,9 +9,11 @@ plugins {
 val jcefGithubVersion = providers.gradleProperty("jcefgithub_version").get()
 
 dependencies {
+  implementation("com.google.code.gson:gson:${providers.gradleProperty("gson_version").get()}")
   implementation("io.github.trethore:jcefgithub:${jcefGithubVersion}:all-relocated") {
     isTransitive = false
   }
+  implementation("org.slf4j:slf4j-api:${providers.gradleProperty("slf4j_version").get()}")
   unpack(create("io.github.trethore:jcefgithub:${jcefGithubVersion}:source"))
 }
 
