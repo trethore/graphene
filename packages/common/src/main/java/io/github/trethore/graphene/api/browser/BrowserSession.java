@@ -13,6 +13,14 @@ public interface BrowserSession extends AutoCloseable {
 
   boolean isClosed();
 
+  boolean isLoading();
+
+  boolean canGoBack();
+
+  boolean canGoForward();
+
+  BrowserCursor requestedCursor();
+
   void navigate(String url);
 
   void goBack();

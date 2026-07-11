@@ -1,6 +1,7 @@
 package io.github.trethore.graphene.internal.cef;
 
 import io.github.trethore.graphene.api.bridge.GrapheneBridge;
+import io.github.trethore.graphene.api.browser.BrowserCursor;
 import io.github.trethore.graphene.api.browser.BrowserDirtyRegion;
 import io.github.trethore.graphene.api.browser.BrowserFrame;
 import io.github.trethore.graphene.api.browser.BrowserLoadCompleted;
@@ -18,10 +19,7 @@ import io.github.trethore.graphene.internal.bridge.BridgeBrowser;
 import io.github.trethore.graphene.internal.bridge.GrapheneBridgeRuntime;
 import io.github.trethore.graphene.internal.browser.GrapheneFrameBuffer;
 import io.github.trethore.graphene.internal.event.GrapheneLoadEventBus;
-import java.awt.Canvas;
-import java.awt.Component;
-import java.awt.Point;
-import java.awt.Rectangle;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -57,6 +55,7 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
       new IdentityHashMap<>();
   private final GrapheneBridge bridge;
   private boolean closed;
+  private volatile BrowserCursor requestedCursor = BrowserCursor.ARROW;
 
   GrapheneCefBrowserSession(
       CefClient client,
@@ -182,7 +181,8 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
 
   @Override
   public boolean onCursorChange(CefBrowser browser, int cursorType) {
-    return false;
+    requestedCursor = cursor(cursorType);
+    return true;
   }
 
   @Override
@@ -241,6 +241,11 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
   @Override
   public boolean isClosed() {
     return closed;
+  }
+
+  @Override
+  public BrowserCursor requestedCursor() {
+    return requestedCursor;
   }
 
   @Override
@@ -380,6 +385,23 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
       throw new IllegalArgumentException("Browser dimensions must be positive");
     }
     return dimension;
+  }
+
+  private static BrowserCursor cursor(int cursorType) {
+    return switch (cursorType) {
+      case Cursor.CROSSHAIR_CURSOR -> BrowserCursor.CROSSHAIR;
+      case Cursor.TEXT_CURSOR -> BrowserCursor.TEXT;
+      case Cursor.HAND_CURSOR -> BrowserCursor.HAND;
+      case Cursor.N_RESIZE_CURSOR, Cursor.S_RESIZE_CURSOR -> BrowserCursor.RESIZE_VERTICAL;
+      case Cursor.E_RESIZE_CURSOR, Cursor.W_RESIZE_CURSOR -> BrowserCursor.RESIZE_HORIZONTAL;
+      case Cursor.NE_RESIZE_CURSOR,
+          Cursor.NW_RESIZE_CURSOR,
+          Cursor.SE_RESIZE_CURSOR,
+          Cursor.SW_RESIZE_CURSOR,
+          Cursor.MOVE_CURSOR ->
+          BrowserCursor.RESIZE_ALL;
+      default -> BrowserCursor.ARROW;
+    };
   }
 
   private final class SessionLoadListener implements BrowserLoadListener {

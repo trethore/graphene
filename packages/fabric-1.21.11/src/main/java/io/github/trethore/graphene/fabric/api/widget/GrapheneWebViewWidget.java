@@ -1,5 +1,7 @@
 package io.github.trethore.graphene.fabric.api.widget;
 
+import com.mojang.blaze3d.platform.cursor.CursorType;
+import com.mojang.blaze3d.platform.cursor.CursorTypes;
 import io.github.trethore.graphene.api.GrapheneContext;
 import io.github.trethore.graphene.api.bridge.GrapheneBridge;
 import io.github.trethore.graphene.fabric.api.surface.BrowserSurface;
@@ -73,6 +75,9 @@ public class GrapheneWebViewWidget extends AbstractWidget implements AutoCloseab
       inputAdapter.mouseMoved(mouseX, mouseY, getX(), getY(), getWidth(), getHeight(), 0);
     }
     surface.render(graphics, getX(), getY(), getWidth(), getHeight());
+    if (isMouseOver(mouseX, mouseY)) {
+      graphics.requestCursor(cursor());
+    }
   }
 
   @Override
@@ -178,5 +183,17 @@ public class GrapheneWebViewWidget extends AbstractWidget implements AutoCloseab
     }
     throw new IllegalStateException(
         "Screen does not implement GrapheneScreenBridge: " + screen.getClass().getName());
+  }
+
+  private CursorType cursor() {
+    return switch (surface.browser().requestedCursor()) {
+      case CROSSHAIR -> CursorTypes.CROSSHAIR;
+      case TEXT -> CursorTypes.IBEAM;
+      case HAND -> CursorTypes.POINTING_HAND;
+      case RESIZE_HORIZONTAL -> CursorTypes.RESIZE_EW;
+      case RESIZE_VERTICAL -> CursorTypes.RESIZE_NS;
+      case RESIZE_ALL -> CursorTypes.RESIZE_ALL;
+      case ARROW -> CursorTypes.ARROW;
+    };
   }
 }

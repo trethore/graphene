@@ -21,7 +21,9 @@ public final class FabricBootstrap implements ClientModInitializer {
         new GrapheneCefRuntime(
             platformServices.startupPresenter(),
             platformServices.mainThreadExecutor(),
-            platformServices.nativeWindow()));
+            platformServices.nativeWindow(),
+            platformServices.fileDialogPresenter(),
+            platformServices.jsDialogPresenter()));
     LOGGER.info("Installed {} platform services", MOD_ID);
   }
 }
