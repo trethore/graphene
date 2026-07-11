@@ -14,7 +14,7 @@
   "icon": "assets/grapheneui/icon.png",
   "environment": "client",
   "entrypoints": {
-    "main": [
+    "client": [
       "io.github.trethore.graphene.FabricBootstrap"
     ]
   },
