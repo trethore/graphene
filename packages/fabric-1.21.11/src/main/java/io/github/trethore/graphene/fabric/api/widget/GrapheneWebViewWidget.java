@@ -122,6 +122,13 @@ public class GrapheneWebViewWidget extends AbstractWidget implements AutoCloseab
   }
 
   @Override
+  public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
+    inputAdapter.mouseDragged(
+        event.x(), event.y(), getX(), getY(), getWidth(), getHeight(), event.modifiers());
+    return true;
+  }
+
+  @Override
   public boolean mouseScrolled(double mouseX, double mouseY, double horizontal, double vertical) {
     if (!isMouseOver(mouseX, mouseY)) {
       return false;

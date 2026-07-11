@@ -38,7 +38,14 @@ class GrapheneCefInputTranslatorTest {
   void preservesRawKeyboardCodes() {
     BrowserKeyInput input =
         new BrowserKeyInput(
-            BrowserKeyAction.RELEASE, 65, 30, 44, false, Set.of(BrowserModifier.CONTROL));
+            BrowserKeyAction.RELEASE,
+            65,
+            30,
+            44,
+            false,
+            '\u0001',
+            'a',
+            Set.of(BrowserModifier.CONTROL));
 
     CefKeyEvent event = GrapheneCefInputTranslator.key(input);
 
@@ -47,5 +54,7 @@ class GrapheneCefInputTranslatorTest {
     assertEquals(30, event.native_key_code);
     assertEquals(44, event.scan_code);
     assertEquals(EventFlags.EVENTFLAG_CONTROL_DOWN, event.modifiers);
+    assertEquals('\u0001', event.character);
+    assertEquals('a', event.unmodified_character);
   }
 }

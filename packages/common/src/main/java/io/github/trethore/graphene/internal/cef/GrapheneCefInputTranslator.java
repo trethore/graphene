@@ -42,8 +42,8 @@ final class GrapheneCefInputTranslator {
         input.keyCode(),
         input.nativeKeyCode(),
         input.systemKey(),
-        (char) 0,
-        (char) 0,
+        input.character(),
+        input.unmodifiedCharacter(),
         input.scanCode());
   }
 

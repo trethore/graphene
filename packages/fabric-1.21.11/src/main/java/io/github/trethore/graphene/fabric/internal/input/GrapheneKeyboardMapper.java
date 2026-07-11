@@ -21,8 +21,8 @@ public final class GrapheneKeyboardMapper {
       int glfwModifiers,
       Set<BrowserModifier> modifiers) {
     int resolvedScanCode = resolveScanCode(keyCode, scanCode);
-    int domKeyCode =
-        windowsVirtualKey(keyCode, layoutCharacter(keyCode, resolvedScanCode, glfwModifiers));
+    char layoutCharacter = layoutCharacter(keyCode, resolvedScanCode, glfwModifiers);
+    int domKeyCode = windowsVirtualKey(keyCode, layoutCharacter);
     int nativeKeyCode = nativeKeyCode(keyCode, resolvedScanCode, domKeyCode, pressed);
     EnumSet<BrowserModifier> resolvedModifiers =
         modifiers.isEmpty() ? EnumSet.noneOf(BrowserModifier.class) : EnumSet.copyOf(modifiers);
@@ -36,12 +36,16 @@ public final class GrapheneKeyboardMapper {
     }
     boolean systemKey =
         MAC ? (glfwModifiers & GLFW.GLFW_MOD_SUPER) != 0 : (glfwModifiers & GLFW.GLFW_MOD_ALT) != 0;
+    char unmodifiedCharacter = rawUnmodifiedCharacter(keyCode, layoutCharacter);
+    char character = rawCharacter(keyCode, unmodifiedCharacter, glfwModifiers);
     return new BrowserKeyInput(
         pressed ? BrowserKeyAction.PRESS : BrowserKeyAction.RELEASE,
         domKeyCode,
         nativeKeyCode,
         WINDOWS ? resolvedScanCode & 0xFFL : resolvedScanCode,
         systemKey,
+        character,
+        unmodifiedCharacter,
         resolvedModifiers);
   }
 
@@ -161,6 +165,9 @@ public final class GrapheneKeyboardMapper {
   }
 
   private static char layoutCharacter(int keyCode, int scanCode, int modifiers) {
+    if (isKeypad(keyCode)) {
+      return keypadCharacter(keyCode, (modifiers & GLFW.GLFW_MOD_NUM_LOCK) != 0);
+    }
     String name = scanCode > 0 ? GLFW.glfwGetKeyName(GLFW.GLFW_KEY_UNKNOWN, scanCode) : null;
     if (name == null || name.isBlank()) {
       name = GLFW.glfwGetKeyName(keyCode, scanCode);
@@ -170,6 +177,79 @@ public final class GrapheneKeyboardMapper {
     }
     char character = name.charAt(0);
     return (modifiers & GLFW.GLFW_MOD_SHIFT) != 0 ? Character.toUpperCase(character) : character;
+  }
+
+  private static char rawUnmodifiedCharacter(int keyCode, char layoutCharacter) {
+    if (MAC) {
+      return macRawCharacter(keyCode, layoutCharacter);
+    }
+    if (!WINDOWS) {
+      return switch (keyCode) {
+        case GLFW.GLFW_KEY_BACKSPACE -> (char) 0xFF08;
+        case GLFW.GLFW_KEY_TAB -> (char) 0xFF09;
+        case GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> '\r';
+        case GLFW.GLFW_KEY_ESCAPE -> (char) 0xFF1B;
+        case GLFW.GLFW_KEY_LEFT -> (char) 0xFF51;
+        case GLFW.GLFW_KEY_UP -> (char) 0xFF52;
+        case GLFW.GLFW_KEY_RIGHT -> (char) 0xFF53;
+        case GLFW.GLFW_KEY_DOWN -> (char) 0xFF54;
+        case GLFW.GLFW_KEY_DELETE -> (char) 0xFFFF;
+        default -> layoutCharacter;
+      };
+    }
+    return 0;
+  }
+
+  private static char rawCharacter(int keyCode, char unmodifiedCharacter, int modifiers) {
+    if ((modifiers & GLFW.GLFW_MOD_CONTROL) == 0) {
+      return unmodifiedCharacter;
+    }
+    if (keyCode >= GLFW.GLFW_KEY_A && keyCode <= GLFW.GLFW_KEY_Z) {
+      return (char) (keyCode - GLFW.GLFW_KEY_A + 1);
+    }
+    return switch (keyCode) {
+      case GLFW.GLFW_KEY_LEFT_BRACKET -> 0x1B;
+      case GLFW.GLFW_KEY_BACKSLASH -> 0x1C;
+      case GLFW.GLFW_KEY_RIGHT_BRACKET -> 0x1D;
+      case GLFW.GLFW_KEY_6 -> (modifiers & GLFW.GLFW_MOD_SHIFT) != 0 ? 0x1E : unmodifiedCharacter;
+      case GLFW.GLFW_KEY_MINUS ->
+          (modifiers & GLFW.GLFW_MOD_SHIFT) != 0 ? 0x1F : unmodifiedCharacter;
+      case GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> '\n';
+      default -> unmodifiedCharacter;
+    };
+  }
+
+  private static char keypadCharacter(int keyCode, boolean numLock) {
+    if (keyCode >= GLFW.GLFW_KEY_KP_0 && keyCode <= GLFW.GLFW_KEY_KP_9) {
+      return numLock ? (char) ('0' + keyCode - GLFW.GLFW_KEY_KP_0) : 0;
+    }
+    return switch (keyCode) {
+      case GLFW.GLFW_KEY_KP_DECIMAL -> numLock ? '.' : 0;
+      case GLFW.GLFW_KEY_KP_DIVIDE -> '/';
+      case GLFW.GLFW_KEY_KP_MULTIPLY -> '*';
+      case GLFW.GLFW_KEY_KP_SUBTRACT -> '-';
+      case GLFW.GLFW_KEY_KP_ADD -> '+';
+      case GLFW.GLFW_KEY_KP_EQUAL -> '=';
+      case GLFW.GLFW_KEY_KP_ENTER -> '\r';
+      default -> 0;
+    };
+  }
+
+  private static char macRawCharacter(int keyCode, char fallback) {
+    return switch (keyCode) {
+      case GLFW.GLFW_KEY_BACKSPACE -> 0x7F;
+      case GLFW.GLFW_KEY_LEFT -> '\uF702';
+      case GLFW.GLFW_KEY_RIGHT -> '\uF703';
+      case GLFW.GLFW_KEY_UP -> '\uF700';
+      case GLFW.GLFW_KEY_DOWN -> '\uF701';
+      case GLFW.GLFW_KEY_INSERT -> '\uF727';
+      case GLFW.GLFW_KEY_DELETE -> '\uF728';
+      case GLFW.GLFW_KEY_HOME -> '\uF729';
+      case GLFW.GLFW_KEY_END -> '\uF72B';
+      case GLFW.GLFW_KEY_PAGE_UP -> '\uF72C';
+      case GLFW.GLFW_KEY_PAGE_DOWN -> '\uF72D';
+      default -> fallback;
+    };
   }
 
   private static int macKeyCode(int keyCode, int fallback) {

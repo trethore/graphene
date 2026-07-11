@@ -54,6 +54,10 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
   private final Map<BrowserLoadListener, BrowserLoadListener> listenerAdapters =
       new IdentityHashMap<>();
   private final GrapheneBridge bridge;
+  private final Object dragLock = new Object();
+  private CefDragData activeDragData;
+  private int activeDragMask = CefDragData.DragOperations.DRAG_OPERATION_NONE;
+  private boolean dragTargetEntered;
   private boolean closed;
   private volatile BrowserCursor requestedCursor = BrowserCursor.ARROW;
 
@@ -195,7 +199,16 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
 
   @Override
   public boolean startDragging(CefBrowser browser, CefDragData dragData, int mask, int x, int y) {
-    return false;
+    if (dragData == null) {
+      return false;
+    }
+    synchronized (dragLock) {
+      closeActiveDragLocked();
+      activeDragData = dragData.clone();
+      activeDragMask = mask;
+      dragTargetEntered = false;
+    }
+    return true;
   }
 
   @Override
@@ -306,8 +319,11 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
 
   @Override
   public void sendPointerInput(BrowserPointerInput input) {
-    sendCefMouseEvent(
-        GrapheneCefInputTranslator.pointer(Objects.requireNonNull(input, INPUT_NAME)));
+    BrowserPointerInput validatedInput = Objects.requireNonNull(input, INPUT_NAME);
+    if (handleDragInput(validatedInput)) {
+      return;
+    }
+    sendCefMouseEvent(GrapheneCefInputTranslator.pointer(validatedInput));
   }
 
   @Override
@@ -364,6 +380,9 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
     closed = true;
     listenerAdapters.values().forEach(loadEventBus::unregister);
     listenerAdapters.clear();
+    synchronized (dragLock) {
+      closeActiveDragLocked();
+    }
     bridgeRuntime.detach(this);
     frameBuffer.clear();
     try {
@@ -410,6 +429,77 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
           BrowserCursor.RESIZE_ALL;
       default -> BrowserCursor.ARROW;
     };
+  }
+
+  private boolean handleDragInput(BrowserPointerInput input) {
+    synchronized (dragLock) {
+      if (activeDragData == null) {
+        return false;
+      }
+      Point point = new Point(input.x(), input.y());
+      int modifiers = GrapheneCefInputTranslator.modifiers(input.modifiers());
+      switch (input.action()) {
+        case DRAG, MOVE -> {
+          if (!dragTargetEntered) {
+            dragTargetDragEnter(activeDragData, point, modifiers, activeDragMask);
+            dragTargetEntered = true;
+          } else {
+            dragTargetDragOver(point, modifiers, activeDragMask);
+          }
+          return true;
+        }
+        case RELEASE -> {
+          if (!dragTargetEntered) {
+            dragTargetDragEnter(activeDragData, point, modifiers, activeDragMask);
+          }
+          dragTargetDrop(point, modifiers);
+          dragSourceEndedAt(point, preferredDragOperation(activeDragMask));
+          dragSourceSystemDragEnded();
+          clearActiveDragLocked();
+          return true;
+        }
+        case EXIT -> {
+          closeActiveDragLocked();
+          return true;
+        }
+        default -> {
+          return true;
+        }
+      }
+    }
+  }
+
+  private void closeActiveDragLocked() {
+    if (activeDragData == null) {
+      return;
+    }
+    if (dragTargetEntered) {
+      dragTargetDragLeave();
+    }
+    dragSourceSystemDragEnded();
+    clearActiveDragLocked();
+  }
+
+  private void clearActiveDragLocked() {
+    if (activeDragData != null) {
+      activeDragData.dispose();
+      activeDragData = null;
+    }
+    activeDragMask = CefDragData.DragOperations.DRAG_OPERATION_NONE;
+    dragTargetEntered = false;
+  }
+
+  private static int preferredDragOperation(int mask) {
+    if ((mask & CefDragData.DragOperations.DRAG_OPERATION_MOVE) != 0) {
+      return CefDragData.DragOperations.DRAG_OPERATION_MOVE;
+    }
+    if ((mask & CefDragData.DragOperations.DRAG_OPERATION_COPY) != 0) {
+      return CefDragData.DragOperations.DRAG_OPERATION_COPY;
+    }
+    if ((mask & CefDragData.DragOperations.DRAG_OPERATION_LINK) != 0) {
+      return CefDragData.DragOperations.DRAG_OPERATION_LINK;
+    }
+    return CefDragData.DragOperations.DRAG_OPERATION_NONE;
   }
 
   private final class SessionLoadListener implements BrowserLoadListener {
