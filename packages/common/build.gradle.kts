@@ -1,6 +1,12 @@
+import io.github.trethore.buildlogic.unpack
+
 plugins {
   `java-library`
   `maven-publish`
+}
+
+dependencies {
+  unpack(implementation("io.github.trethore:jcefgithub:146.0.10.3"))
 }
 
 tasks.withType<JavaCompile>().configureEach {

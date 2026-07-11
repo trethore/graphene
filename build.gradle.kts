@@ -65,6 +65,11 @@ subprojects {
 references {
   unpackNestedJars = true
 
+  git(
+      url = "git@github.com:trethore/graphene.git",
+      branch = "main",
+  )
+
   // Optional Git references can be added like this:
   // git(
   //     url = "https://github.com/FabricMC/fabric.git",
