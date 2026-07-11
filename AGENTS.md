@@ -27,7 +27,7 @@ graphene/                                   # You are here!
           mixin/                            # Minecraft/Fabric-version-specific mixins.
           FabricBootstrap.java              # Fabric ModInitializer that boots common code.
         resources/
-          assets/grapheneui/                 # Fabric mod assets.
+          assets/grapheneui/                # Fabric mod assets.
           grapheneui.mixins.json
           fabric.mod.json
       build.gradle.kts
