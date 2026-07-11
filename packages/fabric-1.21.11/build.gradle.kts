@@ -32,14 +32,27 @@ loom {
   }
 }
 
+val embeddedCommon =
+    configurations.create("embeddedCommon") {
+      isCanBeConsumed = false
+      isCanBeResolved = false
+    }
+
+configurations.implementation {
+  extendsFrom(embeddedCommon)
+}
+
+configurations.include {
+  extendsFrom(embeddedCommon)
+}
+
 dependencies {
   unpack(minecraft("com.mojang:minecraft:$minecraftVersion"))
   mappings(loom.officialMojangMappings())
   modImplementation("net.fabricmc:fabric-loader:$loaderVersion")
   unpack(modImplementation("net.fabricmc.fabric-api:fabric-api:$fabricApiVersion"))
 
-  implementation(project(":packages:common"))
-  include(project(":packages:common"))
+  embeddedCommon(project(":packages:common"))
   include("io.github.trethore:jcefgithub:${jcefGithubVersion}") {
     isTransitive = false
     artifact {
@@ -48,48 +61,49 @@ dependencies {
   }
 }
 
-val checkFabricArchitecture by tasks.registering {
-  group = "verification"
-  description = "Ensures Fabric source code does not access JCEF directly."
+val checkFabricArchitecture =
+    tasks.register("checkFabricArchitecture") {
+      group = "verification"
+      description = "Ensures Fabric source code does not access JCEF directly."
 
-  val javaSources =
-      fileTree("src") {
-        include("**/*.java")
-      }
+      val javaSources =
+          fileTree("src") {
+            include("**/*.java")
+          }
 
-  inputs.files(javaSources)
+      inputs.files(javaSources)
 
-  doLast {
-    val forbiddenImports =
-        listOf(
-            "org.cef.",
-            "io.github.trethore.jcefgithub.",
-        )
+      doLast {
+        val forbiddenImports =
+            listOf(
+                "org.cef.",
+                "io.github.trethore.jcefgithub.",
+            )
 
-    val violations =
-        javaSources.files.flatMap { sourceFile ->
-          sourceFile.readLines().mapIndexedNotNull { index, line ->
-            val trimmedLine = line.trim()
-            val forbiddenImport = forbiddenImports.firstOrNull { packageName ->
-              trimmedLine.startsWith("import $packageName")
+        val violations =
+            javaSources.files.flatMap { sourceFile ->
+              sourceFile.readLines().mapIndexedNotNull { index, line ->
+                val trimmedLine = line.trim()
+                val forbiddenImport = forbiddenImports.firstOrNull { packageName ->
+                  trimmedLine.startsWith("import $packageName")
+                }
+
+                forbiddenImport?.let {
+                  "${sourceFile.relativeTo(projectDir)}:${index + 1}: $trimmedLine"
+                }
+              }
             }
 
-            forbiddenImport?.let {
-              "${sourceFile.relativeTo(projectDir)}:${index + 1}: $trimmedLine"
-            }
+        check(violations.isEmpty()) {
+          buildString {
+            appendLine("Fabric code must not import JCEF directly.")
+            appendLine("JCEF can only be accessed from packages/common.")
+            appendLine()
+            violations.forEach(::appendLine)
           }
         }
-
-    check(violations.isEmpty()) {
-      buildString {
-        appendLine("Fabric code must not import JCEF directly.")
-        appendLine("JCEF can only be accessed from packages/common.")
-        appendLine()
-        violations.forEach(::appendLine)
       }
     }
-  }
-}
 
 tasks.named("check") {
   dependsOn(checkFabricArchitecture)
