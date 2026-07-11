@@ -20,6 +20,13 @@ with other Minecraft mods.
 4. Do not expose JCEF types through the public API. JCEF is an implementation detail that may be replaced independently.
 5. `packages/common` must not depend on Minecraft, Fabric, Loom, or a particular Minecraft version.
 6. `packages/fabric-1.21.11` depends on common; common must never depend on Fabric.
+7. The main entry point is `Graphene`, and consumer-scoped access uses `GrapheneContext`.
+8. Registration supports both anchor classes and explicit mod IDs; explicit IDs must resolve to loaded mods.
+9. Common exposes `BrowserSession`; Fabric exposes `BrowserSurface` with one session per render target.
+10. Minecraft input is normalized by version-specific adapters and translated to JCEF by shared common logic.
+11. Public load events, asset identifiers, runtime terminology, and browser options use Graphene-owned types.
+
+The complete boundary specification is recorded in `docs/api-boundaries.md`.
 
 ## Target Architecture
 

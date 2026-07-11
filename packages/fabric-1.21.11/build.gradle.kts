@@ -2,6 +2,7 @@ import io.github.trethore.buildlogic.unpack
 
 plugins {
   id("net.fabricmc.fabric-loom-remap")
+  id("io.github.trethore.architecture-check")
   `maven-publish`
 }
 
@@ -61,52 +62,15 @@ dependencies {
   }
 }
 
-val checkFabricArchitecture =
-    tasks.register("checkFabricArchitecture") {
-      group = "verification"
-      description = "Ensures Fabric source code does not access JCEF directly."
-
-      val javaSources =
-          fileTree("src") {
-            include("**/*.java")
-          }
-
-      inputs.files(javaSources)
-
-      doLast {
-        val forbiddenImports =
-            listOf(
-                "org.cef.",
-                "io.github.trethore.jcefgithub.",
-            )
-
-        val violations =
-            javaSources.files.flatMap { sourceFile ->
-              sourceFile.readLines().mapIndexedNotNull { index, line ->
-                val trimmedLine = line.trim()
-                val forbiddenImport = forbiddenImports.firstOrNull { packageName ->
-                  trimmedLine.startsWith("import $packageName")
-                }
-
-                forbiddenImport?.let {
-                  "${sourceFile.relativeTo(projectDir)}:${index + 1}: $trimmedLine"
-                }
-              }
-            }
-
-        check(violations.isEmpty()) {
-          buildString {
-            appendLine("Fabric code must not import JCEF directly.")
-            appendLine("JCEF can only be accessed from packages/common.")
-            appendLine()
-            violations.forEach(::appendLine)
-          }
-        }
-      }
-    }
-
-tasks.named("check") {
-  dependsOn(checkFabricArchitecture)
+architectureChecks {
+  register("jcefIsolation") {
+    sources.from(fileTree("src") { include("**/*.java") })
+    forbiddenImports.addAll(
+        "org.cef.",
+        "io.github.trethore.jcefgithub.",
+    )
+    failureMessage.set("Fabric code must not access JCEF directly; use the common API instead.")
+  }
 }
 
 tasks.processResources {
