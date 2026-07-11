@@ -10,6 +10,10 @@ import io.github.trethore.graphene.api.browser.BrowserLoadStarted;
 import io.github.trethore.graphene.api.browser.BrowserLoadingState;
 import io.github.trethore.graphene.api.browser.BrowserOptions;
 import io.github.trethore.graphene.api.browser.BrowserSession;
+import io.github.trethore.graphene.api.browser.input.BrowserKeyInput;
+import io.github.trethore.graphene.api.browser.input.BrowserPointerInput;
+import io.github.trethore.graphene.api.browser.input.BrowserScrollInput;
+import io.github.trethore.graphene.api.browser.input.BrowserTextInput;
 import io.github.trethore.graphene.internal.bridge.BridgeBrowser;
 import io.github.trethore.graphene.internal.bridge.GrapheneBridgeRuntime;
 import io.github.trethore.graphene.internal.browser.GrapheneFrameBuffer;
@@ -39,6 +43,8 @@ import org.cef.handler.CefScreenInfo;
 
 final class GrapheneCefBrowserSession extends CefBrowserWindowless
     implements BrowserSession, BridgeBrowser, CefRenderHandler {
+  private static final String INPUT_NAME = "input";
+
   private final BrowserOptions options;
   private final long nativeWindowHandle;
   private final GrapheneBridgeRuntime bridgeRuntime;
@@ -278,6 +284,33 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
       viewRect.setSize(validatedWidth, validatedHeight);
     }
     wasResized(validatedWidth, validatedHeight);
+  }
+
+  @Override
+  public void setFocused(boolean focused) {
+    setFocus(focused);
+  }
+
+  @Override
+  public void sendPointerInput(BrowserPointerInput input) {
+    sendCefMouseEvent(
+        GrapheneCefInputTranslator.pointer(Objects.requireNonNull(input, INPUT_NAME)));
+  }
+
+  @Override
+  public void sendScrollInput(BrowserScrollInput input) {
+    sendCefMouseWheelEvent(
+        GrapheneCefInputTranslator.scroll(Objects.requireNonNull(input, INPUT_NAME)));
+  }
+
+  @Override
+  public void sendKeyInput(BrowserKeyInput input) {
+    sendCefKeyEvent(GrapheneCefInputTranslator.key(Objects.requireNonNull(input, INPUT_NAME)));
+  }
+
+  @Override
+  public void sendTextInput(BrowserTextInput input) {
+    sendCefKeyEvent(GrapheneCefInputTranslator.text(Objects.requireNonNull(input, INPUT_NAME)));
   }
 
   @Override
