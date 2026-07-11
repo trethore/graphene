@@ -1,5 +1,6 @@
 package io.github.trethore.graphene.api;
 
+import io.github.trethore.graphene.api.browser.BrowserSessions;
 import io.github.trethore.graphene.api.config.GrapheneConfig;
 import io.github.trethore.graphene.api.config.GrapheneContainerConfig;
 import io.github.trethore.graphene.api.config.GrapheneGlobalConfig;
@@ -16,6 +17,7 @@ public final class GrapheneContext {
   private final GrapheneAssetUrls classpathAssets;
   private final GrapheneAssetUrls httpAssets;
   private final UnaryOperator<String> httpUrlFactory;
+  private final BrowserSessions browsers;
 
   public GrapheneContext(
       String id,
@@ -23,13 +25,15 @@ public final class GrapheneContext {
       GrapheneAssetUrls appAssets,
       GrapheneAssetUrls classpathAssets,
       GrapheneAssetUrls httpAssets,
-      UnaryOperator<String> httpUrlFactory) {
+      UnaryOperator<String> httpUrlFactory,
+      BrowserSessions browsers) {
     this.id = Objects.requireNonNull(id, "id");
     this.config = Objects.requireNonNull(config, "config");
     this.appAssets = Objects.requireNonNull(appAssets, "appAssets");
     this.classpathAssets = Objects.requireNonNull(classpathAssets, "classpathAssets");
     this.httpAssets = Objects.requireNonNull(httpAssets, "httpAssets");
     this.httpUrlFactory = Objects.requireNonNull(httpUrlFactory, "httpUrlFactory");
+    this.browsers = Objects.requireNonNull(browsers, "browsers");
   }
 
   public String id() {
@@ -70,5 +74,9 @@ public final class GrapheneContext {
 
   public String httpUrl(String path) {
     return httpUrlFactory.apply(path);
+  }
+
+  public BrowserSessions browsers() {
+    return browsers;
   }
 }

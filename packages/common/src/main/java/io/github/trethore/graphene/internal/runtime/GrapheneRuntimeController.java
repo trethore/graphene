@@ -247,7 +247,9 @@ public final class GrapheneRuntimeController implements GrapheneRuntime, Graphen
             GrapheneAppUrls.assets(modId),
             GrapheneClasspathUrls.assets(modId),
             httpUrls.assets(modId),
-            path -> httpUrls.modUrl(modId, path));
+            path -> httpUrls.modUrl(modId, path),
+            (url, options, width, height) ->
+                browserRuntime.createSession(url, options, width, height));
     contexts.put(modId, context);
     configs.put(modId, validatedConfig);
     return context;

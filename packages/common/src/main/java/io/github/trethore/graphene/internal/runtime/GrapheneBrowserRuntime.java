@@ -1,5 +1,7 @@
 package io.github.trethore.graphene.internal.runtime;
 
+import io.github.trethore.graphene.api.browser.BrowserOptions;
+import io.github.trethore.graphene.api.browser.BrowserSession;
 import io.github.trethore.graphene.api.config.GrapheneGlobalConfig;
 import java.util.OptionalInt;
 
@@ -9,6 +11,8 @@ public interface GrapheneBrowserRuntime {
   void shutdown();
 
   OptionalInt remoteDebuggingPort();
+
+  BrowserSession createSession(String url, BrowserOptions options, int width, int height);
 
   static GrapheneBrowserRuntime disabled() {
     return new GrapheneBrowserRuntime() {
@@ -25,6 +29,12 @@ public interface GrapheneBrowserRuntime {
       @Override
       public OptionalInt remoteDebuggingPort() {
         return OptionalInt.empty();
+      }
+
+      @Override
+      public BrowserSession createSession(
+          String url, BrowserOptions options, int width, int height) {
+        throw new IllegalStateException("Graphene browser runtime is not installed");
       }
     };
   }
