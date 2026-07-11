@@ -11,31 +11,42 @@ Here is an overview of the project:
 graphene/                                   # You are here!
   .github/                                  # GitHub config and workflows.
   build-logic/                              # Included Gradle build for custom build logic.
+    architecture-check/                     # Gradle plugin for enforcing architecture rules.
     sonar/                                  # Gradle plugin for running SonarQube analysis.
     unpack-sources/                         # Gradle plugin that unpacks dependency and Git reference sources.
+  debug-client/                             # Development-only clients and resources for manually testing Graphene.
+    fabric-1.21.11/                         # Fabric debug client for Minecraft 1.21.11.
+      src/main/java/io/github/trethore/graphene/debug/
+      src/main/resources/
+      build.gradle.kts
+    shared/resources/                       # Test pages, scripts, styles, translations, and assets shared by debug clients.
   docs/
   packages/
-    common/                                 # Shared mod logic with no Minecraft or Fabric dependencies.
-      src/main/java/io/github/trethore/graphene/
-        api/                                # Public entry points used by loader/version implementations.
-          Main.java
-        internal/                           # Private common implementation details.
+    common/                                 # Loader-independent Graphene API, runtime, JCEF integration, and web resources.
+      src/main/
+        java/io/github/trethore/graphene/
+          api/                              # Public browser, bridge, configuration, runtime, and URL APIs.
+          internal/                         # Shared runtime, JCEF, bridge, HTTP, platform, and resource internals.
+        resources/assets/grapheneui/        # JavaScript resources injected into Graphene browser sessions.
+      src/test/                             # Unit tests and test resources for common functionality.
       build.gradle.kts
     fabric-1.21.11/                         # Fabric implementation for Minecraft 1.21.11.
       src/main/
         java/io/github/trethore/graphene/
+          fabric/                           # Fabric-specific public APIs and internal integrations.
           mixin/                            # Minecraft/Fabric-version-specific mixins.
           FabricBootstrap.java              # Fabric ModInitializer that boots common code.
         resources/
           assets/grapheneui/                # Fabric mod assets.
-          grapheneui.mixins.json
           fabric.mod.json
+          grapheneui.mixins.json
+      src/test/                             # Unit tests for Fabric-specific functionality.
       build.gradle.kts
   references/                               # Dependency source code for browsing and reference.
+    <group>-<lib-name>-<version>/
+    com.mojang-minecraft-1.21.11/
     net.fabricmc.fabric-api-fabric-api-0.141.4-1.21.11/
       nested/                               # Source code of the nested jars.
-    com.mojang-minecraft-1.21.11/
-    <group>-<lib-name>-<version>/
   .gitignore
   build.gradle.kts                          # Root Gradle config shared by all projects
   gradle.properties                         # Shared version and dependency properties.
