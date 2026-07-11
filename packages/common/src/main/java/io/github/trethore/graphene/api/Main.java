@@ -1,4 +1,4 @@
-package com.example.api;
+package io.github.trethore.graphene.api;
 
 public final class Main {
   private Main() {}

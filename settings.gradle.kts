@@ -15,8 +15,8 @@ pluginManagement {
   }
 }
 
-// Should match your modid
-rootProject.name = "example-mod"
+// Gradle project name
+rootProject.name = "graphene"
 
 include("packages:common")
 

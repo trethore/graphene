@@ -9,7 +9,7 @@ services:
       SONAR_JDBC_USERNAME: sonarqube
       SONAR_JDBC_PASSWORD: ${SONAR_DB_PASSWORD:-sonarqube}
     ports:
-      - "9000:9000"
+      - "${SONAR_PORT:-9000}:9000"
     volumes:
       - sonarqube_data:/opt/sonarqube/data
       - sonarqube_extensions:/opt/sonarqube/extensions

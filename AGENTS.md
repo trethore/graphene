@@ -1,13 +1,14 @@
 # Repository Guidelines
 
-This is just an example mod.
+Graphene is a client-side UI library for Minecraft. Its goal is to provide a simple yet powerful
+API for mod developers to create rich, web-based user interfaces in Minecraft using JCEF.
 
 ## Project Structure
 
 Here is an overview of the project:
 
 ```text
-example-mod/                                # You are here!
+graphene/                                   # You are here!
   .github/                                  # GitHub config and workflows.
   build-logic/                              # Included Gradle build for custom build logic.
     sonar/                                  # Gradle plugin for running SonarQube analysis.
@@ -15,19 +16,19 @@ example-mod/                                # You are here!
   docs/
   packages/
     common/                                 # Shared mod logic with no Minecraft or Fabric dependencies.
-      src/main/java/com/example/
+      src/main/java/io/github/trethore/graphene/
         api/                                # Public entry points used by loader/version implementations.
           Main.java
         internal/                           # Private common implementation details.
       build.gradle.kts
     fabric-1.21.11/                         # Fabric implementation for Minecraft 1.21.11.
       src/main/
-        java/com/example/
+        java/io/github/trethore/graphene/
           mixin/                            # Minecraft/Fabric-version-specific mixins.
           FabricBootstrap.java              # Fabric ModInitializer that boots common code.
         resources/
-          assets/example-mod/               # Fabric mod assets.
-          example-mod.mixins.json
+          assets/grapheneui/                 # Fabric mod assets.
+          grapheneui.mixins.json
           fabric.mod.json
       build.gradle.kts
   references/                               # Dependency source code for browsing and reference.

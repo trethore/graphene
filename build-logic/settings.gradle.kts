@@ -5,7 +5,7 @@ pluginManagement {
   }
 }
 
-rootProject.name = "example-mod-build-logic"
+rootProject.name = "build-logic"
 
 include("unpack-sources")
 

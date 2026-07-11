@@ -9,3 +9,4 @@
 
 # Treat packaged assets as binary
 *.png           binary
+*.jar           binary

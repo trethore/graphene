@@ -1,7 +1,6 @@
-# Example Mod Documentation
+# Graphene Documentation
 
-This is just an example mod.
+Graphene is a client-side UI library for Minecraft.
 
-- [Create your mod from this example](create-your-mod.md)
 - [Running the mod](running.md)
 - [Source references](references.md)

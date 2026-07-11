@@ -1,25 +1,25 @@
 {
   "schemaVersion": 1,
-  "id": "example-mod",
+  "id": "grapheneui",
   "version": "${version}",
-  "name": "Example Mod",
-  "description": "This is an example description! Tell everyone what your mod is about!",
+  "name": "Graphene",
+  "description": "A client-side UI library for Minecraft that lets mod developers build interfaces with web technologies.",
   "authors": [
-    "Me!"
+    "trethore"
   ],
   "contact": {
-    "sources": "https://github.com/trethore/example-mod"
+    "sources": "https://github.com/trethore/graphene"
   },
   "license": "MIT",
-  "icon": "assets/example-mod/icon.png",
-  "environment": "*",
+  "icon": "assets/grapheneui/icon.png",
+  "environment": "client",
   "entrypoints": {
     "main": [
-      "com.example.FabricBootstrap"
+      "io.github.trethore.graphene.FabricBootstrap"
     ]
   },
   "mixins": [
-    "example-mod.mixins.json"
+    "grapheneui.mixins.json"
   ],
   "depends": {
     "fabricloader": ">=${loaderVersion}",
