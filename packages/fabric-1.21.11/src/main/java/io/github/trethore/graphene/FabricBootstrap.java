@@ -17,7 +17,9 @@ public final class FabricBootstrap implements ClientModInitializer {
     GraphenePlatformServices platformServices = FabricPlatformServices.create();
     GrapheneRuntimeController controller = GrapheneRuntimeController.instance();
     controller.install(platformServices);
-    controller.installBrowserRuntime(new GrapheneCefRuntime(platformServices.startupPresenter()));
+    controller.installBrowserRuntime(
+        new GrapheneCefRuntime(
+            platformServices.startupPresenter(), platformServices.mainThreadExecutor()));
     LOGGER.info("Installed {} platform services", MOD_ID);
   }
 }

@@ -29,6 +29,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+@SuppressWarnings("java:S6548")
 public final class GrapheneRuntimeController implements GrapheneRuntime, GrapheneBackend {
   private static final GrapheneRuntimeController INSTANCE = new GrapheneRuntimeController();
 

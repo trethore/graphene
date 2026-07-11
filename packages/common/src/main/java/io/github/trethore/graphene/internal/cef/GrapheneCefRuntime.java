@@ -1,7 +1,11 @@
 package io.github.trethore.graphene.internal.cef;
 
 import io.github.trethore.graphene.api.config.GrapheneGlobalConfig;
+import io.github.trethore.graphene.internal.bridge.GrapheneBridgeOptions;
+import io.github.trethore.graphene.internal.bridge.GrapheneBridgeRuntime;
+import io.github.trethore.graphene.internal.event.GrapheneLoadEventBus;
 import io.github.trethore.graphene.internal.platform.GrapheneStartupPresenter;
+import io.github.trethore.graphene.internal.platform.GrapheneTaskExecutor;
 import io.github.trethore.graphene.internal.runtime.GrapheneBrowserRuntime;
 import io.github.trethore.jcefgithub.CefAppBuilder;
 import io.github.trethore.jcefgithub.CefInitializationException;
@@ -22,12 +26,19 @@ public final class GrapheneCefRuntime implements GrapheneBrowserRuntime {
   private static final long SHUTDOWN_POLL_INTERVAL = TimeUnit.MILLISECONDS.toNanos(25);
 
   private final GrapheneStartupPresenter startupPresenter;
+  private final GrapheneTaskExecutor mainThreadExecutor;
+  private final GrapheneBridgeRuntime bridgeRuntime;
+  private final GrapheneLoadEventBus loadEventBus = new GrapheneLoadEventBus();
   private CefApp app;
   private CefClient client;
   private int remoteDebuggingPort = -1;
 
-  public GrapheneCefRuntime(GrapheneStartupPresenter startupPresenter) {
+  public GrapheneCefRuntime(
+      GrapheneStartupPresenter startupPresenter, GrapheneTaskExecutor mainThreadExecutor) {
     this.startupPresenter = Objects.requireNonNull(startupPresenter, "startupPresenter");
+    this.mainThreadExecutor = Objects.requireNonNull(mainThreadExecutor, "mainThreadExecutor");
+    this.bridgeRuntime =
+        new GrapheneBridgeRuntime(GrapheneBridgeOptions.defaults(), mainThreadExecutor);
   }
 
   @Override
@@ -36,6 +47,7 @@ public final class GrapheneCefRuntime implements GrapheneBrowserRuntime {
       return;
     }
     CefAppBuilder builder = GrapheneCefInstaller.createBuilder(config);
+    builder.setAppHandler(new GrapheneCefAppHandler(config.browserFileAccessPolicy()));
     builder.setProgressHandler(
         (state, percent) ->
             startupPresenter.update(state.name(), percent < 0 ? -1.0 : percent / 100.0));
@@ -44,6 +56,8 @@ public final class GrapheneCefRuntime implements GrapheneBrowserRuntime {
       CefClient createdClient;
       try {
         createdClient = createdApp.createClient();
+        GrapheneCefClientConfig.configure(
+            createdClient, loadEventBus, bridgeRuntime, mainThreadExecutor);
       } catch (RuntimeException exception) {
         disposePartial(null, createdApp);
         throw exception;
@@ -76,6 +90,8 @@ public final class GrapheneCefRuntime implements GrapheneBrowserRuntime {
     client = null;
     app = null;
     remoteDebuggingPort = -1;
+    bridgeRuntime.shutdown();
+    loadEventBus.clear();
     disposePartial(activeClient, activeApp);
   }
 
