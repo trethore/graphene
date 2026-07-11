@@ -6,7 +6,7 @@ plugins {
 }
 
 val minecraftVersion = "1.21.11"
-val loaderVersion = "0.19.2"
+val loaderVersion = providers.gradleProperty("loader_version").get()
 val fabricApiVersion = "0.141.4+1.21.11"
 
 base {
@@ -16,17 +16,17 @@ base {
 loom {
   runs {
     named("client") {
-      name("Minecraft Client 1.21.11")
-      appendProjectPathToConfigName.set(false)
-      ideConfigGenerated(true)
-      runDir("run/client")
+      displayName.set("Minecraft Client 1.21.11")
+      appendProjectPathToDisplayName.set(false)
+      generateRunConfig.set(true)
+      runDirectory.set(layout.projectDirectory.dir("run/client"))
     }
 
     named("server") {
-      name("Minecraft Server 1.21.11")
-      appendProjectPathToConfigName.set(false)
-      ideConfigGenerated(true)
-      runDir("run/server")
+      displayName.set("Minecraft Server 1.21.11")
+      appendProjectPathToDisplayName.set(false)
+      generateRunConfig.set(true)
+      runDirectory.set(layout.projectDirectory.dir("run/server"))
     }
   }
 }
