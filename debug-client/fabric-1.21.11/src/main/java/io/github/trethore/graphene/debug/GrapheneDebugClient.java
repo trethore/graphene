@@ -35,7 +35,11 @@ public final class GrapheneDebugClient implements ClientModInitializer {
                 .global(
                     GrapheneGlobalConfig.builder()
                         .allowBrowserFileAccess()
-                        .remoteDebugging(GrapheneRemoteDebugConfig.builder().randomPort().build())
+                        .remoteDebugging(
+                            GrapheneRemoteDebugConfig.builder()
+                                .randomPort()
+                                .allowedOrigins("https://chrome-devtools-frontend.appspot.com")
+                                .build())
                         .build())
                 .build());
     GrapheneDebugKeyBindings.register();
