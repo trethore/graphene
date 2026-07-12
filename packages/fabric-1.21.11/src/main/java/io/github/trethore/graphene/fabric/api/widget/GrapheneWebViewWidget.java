@@ -6,6 +6,7 @@ import io.github.trethore.graphene.api.GrapheneContext;
 import io.github.trethore.graphene.api.bridge.GrapheneBridge;
 import io.github.trethore.graphene.fabric.api.surface.BrowserSurface;
 import io.github.trethore.graphene.fabric.api.surface.BrowserSurfaceInputAdapter;
+import io.github.trethore.graphene.fabric.internal.input.GrapheneClickCounter;
 import io.github.trethore.graphene.fabric.internal.screen.GrapheneScreenBridge;
 import java.util.Objects;
 import net.minecraft.client.gui.GuiGraphics;
@@ -16,6 +17,7 @@ import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.Util;
 import org.jspecify.annotations.NonNull;
 
 @SuppressWarnings("unused")
@@ -23,6 +25,7 @@ public class GrapheneWebViewWidget extends AbstractWidget implements AutoCloseab
   private final Screen screen;
   private final BrowserSurface surface;
   private final BrowserSurfaceInputAdapter inputAdapter;
+  private final GrapheneClickCounter clickCounter = new GrapheneClickCounter();
   private boolean closed;
 
   public GrapheneWebViewWidget(
@@ -119,6 +122,7 @@ public class GrapheneWebViewWidget extends AbstractWidget implements AutoCloseab
       return false;
     }
     screen.setFocused(this);
+    int clickCount = clickCounter.registerClick(event.button(), doubleClick, Util.getMillis());
     inputAdapter.mouseButton(
         event.x(),
         event.y(),
@@ -128,7 +132,7 @@ public class GrapheneWebViewWidget extends AbstractWidget implements AutoCloseab
         getHeight(),
         event.button(),
         true,
-        doubleClick ? 2 : 1,
+        clickCount,
         event.modifiers());
     return true;
   }
@@ -144,7 +148,7 @@ public class GrapheneWebViewWidget extends AbstractWidget implements AutoCloseab
         getHeight(),
         event.button(),
         false,
-        1,
+        clickCounter.current(event.button()),
         event.modifiers());
     return true;
   }
