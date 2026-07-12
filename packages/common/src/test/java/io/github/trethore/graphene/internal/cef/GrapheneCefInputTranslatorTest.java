@@ -35,6 +35,19 @@ class GrapheneCefInputTranslatorTest {
   }
 
   @Test
+  void preservesPressedButtonDuringPointerDrag() {
+    BrowserPointerInput input =
+        new BrowserPointerInput(
+            BrowserPointerAction.DRAG, 18, 30, BrowserPointerButton.LEFT, 0, Set.of());
+
+    CefMouseEvent event = GrapheneCefInputTranslator.pointer(input);
+
+    assertEquals(CefMouseEvent.MOUSEEVENT_DRAGGED, event.type);
+    assertEquals(CefMouseEvent.BUTTON_LEFT, event.button);
+    assertEquals(EventFlags.EVENTFLAG_LEFT_MOUSE_BUTTON, event.modifiers);
+  }
+
+  @Test
   void preservesRawKeyboardCodes() {
     BrowserKeyInput input =
         new BrowserKeyInput(

@@ -58,6 +58,7 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
   private CefDragData activeDragData;
   private int activeDragMask = CefDragData.DragOperations.DRAG_OPERATION_NONE;
   private boolean dragTargetEntered;
+  private volatile BrowserCursor pageCursor = BrowserCursor.ARROW;
   private boolean closed;
   private volatile boolean focused;
   private volatile BrowserCursor requestedCursor = BrowserCursor.ARROW;
@@ -194,7 +195,13 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
 
   @Override
   public boolean onCursorChange(CefBrowser browser, int cursorType) {
-    requestedCursor = cursor(cursorType);
+    BrowserCursor cursor = cursor(cursorType);
+    pageCursor = cursor;
+    synchronized (dragLock) {
+      if (activeDragData == null) {
+        requestedCursor = cursor;
+      }
+    }
     return true;
   }
 
@@ -208,13 +215,21 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
       activeDragData = dragData.clone();
       activeDragMask = mask;
       dragTargetEntered = false;
+      requestedCursor = BrowserCursor.HAND;
     }
     return true;
   }
 
   @Override
   public void updateDragCursor(CefBrowser browser, int operation) {
-    // Drag cursor handling belongs to the Fabric surface adapter.
+    synchronized (dragLock) {
+      if (activeDragData != null) {
+        requestedCursor =
+            operation == CefDragData.DragOperations.DRAG_OPERATION_NONE
+                ? BrowserCursor.NOT_ALLOWED
+                : BrowserCursor.HAND;
+      }
+    }
   }
 
   @Override
@@ -497,6 +512,7 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
     }
     activeDragMask = CefDragData.DragOperations.DRAG_OPERATION_NONE;
     dragTargetEntered = false;
+    requestedCursor = pageCursor;
   }
 
   private static int preferredDragOperation(int mask) {

@@ -225,6 +225,7 @@ public class GrapheneWebViewWidget extends AbstractWidget implements AutoCloseab
       case CROSSHAIR -> CursorTypes.CROSSHAIR;
       case TEXT -> CursorTypes.IBEAM;
       case HAND -> CursorTypes.POINTING_HAND;
+      case NOT_ALLOWED -> CursorTypes.NOT_ALLOWED;
       case RESIZE_HORIZONTAL -> CursorTypes.RESIZE_EW;
       case RESIZE_VERTICAL -> CursorTypes.RESIZE_NS;
       case RESIZE_ALL -> CursorTypes.RESIZE_ALL;

@@ -40,9 +40,13 @@ public final class BrowserSurfaceInputAdapter {
       int renderedWidth,
       int renderedHeight,
       int modifiers) {
+    BrowserPointerAction action =
+        pressedButton == BrowserPointerButton.NONE
+            ? BrowserPointerAction.MOVE
+            : BrowserPointerAction.DRAG;
     sendPointer(
-        BrowserPointerAction.MOVE,
-        BrowserPointerButton.NONE,
+        action,
+        pressedButton,
         mouseX,
         mouseY,
         surfaceX,

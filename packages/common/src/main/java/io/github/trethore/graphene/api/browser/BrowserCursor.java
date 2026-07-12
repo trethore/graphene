@@ -5,6 +5,7 @@ public enum BrowserCursor {
   CROSSHAIR,
   TEXT,
   HAND,
+  NOT_ALLOWED,
   RESIZE_HORIZONTAL,
   RESIZE_VERTICAL,
   RESIZE_ALL
