@@ -58,9 +58,9 @@ dependencies {
   modImplementation("net.fabricmc:fabric-loader:$loaderVersion")
   modImplementation("net.fabricmc.fabric-api:fabric-api:$fabricApiVersion")
   implementation(files(grapheneMainSourceSet.map { it.output }))
-  runtimeOnly(grapheneRuntimeSourceSet.output)
   implementation(project(":packages:common"))
   implementation("com.google.code.gson:gson:${providers.gradleProperty("gson_version").get()}")
+  runtimeOnly(grapheneRuntimeSourceSet.output)
 }
 
 tasks.processResources {

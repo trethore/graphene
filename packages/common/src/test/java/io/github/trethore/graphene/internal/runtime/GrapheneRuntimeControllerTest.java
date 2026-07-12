@@ -42,7 +42,6 @@ class GrapheneRuntimeControllerTest {
     assertThrows(IllegalStateException.class, () -> controller.register("beta", betaConfig));
 
     lifecycle.stopping.run();
-    controller.shutdownAsync().toCompletableFuture().join();
     assertEquals(GrapheneRuntimeState.STOPPED, controller.state());
   }
 

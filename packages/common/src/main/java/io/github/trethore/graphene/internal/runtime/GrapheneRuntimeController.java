@@ -63,7 +63,7 @@ public final class GrapheneRuntimeController implements GrapheneRuntime, Graphen
 
     platformServices = services;
     services.lifecycle().onStarted(this::startRegisteredConsumers);
-    services.lifecycle().onStopping(this::shutdownAsync);
+    services.lifecycle().onStopping(this::shutdown);
   }
 
   public synchronized void installBrowserRuntime(GrapheneBrowserRuntime installedBrowserRuntime) {
@@ -181,14 +181,7 @@ public final class GrapheneRuntimeController implements GrapheneRuntime, Graphen
 
   @Override
   public void initialize() {
-    try {
-      initializeAsync().toCompletableFuture().join();
-    } catch (CompletionException exception) {
-      if (exception.getCause() instanceof RuntimeException runtimeException) {
-        throw runtimeException;
-      }
-      throw exception;
-    }
+    join(initializeAsync());
   }
 
   @Override
@@ -314,6 +307,21 @@ public final class GrapheneRuntimeController implements GrapheneRuntime, Graphen
     }
     if (shutdownFailure != null) {
       throw shutdownFailure;
+    }
+  }
+
+  private void shutdown() {
+    join(shutdownAsync());
+  }
+
+  private static void join(CompletionStage<Void> stage) {
+    try {
+      stage.toCompletableFuture().join();
+    } catch (CompletionException exception) {
+      if (exception.getCause() instanceof RuntimeException runtimeException) {
+        throw runtimeException;
+      }
+      throw exception;
     }
   }
 

@@ -18,6 +18,7 @@ import io.github.trethore.jcefgithub.UnsupportedPlatformException;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.OptionalInt;
 import java.util.Set;
@@ -83,7 +84,7 @@ public final class GrapheneCefRuntime implements GrapheneBrowserRuntime {
             fileDialogPresenter,
             jsDialogPresenter);
       } catch (RuntimeException exception) {
-        disposePartial(null, createdApp);
+        disposePartial(createdApp, List.of());
         throw exception;
       }
       app = createdApp;
@@ -109,17 +110,15 @@ public final class GrapheneCefRuntime implements GrapheneBrowserRuntime {
 
   @Override
   public synchronized void shutdown() {
-    CefClient activeClient = client;
     CefApp activeApp = app;
     client = null;
     app = null;
     remoteDebuggingPort = -1;
     List<GrapheneCefBrowserSession> activeSessions = List.copyOf(sessions);
     sessions.clear();
-    activeSessions.forEach(GrapheneCefBrowserSession::close);
     bridgeRuntime.shutdown();
     loadEventBus.clear();
-    disposePartial(activeClient, activeApp);
+    disposePartial(activeApp, activeSessions);
   }
 
   @Override
@@ -152,22 +151,19 @@ public final class GrapheneCefRuntime implements GrapheneBrowserRuntime {
     sessions.remove(session);
   }
 
-  private static void disposePartial(CefClient activeClient, CefApp activeApp) {
-    if (activeClient != null) {
-      try {
-        activeClient.dispose();
-      } catch (RuntimeException exception) {
-        LOGGER.warn("Failed to dispose JCEF client", exception);
-      }
-    }
-    if (activeApp == null) {
-      return;
-    }
+  private static void disposePartial(
+      CefApp activeApp, List<GrapheneCefBrowserSession> closingSessions) {
     try {
-      activeApp.dispose();
-      awaitTermination();
+      if (activeApp != null) {
+        activeApp.dispose();
+      }
     } catch (RuntimeException exception) {
-      LOGGER.warn("Failed to dispose JCEF application", exception);
+      LOGGER.warn("Failed to dispose JCEF", exception);
+    } finally {
+      closingSessions.forEach(GrapheneCefBrowserSession::close);
+    }
+    if (activeApp != null) {
+      awaitTermination();
     }
   }
 
@@ -180,7 +176,30 @@ public final class GrapheneCefRuntime implements GrapheneBrowserRuntime {
       }
     }
     if (CefApp.getState() != CefApp.CefAppState.TERMINATED) {
-      LOGGER.warn("Timed out waiting for JCEF termination");
+      LOGGER.warn("Timed out waiting for JCEF termination: state={}", CefApp.getState());
+      killJcefProcesses();
     }
+  }
+
+  private static void killJcefProcesses() {
+    List<ProcessHandle> processes =
+        ProcessHandle.current().descendants().filter(GrapheneCefRuntime::isJcefProcess).toList();
+    processes.forEach(
+        process -> {
+          LOGGER.debug(
+              "Forcibly terminating JCEF process: pid={}, command={}",
+              process.pid(),
+              process.info().commandLine().orElse("unknown"));
+          process.destroyForcibly();
+        });
+    LOGGER.warn("Requested forced termination of {} JCEF processes", processes.size());
+  }
+
+  private static boolean isJcefProcess(ProcessHandle process) {
+    String command = process.info().command().orElse("");
+    int separator = Math.max(command.lastIndexOf('/'), command.lastIndexOf('\\'));
+    String executableName =
+        command.substring(separator + 1).toLowerCase(Locale.ROOT).replace(' ', '_');
+    return executableName.equals("jcef_helper") || executableName.equals("jcef_helper.exe");
   }
 }
