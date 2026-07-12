@@ -11,6 +11,7 @@ import io.github.trethore.graphene.api.browser.BrowserLoadStarted;
 import io.github.trethore.graphene.api.browser.BrowserLoadingState;
 import io.github.trethore.graphene.api.browser.BrowserOptions;
 import io.github.trethore.graphene.api.browser.BrowserSession;
+import io.github.trethore.graphene.api.browser.input.BrowserKeyAction;
 import io.github.trethore.graphene.api.browser.input.BrowserKeyInput;
 import io.github.trethore.graphene.api.browser.input.BrowserPointerInput;
 import io.github.trethore.graphene.api.browser.input.BrowserScrollInput;
@@ -58,6 +59,7 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
   private CefDragData activeDragData;
   private int activeDragMask = CefDragData.DragOperations.DRAG_OPERATION_NONE;
   private boolean dragTargetEntered;
+  private BrowserKeyInput lastPressedKeyInput;
   private volatile BrowserCursor pageCursor = BrowserCursor.ARROW;
   private boolean closed;
   private volatile boolean focused;
@@ -359,12 +361,21 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
 
   @Override
   public void sendKeyInput(BrowserKeyInput input) {
-    sendCefKeyEvent(GrapheneCefInputTranslator.key(Objects.requireNonNull(input, INPUT_NAME)));
+    BrowserKeyInput validatedInput = Objects.requireNonNull(input, INPUT_NAME);
+    if (validatedInput.action() == BrowserKeyAction.PRESS) {
+      lastPressedKeyInput = validatedInput;
+    }
+    sendCefKeyEvent(GrapheneCefInputTranslator.key(validatedInput));
+    if (validatedInput.action() == BrowserKeyAction.RELEASE) {
+      lastPressedKeyInput = null;
+    }
   }
 
   @Override
   public void sendTextInput(BrowserTextInput input) {
-    sendCefKeyEvent(GrapheneCefInputTranslator.text(Objects.requireNonNull(input, INPUT_NAME)));
+    sendCefKeyEvent(
+        GrapheneCefInputTranslator.text(
+            Objects.requireNonNull(input, INPUT_NAME), lastPressedKeyInput));
   }
 
   @Override

@@ -8,6 +8,7 @@ import io.github.trethore.graphene.api.browser.input.BrowserModifier;
 import io.github.trethore.graphene.api.browser.input.BrowserPointerAction;
 import io.github.trethore.graphene.api.browser.input.BrowserPointerButton;
 import io.github.trethore.graphene.api.browser.input.BrowserPointerInput;
+import io.github.trethore.graphene.api.browser.input.BrowserTextInput;
 import java.util.Set;
 import org.cef.input.CefKeyEvent;
 import org.cef.input.CefMouseEvent;
@@ -68,6 +69,21 @@ class GrapheneCefInputTranslatorTest {
     assertEquals(44, event.scan_code);
     assertEquals(EventFlags.EVENTFLAG_CONTROL_DOWN, event.modifiers);
     assertEquals('\u0001', event.character);
+    assertEquals('a', event.unmodified_character);
+  }
+
+  @Test
+  void preservesOriginatingKeyCodesForCharacterEvents() {
+    BrowserKeyInput keyInput =
+        new BrowserKeyInput(BrowserKeyAction.PRESS, 65, 38, 38, false, 'a', 'a', Set.of());
+    CefKeyEvent event =
+        GrapheneCefInputTranslator.text(new BrowserTextInput('a', Set.of()), keyInput);
+
+    assertEquals(CefKeyEvent.KEYEVENT_CHAR, event.type);
+    assertEquals(65, event.windows_key_code);
+    assertEquals(38, event.native_key_code);
+    assertEquals(38, event.scan_code);
+    assertEquals('a', event.character);
     assertEquals('a', event.unmodified_character);
   }
 }

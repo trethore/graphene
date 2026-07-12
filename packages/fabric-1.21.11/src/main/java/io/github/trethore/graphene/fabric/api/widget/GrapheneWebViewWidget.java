@@ -9,6 +9,7 @@ import io.github.trethore.graphene.fabric.api.surface.BrowserSurfaceInputAdapter
 import io.github.trethore.graphene.fabric.internal.input.GrapheneClickCounter;
 import io.github.trethore.graphene.fabric.internal.screen.GrapheneScreenBridge;
 import java.util.Objects;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
@@ -19,6 +20,7 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
 import org.jspecify.annotations.NonNull;
+import org.lwjgl.glfw.GLFW;
 
 @SuppressWarnings("unused")
 public class GrapheneWebViewWidget extends AbstractWidget implements AutoCloseable {
@@ -59,6 +61,8 @@ public class GrapheneWebViewWidget extends AbstractWidget implements AutoCloseab
     this.screen = Objects.requireNonNull(screen, "screen");
     this.surface = Objects.requireNonNull(surface, "surface");
     this.inputAdapter = new BrowserSurfaceInputAdapter(surface);
+    GLFW.glfwSetInputMode(
+        Minecraft.getInstance().getWindow().handle(), GLFW.GLFW_LOCK_KEY_MODS, GLFW.GLFW_TRUE);
     requireScreenBridge(screen).graphene$addWebViewWidget(this);
     surface.resize(width, height);
   }

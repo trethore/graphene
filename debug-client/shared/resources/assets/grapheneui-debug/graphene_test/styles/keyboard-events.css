@@ -1,0 +1,129 @@
+body {
+    font-family: sans-serif;
+    line-height: 1.4;
+    margin: 16px;
+}
+
+main {
+    max-width: 1400px;
+}
+
+h1, h2, p {
+    margin-top: 0;
+}
+
+.panel {
+    border: 1px solid #bbb;
+    margin: 14px 0;
+    padding: 12px;
+}
+
+label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+textarea {
+    box-sizing: border-box;
+    font: 18px/1.5 monospace;
+    min-height: 140px;
+    padding: 10px;
+    resize: vertical;
+    width: 100%;
+}
+
+.status-grid {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    margin-top: 10px;
+}
+
+.status-grid div {
+    background: #f2f2f2;
+    padding: 8px;
+}
+
+.status-grid span, .status-grid strong {
+    display: block;
+}
+
+.status-grid span {
+    color: #555;
+    font-size: 12px;
+}
+
+.section-heading {
+    align-items: center;
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+}
+
+.section-heading h2 {
+    margin-bottom: 0;
+}
+
+.actions {
+    display: flex;
+    gap: 8px;
+}
+
+button {
+    cursor: pointer;
+    padding: 7px 12px;
+}
+
+pre, code, table {
+    font-family: monospace;
+}
+
+pre {
+    margin-bottom: 0;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+
+.copy-status {
+    color: #176b27;
+    min-height: 1.4em;
+    margin: 8px 0;
+}
+
+.table-scroll {
+    max-height: 520px;
+    overflow: auto;
+}
+
+table {
+    border-collapse: collapse;
+    font-size: 12px;
+    width: 100%;
+}
+
+th, td {
+    border: 1px solid #bbb;
+    padding: 5px 7px;
+    text-align: left;
+    vertical-align: top;
+    white-space: nowrap;
+}
+
+th {
+    background: #eee;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+tbody tr:nth-child(even) {
+    background: #f7f7f7;
+}
+
+@media (max-width: 700px) {
+    .section-heading {
+        align-items: stretch;
+        flex-direction: column;
+    }
+}

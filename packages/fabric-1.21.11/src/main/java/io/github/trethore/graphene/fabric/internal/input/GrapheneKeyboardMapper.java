@@ -23,7 +23,7 @@ public final class GrapheneKeyboardMapper {
     int resolvedScanCode = resolveScanCode(keyCode, scanCode);
     char layoutCharacter = layoutCharacter(keyCode, resolvedScanCode, glfwModifiers);
     int domKeyCode = windowsVirtualKey(keyCode, layoutCharacter);
-    int nativeKeyCode = nativeKeyCode(keyCode, resolvedScanCode, domKeyCode, pressed);
+    int nativeKeyCode = nativeKeyCode(keyCode, resolvedScanCode, pressed);
     EnumSet<BrowserModifier> resolvedModifiers =
         modifiers.isEmpty() ? EnumSet.noneOf(BrowserModifier.class) : EnumSet.copyOf(modifiers);
     if (isKeypad(keyCode)) {
@@ -50,6 +50,9 @@ public final class GrapheneKeyboardMapper {
   }
 
   static int windowsVirtualKey(int keyCode, char character) {
+    if (keyCode >= GLFW.GLFW_KEY_0 && keyCode <= GLFW.GLFW_KEY_9) {
+      return keyCode;
+    }
     if (character >= 'a' && character <= 'z') {
       return Character.toUpperCase(character);
     }
@@ -63,6 +66,7 @@ public final class GrapheneKeyboardMapper {
       case GLFW.GLFW_KEY_LEFT_SHIFT, GLFW.GLFW_KEY_RIGHT_SHIFT -> 0x10;
       case GLFW.GLFW_KEY_LEFT_CONTROL, GLFW.GLFW_KEY_RIGHT_CONTROL -> 0x11;
       case GLFW.GLFW_KEY_LEFT_ALT, GLFW.GLFW_KEY_RIGHT_ALT -> 0x12;
+      case GLFW.GLFW_KEY_CAPS_LOCK -> 0x14;
       case GLFW.GLFW_KEY_ESCAPE -> 0x1B;
       case GLFW.GLFW_KEY_SPACE -> 0x20;
       case GLFW.GLFW_KEY_PAGE_UP -> 0x21;
@@ -88,7 +92,12 @@ public final class GrapheneKeyboardMapper {
           GLFW.GLFW_KEY_KP_7,
           GLFW.GLFW_KEY_KP_8,
           GLFW.GLFW_KEY_KP_9 ->
-          0x60 + keyCode - GLFW.GLFW_KEY_KP_0;
+          keypadDigitVirtualKey(keyCode, character != 0);
+      case GLFW.GLFW_KEY_KP_MULTIPLY -> 0x6A;
+      case GLFW.GLFW_KEY_KP_ADD -> 0x6B;
+      case GLFW.GLFW_KEY_KP_SUBTRACT -> 0x6D;
+      case GLFW.GLFW_KEY_KP_DECIMAL -> character == 0 ? 0x2E : 0x6E;
+      case GLFW.GLFW_KEY_KP_DIVIDE -> 0x6F;
       case GLFW.GLFW_KEY_F1,
           GLFW.GLFW_KEY_F2,
           GLFW.GLFW_KEY_F3,
@@ -115,11 +124,12 @@ public final class GrapheneKeyboardMapper {
       case GLFW.GLFW_KEY_BACKSLASH -> 0xDC;
       case GLFW.GLFW_KEY_RIGHT_BRACKET -> 0xDD;
       case GLFW.GLFW_KEY_APOSTROPHE -> 0xDE;
+      case GLFW.GLFW_KEY_WORLD_1, GLFW.GLFW_KEY_WORLD_2 -> 0xE2;
       default -> character;
     };
   }
 
-  private static int nativeKeyCode(int keyCode, int scanCode, int domKeyCode, boolean pressed) {
+  private static int nativeKeyCode(int keyCode, int scanCode, boolean pressed) {
     if (WINDOWS) {
       return scanCode <= 0
           ? 0
@@ -128,17 +138,29 @@ public final class GrapheneKeyboardMapper {
     if (MAC) {
       return macKeyCode(keyCode, scanCode);
     }
+    return linuxNativeKeyCode(scanCode);
+  }
+
+  static int linuxNativeKeyCode(int scanCode) {
+    return Math.max(scanCode, 0);
+  }
+
+  static int keypadDigitVirtualKey(int keyCode, boolean numLock) {
+    if (numLock) {
+      return 0x60 + keyCode - GLFW.GLFW_KEY_KP_0;
+    }
     return switch (keyCode) {
-      case GLFW.GLFW_KEY_BACKSPACE -> 0xFF08;
-      case GLFW.GLFW_KEY_TAB -> 0xFF09;
-      case GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> 0xFF0D;
-      case GLFW.GLFW_KEY_ESCAPE -> 0xFF1B;
-      case GLFW.GLFW_KEY_LEFT -> 0xFF51;
-      case GLFW.GLFW_KEY_UP -> 0xFF52;
-      case GLFW.GLFW_KEY_RIGHT -> 0xFF53;
-      case GLFW.GLFW_KEY_DOWN -> 0xFF54;
-      case GLFW.GLFW_KEY_DELETE -> 0xFFFF;
-      default -> domKeyCode;
+      case GLFW.GLFW_KEY_KP_0 -> 0x2D;
+      case GLFW.GLFW_KEY_KP_1 -> 0x23;
+      case GLFW.GLFW_KEY_KP_2 -> 0x28;
+      case GLFW.GLFW_KEY_KP_3 -> 0x22;
+      case GLFW.GLFW_KEY_KP_4 -> 0x25;
+      case GLFW.GLFW_KEY_KP_5 -> 0x0C;
+      case GLFW.GLFW_KEY_KP_6 -> 0x27;
+      case GLFW.GLFW_KEY_KP_7 -> 0x24;
+      case GLFW.GLFW_KEY_KP_8 -> 0x26;
+      case GLFW.GLFW_KEY_KP_9 -> 0x21;
+      default -> 0;
     };
   }
 

@@ -3,6 +3,7 @@
   "package": "io.github.trethore.graphene.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "KeyboardHandlerMixin",
     "MouseHandlerMixin",
     "ScreenMixin"
   ],

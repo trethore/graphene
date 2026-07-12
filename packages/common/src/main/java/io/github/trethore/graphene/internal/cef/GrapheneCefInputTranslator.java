@@ -47,16 +47,23 @@ final class GrapheneCefInputTranslator {
         input.scanCode());
   }
 
-  static CefKeyEvent text(BrowserTextInput input) {
+  static CefKeyEvent text(BrowserTextInput input, BrowserKeyInput originatingKey) {
+    int windowsKeyCode = originatingKey == null ? input.character() : originatingKey.keyCode();
+    int nativeKeyCode = originatingKey == null ? 0 : originatingKey.nativeKeyCode();
+    long scanCode = originatingKey == null ? 0 : originatingKey.scanCode();
+    char unmodifiedCharacter =
+        originatingKey == null || originatingKey.unmodifiedCharacter() == 0
+            ? input.character()
+            : originatingKey.unmodifiedCharacter();
     return new CefKeyEvent(
         CefKeyEvent.KEYEVENT_CHAR,
         modifiers(input.modifiers()),
+        windowsKeyCode,
+        nativeKeyCode,
+        originatingKey != null && originatingKey.systemKey(),
         input.character(),
-        0,
-        false,
-        input.character(),
-        input.character(),
-        0);
+        unmodifiedCharacter,
+        scanCode);
   }
 
   static int modifiers(Set<BrowserModifier> modifiers) {

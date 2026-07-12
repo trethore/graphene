@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -144,6 +145,8 @@ final class GrapheneBrowserDebugScreen extends Screen {
         bridge.onRequest(
             "debug:tests:run", (channel, payload) -> GrapheneDebugTestRunner.runAllTestsAsJson()));
     subscriptions.add(
+        bridge.onRequest("debug:clipboard:copy", (channel, payload) -> copyToClipboard(payload)));
+    subscriptions.add(
         bridge.onRequest(
             "debug:bridge:trigger-java-to-js", (channel, payload) -> javaToJsRoundTrip(payload)));
   }
@@ -163,6 +166,22 @@ final class GrapheneBrowserDebugScreen extends Screen {
               result.add("response", parse(response));
               return result.toString();
             });
+  }
+
+  private CompletableFuture<String> copyToClipboard(String payload) {
+    CompletableFuture<String> result = new CompletableFuture<>();
+    Minecraft minecraft = Minecraft.getInstance();
+    minecraft.execute(
+        () -> {
+          try {
+            JsonObject request = parse(payload).getAsJsonObject();
+            minecraft.keyboardHandler.setClipboard(request.get("text").getAsString());
+            result.complete("{\"ok\":true}");
+          } catch (RuntimeException exception) {
+            result.complete("{\"ok\":false}");
+          }
+        });
+    return result;
   }
 
   private void openDevTools() {
