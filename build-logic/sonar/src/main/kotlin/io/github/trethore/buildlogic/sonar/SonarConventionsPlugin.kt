@@ -41,8 +41,8 @@ class SonarConventionsPlugin : Plugin<Project> {
 
         project.tasks.register<SonarIssuesTask>(SonarConstants.ISSUES_TASK_NAME) {
             group = SonarConstants.TASK_GROUP
-            description = "Lists unresolved SonarQube issues for this project."
-            mustRunAfter(SonarConstants.SONAR_TASK_NAME)
+            description = "Runs SonarQube analysis and lists unresolved issues for this project."
+            dependsOn(SonarConstants.SONAR_TASK_NAME)
             hostUrl.set(sonarHostUrl)
             projectKey.set(project.rootProject.name)
             token.set(sonarToken)
