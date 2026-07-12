@@ -69,10 +69,6 @@ references {
   unpackNestedJars = true
 
   git(
-      url = "git@github.com:trethore/graphene.git",
-      branch = "main",
-  )
-  git(
       url = "https://github.com/trethore/jcef.git",
       branch = "master",
   )
