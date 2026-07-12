@@ -166,20 +166,7 @@ public final class GrapheneCefInstaller {
     if (!isLinux()) {
       return;
     }
-    builder.addJcefArgs(
-        "--no-sandbox",
-        "--password-store=basic",
-        "--disable-background-networking",
-        "--disable-component-update",
-        "--disable-domain-reliability",
-        "--disable-sync",
-        "--metrics-recording-only",
-        "--no-first-run",
-        "--no-default-browser-check",
-        "--disable-features=MediaRouter,OptimizationHints,AutofillServerCommunication,CertificateTransparencyComponentUpdater,Translate");
-    if (isWaylandSession()) {
-      builder.addJcefArgs("--ozone-platform=x11");
-    }
+    builder.addJcefArgs("--no-sandbox", "--password-store=basic");
   }
 
   private static int findAvailablePort() {
@@ -196,11 +183,6 @@ public final class GrapheneCefInstaller {
 
   private static boolean isMac() {
     return osName().contains("mac");
-  }
-
-  private static boolean isWaylandSession() {
-    String sessionType = System.getenv("XDG_SESSION_TYPE");
-    return sessionType != null && sessionType.equalsIgnoreCase("wayland");
   }
 
   private static String osName() {
