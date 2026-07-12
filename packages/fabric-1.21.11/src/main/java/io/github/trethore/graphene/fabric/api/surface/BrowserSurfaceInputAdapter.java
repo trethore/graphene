@@ -15,6 +15,7 @@ import org.lwjgl.glfw.GLFW;
 
 @SuppressWarnings("unused")
 public final class BrowserSurfaceInputAdapter {
+  private static final String MOUSE_BUTTON_CHANNEL = "graphene:mouse:button";
   private static final int SCROLL_DELTA = 120;
   private static final long SYNTHETIC_DUPLICATE_WINDOW_MILLIS = 250;
 
@@ -69,6 +70,11 @@ public final class BrowserSurfaceInputAdapter {
       int clickCount,
       int modifiers) {
     BrowserPointerButton browserButton = pointerButton(button);
+    if (browserButton == BrowserPointerButton.NONE) {
+      sendExtendedMouseButton(
+          mouseX, mouseY, surfaceX, surfaceY, renderedWidth, renderedHeight, button, pressed);
+      return;
+    }
     if (pressed) {
       pressedButton = browserButton;
     } else if (pressedButton == browserButton) {
@@ -246,6 +252,30 @@ public final class BrowserSurfaceInputAdapter {
             modifiers(modifiers)));
   }
 
+  private void sendExtendedMouseButton(
+      double mouseX,
+      double mouseY,
+      int surfaceX,
+      int surfaceY,
+      int renderedWidth,
+      int renderedHeight,
+      int button,
+      boolean pressed) {
+    if (button < GLFW.GLFW_MOUSE_BUTTON_4 || button > GLFW.GLFW_MOUSE_BUTTON_8) {
+      return;
+    }
+    surface
+        .browser()
+        .bridge()
+        .emitJson(
+            MOUSE_BUTTON_CHANNEL,
+            new ExtendedMouseButtonInput(
+                button,
+                pressed,
+                surface.toBrowserX(mouseX - surfaceX, renderedWidth),
+                surface.toBrowserY(mouseY - surfaceY, renderedHeight)));
+  }
+
   private static BrowserPointerButton pointerButton(int button) {
     return switch (button) {
       case GLFW.GLFW_MOUSE_BUTTON_LEFT -> BrowserPointerButton.LEFT;
@@ -277,4 +307,6 @@ public final class BrowserSurfaceInputAdapter {
     }
     return Set.copyOf(result);
   }
+
+  private record ExtendedMouseButtonInput(int button, boolean pressed, int x, int y) {}
 }

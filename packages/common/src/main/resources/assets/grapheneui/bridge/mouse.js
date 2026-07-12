@@ -31,6 +31,39 @@ function grapheneMouseCreateEvent(button, pressed) {
     };
 }
 
+function grapheneMouseButtonsMask() {
+    let buttons = 0;
+    grapheneMousePressedButtons.forEach(function (button) {
+        buttons |= 1 << button;
+    });
+    return buttons;
+}
+
+function grapheneMouseDispatchDomEvent(button, pressed, x, y) {
+    const target = document.elementFromPoint(x, y) ?? document;
+    const type = pressed ? "mousedown" : "mouseup";
+    const options = {
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+        view: globalThis,
+        button: button,
+        buttons: grapheneMouseButtonsMask(),
+        clientX: x,
+        clientY: y
+    };
+
+    if (typeof globalThis.PointerEvent === "function") {
+        target.dispatchEvent(new PointerEvent(pressed ? "pointerdown" : "pointerup", {
+            ...options,
+            pointerId: 1,
+            pointerType: "mouse",
+            isPrimary: true
+        }));
+    }
+    target.dispatchEvent(new MouseEvent(type, options));
+}
+
 function grapheneMouseSnapshot() {
     return {
         eventCount: grapheneMouseEventCount,
@@ -62,6 +95,12 @@ function grapheneMouseOnBridgeEvent(payload) {
         grapheneMousePressedButtons.add(button);
     } else {
         grapheneMousePressedButtons.delete(button);
+    }
+
+    const x = Number(payload?.x);
+    const y = Number(payload?.y);
+    if (Number.isFinite(x) && Number.isFinite(y)) {
+        grapheneMouseDispatchDomEvent(button, pressed, x, y);
     }
 
     grapheneMouseEventCount += 1;
