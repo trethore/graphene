@@ -7,6 +7,7 @@ val loaderVersion = providers.gradleProperty("loader_version").get()
 val fabricApiVersion = "0.141.4+1.21.11"
 val grapheneProject = project(":packages:fabric-1.21.11")
 val grapheneMainSourceSet = grapheneProject.extensions.getByType<SourceSetContainer>().named("main")
+val grapheneDevelopmentJar = grapheneProject.tasks.named<Jar>("jar")
 
 base {
   archivesName = "graphene-debug-$targetMinecraftVersion"
@@ -40,14 +41,7 @@ dependencies {
   mappings(loom.officialMojangMappings())
   modImplementation("net.fabricmc:fabric-loader:$loaderVersion")
   modImplementation("net.fabricmc.fabric-api:fabric-api:$fabricApiVersion")
-  modLocalRuntime(
-      project(
-          path = grapheneProject.path,
-          configuration = "namedElements",
-      ),
-  ) {
-    isTransitive = false
-  }
+  modLocalRuntime(files(grapheneDevelopmentJar))
   compileOnly(files(grapheneMainSourceSet.map { it.output }))
   implementation(project(":packages:common"))
   implementation("com.google.code.gson:gson:${providers.gradleProperty("gson_version").get()}")
