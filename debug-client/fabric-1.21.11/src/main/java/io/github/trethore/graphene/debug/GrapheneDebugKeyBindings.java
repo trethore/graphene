@@ -32,7 +32,7 @@ final class GrapheneDebugKeyBindings {
 
   private static void onClientTick(Minecraft minecraft) {
     while (OPEN_BROWSER.consumeClick()) {
-      minecraft.setScreen(new GrapheneBrowserDebugScreen());
+      minecraft.setScreen(GrapheneBrowserDebugScreen.instance());
     }
   }
 }

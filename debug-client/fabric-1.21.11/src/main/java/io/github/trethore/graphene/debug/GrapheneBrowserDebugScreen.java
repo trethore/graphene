@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.github.trethore.graphene.api.bridge.GrapheneBridge;
 import io.github.trethore.graphene.api.bridge.GrapheneBridgeSubscription;
+import io.github.trethore.graphene.fabric.api.screen.GrapheneScreens;
 import io.github.trethore.graphene.fabric.api.widget.GrapheneWebViewWidget;
 import java.net.URI;
 import java.time.Duration;
@@ -23,9 +24,11 @@ import org.jspecify.annotations.NonNull;
 
 final class GrapheneBrowserDebugScreen extends Screen {
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(3);
+  private static final GrapheneBrowserDebugScreen INSTANCE = new GrapheneBrowserDebugScreen();
   private static String lastUrl;
 
   private final List<GrapheneBridgeSubscription> subscriptions = new ArrayList<>();
+
   private GrapheneWebViewWidget webView;
   private EditBox urlBox;
   private Button backButton;
@@ -33,6 +36,15 @@ final class GrapheneBrowserDebugScreen extends Screen {
 
   GrapheneBrowserDebugScreen() {
     super(Component.translatable("screen.grapheneui-debug.title"));
+    GrapheneScreens.setWebViewAutoCloseEnabled(this, false);
+  }
+
+  static GrapheneBrowserDebugScreen instance() {
+    return INSTANCE;
+  }
+
+  static void closeSession() {
+    INSTANCE.closePersistentSession();
   }
 
   @Override
@@ -115,7 +127,6 @@ final class GrapheneBrowserDebugScreen extends Screen {
     if (webView != null) {
       rememberLastUrl(webView.currentUrl());
     }
-    clearSubscriptions();
     super.onClose();
   }
 
@@ -162,9 +173,13 @@ final class GrapheneBrowserDebugScreen extends Screen {
             port -> Util.getPlatform().openUri(URI.create("http://127.0.0.1:" + port + "/json")));
   }
 
-  private void clearSubscriptions() {
+  private void closePersistentSession() {
     subscriptions.forEach(GrapheneBridgeSubscription::unsubscribe);
     subscriptions.clear();
+    if (webView != null) {
+      webView.close();
+      webView = null;
+    }
   }
 
   private static String defaultUrl() {
