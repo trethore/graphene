@@ -58,10 +58,13 @@ final class GrapheneCefLoadHandler extends CefLoadHandlerAdapter {
 
   @Override
   public void onLoadEnd(CefBrowser browser, CefFrame frame, int httpStatusCode) {
+    boolean mainFrame = isMainFrame(frame);
+    if (mainFrame && browser instanceof GrapheneCefBrowserSession session) {
+      session.restoreFocusAfterNavigation();
+    }
     GrapheneCefBrowserAdapter browserAdapter = new GrapheneCefBrowserAdapter(browser);
     BrowserLoadCompleted event =
-        new BrowserLoadCompleted(
-            identifier(browser), frameUrl(frame), isMainFrame(frame), httpStatusCode);
+        new BrowserLoadCompleted(identifier(browser), frameUrl(frame), mainFrame, httpStatusCode);
     taskExecutor.execute(
         () -> {
           eventBus.publish(event);

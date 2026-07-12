@@ -59,6 +59,7 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
   private int activeDragMask = CefDragData.DragOperations.DRAG_OPERATION_NONE;
   private boolean dragTargetEntered;
   private boolean closed;
+  private volatile boolean focused;
   private volatile BrowserCursor requestedCursor = BrowserCursor.ARROW;
 
   GrapheneCefBrowserSession(
@@ -314,7 +315,16 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
 
   @Override
   public void setFocused(boolean focused) {
+    this.focused = focused;
     setFocus(focused);
+  }
+
+  void restoreFocusAfterNavigation() {
+    if (!focused || closed) {
+      return;
+    }
+    setFocus(false);
+    setFocus(true);
   }
 
   @Override
