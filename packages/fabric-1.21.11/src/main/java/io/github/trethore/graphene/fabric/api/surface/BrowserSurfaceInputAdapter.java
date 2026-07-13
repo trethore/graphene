@@ -203,12 +203,9 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
   }
 
   private void pasteClipboard() {
-    GrapheneClipboardContent content = clipboard.read();
-    if (!clipboard.isAvailable()) {
-      content =
-          new GrapheneClipboardContent(
-              Minecraft.getInstance().keyboardHandler.getClipboard(), null, null);
-    }
+    GrapheneClipboardContent richContent = clipboard.read();
+    String nativeText = Minecraft.getInstance().keyboardHandler.getClipboard();
+    GrapheneClipboardContent content = resolveClipboardContent(richContent, nativeText);
     byte[] png = content.png();
     surface
         .browser()
@@ -408,12 +405,27 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
     return Set.copyOf(result);
   }
 
+  static GrapheneClipboardContent resolveClipboardContent(
+      GrapheneClipboardContent richContent, String nativeText) {
+    GrapheneClipboardContent validatedRichContent =
+        Objects.requireNonNull(richContent, "richContent");
+    String normalizedNativeText = emptyToNull(nativeText);
+    if (Objects.equals(normalizedNativeText, emptyToNull(validatedRichContent.text()))) {
+      return validatedRichContent;
+    }
+    return new GrapheneClipboardContent(normalizedNativeText, null, null);
+  }
+
   static boolean isPasteShortcut(int keyCode, int modifiers) {
     int shortcutModifier = MAC ? GLFW.GLFW_MOD_SUPER : GLFW.GLFW_MOD_CONTROL;
     int disallowedModifiers = GLFW.GLFW_MOD_SHIFT | GLFW.GLFW_MOD_ALT;
     return keyCode == GLFW.GLFW_KEY_V
         && (modifiers & shortcutModifier) != 0
         && (modifiers & disallowedModifiers) == 0;
+  }
+
+  private static String emptyToNull(String value) {
+    return value == null || value.isEmpty() ? null : value;
   }
 
   private static String osName() {
