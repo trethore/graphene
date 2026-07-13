@@ -1,6 +1,6 @@
 package io.github.trethore.graphene.fabric.internal.platform;
 
-import net.minecraft.client.Minecraft;
+import io.github.trethore.graphene.fabric.internal.util.MinecraftReferences;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Overlay;
 import net.minecraft.client.gui.screens.Screen;
@@ -25,8 +25,7 @@ final class GrapheneStartupOverlay extends Overlay {
 
   @Override
   public void render(@NonNull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-    Minecraft minecraft = Minecraft.getInstance();
-    Screen screen = minecraft.screen;
+    Screen screen = MinecraftReferences.screen();
     if (screen != null) {
       screen.renderWithTooltipAndSubtitles(graphics, mouseX, mouseY, partialTick);
     }
@@ -36,7 +35,7 @@ final class GrapheneStartupOverlay extends Overlay {
     graphics.nextStratum();
     graphics.fill(0, 0, graphics.guiWidth(), graphics.guiHeight(), BACKGROUND);
     graphics.drawCenteredString(
-        minecraft.font,
+        MinecraftReferences.font(),
         Component.literal("Graphene: " + displayStage()),
         centerX,
         barTop - 22,

@@ -1,5 +1,6 @@
 package io.github.trethore.graphene.fabric.internal.platform;
 
+import io.github.trethore.graphene.fabric.internal.util.MinecraftReferences;
 import io.github.trethore.graphene.internal.platform.GrapheneFileDialogPresenter;
 import io.github.trethore.graphene.internal.platform.GrapheneJsDialogPresenter;
 import io.github.trethore.graphene.internal.platform.GrapheneLifecycle;
@@ -16,7 +17,6 @@ import java.util.function.Supplier;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
-import net.minecraft.client.Minecraft;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
@@ -28,7 +28,7 @@ public final class FabricPlatformServices {
         lifecycle(),
         mainThreadExecutor(),
         modResolver(),
-        () -> Minecraft.getInstance().getWindow().handle(),
+        MinecraftReferences::windowHandle,
         windowMetrics(),
         startupPresenter(),
         fileDialogPresenter(),
@@ -53,7 +53,7 @@ public final class FabricPlatformServices {
     return new GrapheneTaskExecutor() {
       @Override
       public void execute(Runnable action) {
-        Minecraft.getInstance().execute(action);
+        MinecraftReferences.execute(action);
       }
 
       @Override
@@ -109,17 +109,17 @@ public final class FabricPlatformServices {
     return new GrapheneWindowMetrics() {
       @Override
       public int width() {
-        return Minecraft.getInstance().getWindow().getWidth();
+        return MinecraftReferences.windowWidth();
       }
 
       @Override
       public int height() {
-        return Minecraft.getInstance().getWindow().getHeight();
+        return MinecraftReferences.windowHeight();
       }
 
       @Override
       public double scaleFactor() {
-        return Minecraft.getInstance().getWindow().getGuiScale();
+        return MinecraftReferences.guiScale();
       }
     };
   }
@@ -130,22 +130,21 @@ public final class FabricPlatformServices {
       @Override
       public void update(String stage, double progress) {
         overlay.update(stage, progress);
-        Minecraft minecraft = Minecraft.getInstance();
-        minecraft.execute(
+        MinecraftReferences.execute(
             () -> {
-              if (minecraft.getOverlay() == null || minecraft.getOverlay() == overlay) {
-                minecraft.setOverlay(overlay);
+              if (MinecraftReferences.overlay() == null
+                  || MinecraftReferences.overlay() == overlay) {
+                MinecraftReferences.setOverlay(overlay);
               }
             });
       }
 
       @Override
       public void close() {
-        Minecraft minecraft = Minecraft.getInstance();
-        minecraft.execute(
+        MinecraftReferences.execute(
             () -> {
-              if (minecraft.getOverlay() == overlay) {
-                minecraft.setOverlay(null);
+              if (MinecraftReferences.overlay() == overlay) {
+                MinecraftReferences.setOverlay(null);
               }
             });
       }

@@ -9,6 +9,7 @@ import io.github.trethore.graphene.api.browser.input.BrowserPointerInput;
 import io.github.trethore.graphene.api.browser.input.BrowserScrollInput;
 import io.github.trethore.graphene.api.browser.input.BrowserTextInput;
 import io.github.trethore.graphene.fabric.internal.input.GrapheneKeyboardMapper;
+import io.github.trethore.graphene.fabric.internal.util.MinecraftReferences;
 import io.github.trethore.graphene.internal.platform.GrapheneClipboard;
 import io.github.trethore.graphene.internal.platform.GrapheneClipboardContent;
 import java.util.Base64;
@@ -16,7 +17,6 @@ import java.util.EnumSet;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
-import net.minecraft.client.Minecraft;
 import org.lwjgl.glfw.GLFW;
 
 @SuppressWarnings("unused")
@@ -204,7 +204,7 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
 
   private void pasteClipboard() {
     GrapheneClipboardContent richContent = clipboard.read();
-    String nativeText = Minecraft.getInstance().keyboardHandler.getClipboard();
+    String nativeText = MinecraftReferences.keyboardHandler().getClipboard();
     GrapheneClipboardContent content = resolveClipboardContent(richContent, nativeText);
     byte[] png = content.png();
     surface
@@ -228,7 +228,7 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
     if (clipboard.isAvailable()) {
       clipboard.write(content);
     } else if (content.text() != null && !content.text().isEmpty()) {
-      Minecraft.getInstance().keyboardHandler.setClipboard(content.text());
+      MinecraftReferences.keyboardHandler().setClipboard(content.text());
     }
   }
 

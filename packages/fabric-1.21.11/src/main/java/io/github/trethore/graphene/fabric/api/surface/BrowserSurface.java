@@ -4,9 +4,9 @@ import io.github.trethore.graphene.api.GrapheneContext;
 import io.github.trethore.graphene.api.browser.BrowserOptions;
 import io.github.trethore.graphene.api.browser.BrowserSession;
 import io.github.trethore.graphene.fabric.internal.browser.GrapheneBrowserGpuRenderer;
+import io.github.trethore.graphene.fabric.internal.util.MinecraftReferences;
 import io.github.trethore.graphene.internal.browser.GrapheneSurfaceSizingState;
 import java.util.Objects;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 
 @SuppressWarnings("unused")
@@ -120,7 +120,7 @@ public final class BrowserSurface implements AutoCloseable {
   }
 
   private static double scaleFactor() {
-    return Minecraft.getInstance().getWindow().getGuiScale();
+    return MinecraftReferences.guiScale();
   }
 
   private static int requirePositive(int value, String name) {

@@ -5,13 +5,25 @@ import java.util.List;
 
 @SuppressWarnings("java:S100")
 public interface GrapheneScreenBridge {
-  List<GrapheneWebViewWidget> graphene$webViewWidgets();
+  GrapheneScreenState graphene$state();
 
-  void graphene$addWebViewWidget(GrapheneWebViewWidget widget);
+  default List<GrapheneWebViewWidget> graphene$webViewWidgets() {
+    return graphene$state().webViewWidgets();
+  }
 
-  void graphene$removeWebViewWidget(GrapheneWebViewWidget widget);
+  default void graphene$addWebViewWidget(GrapheneWebViewWidget widget) {
+    graphene$state().addWebViewWidget(widget);
+  }
 
-  boolean graphene$isWebViewAutoCloseEnabled();
+  default void graphene$removeWebViewWidget(GrapheneWebViewWidget widget) {
+    graphene$state().removeWebViewWidget(widget);
+  }
 
-  void graphene$setWebViewAutoCloseEnabled(boolean autoClose);
+  default boolean graphene$isWebViewAutoCloseEnabled() {
+    return graphene$state().isWebViewAutoCloseEnabled();
+  }
+
+  default void graphene$setWebViewAutoCloseEnabled(boolean autoClose) {
+    graphene$state().setWebViewAutoCloseEnabled(autoClose);
+  }
 }
