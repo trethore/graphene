@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta content="width=device-width, initial-scale=1" name="viewport">
     <title>Graphene Focus Autofocus Test</title>
+    <link href="../style/main.css" rel="stylesheet">
     <script defer src="../scripts/focus-autofocus.js"></script>
 </head>
 <body>
@@ -20,25 +21,21 @@
         <input autocomplete="off" autofocus id="autofocus-input" placeholder="Start typing without clicking">
 
         <div class="status-grid">
-            <div class="status">
+            <div>
                 DOM focus target
-                <span class="value" id="active-element">unknown</span>
+                <span id="active-element">unknown</span>
             </div>
-            <div class="status">
+            <div>
                 Last key seen by the page
-                <span class="value" id="last-key">none</span>
+                <span id="last-key">none</span>
             </div>
-            <div class="status">
+            <div>
                 Input length
-                <span class="value" id="input-length">0</span>
+                <span id="input-length">0</span>
             </div>
         </div>
     </div>
 
-    <p>
-        Suggested debug URL:<br>
-        <code>app://assets/grapheneui-debug/graphene_test/pages/focus-autofocus.html</code>
-    </p>
 </main>
 </body>
 </html>
