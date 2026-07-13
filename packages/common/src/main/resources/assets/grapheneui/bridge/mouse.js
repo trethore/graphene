@@ -1,179 +1,166 @@
-const GRAPHENE_MOUSE_INSTALLED_FLAG = "__grapheneMouseInstalled";
-const GRAPHENE_MOUSE_CHANNEL = "graphene:mouse:button";
-const GRAPHENE_MOUSE_STATE_REQUEST_CHANNEL = "graphene:mouse:state";
-const GRAPHENE_MOUSE_BUTTON_4 = 3;
-const GRAPHENE_MOUSE_BUTTON_5 = 4;
-const GRAPHENE_MOUSE_BUTTON_6 = 5;
-const GRAPHENE_MOUSE_BUTTON_7 = 6;
-const GRAPHENE_MOUSE_BUTTON_8 = 7;
+(function () {
+	"use strict";
 
-const grapheneMouseListeners = new Set();
-const grapheneMousePressedButtons = new Set();
-let grapheneMouseEventCount = 0;
-let grapheneMouseLastEvent = null;
+	const INSTALLED_FLAG = "__grapheneMouseInstalled";
+	const EXTRA_BUTTON_CHANNEL = "graphene:mouse:button";
+	const STATE_REQUEST_CHANNEL = "graphene:mouse:state";
+	const BUTTON_6 = 5;
+	const BUTTON_7 = 6;
+	const BUTTON_8 = 7;
 
-function grapheneMouseReportSuppressedError(context, error) {
-	const consoleObject = globalThis.console;
-	if (consoleObject && typeof consoleObject.debug === "function") {
-		consoleObject.debug("[GrapheneMouse] " + context, error);
-	}
-}
+	const listeners = new Set();
+	const pressedButtons = new Set();
+	let eventCount = 0;
+	let lastEvent = null;
 
-function grapheneMouseIsSupportedButton(button) {
-	return button >= GRAPHENE_MOUSE_BUTTON_4 && button <= GRAPHENE_MOUSE_BUTTON_8;
-}
-
-function grapheneMouseCreateEvent(button, pressed) {
-	return {
-		button: button,
-		pressed: pressed,
-		released: !pressed,
-	};
-}
-
-function grapheneMouseButtonsMask() {
-	let buttons = 0;
-	grapheneMousePressedButtons.forEach(function (button) {
-		buttons |= 1 << button;
-	});
-	return buttons;
-}
-
-function grapheneMouseDispatchDomEvent(button, pressed, x, y) {
-	const target = document.elementFromPoint(x, y) ?? document;
-	const type = pressed ? "mousedown" : "mouseup";
-	const options = {
-		bubbles: true,
-		cancelable: true,
-		composed: true,
-		view: globalThis,
-		button: button,
-		buttons: grapheneMouseButtonsMask(),
-		clientX: x,
-		clientY: y,
-	};
-
-	if (typeof globalThis.PointerEvent === "function") {
-		target.dispatchEvent(
-			new PointerEvent(pressed ? "pointerdown" : "pointerup", {
-				...options,
-				pointerId: 1,
-				pointerType: "mouse",
-				isPrimary: true,
-			}),
-		);
-	}
-	target.dispatchEvent(new MouseEvent(type, options));
-}
-
-function grapheneMouseSnapshot() {
-	return {
-		eventCount: grapheneMouseEventCount,
-		lastEvent: grapheneMouseLastEvent,
-		pressedButtons: Array.from(grapheneMousePressedButtons).sort(
-			function (left, right) {
-				return left - right;
-			},
-		),
-	};
-}
-
-function grapheneMouseDispatch(eventPayload) {
-	grapheneMouseListeners.forEach(function (listener) {
-		try {
-			listener(eventPayload);
-		} catch (error) {
-			grapheneMouseReportSuppressedError("Mouse listener failed", error);
+	function reportSuppressedError(context, error) {
+		const consoleObject = globalThis.console;
+		if (consoleObject && typeof consoleObject.debug === "function") {
+			consoleObject.debug("[GrapheneMouse] " + context, error);
 		}
-	});
-}
-
-function grapheneMouseOnBridgeEvent(payload) {
-	const button = Number(payload?.button);
-	if (!grapheneMouseIsSupportedButton(button)) {
-		return;
 	}
 
-	const pressed = Boolean(payload?.pressed);
-	if (pressed) {
-		grapheneMousePressedButtons.add(button);
-	} else {
-		grapheneMousePressedButtons.delete(button);
+	function isSupportedButton(button) {
+		return button >= BUTTON_6 && button <= BUTTON_8;
 	}
 
-	const x = Number(payload?.x);
-	const y = Number(payload?.y);
-	if (Number.isFinite(x) && Number.isFinite(y)) {
-		grapheneMouseDispatchDomEvent(button, pressed, x, y);
+	function createEvent(button, pressed) {
+		return {
+			button: button,
+			pressed: pressed,
+			released: !pressed,
+		};
 	}
 
-	grapheneMouseEventCount += 1;
-	grapheneMouseLastEvent = grapheneMouseCreateEvent(button, pressed);
-	grapheneMouseDispatch(grapheneMouseLastEvent);
-}
+	function buttonsMask() {
+		let buttons = 0;
+		pressedButtons.forEach(function (button) {
+			buttons |= 1 << button;
+		});
+		return buttons;
+	}
 
-function grapheneMouseAddListener(listener) {
-	grapheneMouseListeners.add(listener);
-}
+	function dispatchDomEvent(button, pressed, x, y) {
+		const target = document.elementFromPoint(x, y) ?? document;
+		const type = pressed ? "mousedown" : "mouseup";
+		const options = {
+			bubbles: true,
+			cancelable: true,
+			composed: true,
+			view: globalThis,
+			button: button,
+			buttons: buttonsMask(),
+			clientX: x,
+			clientY: y,
+		};
 
-function grapheneMouseRemoveListener(listener) {
-	grapheneMouseListeners.delete(listener);
-}
+		if (typeof globalThis.PointerEvent === "function") {
+			target.dispatchEvent(
+				new PointerEvent(pressed ? "pointerdown" : "pointerup", {
+					...options,
+					pointerId: 1,
+					pointerType: "mouse",
+					isPrimary: true,
+				}),
+			);
+		}
+		target.dispatchEvent(new MouseEvent(type, options));
+	}
 
-function grapheneMouseInstallApi(bridge) {
-	bridge.on(GRAPHENE_MOUSE_CHANNEL, grapheneMouseOnBridgeEvent);
-	bridge.handle(GRAPHENE_MOUSE_STATE_REQUEST_CHANNEL, function () {
-		return grapheneMouseSnapshot();
-	});
+	function snapshot() {
+		return {
+			eventCount: eventCount,
+			lastEvent: lastEvent,
+			pressedButtons: Array.from(pressedButtons).sort(function (left, right) {
+				return left - right;
+			}),
+		};
+	}
 
-	globalThis.grapheneMouse = {
-		__grapheneMouseInstalled: true,
-		CHANNEL: GRAPHENE_MOUSE_CHANNEL,
-		BUTTON_4: GRAPHENE_MOUSE_BUTTON_4,
-		BUTTON_5: GRAPHENE_MOUSE_BUTTON_5,
-		BUTTON_6: GRAPHENE_MOUSE_BUTTON_6,
-		BUTTON_7: GRAPHENE_MOUSE_BUTTON_7,
-		BUTTON_8: GRAPHENE_MOUSE_BUTTON_8,
-		on: function (listener) {
-			grapheneMouseAddListener(listener);
-			return function () {
-				grapheneMouseRemoveListener(listener);
-			};
-		},
-		off: function (listener) {
-			grapheneMouseRemoveListener(listener);
-		},
-		isSideButton: function (button) {
-			return grapheneMouseIsSupportedButton(Number(button));
-		},
-		isPressed: function (button) {
-			const normalizedButton = Number(button);
-			return grapheneMousePressedButtons.has(normalizedButton);
-		},
-		snapshot: function () {
-			return grapheneMouseSnapshot();
-		},
-	};
-}
+	function dispatch(eventPayload) {
+		listeners.forEach(function (listener) {
+			try {
+				listener(eventPayload);
+			} catch (error) {
+				reportSuppressedError("Mouse listener failed", error);
+			}
+		});
+	}
 
-function grapheneMouseTryInstall() {
-	if (globalThis.grapheneMouse?.[GRAPHENE_MOUSE_INSTALLED_FLAG]) {
+	function onBridgeEvent(payload) {
+		const button = Number(payload?.button);
+		if (!isSupportedButton(button)) {
+			return;
+		}
+
+		const pressed = Boolean(payload?.pressed);
+		if (pressed) {
+			pressedButtons.add(button);
+		} else {
+			pressedButtons.delete(button);
+		}
+
+		const x = Number(payload?.x);
+		const y = Number(payload?.y);
+		if (Number.isFinite(x) && Number.isFinite(y)) {
+			dispatchDomEvent(button, pressed, x, y);
+		}
+
+		eventCount += 1;
+		lastEvent = createEvent(button, pressed);
+		dispatch(lastEvent);
+	}
+
+	function addListener(listener) {
+		listeners.add(listener);
+	}
+
+	function removeListener(listener) {
+		listeners.delete(listener);
+	}
+
+	function install(bridge) {
+		bridge.on(EXTRA_BUTTON_CHANNEL, onBridgeEvent);
+		bridge.handle(STATE_REQUEST_CHANNEL, function () {
+			return snapshot();
+		});
+
+		globalThis.grapheneMouse = {
+			[INSTALLED_FLAG]: true,
+			CHANNEL: EXTRA_BUTTON_CHANNEL,
+			BUTTON_6: BUTTON_6,
+			BUTTON_7: BUTTON_7,
+			BUTTON_8: BUTTON_8,
+			on: function (listener) {
+				addListener(listener);
+				return function () {
+					removeListener(listener);
+				};
+			},
+			off: function (listener) {
+				removeListener(listener);
+			},
+			isSideButton: function (button) {
+				return isSupportedButton(Number(button));
+			},
+			isPressed: function (button) {
+				const normalizedButton = Number(button);
+				return pressedButtons.has(normalizedButton);
+			},
+			snapshot: snapshot,
+		};
+	}
+
+	if (globalThis.grapheneMouse?.[INSTALLED_FLAG]) {
 		return;
 	}
 
 	const bridge = globalThis.grapheneBridge;
 	if (
-		!bridge ||
-		typeof bridge.on !== "function" ||
-		typeof bridge.handle !== "function"
+		bridge &&
+		typeof bridge.on === "function" &&
+		typeof bridge.handle === "function"
 	) {
-		if (typeof globalThis.setTimeout === "function") {
-			globalThis.setTimeout(grapheneMouseTryInstall, 50);
-		}
-		return;
+		install(bridge);
 	}
-
-	grapheneMouseInstallApi(bridge);
-}
-
-grapheneMouseTryInstall();
+})();

@@ -55,7 +55,7 @@
 		}
 
 		statusElement().innerHTML =
-			'<span class="ok">Bridge connected:</span> press a side mouse button';
+			'<span class="ok">Bridge connected:</span> press mouse button 6, 7, or 8';
 		renderSnapshot(mouseApi);
 		removeListener = mouseApi.on(function (eventPayload) {
 			renderMouseEvent(mouseApi, eventPayload);

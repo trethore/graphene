@@ -23,7 +23,7 @@ import org.lwjgl.glfw.GLFW;
 public final class BrowserSurfaceInputAdapter implements AutoCloseable {
   private static final String CLIPBOARD_PASTE_CHANNEL = "graphene:clipboard:paste";
   private static final String CLIPBOARD_WRITE_CHANNEL = "graphene:clipboard:write";
-  private static final String MOUSE_BUTTON_CHANNEL = "graphene:mouse:button";
+  private static final String EXTRA_MOUSE_BUTTON_CHANNEL = "graphene:mouse:button";
   private static final int SCROLL_DELTA = 120;
   private static final long SYNTHETIC_DUPLICATE_WINDOW_MILLIS = 250;
   private static final boolean MAC = osName().contains("mac");
@@ -89,9 +89,13 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
       boolean pressed,
       int clickCount,
       int modifiers) {
+    if (handleHistoryNavigation(button, pressed)) {
+      return;
+    }
+
     BrowserPointerButton browserButton = pointerButton(button);
     if (browserButton == BrowserPointerButton.NONE) {
-      sendExtendedMouseButton(
+      sendExtraMouseButton(
           mouseX, mouseY, surfaceX, surfaceY, renderedWidth, renderedHeight, button, pressed);
       return;
     }
@@ -330,7 +334,25 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
             modifiers(modifiers)));
   }
 
-  private void sendExtendedMouseButton(
+  private boolean handleHistoryNavigation(int button, boolean pressed) {
+    return switch (button) {
+      case GLFW.GLFW_MOUSE_BUTTON_4 -> {
+        if (pressed) {
+          surface.browser().goBack();
+        }
+        yield true;
+      }
+      case GLFW.GLFW_MOUSE_BUTTON_5 -> {
+        if (pressed) {
+          surface.browser().goForward();
+        }
+        yield true;
+      }
+      default -> false;
+    };
+  }
+
+  private void sendExtraMouseButton(
       double mouseX,
       double mouseY,
       int surfaceX,
@@ -339,15 +361,15 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
       int renderedHeight,
       int button,
       boolean pressed) {
-    if (button < GLFW.GLFW_MOUSE_BUTTON_4 || button > GLFW.GLFW_MOUSE_BUTTON_8) {
+    if (button < GLFW.GLFW_MOUSE_BUTTON_6 || button > GLFW.GLFW_MOUSE_BUTTON_8) {
       return;
     }
     surface
         .browser()
         .bridge()
         .emitJson(
-            MOUSE_BUTTON_CHANNEL,
-            new ExtendedMouseButtonInput(
+            EXTRA_MOUSE_BUTTON_CHANNEL,
+            new ExtraMouseButtonInput(
                 button,
                 pressed,
                 surface.toBrowserX(mouseX - surfaceX, renderedWidth),
@@ -398,7 +420,7 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
     return System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
   }
 
-  private record ExtendedMouseButtonInput(int button, boolean pressed, int x, int y) {}
+  private record ExtraMouseButtonInput(int button, boolean pressed, int x, int y) {}
 
   private record ClipboardPayload(String text, String html, String png) {}
 }

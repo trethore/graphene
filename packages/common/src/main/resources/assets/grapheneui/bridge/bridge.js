@@ -1,547 +1,400 @@
-const GRAPHENE_BRIDGE_NAME = "grapheneui";
-const GRAPHENE_PROTOCOL_VERSION = 1;
-const GRAPHENE_KIND_EVENT = "event";
-const GRAPHENE_KIND_REQUEST = "request";
-const GRAPHENE_KIND_RESPONSE = "response";
-const GRAPHENE_KIND_READY = "ready";
-const GRAPHENE_ERROR_NO_HANDLER = "handler_not_found";
-const GRAPHENE_ERROR_HANDLER_FAILURE = "js_handler_error";
-const GRAPHENE_ERROR_INVALID_RESPONSE = "invalid_response";
-const GRAPHENE_INSTALLED_FLAG = "__grapheneInstalled";
-const GRAPHENE_RECEIVE_FN_NAME = "__grapheneBridgeReceiveFromJava";
-const GRAPHENE_POPUP_FALLBACK_INSTALLED_FLAG =
-	"__graphenePopupFallbackInstalled";
-const GRAPHENE_SHARED_STATE_NAME = "__grapheneBridgeSharedState";
-const GRAPHENE_READY_RETRY_DELAY_MS = 50;
+(function () {
+	"use strict";
 
-/**
- * @typedef {Object} GrapheneCefQueryRequest
- * @property {string} request
- * @property {(responseText: string) => void} onSuccess
- * @property {(errorCode: number, errorMessage: string) => void} onFailure
- */
+	const BRIDGE_NAME = "grapheneui";
+	const PROTOCOL_VERSION = 1;
+	const KIND_EVENT = "event";
+	const KIND_REQUEST = "request";
+	const KIND_RESPONSE = "response";
+	const KIND_READY = "ready";
+	const ERROR_NO_HANDLER = "handler_not_found";
+	const ERROR_HANDLER_FAILURE = "js_handler_error";
+	const ERROR_INVALID_RESPONSE = "invalid_response";
+	const INSTALLED_FLAG = "__grapheneInstalled";
+	const RECEIVE_FN_NAME = "__grapheneBridgeReceiveFromJava";
+	const READY_RETRY_DELAY_MS = 50;
 
-let grapheneBridgeNextRequestSequence = 0;
-const grapheneBridgeEventListenersByChannel = new Map();
-const grapheneBridgeRequestHandlersByChannel = new Map();
-
-const grapheneBridgeSharedState = grapheneBridgeGetSharedState();
-
-function grapheneBridgeNoop() {}
-
-function grapheneBridgeReportSuppressedError(context, error) {
-	const consoleObject = globalThis.console;
-	if (consoleObject && typeof consoleObject.debug === "function") {
-		consoleObject.debug("[GrapheneBridge] " + context, error);
-	}
-}
-
-function grapheneBridgeGetSharedState() {
-	let sharedState = globalThis[GRAPHENE_SHARED_STATE_NAME];
-	if (grapheneBridgeIsValidSharedState(sharedState)) {
-		return sharedState;
+	if (globalThis.grapheneBridge?.[INSTALLED_FLAG]) {
+		return;
 	}
 
-	/** @type {(value: void | PromiseLike<void>) => void} */
-	let resolveReadyPromise = grapheneBridgeNoop;
-	const readyPromise = new Promise(function (resolve) {
-		resolveReadyPromise = resolve;
-	});
+	/**
+	 * @typedef {Object} GrapheneCefQueryRequest
+	 * @property {string} request
+	 * @property {(responseText: string) => void} onSuccess
+	 * @property {(errorCode: number, errorMessage: string) => void} onFailure
+	 */
 
-	sharedState = {
-		ready: false,
-		readyRequestInFlight: false,
-		readyRetryScheduled: false,
-		readyListeners: new Set(),
-		readyPromise: readyPromise,
-		resolveReadyPromise: resolveReadyPromise,
-	};
-	globalThis[GRAPHENE_SHARED_STATE_NAME] = sharedState;
-	return sharedState;
-}
+	let nextRequestSequence = 0;
+	const eventListenersByChannel = new Map();
+	const requestHandlersByChannel = new Map();
+	const readyState = createReadyState();
 
-function grapheneBridgeIsValidSharedState(sharedState) {
-	if (!sharedState || typeof sharedState !== "object") {
-		return false;
+	function noop() {}
+
+	function reportSuppressedError(context, error) {
+		const consoleObject = globalThis.console;
+		if (consoleObject && typeof consoleObject.debug === "function") {
+			consoleObject.debug("[GrapheneBridge] " + context, error);
+		}
 	}
 
-	return (
-		grapheneBridgeHasBoolean(sharedState, "ready") &&
-		grapheneBridgeHasBoolean(sharedState, "readyRequestInFlight") &&
-		grapheneBridgeHasBoolean(sharedState, "readyRetryScheduled") &&
-		grapheneBridgeHasListenerSet(sharedState.readyListeners) &&
-		grapheneBridgeIsPromiseLike(sharedState.readyPromise) &&
-		typeof sharedState.resolveReadyPromise === "function"
-	);
-}
+	function createReadyState() {
+		/** @type {(value: void | PromiseLike<void>) => void} */
+		let resolveReadyPromise = noop;
+		const readyPromise = new Promise(function (resolve) {
+			resolveReadyPromise = resolve;
+		});
 
-function grapheneBridgeHasBoolean(objectValue, key) {
-	return (
-		Object.hasOwn(objectValue, key) && typeof objectValue[key] === "boolean"
-	);
-}
+		return {
+			ready: false,
+			readyRequestInFlight: false,
+			readyRetryScheduled: false,
+			readyListeners: new Set(),
+			readyPromise: readyPromise,
+			resolveReadyPromise: resolveReadyPromise,
+		};
+	}
 
-function grapheneBridgeHasListenerSet(value) {
-	return (
-		value &&
-		typeof value === "object" &&
-		typeof value.add === "function" &&
-		typeof value.delete === "function" &&
-		typeof value.forEach === "function" &&
-		typeof value.clear === "function"
-	);
-}
+	function isBridgeMessage(message) {
+		return Boolean(message) && message.bridge === BRIDGE_NAME;
+	}
 
-function grapheneBridgeIsPromiseLike(value) {
-	return value && typeof value === "object" && typeof value.then === "function";
-}
+	function normalizePayload(payload) {
+		return payload === undefined ? null : payload;
+	}
 
-function grapheneBridgeResolveCefQuery() {
-	const cefQuery = globalThis["cefQuery"];
-	return typeof cefQuery === "function" ? cefQuery : null;
-}
+	function createBaseMessage(kind) {
+		return {
+			bridge: BRIDGE_NAME,
+			version: PROTOCOL_VERSION,
+			kind: kind,
+		};
+	}
 
-function grapheneBridgeNotifyReadyListeners() {
-	grapheneBridgeSharedState.readyListeners.forEach(function (listener) {
+	function createResponseBase(message) {
+		return {
+			bridge: BRIDGE_NAME,
+			version: PROTOCOL_VERSION,
+			kind: KIND_RESPONSE,
+			id: message.id,
+			channel: message.channel,
+		};
+	}
+
+	function createErrorResponse(message, code, errorMessage) {
+		return Object.assign(createResponseBase(message), {
+			ok: false,
+			payload: null,
+			error: {
+				code: code,
+				message: errorMessage,
+			},
+		});
+	}
+
+	function createSuccessResponse(message, payload) {
+		return Object.assign(createResponseBase(message), {
+			ok: true,
+			payload: normalizePayload(payload),
+		});
+	}
+
+	function nextRequestId() {
+		nextRequestSequence += 1;
+		return "js-" + Date.now() + "-" + nextRequestSequence;
+	}
+
+	function parseJsonOrNull(value) {
 		try {
-			listener();
+			return typeof value === "string" ? JSON.parse(value) : value;
 		} catch (error) {
-			grapheneBridgeReportSuppressedError("Ready listener failed", error);
+			reportSuppressedError("Failed to parse JSON payload", error);
+			return null;
 		}
-	});
-	grapheneBridgeSharedState.readyListeners.clear();
-}
-
-function grapheneBridgeMarkReady() {
-	if (grapheneBridgeSharedState.ready) {
-		return;
 	}
 
-	grapheneBridgeSharedState.ready = true;
-	grapheneBridgeSharedState.readyRetryScheduled = false;
-	grapheneBridgeSharedState.resolveReadyPromise();
-	grapheneBridgeNotifyReadyListeners();
-}
-
-function grapheneBridgeOnReady(listener) {
-	if (typeof listener !== "function") {
-		throw new TypeError("listener must be a function");
-	}
-
-	if (grapheneBridgeSharedState.ready) {
-		if (typeof globalThis.queueMicrotask === "function") {
-			globalThis.queueMicrotask(listener);
-		} else if (typeof globalThis.setTimeout === "function") {
-			globalThis.setTimeout(listener, 0);
-		} else {
-			listener();
+	function parseResponse(responseText) {
+		if (!responseText) {
+			return { ok: true, payload: null };
 		}
 
-		return grapheneBridgeNoop;
+		const parsed = parseJsonOrNull(responseText);
+		if (parsed !== null) {
+			return parsed;
+		}
+
+		return {
+			ok: false,
+			error: {
+				code: ERROR_INVALID_RESPONSE,
+				message: "Bridge returned invalid JSON",
+			},
+		};
 	}
 
-	grapheneBridgeSharedState.readyListeners.add(listener);
-	return function () {
-		grapheneBridgeSharedState.readyListeners.delete(listener);
-	};
-}
+	function toError(response) {
+		const defaultMessage = "Bridge request failed";
+		const errorMessage = response?.error?.message ?? defaultMessage;
+		const error = new Error(errorMessage);
+		if (response?.error?.code) {
+			error.code = response.error.code;
+		}
 
-function grapheneBridgeScheduleReadyRetry() {
-	if (
-		grapheneBridgeSharedState.ready ||
-		grapheneBridgeSharedState.readyRetryScheduled
-	) {
-		return;
+		return error;
 	}
 
-	if (typeof globalThis.setTimeout !== "function") {
-		return;
+	function resolveCefQuery() {
+		const cefQuery = globalThis["cefQuery"];
+		return typeof cefQuery === "function" ? cefQuery : null;
 	}
 
-	grapheneBridgeSharedState.readyRetryScheduled = true;
-	globalThis.setTimeout(function () {
-		grapheneBridgeSharedState.readyRetryScheduled = false;
-		grapheneBridgeSendReady();
-	}, GRAPHENE_READY_RETRY_DELAY_MS);
-}
-
-function grapheneBridgeIsMessage(message) {
-	return Boolean(message) && message.bridge === GRAPHENE_BRIDGE_NAME;
-}
-
-function grapheneBridgeNormalizePayload(payload) {
-	return payload === undefined ? null : payload;
-}
-
-function grapheneBridgeCreateBaseMessage(kind) {
-	return {
-		bridge: GRAPHENE_BRIDGE_NAME,
-		version: GRAPHENE_PROTOCOL_VERSION,
-		kind: kind,
-	};
-}
-
-function grapheneBridgeCreateResponseBase(message) {
-	return {
-		bridge: GRAPHENE_BRIDGE_NAME,
-		version: GRAPHENE_PROTOCOL_VERSION,
-		kind: GRAPHENE_KIND_RESPONSE,
-		id: message.id,
-		channel: message.channel,
-	};
-}
-
-function grapheneBridgeCreateErrorResponse(message, code, errorMessage) {
-	return Object.assign(grapheneBridgeCreateResponseBase(message), {
-		ok: false,
-		payload: null,
-		error: {
-			code: code,
-			message: errorMessage,
-		},
-	});
-}
-
-function grapheneBridgeCreateSuccessResponse(message, payload) {
-	return Object.assign(grapheneBridgeCreateResponseBase(message), {
-		ok: true,
-		payload: grapheneBridgeNormalizePayload(payload),
-	});
-}
-
-function grapheneBridgeNextRequestId() {
-	grapheneBridgeNextRequestSequence += 1;
-	return "js-" + Date.now() + "-" + grapheneBridgeNextRequestSequence;
-}
-
-function grapheneBridgeParseJsonOrNull(value) {
-	try {
-		return typeof value === "string" ? JSON.parse(value) : value;
-	} catch (error) {
-		grapheneBridgeReportSuppressedError("Failed to parse JSON payload", error);
-		return null;
-	}
-}
-
-function grapheneBridgeParseResponse(responseText) {
-	if (!responseText) {
-		return { ok: true, payload: null };
+	/**
+	 * @param {Object} message
+	 * @param {(responseText: string) => void} resolve
+	 * @param {(error: Error) => void} reject
+	 * @returns {GrapheneCefQueryRequest}
+	 */
+	function createCefQueryRequest(message, resolve, reject) {
+		return {
+			request: JSON.stringify(message),
+			onSuccess: resolve,
+			onFailure: function (_, errorMessage) {
+				reject(new Error(errorMessage));
+			},
+		};
 	}
 
-	const parsed = grapheneBridgeParseJsonOrNull(responseText);
-	if (parsed !== null) {
-		return parsed;
+	function sendToJava(message) {
+		return new Promise(function (resolve, reject) {
+			const cefQuery = resolveCefQuery();
+			if (!cefQuery) {
+				reject(new Error("cefQuery is unavailable"));
+				return;
+			}
+
+			cefQuery(createCefQueryRequest(message, resolve, reject));
+		});
 	}
 
-	return {
-		ok: false,
-		error: {
-			code: GRAPHENE_ERROR_INVALID_RESPONSE,
-			message: "Bridge returned invalid JSON",
-		},
-	};
-}
-
-function grapheneBridgeToError(response) {
-	const defaultMessage = "Bridge request failed";
-	const errorMessage = response?.error?.message ?? defaultMessage;
-	const error = new Error(errorMessage);
-	if (response?.error?.code) {
-		error.code = response.error.code;
+	function notifyReadyListeners() {
+		readyState.readyListeners.forEach(function (listener) {
+			try {
+				listener();
+			} catch (error) {
+				reportSuppressedError("Ready listener failed", error);
+			}
+		});
+		readyState.readyListeners.clear();
 	}
 
-	return error;
-}
-
-/**
- * @param {Object} message
- * @param {(responseText: string) => void} resolve
- * @param {(error: Error) => void} reject
- * @returns {GrapheneCefQueryRequest}
- */
-function grapheneBridgeCreateCefQueryRequest(message, resolve, reject) {
-	return {
-		request: JSON.stringify(message),
-		onSuccess: resolve,
-		onFailure: function (_, errorMessage) {
-			reject(new Error(errorMessage));
-		},
-	};
-}
-
-function grapheneBridgeSendToJava(message) {
-	return new Promise(function (resolve, reject) {
-		const cefQuery = grapheneBridgeResolveCefQuery();
-		if (!cefQuery) {
-			reject(new Error("cefQuery is unavailable"));
+	function markReady() {
+		if (readyState.ready) {
 			return;
 		}
 
-		cefQuery(grapheneBridgeCreateCefQueryRequest(message, resolve, reject));
-	});
-}
-
-function grapheneBridgeSendReady() {
-	if (
-		grapheneBridgeSharedState.ready ||
-		grapheneBridgeSharedState.readyRequestInFlight
-	) {
-		return;
+		readyState.ready = true;
+		readyState.readyRetryScheduled = false;
+		readyState.resolveReadyPromise();
+		notifyReadyListeners();
 	}
 
-	grapheneBridgeSharedState.readyRequestInFlight = true;
-	grapheneBridgeSendToJava(grapheneBridgeCreateBaseMessage(GRAPHENE_KIND_READY))
-		.then(function () {
-			grapheneBridgeSharedState.readyRequestInFlight = false;
-			grapheneBridgeMarkReady();
-		})
-		.catch(function (error) {
-			grapheneBridgeSharedState.readyRequestInFlight = false;
-			grapheneBridgeReportSuppressedError("Ready handshake failed", error);
-			grapheneBridgeScheduleReadyRetry();
-		});
-}
-
-function grapheneBridgeAddEventListener(channel, listener) {
-	let listeners = grapheneBridgeEventListenersByChannel.get(channel);
-	if (!listeners) {
-		listeners = new Set();
-		grapheneBridgeEventListenersByChannel.set(channel, listeners);
-	}
-
-	listeners.add(listener);
-}
-
-function grapheneBridgeRemoveEventListener(channel, listener) {
-	const listeners = grapheneBridgeEventListenersByChannel.get(channel);
-	if (!listeners) {
-		return;
-	}
-
-	listeners.delete(listener);
-	if (listeners.size === 0) {
-		grapheneBridgeEventListenersByChannel.delete(channel);
-	}
-}
-
-function grapheneBridgeDispatchEvent(message) {
-	const listeners = grapheneBridgeEventListenersByChannel.get(message.channel);
-	if (!listeners) {
-		return;
-	}
-
-	listeners.forEach(function (listener) {
-		try {
-			listener(message.payload);
-		} catch (error) {
-			grapheneBridgeReportSuppressedError(
-				"Event listener failed for channel '" + message.channel + "'",
-				error,
-			);
+	function onReady(listener) {
+		if (typeof listener !== "function") {
+			throw new TypeError("listener must be a function");
 		}
-	});
-}
 
-function grapheneBridgeHandleRequest(message) {
-	const requestHandler = grapheneBridgeRequestHandlersByChannel.get(
-		message.channel,
-	);
-	if (!requestHandler) {
-		grapheneBridgeSendToJava(
-			grapheneBridgeCreateErrorResponse(
-				message,
-				GRAPHENE_ERROR_NO_HANDLER,
-				"No JS bridge handler for channel '" + message.channel + "'",
-			),
-		).catch(grapheneBridgeNoop);
-		return;
+		if (readyState.ready) {
+			if (typeof globalThis.queueMicrotask === "function") {
+				globalThis.queueMicrotask(listener);
+			} else if (typeof globalThis.setTimeout === "function") {
+				globalThis.setTimeout(listener, 0);
+			} else {
+				listener();
+			}
+
+			return noop;
+		}
+
+		readyState.readyListeners.add(listener);
+		return function () {
+			readyState.readyListeners.delete(listener);
+		};
 	}
 
-	Promise.resolve()
-		.then(function () {
-			return requestHandler(message.payload);
-		})
-		.then(function (responsePayload) {
-			return grapheneBridgeSendToJava(
-				grapheneBridgeCreateSuccessResponse(message, responsePayload),
-			);
-		})
-		.catch(function (error) {
-			const messageText = error?.message ?? String(error);
-			return grapheneBridgeSendToJava(
-				grapheneBridgeCreateErrorResponse(
-					message,
-					GRAPHENE_ERROR_HANDLER_FAILURE,
-					messageText,
-				),
-			);
-		})
-		.catch(grapheneBridgeNoop);
-}
+	function scheduleReadyRetry() {
+		if (readyState.ready || readyState.readyRetryScheduled) {
+			return;
+		}
 
-function grapheneBridgeReceiveFromJava(messageJson) {
-	const message = grapheneBridgeParseJsonOrNull(messageJson);
-	if (!grapheneBridgeIsMessage(message)) {
-		return;
+		if (typeof globalThis.setTimeout !== "function") {
+			return;
+		}
+
+		readyState.readyRetryScheduled = true;
+		globalThis.setTimeout(function () {
+			readyState.readyRetryScheduled = false;
+			sendReady();
+		}, READY_RETRY_DELAY_MS);
 	}
 
-	if (message.kind === GRAPHENE_KIND_EVENT) {
-		grapheneBridgeDispatchEvent(message);
-		return;
-	}
+	function sendReady() {
+		if (readyState.ready || readyState.readyRequestInFlight) {
+			return;
+		}
 
-	if (message.kind === GRAPHENE_KIND_REQUEST) {
-		grapheneBridgeHandleRequest(message);
-	}
-}
-
-function grapheneBridgeInstallApi() {
-	globalThis[GRAPHENE_RECEIVE_FN_NAME] = grapheneBridgeReceiveFromJava;
-
-	const grapheneBridgeApi = {
-		__grapheneInstalled: true,
-		on: function (channel, listener) {
-			grapheneBridgeAddEventListener(channel, listener);
-			return function () {
-				grapheneBridgeApi.off(channel, listener);
-			};
-		},
-		off: grapheneBridgeOff,
-		handle: function (channel, handler) {
-			grapheneBridgeRequestHandlersByChannel.set(channel, handler);
-			return function () {
-				if (grapheneBridgeRequestHandlersByChannel.get(channel) === handler) {
-					grapheneBridgeRequestHandlersByChannel.delete(channel);
-				}
-			};
-		},
-		isReady: function () {
-			return grapheneBridgeSharedState.ready;
-		},
-		onReady: grapheneBridgeOnReady,
-		ready: function () {
-			return grapheneBridgeSharedState.readyPromise;
-		},
-		emit: function (channel, payload) {
-			return grapheneBridgeSendToJava(
-				Object.assign(grapheneBridgeCreateBaseMessage(GRAPHENE_KIND_EVENT), {
-					channel: channel,
-					payload: grapheneBridgeNormalizePayload(payload),
-				}),
-			);
-		},
-		request: function (channel, payload) {
-			return grapheneBridgeSendToJava(
-				Object.assign(grapheneBridgeCreateBaseMessage(GRAPHENE_KIND_REQUEST), {
-					id: grapheneBridgeNextRequestId(),
-					channel: channel,
-					payload: grapheneBridgeNormalizePayload(payload),
-				}),
-			).then(function (responseText) {
-				const response = grapheneBridgeParseResponse(responseText);
-				if (response.ok === false) {
-					throw grapheneBridgeToError(response);
-				}
-
-				return response.payload;
+		readyState.readyRequestInFlight = true;
+		sendToJava(createBaseMessage(KIND_READY))
+			.then(function () {
+				readyState.readyRequestInFlight = false;
+				markReady();
+			})
+			.catch(function (error) {
+				readyState.readyRequestInFlight = false;
+				reportSuppressedError("Ready handshake failed", error);
+				scheduleReadyRetry();
 			});
-		},
-	};
+	}
 
-	globalThis.grapheneBridge = grapheneBridgeApi;
-}
+	function addChannelListener(channel, listener) {
+		let listeners = eventListenersByChannel.get(channel);
+		if (!listeners) {
+			listeners = new Set();
+			eventListenersByChannel.set(channel, listeners);
+		}
 
-function grapheneBridgeOff(channel, listener) {
-	grapheneBridgeRemoveEventListener(channel, listener);
-}
+		listeners.add(listener);
+	}
 
-function grapheneBridgeFindAnchorFromClick(event) {
-	const target = event?.target;
-	if (target && typeof target.closest === "function") {
-		const directMatch = target.closest("a[href]");
-		if (directMatch) {
-			return directMatch;
+	function removeChannelListener(channel, listener) {
+		const listeners = eventListenersByChannel.get(channel);
+		if (!listeners) {
+			return;
+		}
+
+		listeners.delete(listener);
+		if (listeners.size === 0) {
+			eventListenersByChannel.delete(channel);
 		}
 	}
 
-	if (typeof event?.composedPath !== "function") {
-		return null;
+	function dispatchChannelEvent(message) {
+		const listeners = eventListenersByChannel.get(message.channel);
+		if (!listeners) {
+			return;
+		}
+
+		listeners.forEach(function (listener) {
+			try {
+				listener(message.payload);
+			} catch (error) {
+				reportSuppressedError(
+					"Event listener failed for channel '" + message.channel + "'",
+					error,
+				);
+			}
+		});
 	}
 
-	const path = event.composedPath();
-	for (const node of path) {
-		if (!node) {
-			continue;
+	function handleRequest(message) {
+		const requestHandler = requestHandlersByChannel.get(message.channel);
+		if (!requestHandler) {
+			sendToJava(
+				createErrorResponse(
+					message,
+					ERROR_NO_HANDLER,
+					"No JS bridge handler for channel '" + message.channel + "'",
+				),
+			).catch(noop);
+			return;
 		}
 
-		if (typeof node.closest === "function") {
-			const pathMatch = node.closest("a[href]");
-			if (pathMatch) {
-				return pathMatch;
-			}
+		Promise.resolve()
+			.then(function () {
+				return requestHandler(message.payload);
+			})
+			.then(function (responsePayload) {
+				return sendToJava(createSuccessResponse(message, responsePayload));
+			})
+			.catch(function (error) {
+				const messageText = error?.message ?? String(error);
+				return sendToJava(
+					createErrorResponse(message, ERROR_HANDLER_FAILURE, messageText),
+				);
+			})
+			.catch(noop);
+	}
+
+	function receiveFromJava(messageJson) {
+		const message = parseJsonOrNull(messageJson);
+		if (!isBridgeMessage(message)) {
+			return;
+		}
+
+		if (message.kind === KIND_EVENT) {
+			dispatchChannelEvent(message);
+			return;
+		}
+
+		if (message.kind === KIND_REQUEST) {
+			handleRequest(message);
 		}
 	}
 
-	return null;
-}
+	function install() {
+		globalThis[RECEIVE_FN_NAME] = receiveFromJava;
 
-function grapheneBridgeInstallPopupFallback() {
-	if (globalThis[GRAPHENE_POPUP_FALLBACK_INSTALLED_FLAG]) {
-		return;
+		globalThis.grapheneBridge = {
+			[INSTALLED_FLAG]: true,
+			on: function (channel, listener) {
+				addChannelListener(channel, listener);
+				return function () {
+					removeChannelListener(channel, listener);
+				};
+			},
+			off: removeChannelListener,
+			handle: function (channel, handler) {
+				requestHandlersByChannel.set(channel, handler);
+				return function () {
+					if (requestHandlersByChannel.get(channel) === handler) {
+						requestHandlersByChannel.delete(channel);
+					}
+				};
+			},
+			isReady: function () {
+				return readyState.ready;
+			},
+			onReady: onReady,
+			ready: function () {
+				return readyState.readyPromise;
+			},
+			emit: function (channel, payload) {
+				return sendToJava(
+					Object.assign(createBaseMessage(KIND_EVENT), {
+						channel: channel,
+						payload: normalizePayload(payload),
+					}),
+				);
+			},
+			request: function (channel, payload) {
+				return sendToJava(
+					Object.assign(createBaseMessage(KIND_REQUEST), {
+						id: nextRequestId(),
+						channel: channel,
+						payload: normalizePayload(payload),
+					}),
+				).then(function (responseText) {
+					const response = parseResponse(responseText);
+					if (response.ok === false) {
+						throw toError(response);
+					}
+
+					return response.payload;
+				});
+			},
+		};
 	}
 
-	globalThis[GRAPHENE_POPUP_FALLBACK_INSTALLED_FLAG] = true;
-
-	document.addEventListener(
-		"click",
-		function (event) {
-			const anchor = grapheneBridgeFindAnchorFromClick(event);
-			if (!anchor) {
-				return;
-			}
-
-			const target = String(anchor.getAttribute("target") || "").toLowerCase();
-			if (target !== "_blank") {
-				return;
-			}
-
-			const href = anchor.href;
-			if (!href) {
-				return;
-			}
-
-			event.preventDefault();
-			event.stopPropagation();
-			globalThis.location?.assign?.(href);
-		},
-		true,
-	);
-
-	const originalOpen =
-		typeof globalThis.open === "function"
-			? globalThis.open.bind(globalThis)
-			: null;
-
-	globalThis.open = function (url, target, features) {
-		const hasUrl = typeof url === "string" && url.length > 0;
-		const normalizedTarget =
-			typeof target === "string" ? target.toLowerCase() : "";
-		if (hasUrl && (normalizedTarget === "_blank" || normalizedTarget === "")) {
-			globalThis.location?.assign?.(url);
-			return globalThis;
-		}
-
-		if (originalOpen) {
-			return originalOpen(url, target, features);
-		}
-
-		return null;
-	};
-}
-
-if (!globalThis.grapheneBridge?.[GRAPHENE_INSTALLED_FLAG]) {
-	grapheneBridgeInstallApi();
-}
-
-grapheneBridgeInstallPopupFallback();
-grapheneBridgeSendReady();
+	install();
+	sendReady();
+})();
