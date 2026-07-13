@@ -71,6 +71,7 @@ graphene/                                   # You are here!
 ## Testing & Verification
 
 - Run `./gradlew check` to catch Java compilation errors, formatting issues, and execute tests.
+- Run `./gradlew spotlessApply` to format changes directly instead of running `./gradlew spotlessCheck` first and then fixing formatting issues.
 - Do not run long-running Gradle tasks, such as game launches. Instead, provide the exact command for the user to run, for example:
   `./gradlew :packages:fabric-1.21.11:runClient`
 
