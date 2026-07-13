@@ -11,7 +11,6 @@ const copyStatus = document.getElementById("copy-status");
 
 const records = [];
 let nextSequence = 1;
-let bridge = null;
 
 function valueOrEmpty(value) {
     return value === undefined || value === null ? "" : String(value);
@@ -209,40 +208,20 @@ function copyReport() {
     if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
         navigator.clipboard.writeText(report).then(
             () => copyStatus.textContent = "Report copied using the Clipboard API.",
-            error => copyWithBridge(report, error)
+            error => copyWithFallback(report, error)
         );
         return;
     }
 
+    copyWithFallback(report, new Error("Clipboard API is unavailable"));
+}
+
+function copyWithFallback(report, clipboardError) {
     if (copyWithDocumentCommand(report)) {
         copyStatus.textContent = "Report copied to clipboard.";
-        return;
-    }
-
-    copyWithBridge(report, new Error("Clipboard API is unavailable"));
-}
-
-function copyWithBridge(report, clipboardError) {
-    if (!bridge) {
+    } else {
         copyStatus.textContent = "Copy failed: " + (clipboardError?.message || String(clipboardError));
-        return;
     }
-    bridge.request("debug:clipboard:copy", {text: report}).then(response => {
-        copyStatus.textContent = response && response.ok
-            ? "Clipboard API failed; report copied using the debug bridge."
-            : "Clipboard API and debug bridge copy failed.";
-    }).catch(bridgeError => {
-        copyStatus.textContent = "Copy failed: " + (bridgeError?.message || String(bridgeError));
-    });
-}
-
-function connectBridgeWhenAvailable() {
-    const candidate = globalThis.grapheneBridge;
-    if (!candidate || typeof candidate.request !== "function") {
-        setTimeout(connectBridgeWhenAvailable, 50);
-        return;
-    }
-    bridge = candidate;
 }
 
 function clearLog() {
@@ -265,4 +244,3 @@ copyButton.addEventListener("click", copyReport);
 
 environmentElement.textContent = environmentReport();
 updateStatus(null);
-connectBridgeWhenAvailable();

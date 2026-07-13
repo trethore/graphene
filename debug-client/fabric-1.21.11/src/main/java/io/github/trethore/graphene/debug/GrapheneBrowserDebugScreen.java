@@ -1,20 +1,8 @@
 package io.github.trethore.graphene.debug;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonNull;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import io.github.trethore.graphene.api.bridge.GrapheneBridge;
-import io.github.trethore.graphene.api.bridge.GrapheneBridgeSubscription;
 import io.github.trethore.graphene.fabric.api.screen.GrapheneScreens;
 import io.github.trethore.graphene.fabric.api.widget.GrapheneWebViewWidget;
 import java.net.URI;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -24,13 +12,11 @@ import net.minecraft.util.Util;
 import org.jspecify.annotations.NonNull;
 
 final class GrapheneBrowserDebugScreen extends Screen {
-  private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(3);
   private static final GrapheneBrowserDebugScreen INSTANCE = new GrapheneBrowserDebugScreen();
   private static String lastUrl;
 
-  private final List<GrapheneBridgeSubscription> subscriptions = new ArrayList<>();
-
   private GrapheneWebViewWidget webView;
+  private GrapheneBrowserDebugBridge debugBridge;
   private EditBox urlBox;
   private Button backButton;
   private Button forwardButton;
@@ -68,7 +54,7 @@ final class GrapheneBrowserDebugScreen extends Screen {
               webViewHeight,
               Component.empty(),
               initialUrl);
-      configureBridge();
+      debugBridge = new GrapheneBrowserDebugBridge(webView.bridge());
     } else {
       webView.setPosition(8, webViewY);
       webView.setSize(webViewWidth, webViewHeight);
@@ -131,59 +117,6 @@ final class GrapheneBrowserDebugScreen extends Screen {
     super.onClose();
   }
 
-  private void configureBridge() {
-    GrapheneBridge bridge = webView.bridge();
-    subscriptions.add(
-        bridge.onRequest(
-            "debug:echo",
-            (channel, payload) -> CompletableFuture.completedFuture(echoResponse(payload))));
-    subscriptions.add(
-        bridge.onRequest(
-            "debug:sum",
-            (channel, payload) -> CompletableFuture.completedFuture(sumResponse(payload))));
-    subscriptions.add(
-        bridge.onRequest(
-            "debug:tests:run", (channel, payload) -> GrapheneDebugTestRunner.runAllTestsAsJson()));
-    subscriptions.add(
-        bridge.onRequest("debug:clipboard:copy", (channel, payload) -> copyToClipboard(payload)));
-    subscriptions.add(
-        bridge.onRequest(
-            "debug:bridge:trigger-java-to-js", (channel, payload) -> javaToJsRoundTrip(payload)));
-  }
-
-  private CompletableFuture<String> javaToJsRoundTrip(String payload) {
-    GrapheneBridge bridge = webView.bridge();
-    JsonObject event = new JsonObject();
-    event.addProperty("sentAt", Instant.now().toString());
-    event.add("payload", parse(payload));
-    bridge.emit("debug:bridge:java-event", event.toString());
-    return bridge
-        .request("debug:bridge:java-request", event.toString(), REQUEST_TIMEOUT)
-        .thenApply(
-            response -> {
-              JsonObject result = new JsonObject();
-              result.addProperty("ok", true);
-              result.add("response", parse(response));
-              return result.toString();
-            });
-  }
-
-  private CompletableFuture<String> copyToClipboard(String payload) {
-    CompletableFuture<String> result = new CompletableFuture<>();
-    Minecraft minecraft = Minecraft.getInstance();
-    minecraft.execute(
-        () -> {
-          try {
-            JsonObject request = parse(payload).getAsJsonObject();
-            minecraft.keyboardHandler.setClipboard(request.get("text").getAsString());
-            result.complete("{\"ok\":true}");
-          } catch (RuntimeException exception) {
-            result.complete("{\"ok\":false}");
-          }
-        });
-    return result;
-  }
-
   private void openDevTools() {
     GrapheneDebugClient.context()
         .runtime()
@@ -193,8 +126,10 @@ final class GrapheneBrowserDebugScreen extends Screen {
   }
 
   private void closePersistentSession() {
-    subscriptions.forEach(GrapheneBridgeSubscription::unsubscribe);
-    subscriptions.clear();
+    if (debugBridge != null) {
+      debugBridge.close();
+      debugBridge = null;
+    }
     if (webView != null) {
       webView.close();
       webView = null;
@@ -207,34 +142,5 @@ final class GrapheneBrowserDebugScreen extends Screen {
 
   private static void rememberLastUrl(String url) {
     lastUrl = url;
-  }
-
-  private static String echoResponse(String payload) {
-    JsonObject response = new JsonObject();
-    response.addProperty("ok", true);
-    response.add("received", parse(payload));
-    return response.toString();
-  }
-
-  private static String sumResponse(String payload) {
-    JsonObject response = new JsonObject();
-    try {
-      JsonObject request = parse(payload).getAsJsonObject();
-      response.addProperty("ok", true);
-      response.addProperty(
-          "result", request.get("a").getAsDouble() + request.get("b").getAsDouble());
-    } catch (RuntimeException exception) {
-      response.addProperty("ok", false);
-      response.addProperty("error", "Expected numeric fields 'a' and 'b'");
-    }
-    return response.toString();
-  }
-
-  private static JsonElement parse(String json) {
-    try {
-      return JsonParser.parseString(json == null ? "null" : json);
-    } catch (RuntimeException exception) {
-      return JsonNull.INSTANCE;
-    }
   }
 }
