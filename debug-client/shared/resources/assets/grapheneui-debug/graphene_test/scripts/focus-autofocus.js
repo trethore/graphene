@@ -4,31 +4,31 @@ const lastKeyLabel = document.getElementById("last-key");
 const inputLengthLabel = document.getElementById("input-length");
 
 function describeActiveElement() {
-    const activeElement = document.activeElement;
-    if (!activeElement) {
-        return "none";
-    }
+	const activeElement = document.activeElement;
+	if (!activeElement) {
+		return "none";
+	}
 
-    const idSuffix = activeElement.id ? "#" + activeElement.id : "";
-    return activeElement.tagName.toLowerCase() + idSuffix;
+	const idSuffix = activeElement.id ? "#" + activeElement.id : "";
+	return activeElement.tagName.toLowerCase() + idSuffix;
 }
 
 function updateStatus() {
-    activeElementLabel.textContent = describeActiveElement();
-    inputLengthLabel.textContent = String(input.value.length);
+	activeElementLabel.textContent = describeActiveElement();
+	inputLengthLabel.textContent = String(input.value.length);
 }
 
 function focusInput() {
-    input.focus();
-    input.select();
-    updateStatus();
+	input.focus();
+	input.select();
+	updateStatus();
 }
 
 window.addEventListener("load", focusInput);
 document.addEventListener("focusin", updateStatus);
-document.addEventListener("keydown", event => {
-    lastKeyLabel.textContent = event.key;
-    updateStatus();
+document.addEventListener("keydown", (event) => {
+	lastKeyLabel.textContent = event.key;
+	updateStatus();
 });
 input.addEventListener("input", updateStatus);
 

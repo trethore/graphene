@@ -1,41 +1,40 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta content="width=device-width, initial-scale=1" name="viewport">
-    <title>Graphene Focus Autofocus Test</title>
-    <link href="../style/main.css" rel="stylesheet">
-    <script defer src="../scripts/focus-autofocus.js"></script>
+<meta charset="UTF-8">
+<meta content="width=device-width, initial-scale=1" name="viewport">
+<title>Graphene Focus Autofocus Test</title>
+<link href="../style/main.css" rel="stylesheet">
+<script defer src="../scripts/focus-autofocus.js" type="text/javascript"></script>
 </head>
 <body>
-<main>
-    <p><a href="tests.html">Back to tests</a></p>
-    <h1>Autofocus Keyboard Test</h1>
-    <p>
-        Reopen the debug screen on this page and type immediately without clicking anywhere.
-        If Graphene keyboard focus is working on first open, the text should appear in the input below.
-    </p>
+	<main>
+		<p>
+			<a href="tests.html">Back to tests</a>
+		</p>
+		<h1>Autofocus Keyboard Test</h1>
+		<p>Reopen the debug screen on this page and type immediately
+			without clicking anywhere. If Graphene keyboard focus is working on
+			first open, the text should appear in the input below.</p>
 
-    <div class="panel">
-        <label for="autofocus-input">Type here immediately after the screen opens</label>
-        <input autocomplete="off" autofocus id="autofocus-input" placeholder="Start typing without clicking">
+		<div class="panel">
+			<label for="autofocus-input">Type here immediately after the
+				screen opens</label> <input autocomplete="off" autofocus
+				id="autofocus-input" placeholder="Start typing without clicking">
 
-        <div class="status-grid">
-            <div>
-                DOM focus target
-                <span id="active-element">unknown</span>
-            </div>
-            <div>
-                Last key seen by the page
-                <span id="last-key">none</span>
-            </div>
-            <div>
-                Input length
-                <span id="input-length">0</span>
-            </div>
-        </div>
-    </div>
+			<div class="status-grid">
+				<div>
+					DOM focus target <span id="active-element">unknown</span>
+				</div>
+				<div>
+					Last key seen by the page <span id="last-key">none</span>
+				</div>
+				<div>
+					Input length <span id="input-length">0</span>
+				</div>
+			</div>
+		</div>
 
-</main>
+	</main>
 </body>
 </html>

@@ -1,32 +1,36 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta content="width=device-width, initial-scale=1" name="viewport">
-    <title>Graphene Popup and Rendering Test</title>
-    <link href="../style/main.css" rel="stylesheet">
+<meta charset="UTF-8">
+<meta content="width=device-width, initial-scale=1" name="viewport">
+<title>Graphene Popup and Rendering Test</title>
+<link href="../style/main.css" rel="stylesheet">
 </head>
 <body>
-<h1>Popup and Rendering Test</h1>
-<p><a href="tests.html">Back to tests page</a></p>
+	<h1>Popup and Rendering Test</h1>
+	<p>
+		<a href="tests.html">Back to tests page</a>
+	</p>
 
-<p>Open each select and verify that its popup is positioned and clipped correctly.</p>
-<div class="popup-edge-controls">
-    <select>
-        <option>Top left</option>
-        <option>Second option</option>
-        <option>Third option</option>
-    </select>
-    <select>
-        <option>Top right</option>
-        <option>Second option</option>
-        <option>Third option</option>
-    </select>
-</div>
+	<p>Open each select and verify that its popup is positioned and
+		clipped correctly.</p>
+	<div class="popup-edge-controls">
+		<select>
+			<option>Top left</option>
+			<option>Second option</option>
+			<option>Third option</option>
+		</select> <select>
+			<option>Top right</option>
+			<option>Second option</option>
+			<option>Third option</option>
+		</select>
+	</div>
 
-<p>The green square should animate without corrupting the rest of the frame.</p>
-<div class="dirty-region"></div>
+	<p>The green square should animate without corrupting the rest of
+		the frame.</p>
+	<div class="dirty-region"></div>
 
-<p contenteditable="true">Click here to test text selection, focus, and the text cursor.</p>
+	<p contenteditable="true">Click here to test text selection, focus,
+		and the text cursor.</p>
 </body>
 </html>

@@ -1,279 +1,258 @@
 :root {
-    background: #fff;
-    color: #222;
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 16px;
+	background: #fff;
+	color: #222;
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 16px;
 }
 
 * {
-    box-sizing: border-box;
+	box-sizing: border-box;
 }
 
-html,
+html, body {
+	min-height: 100%;
+}
+
 body {
-    min-height: 100%;
+	background: #fff;
+	line-height: 1.5;
+	margin: 0 auto;
+	max-width: 1100px;
+	padding: 32px 20px 48px;
 }
 
-body {
-    background: #fff;
-    line-height: 1.5;
-    margin: 0 auto;
-    max-width: 1100px;
-    padding: 32px 20px 48px;
-}
-
-h1,
-h2 {
-    line-height: 1.2;
+h1, h2 {
+	line-height: 1.2;
 }
 
 h1 {
-    margin: 0 0 16px;
+	margin: 0 0 16px;
 }
 
 h2 {
-    margin: 28px 0 12px;
+	margin: 28px 0 12px;
 }
 
 p {
-    margin: 12px 0;
+	margin: 12px 0;
 }
 
 a {
-    color: #0645ad;
+	color: #0645ad;
 }
 
 a:visited {
-    color: #5a3696;
+	color: #5a3696;
 }
 
-button,
-input,
-select,
-textarea {
-    background: #fff;
-    border: 1px solid #888;
-    color: #222;
-    font: inherit;
-    max-width: 100%;
-    padding: 7px 9px;
+button, input, select, textarea {
+	background: #fff;
+	border: 1px solid #888;
+	color: #222;
+	font: inherit;
+	max-width: 100%;
+	padding: 7px 9px;
 }
 
 button {
-    cursor: pointer;
+	cursor: pointer;
 }
 
 button:hover {
-    background: #eee;
+	background: #eee;
 }
 
 button:active {
-    background: #ddd;
+	background: #ddd;
 }
 
-button:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible {
-    border-color: #0645ad;
-    outline: none;
+button:focus-visible, input:focus-visible, select:focus-visible,
+	textarea:focus-visible {
+	border-color: #0645ad;
+	outline: none;
 }
 
 a:focus-visible {
-    outline: none;
-    text-decoration-thickness: 2px;
+	outline: none;
+	text-decoration-thickness: 2px;
 }
 
 [contenteditable]:focus-visible {
-    background: #f5f5f5;
-    outline: none;
+	background: #f5f5f5;
+	outline: none;
 }
 
-input[type="text"],
-input[type="number"] {
-    min-width: 220px;
+input[type="text"], input[type="number"] {
+	min-width: 220px;
 }
 
 textarea {
-    font-family: monospace;
-    min-height: 140px;
-    resize: vertical;
-    width: 100%;
+	font-family: monospace;
+	min-height: 140px;
+	resize: vertical;
+	width: 100%;
 }
 
-pre,
-code,
-table {
-    font-family: monospace;
+pre, code, table {
+	font-family: monospace;
 }
 
 pre {
-    background: #f5f5f5;
-    margin: 12px 0 0;
-    overflow: auto;
-    padding: 12px;
-    white-space: pre-wrap;
+	background: #f5f5f5;
+	margin: 12px 0 0;
+	overflow: auto;
+	padding: 12px;
+	white-space: pre-wrap;
 }
 
 ul {
-    padding-left: 24px;
+	padding-left: 24px;
 }
 
 li {
-    margin: 8px 0;
+	margin: 8px 0;
 }
 
 .panel {
-    margin: 24px 0;
+	margin: 24px 0;
 }
 
-.panel > label {
-    display: block;
-    font-weight: bold;
-    margin-bottom: 8px;
+.panel>label {
+	display: block;
+	font-weight: bold;
+	margin-bottom: 8px;
 }
 
-.row,
-.actions,
-.section-heading,
-.popup-edge-controls {
-    align-items: center;
-    display: flex;
-    gap: 8px;
+.row, .actions, .section-heading, .popup-edge-controls {
+	align-items: center;
+	display: flex;
+	gap: 8px;
 }
 
 .row {
-    flex-wrap: wrap;
-    margin-bottom: 12px;
+	flex-wrap: wrap;
+	margin-bottom: 12px;
 }
 
-.section-heading,
-.popup-edge-controls {
-    justify-content: space-between;
+.section-heading, .popup-edge-controls {
+	justify-content: space-between;
 }
 
 .section-heading h2 {
-    margin: 0;
+	margin: 0;
 }
 
 .status-grid {
-    display: grid;
-    gap: 8px;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    margin-top: 12px;
+	display: grid;
+	gap: 8px;
+	grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+	margin-top: 12px;
 }
 
-.status-grid > div {
-    background: #f2f2f2;
-    padding: 8px;
+.status-grid>div {
+	background: #f2f2f2;
+	padding: 8px;
 }
 
-.status-grid span,
-.status-grid strong {
-    display: block;
+.status-grid span, .status-grid strong {
+	display: block;
 }
 
 .status-grid span {
-    color: #555;
-    font-size: 13px;
+	color: #555;
+	font-size: 13px;
 }
 
-#status,
-#bridge-status {
-    font-weight: bold;
-    margin: 12px 0;
+#status, #bridge-status {
+	font-weight: bold;
+	margin: 12px 0;
 }
 
-#details,
-#run-summary {
-    margin: 12px 0;
-    white-space: pre-wrap;
+#details, #run-summary {
+	margin: 12px 0;
+	white-space: pre-wrap;
 }
 
 .copy-status {
-    color: #176b27;
-    min-height: 1.5em;
+	color: #176b27;
+	min-height: 1.5em;
 }
 
 .table-scroll {
-    max-height: 520px;
-    overflow: auto;
+	max-height: 520px;
+	overflow: auto;
 }
 
 table {
-    border-collapse: collapse;
-    font-size: 13px;
-    margin-top: 12px;
-    width: 100%;
+	border-collapse: collapse;
+	font-size: 13px;
+	margin-top: 12px;
+	width: 100%;
 }
 
-th,
-td {
-    border-bottom: 1px solid #ccc;
-    padding: 6px 8px;
-    text-align: left;
-    vertical-align: top;
-    word-break: break-word;
+th, td {
+	border-bottom: 1px solid #ccc;
+	padding: 6px 8px;
+	text-align: left;
+	vertical-align: top;
+	word-break: break-word;
 }
 
 th {
-    background: #eee;
+	background: #eee;
 }
 
 .table-scroll th {
-    position: sticky;
-    top: 0;
-    z-index: 1;
+	position: sticky;
+	top: 0;
+	z-index: 1;
 }
 
-.table-scroll th,
-.table-scroll td {
-    white-space: nowrap;
+.table-scroll th, .table-scroll td {
+	white-space: nowrap;
 }
 
 tbody tr:nth-child(even) {
-    background: #f7f7f7;
+	background: #f7f7f7;
 }
 
-.pass,
-.ok {
-    color: #0a6f26;
-    font-weight: bold;
+.pass, .ok {
+	color: #0a6f26;
+	font-weight: bold;
 }
 
 .fail {
-    color: #9a1b1b;
-    font-weight: bold;
+	color: #9a1b1b;
+	font-weight: bold;
 }
 
 .popup-edge-controls {
-    margin: 24px 0;
+	margin: 24px 0;
 }
 
 .dirty-region {
-    animation: move 2s linear infinite alternate;
-    background: #4caf50;
-    height: 64px;
-    width: 64px;
+	animation: move 2s linear infinite alternate;
+	background: #4caf50;
+	height: 64px;
+	width: 64px;
 }
 
 @keyframes move {
-    from {
-        transform: translateX(0);
-    }
+	from {
+		transform: translateX(0);
+	}
 
-    to {
-        transform: translateX(240px);
-    }
+	to {
+		transform: translateX(240px);
+	}
 }
 
-@media (max-width: 700px) {
-    body {
-        padding: 20px 12px 32px;
-    }
-
-    .section-heading {
-        align-items: stretch;
-        flex-direction: column;
-    }
+@media ( max-width : 700px) {
+	body {
+		padding: 20px 12px 32px;
+	}
+	.section-heading {
+		align-items: stretch;
+		flex-direction: column;
+	}
 }

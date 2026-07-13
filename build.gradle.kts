@@ -1,3 +1,4 @@
+import com.diffplug.spotless.extra.wtp.EclipseWtpFormatterStep
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.tasks.testing.Test
 
@@ -21,6 +22,26 @@ spotless {
     target("**/*.gradle.kts")
     targetExclude("references/**", "**/build/**", ".gradle/**")
     ktfmt()
+  }
+
+  format("javascript") {
+    target(
+        "debug-client/shared/**/*.js",
+        "packages/common/src/main/resources/**/*.js",
+    )
+    biome("2.1.0")
+    trimTrailingWhitespace()
+    endWithNewline()
+  }
+
+  format("html") {
+    target(
+        "debug-client/shared/**/*.html",
+        "packages/common/src/main/resources/**/*.html",
+    )
+    eclipseWtp(EclipseWtpFormatterStep.HTML)
+    trimTrailingWhitespace()
+    endWithNewline()
   }
 
   format("misc") {
