@@ -160,8 +160,6 @@ public final class GrapheneCefInstaller {
         .ifPresent(origins -> builder.addJcefArgs("--remote-allow-origins=" + origins));
   }
 
-  // I'm not sure about the Linux flags here. I added several because, eventually, one of them
-  // worked somehow.
   private static void configurePlatformCompatibility(CefAppBuilder builder) {
     if (!isLinux()) {
       return;

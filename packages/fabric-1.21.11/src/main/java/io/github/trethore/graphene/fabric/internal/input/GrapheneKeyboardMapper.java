@@ -49,6 +49,7 @@ public final class GrapheneKeyboardMapper {
         resolvedModifiers);
   }
 
+  @SuppressWarnings("java:S1479")
   static int windowsVirtualKey(int keyCode, char character) {
     if (keyCode >= GLFW.GLFW_KEY_0 && keyCode <= GLFW.GLFW_KEY_9) {
       return keyCode;
