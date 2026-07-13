@@ -1,5 +1,6 @@
 package io.github.trethore.graphene.fabric.api.surface;
 
+import io.github.trethore.graphene.api.bridge.GrapheneBridgeSubscription;
 import io.github.trethore.graphene.api.browser.BrowserSession;
 import io.github.trethore.graphene.api.browser.input.BrowserModifier;
 import io.github.trethore.graphene.api.browser.input.BrowserPointerAction;
@@ -8,25 +9,44 @@ import io.github.trethore.graphene.api.browser.input.BrowserPointerInput;
 import io.github.trethore.graphene.api.browser.input.BrowserScrollInput;
 import io.github.trethore.graphene.api.browser.input.BrowserTextInput;
 import io.github.trethore.graphene.fabric.internal.input.GrapheneKeyboardMapper;
+import io.github.trethore.graphene.internal.platform.GrapheneClipboard;
+import io.github.trethore.graphene.internal.platform.GrapheneClipboardContent;
+import java.util.Base64;
 import java.util.EnumSet;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
+import net.minecraft.client.Minecraft;
 import org.lwjgl.glfw.GLFW;
 
 @SuppressWarnings("unused")
-public final class BrowserSurfaceInputAdapter {
+public final class BrowserSurfaceInputAdapter implements AutoCloseable {
+  private static final String CLIPBOARD_PASTE_CHANNEL = "graphene:clipboard:paste";
+  private static final String CLIPBOARD_WRITE_CHANNEL = "graphene:clipboard:write";
   private static final String MOUSE_BUTTON_CHANNEL = "graphene:mouse:button";
   private static final int SCROLL_DELTA = 120;
   private static final long SYNTHETIC_DUPLICATE_WINDOW_MILLIS = 250;
+  private static final boolean MAC = osName().contains("mac");
 
   private final BrowserSurface surface;
+  private final GrapheneClipboard clipboard = new GrapheneClipboard();
+  private final GrapheneBridgeSubscription clipboardWriteSubscription;
   private char pendingSyntheticCharacter;
   private long pendingSyntheticTimestamp;
+  private boolean pasteShortcutPressed;
   private boolean rightAltPressed;
   private BrowserPointerButton pressedButton = BrowserPointerButton.NONE;
 
   public BrowserSurfaceInputAdapter(BrowserSurface surface) {
     this.surface = Objects.requireNonNull(surface, "surface");
+    clipboardWriteSubscription =
+        surface
+            .browser()
+            .bridge()
+            .onEventJson(
+                CLIPBOARD_WRITE_CHANNEL,
+                ClipboardPayload.class,
+                (channel, payload) -> writeClipboard(payload));
   }
 
   public void setFocused(boolean focused) {
@@ -138,6 +158,15 @@ public final class BrowserSurfaceInputAdapter {
   }
 
   public void key(int keyCode, int scanCode, boolean pressed, int modifiers) {
+    if (pressed && isPasteShortcut(keyCode, modifiers)) {
+      pasteShortcutPressed = true;
+      pasteClipboard();
+      return;
+    }
+    if (!pressed && keyCode == GLFW.GLFW_KEY_V && pasteShortcutPressed) {
+      pasteShortcutPressed = false;
+      return;
+    }
     if (keyCode == GLFW.GLFW_KEY_RIGHT_ALT) {
       rightAltPressed = pressed;
     }
@@ -162,6 +191,55 @@ public final class BrowserSurfaceInputAdapter {
       return;
     }
     sendText(normalizedCharacter, modifiers);
+  }
+
+  @Override
+  public void close() {
+    clipboardWriteSubscription.unsubscribe();
+  }
+
+  private void pasteClipboard() {
+    GrapheneClipboardContent content = clipboard.read();
+    if (!clipboard.isAvailable()) {
+      content =
+          new GrapheneClipboardContent(
+              Minecraft.getInstance().keyboardHandler.getClipboard(), null, null);
+    }
+    byte[] png = content.png();
+    surface
+        .browser()
+        .bridge()
+        .emitJson(
+            CLIPBOARD_PASTE_CHANNEL,
+            new ClipboardPayload(
+                content.text(),
+                content.html(),
+                png.length == 0 ? null : Base64.getEncoder().encodeToString(png)));
+  }
+
+  private void writeClipboard(ClipboardPayload payload) {
+    if (payload == null) {
+      return;
+    }
+    byte[] png = decodePng(payload.png());
+    GrapheneClipboardContent content =
+        new GrapheneClipboardContent(payload.text(), payload.html(), png);
+    if (clipboard.isAvailable()) {
+      clipboard.write(content);
+    } else if (content.text() != null && !content.text().isEmpty()) {
+      Minecraft.getInstance().keyboardHandler.setClipboard(content.text());
+    }
+  }
+
+  private static byte[] decodePng(String png) {
+    if (png == null || png.isEmpty()) {
+      return new byte[0];
+    }
+    try {
+      return Base64.getDecoder().decode(png);
+    } catch (IllegalArgumentException ignored) {
+      return new byte[0];
+    }
   }
 
   private void sendText(char character, int modifiers) {
@@ -308,5 +386,19 @@ public final class BrowserSurfaceInputAdapter {
     return Set.copyOf(result);
   }
 
+  static boolean isPasteShortcut(int keyCode, int modifiers) {
+    int shortcutModifier = MAC ? GLFW.GLFW_MOD_SUPER : GLFW.GLFW_MOD_CONTROL;
+    int disallowedModifiers = GLFW.GLFW_MOD_SHIFT | GLFW.GLFW_MOD_ALT;
+    return keyCode == GLFW.GLFW_KEY_V
+        && (modifiers & shortcutModifier) != 0
+        && (modifiers & disallowedModifiers) == 0;
+  }
+
+  private static String osName() {
+    return System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
+  }
+
   private record ExtendedMouseButtonInput(int button, boolean pressed, int x, int y) {}
+
+  private record ClipboardPayload(String text, String html, String png) {}
 }

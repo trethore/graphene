@@ -217,6 +217,7 @@ public class GrapheneWebViewWidget extends AbstractWidget implements AutoCloseab
     }
     closed = true;
     requireScreenBridge(screen).graphene$removeWebViewWidget(this);
+    inputAdapter.close();
     surface.close();
   }
 

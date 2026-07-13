@@ -23,7 +23,7 @@ final class GrapheneBridgeEndpointTest {
     assertTrue(browser.executedScripts.isEmpty());
 
     endpoint.onPageLoadEnd();
-    assertEquals(2, browser.executedScripts.size());
+    assertEquals(3, browser.executedScripts.size());
 
     TestQueryCallback callback = new TestQueryCallback();
     boolean handled =
@@ -33,8 +33,8 @@ final class GrapheneBridgeEndpointTest {
     assertTrue(handled);
     assertTrue(endpoint.isReady());
     assertEquals("{}", callback.successResponse);
-    assertEquals(3, browser.executedScripts.size());
-    assertTrue(browser.executedScripts.get(2).contains("__grapheneBridgeReceiveFromJava"));
+    assertEquals(4, browser.executedScripts.size());
+    assertTrue(browser.executedScripts.get(3).contains("__grapheneBridgeReceiveFromJava"));
   }
 
   @Test

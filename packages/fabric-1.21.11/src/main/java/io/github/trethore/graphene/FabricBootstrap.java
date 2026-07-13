@@ -14,6 +14,7 @@ public final class FabricBootstrap implements ModInitializer {
 
   @Override
   public void onInitialize() {
+    System.setProperty("java.awt.headless", "false");
     GraphenePlatformServices platformServices = FabricPlatformServices.create();
     GrapheneRuntimeController controller = GrapheneRuntimeController.instance();
     controller.install(platformServices);

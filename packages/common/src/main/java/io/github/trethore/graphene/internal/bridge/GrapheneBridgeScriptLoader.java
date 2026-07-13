@@ -11,7 +11,10 @@ final class GrapheneBridgeScriptLoader {
       GrapheneDebugLogger.of(GrapheneBridgeScriptLoader.class);
 
   private static final List<String> SCRIPT_RESOURCE_PATHS =
-      List.of("assets/grapheneui/bridge/bridge.js", "assets/grapheneui/bridge/mouse.js");
+      List.of(
+          "assets/grapheneui/bridge/bridge.js",
+          "assets/grapheneui/bridge/clipboard.js",
+          "assets/grapheneui/bridge/mouse.js");
   private static final List<String> SCRIPTS = loadScripts();
 
   private GrapheneBridgeScriptLoader() {}
