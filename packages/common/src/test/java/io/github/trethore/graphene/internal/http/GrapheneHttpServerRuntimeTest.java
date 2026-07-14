@@ -107,6 +107,7 @@ final class GrapheneHttpServerRuntimeTest {
 
     try (GrapheneHttpServerRuntime server =
         GrapheneHttpServerRuntime.start(Map.of("my-mod", config))) {
+      assertEquals("http", URI.create(server.baseUrl()).getScheme());
       assertEquals(
           server.baseUrl() + "/assets/my-mod/web/index.html",
           server.urls().assets("my-mod").url("web/index.html"));

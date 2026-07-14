@@ -14,6 +14,13 @@ final class GrapheneCefLifeSpanHandler extends CefLifeSpanHandlerAdapter {
   }
 
   @Override
+  public void onAfterCreated(CefBrowser browser) {
+    if (browser instanceof GrapheneCefBrowserSession session) {
+      session.initializeBrowserOptions();
+    }
+  }
+
+  @Override
   public boolean onBeforePopup(
       CefBrowser browser, CefFrame frame, String targetUrl, String targetFrameName) {
     if (browser == null) {

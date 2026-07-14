@@ -33,6 +33,7 @@ public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, Auto
   private static final String HEADER_CONTENT_TYPE = "Content-Type";
   private static final String HEADER_ALLOW = "Allow";
   private static final String CONTENT_TYPE_TEXT_PLAIN = "text/plain";
+  private static final String HTTP_SCHEME = "http";
   private static final byte[] EMPTY_BYTES = new byte[0];
   private static final GrapheneHttpServerRuntime DISABLED =
       new GrapheneHttpServerRuntime("", -1, "", null, false);
@@ -73,8 +74,7 @@ public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, Auto
     server.start();
 
     int boundPort = server.getAddress().getPort();
-    String baseUrl =
-        buildBaseUrl(mergedConfig.baseUrlScheme(), bindAddress.getHostAddress(), boundPort);
+    String baseUrl = buildBaseUrl(bindAddress.getHostAddress(), boundPort);
     return new GrapheneHttpServerRuntime(
         bindAddress.getHostAddress(), boundPort, baseUrl, server, true);
   }
@@ -112,7 +112,6 @@ public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, Auto
 
   private static MergedHttpServerConfig mergeServerConfig(
       Map<String, GrapheneHttpConfig> consumerConfigs) {
-    OwnedValue<String> selectedBaseUrlScheme = null;
     OwnedValue<String> selectedBindHost = null;
     OwnedValue<HttpPortBinding> selectedPortBinding = null;
 
@@ -120,9 +119,6 @@ public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, Auto
       String consumerId = consumerConfigEntry.getKey();
       GrapheneHttpConfig httpConfig = consumerConfigEntry.getValue();
 
-      selectedBaseUrlScheme =
-          mergeOwnedValue(
-              selectedBaseUrlScheme, httpConfig.baseUrlScheme(), consumerId, "HTTP baseUrlScheme");
       selectedBindHost =
           mergeOwnedValue(selectedBindHost, httpConfig.bindHost(), consumerId, "HTTP bindHost");
       selectedPortBinding =
@@ -130,14 +126,13 @@ public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, Auto
               selectedPortBinding, HttpPortBinding.of(httpConfig), consumerId, "HTTP port binding");
     }
 
-    String baseUrlScheme = selectedBaseUrlScheme == null ? "http" : selectedBaseUrlScheme.value();
     String bindHost = selectedBindHost == null ? "127.0.0.1" : selectedBindHost.value();
     HttpPortBinding portBinding =
         selectedPortBinding == null
             ? HttpPortBinding.of(GrapheneHttpConfig.builder().build())
             : selectedPortBinding.value();
     return new MergedHttpServerConfig(
-        baseUrlScheme, bindHost, portBinding.fixedPort(), portBinding.randomPortRange());
+        bindHost, portBinding.fixedPort(), portBinding.randomPortRange());
   }
 
   private static <T> OwnedValue<T> mergeOwnedValue(
@@ -204,9 +199,9 @@ public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, Auto
         "No available port in range " + minPort + "-" + maxPort + " for Graphene HTTP server");
   }
 
-  private static String buildBaseUrl(String scheme, String host, int port) {
+  private static String buildBaseUrl(String host, int port) {
     try {
-      return new URI(scheme, null, host, port, null, null, null).toASCIIString();
+      return new URI(HTTP_SCHEME, null, host, port, null, null, null).toASCIIString();
     } catch (URISyntaxException exception) {
       throw new IllegalStateException("Failed to build Graphene HTTP base URL", exception);
     }
@@ -571,10 +566,7 @@ public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, Auto
   }
 
   private record MergedHttpServerConfig(
-      String baseUrlScheme,
-      String bindHost,
-      Integer fixedPort,
-      GrapheneHttpConfig.PortRange randomPortRange) {}
+      String bindHost, Integer fixedPort, GrapheneHttpConfig.PortRange randomPortRange) {}
 
   private record HttpMount(Path fileRoot, String spaFallbackResourcePath) {}
 

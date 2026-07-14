@@ -34,17 +34,23 @@ import org.cef.CefBrowserSettings;
 import org.cef.CefClient;
 import org.cef.browser.CefBrowser;
 import org.cef.browser.CefBrowserWindowless;
+import org.cef.browser.CefDevToolsClient;
 import org.cef.browser.CefPaintEvent;
 import org.cef.browser.CefRequestContext;
 import org.cef.callback.CefDragData;
 import org.cef.handler.CefRenderHandler;
 import org.cef.handler.CefScreenInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 final class GrapheneCefBrowserSession extends CefBrowserWindowless
     implements BrowserSession, BridgeBrowser, CefRenderHandler {
+  private static final String BLANK_URL = "about:blank";
   private static final String INPUT_NAME = "input";
+  private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneCefBrowserSession.class);
 
   private final BrowserOptions options;
+  private final Object navigationLock = new Object();
   private final long nativeWindowHandle;
   private final GrapheneBridgeRuntime bridgeRuntime;
   private final GrapheneLoadEventBus loadEventBus;
@@ -61,7 +67,10 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
   private boolean dragTargetEntered;
   private BrowserKeyInput lastPressedKeyInput;
   private volatile BrowserCursor pageCursor = BrowserCursor.ARROW;
-  private boolean closed;
+  private boolean browserOptionsInitialized;
+  private RuntimeException browserOptionsFailure;
+  private String pendingUrl;
+  private volatile boolean closed;
   private volatile boolean focused;
   private volatile BrowserCursor requestedCursor = BrowserCursor.ARROW;
 
@@ -75,8 +84,10 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
       GrapheneBridgeRuntime bridgeRuntime,
       GrapheneLoadEventBus loadEventBus,
       Consumer<GrapheneCefBrowserSession> closeCallback) {
-    super(client, requireUrl(url), null, cefSettings(options));
+    super(client, initialBrowserUrl(url, options), null, cefSettings(options));
     this.options = Objects.requireNonNull(options, "options");
+    this.browserOptionsInitialized = !GrapheneCefBrowserOptions.requiresInitialization(options);
+    this.pendingUrl = browserOptionsInitialized ? null : requireUrl(url);
     this.nativeWindowHandle = nativeWindowHandle;
     this.bridgeRuntime = Objects.requireNonNull(bridgeRuntime, "bridgeRuntime");
     this.loadEventBus = Objects.requireNonNull(loadEventBus, "loadEventBus");
@@ -274,7 +285,7 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
   @Override
   public String currentUrl() {
     String url = getURL();
-    return url == null || url.isBlank() ? "about:blank" : url;
+    return url == null || url.isBlank() ? BLANK_URL : url;
   }
 
   @Override
@@ -289,7 +300,17 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
 
   @Override
   public void navigate(String url) {
-    loadURL(requireUrl(url));
+    String validatedUrl = requireUrl(url);
+    synchronized (navigationLock) {
+      if (browserOptionsFailure != null) {
+        throw browserOptionsFailure;
+      }
+      if (!browserOptionsInitialized) {
+        pendingUrl = validatedUrl;
+        return;
+      }
+    }
+    loadURL(validatedUrl);
   }
 
   @Override
@@ -304,10 +325,12 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
 
   @Override
   public void executeScript(String script, String sourceUrl) {
-    executeJavaScript(
-        Objects.requireNonNull(script, "script"),
-        Objects.requireNonNull(sourceUrl, "sourceUrl"),
-        1);
+    String validatedScript = Objects.requireNonNull(script, "script");
+    String validatedSourceUrl = Objects.requireNonNull(sourceUrl, "sourceUrl");
+    if (!options.javascriptEnabled()) {
+      return;
+    }
+    executeJavaScript(validatedScript, validatedSourceUrl, 1);
   }
 
   @Override
@@ -342,6 +365,27 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
     }
     setFocus(false);
     setFocus(true);
+  }
+
+  void initializeBrowserOptions() {
+    if (browserOptionsInitialized) {
+      return;
+    }
+    CefDevToolsClient devToolsClient = getDevToolsClient();
+    if (devToolsClient == null) {
+      failBrowserOptionInitialization(
+          new IllegalStateException("JCEF DevTools client is unavailable"));
+      return;
+    }
+    GrapheneCefBrowserOptions.apply(devToolsClient, options)
+        .whenComplete(
+            (ignored, failure) -> {
+              if (failure != null) {
+                failBrowserOptionInitialization(failure);
+                return;
+              }
+              completeBrowserOptionInitialization();
+            });
   }
 
   @Override
@@ -414,6 +458,9 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
       return;
     }
     closed = true;
+    synchronized (navigationLock) {
+      pendingUrl = null;
+    }
     listenerAdapters.values().forEach(loadEventBus::unregister);
     listenerAdapters.clear();
     synchronized (dragLock) {
@@ -433,6 +480,41 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
     CefBrowserSettings settings = new CefBrowserSettings();
     settings.windowless_frame_rate = validatedOptions.maximumFrameRate();
     return settings;
+  }
+
+  private static String initialBrowserUrl(String url, BrowserOptions options) {
+    String validatedUrl = requireUrl(url);
+    return GrapheneCefBrowserOptions.requiresInitialization(options) ? BLANK_URL : validatedUrl;
+  }
+
+  private void completeBrowserOptionInitialization() {
+    String targetUrl;
+    synchronized (navigationLock) {
+      if (closed) {
+        return;
+      }
+      browserOptionsInitialized = true;
+      targetUrl = pendingUrl;
+      pendingUrl = null;
+    }
+    if (targetUrl != null) {
+      loadURL(targetUrl);
+    }
+  }
+
+  private void failBrowserOptionInitialization(Throwable failure) {
+    RuntimeException exception =
+        new IllegalStateException("Failed to apply browser options", failure);
+    String targetUrl;
+    synchronized (navigationLock) {
+      if (closed) {
+        return;
+      }
+      browserOptionsFailure = exception;
+      targetUrl = pendingUrl;
+      pendingUrl = null;
+    }
+    LOGGER.error("Failed to apply browser options for {}", targetUrl, failure);
   }
 
   private static String requireUrl(String url) {

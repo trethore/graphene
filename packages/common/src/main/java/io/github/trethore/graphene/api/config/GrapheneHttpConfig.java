@@ -1,19 +1,16 @@
 package io.github.trethore.graphene.api.config;
 
 import java.nio.file.Path;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 
 @SuppressWarnings("unused")
 public final class GrapheneHttpConfig {
   private static final String DEFAULT_BIND_HOST = "127.0.0.1";
-  private static final String DEFAULT_BASE_URL_SCHEME = "http";
   private static final int MIN_PORT = 1024;
   private static final int MAX_PORT = 65535;
   private static final String FILE_ROOT_NAME = "fileRoot";
 
-  private final String baseUrlScheme;
   private final String bindHost;
   private final Integer fixedPort;
   private final PortRange randomPortRange;
@@ -21,7 +18,6 @@ public final class GrapheneHttpConfig {
   private final String spaFallback;
 
   private GrapheneHttpConfig(Builder builder) {
-    this.baseUrlScheme = normalizeBaseUrlScheme(builder.baseUrlScheme);
     this.bindHost = normalizeBindHost(builder.bindHost);
     this.fixedPort = builder.fixedPort;
     this.randomPortRange = builder.randomPortRange;
@@ -40,20 +36,6 @@ public final class GrapheneHttpConfig {
     }
 
     return normalizedBindHost;
-  }
-
-  private static String normalizeBaseUrlScheme(String baseUrlScheme) {
-    String normalizedBaseUrlScheme = Objects.requireNonNull(baseUrlScheme, "baseUrlScheme").trim();
-    if (normalizedBaseUrlScheme.isBlank()) {
-      throw new IllegalArgumentException("baseUrlScheme must not be blank");
-    }
-
-    if (!normalizedBaseUrlScheme.equalsIgnoreCase("http")
-        && !normalizedBaseUrlScheme.equalsIgnoreCase("https")) {
-      throw new IllegalArgumentException("baseUrlScheme must be either http or https");
-    }
-
-    return normalizedBaseUrlScheme.toLowerCase(Locale.ROOT);
   }
 
   private static String normalizeSpaFallback(String spaFallback) {
@@ -99,10 +81,6 @@ public final class GrapheneHttpConfig {
     return bindHost;
   }
 
-  public String baseUrlScheme() {
-    return baseUrlScheme;
-  }
-
   public Optional<Integer> fixedPort() {
     return Optional.ofNullable(fixedPort);
   }
@@ -129,8 +107,7 @@ public final class GrapheneHttpConfig {
       return false;
     }
 
-    return Objects.equals(baseUrlScheme, other.baseUrlScheme)
-        && Objects.equals(bindHost, other.bindHost)
+    return Objects.equals(bindHost, other.bindHost)
         && Objects.equals(fixedPort, other.fixedPort)
         && Objects.equals(randomPortRange, other.randomPortRange)
         && Objects.equals(fileRoot, other.fileRoot)
@@ -139,11 +116,10 @@ public final class GrapheneHttpConfig {
 
   @Override
   public int hashCode() {
-    return Objects.hash(baseUrlScheme, bindHost, fixedPort, randomPortRange, fileRoot, spaFallback);
+    return Objects.hash(bindHost, fixedPort, randomPortRange, fileRoot, spaFallback);
   }
 
   public static final class Builder {
-    private String baseUrlScheme = DEFAULT_BASE_URL_SCHEME;
     private String bindHost = DEFAULT_BIND_HOST;
     private Integer fixedPort;
     private PortRange randomPortRange = new PortRange(20_000, 21_000);
@@ -154,11 +130,6 @@ public final class GrapheneHttpConfig {
 
     public Builder bindHost(String bindHost) {
       this.bindHost = normalizeBindHost(bindHost);
-      return this;
-    }
-
-    public Builder baseUrlScheme(String baseUrlScheme) {
-      this.baseUrlScheme = normalizeBaseUrlScheme(baseUrlScheme);
       return this;
     }
 

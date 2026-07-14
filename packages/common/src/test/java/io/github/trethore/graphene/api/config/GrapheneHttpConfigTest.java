@@ -14,7 +14,6 @@ final class GrapheneHttpConfigTest {
   void defaultsUseLoopbackAndDefaultRange() {
     GrapheneHttpConfig config = GrapheneHttpConfig.builder().build();
 
-    assertEquals("http", config.baseUrlScheme());
     assertEquals("127.0.0.1", config.bindHost());
     assertTrue(config.fixedPort().isEmpty());
     assertEquals(20_000, config.randomPortRange().orElseThrow().minPort());
@@ -49,7 +48,6 @@ final class GrapheneHttpConfigTest {
     GrapheneHttpConfig.Builder builder = GrapheneHttpConfig.builder();
 
     assertThrows(IllegalArgumentException.class, () -> builder.bindHost(" "));
-    assertThrows(IllegalArgumentException.class, () -> builder.baseUrlScheme("ftp"));
     assertThrows(IllegalArgumentException.class, () -> builder.port(1023));
     assertThrows(IllegalArgumentException.class, () -> builder.randomPortInRange(21_000, 20_000));
     assertThrows(IllegalArgumentException.class, () -> builder.fileRoot(""));
@@ -61,7 +59,6 @@ final class GrapheneHttpConfigTest {
     GrapheneHttpConfig left =
         GrapheneHttpConfig.builder()
             .bindHost("127.0.0.1")
-            .baseUrlScheme("HTTP")
             .randomPortInRange(20_000, 20_010)
             .fileRoot("ui")
             .spaFallback("/assets/test/index.html")

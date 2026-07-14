@@ -8,6 +8,7 @@ import java.util.Optional;
 @SuppressWarnings("unused")
 public final class BrowserOptions {
   private static final int DEFAULT_FRAME_RATE = 60;
+  private static final int DEFAULT_BACKGROUND_COLOR = 0xFFFFFF;
   private static final BrowserOptions DEFAULT = builder().build();
 
   private final int maximumFrameRate;
@@ -20,7 +21,7 @@ public final class BrowserOptions {
   private BrowserOptions(Builder builder) {
     this.maximumFrameRate = requireFrameRate(builder.maximumFrameRate);
     this.transparent = builder.transparent;
-    this.backgroundColor = builder.backgroundColor;
+    this.backgroundColor = requireBackgroundColor(builder.backgroundColor);
     this.javascriptEnabled = builder.javascriptEnabled;
     this.fileDialogPresenter = builder.fileDialogPresenter;
     this.jsDialogPresenter = builder.jsDialogPresenter;
@@ -65,10 +66,17 @@ public final class BrowserOptions {
     return frameRate;
   }
 
+  private static int requireBackgroundColor(int backgroundColor) {
+    if (backgroundColor < 0 || backgroundColor > 0xFFFFFF) {
+      throw new IllegalArgumentException("backgroundColor must be a 24-bit RGB value");
+    }
+    return backgroundColor;
+  }
+
   public static final class Builder {
     private int maximumFrameRate = DEFAULT_FRAME_RATE;
     private boolean transparent = true;
-    private int backgroundColor;
+    private int backgroundColor = DEFAULT_BACKGROUND_COLOR;
     private boolean javascriptEnabled = true;
     private BrowserFileDialogPresenter fileDialogPresenter;
     private BrowserJsDialogPresenter jsDialogPresenter;
@@ -86,7 +94,7 @@ public final class BrowserOptions {
     }
 
     public Builder backgroundColor(int backgroundColor) {
-      this.backgroundColor = backgroundColor;
+      this.backgroundColor = requireBackgroundColor(backgroundColor);
       return this;
     }
 

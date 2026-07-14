@@ -66,27 +66,26 @@ model publicly. Most of these should not be exposed one-for-one.
 
 ### 1. Advertised options that do not work
 
-`BrowserOptions` exposes `backgroundColor` and `javascriptEnabled`, but the CEF session only applies:
+- [ ] Resolved for V1
+- [x] Apply `backgroundColor` with `transparent` controlling alpha.
+- [x] Apply `javascriptEnabled` per browser.
+- [x] Restrict the built-in asset server to HTTP.
+- [ ] Pass file filters to the default Fabric file-dialog presenter.
 
-- `maximumFrameRate` to `CefBrowserSettings.windowless_frame_rate`;
-- `transparent` when creating the browser;
-- the two dialog presenters through the client handlers.
+`BrowserOptions.backgroundColor` is a 24-bit RGB value. Browser sessions default to transparent with a white RGB
+background. The `transparent` option controls whether the effective background alpha is fully transparent or fully
+opaque. Opaque browser backgrounds and JavaScript disablement are applied per browser before navigating to the
+requested initial URL.
 
-`backgroundColor` and `javascriptEnabled` are never read by the implementation. This is a V1 contract blocker.
-Silent no-op options are worse than missing options because consumers will build behavior and security assumptions on
-them.
+The built-in asset server is HTTP-only. `GrapheneHttpConfig` does not expose a configurable URL scheme until TLS and
+its certificate lifecycle have a defined API.
 
-There is also a scope mismatch. In the current JCEF version, background color is available in global `CefSettings`,
-not `CefBrowserSettings`. JavaScript control would need a supported request-context preference or a documented
-alternative. Graphene should either implement stable per-session semantics or move/remove these options before V1.
-
-`GrapheneHttpConfig.baseUrlScheme` accepts `https`, while the runtime creates a plain JDK `HttpServer`, not an HTTPS
-server. V1 should restrict this setting to `http` until TLS is implemented.
-
-The default Fabric file-dialog presenter also ignores the public filter list. Either pass filters to TinyFD correctly
-or document that the platform default cannot honor them.
+The remaining part of this blocker is the default Fabric file-dialog presenter, which ignores the public filter list.
+The filters should be passed to TinyFD in a follow-up change.
 
 ### 2. Backend SPI is accidentally consumer-facing
+
+- [ ] Resolved for V1
 
 The following implementation/bootstrap types are in the main public API package:
 
@@ -101,6 +100,8 @@ For V1, move them to an internal or explicit platform SPI package and make `Grap
 to normal consumers.
 
 ### 3. Shared runtime lifecycle is unsafe as a consumer API
+
+- [ ] Resolved for V1
 
 `GrapheneRuntime` publicly exposes `initialize`, `initializeAsync`, and `shutdownAsync`. The runtime is process-global
 and shared by all registered mods. One consumer can therefore close registration early or shut down every other
@@ -122,6 +123,8 @@ failure rather than only seeing that the runtime is in `FAILED` state.
 
 ### 4. Browser creation readiness is undefined
 
+- [ ] Resolved for V1
+
 `BrowserSessions.create` is synchronous, but native runtime initialization is asynchronous and platform-driven. The
 public API does not define what happens when a consumer creates a session while the runtime is `NEW`, `STARTING`,
 `FAILED`, or `STOPPED`.
@@ -135,6 +138,8 @@ V1 should choose and document one model:
 The current implementation should not leak null-client or native initialization failures from JCEF.
 
 ### 5. Navigation and popup behavior needs a public policy
+
+- [ ] Resolved for V1
 
 JCEF distinguishes normal navigation, `window.open`/popups, and URLs opened from a tab. Graphene currently handles the
 latter two by loading the target URL into the same browser and canceling the new window. This silently destroys the
@@ -155,6 +160,8 @@ pages that can navigate to untrusted origins.
 
 ### 6. Bridge origin policy is missing
 
+- [ ] Resolved for V1
+
 The bridge bootstrap is injected for every loaded page. A browser that navigates from a trusted mod page to an
 untrusted remote page therefore continues to expose registered Java handlers to that page.
 
@@ -169,6 +176,8 @@ Also reserve and document the `graphene:` channel namespace. Fabric clipboard an
 uses private channels in that namespace, but consumers are currently not told that those names are reserved.
 
 ### 7. Downloads need a public decision and observation API
+
+- [ ] Resolved for V1
 
 The current download handler automatically writes files to `~/Downloads/grapheneui`, silently falls back to the temp
 directory, and exposes no progress or cancellation API. JCEF provides all required primitives: suggested path,
@@ -185,6 +194,8 @@ For V1, add:
 The safe default should not silently download arbitrary remote content without a consumer-visible policy.
 
 ### 8. Core observable browser state is incomplete
+
+- [ ] Resolved for V1
 
 The previous implementation exposed title state and title listeners. The migration does not install a JCEF display
 handler and `BrowserSession` has no title API. This is a direct regression for screens that display page titles.
@@ -204,6 +215,8 @@ Use a common subscription type for listeners. `GrapheneBridgeSubscription` shoul
 
 ### 9. Load event types are not yet implementation-neutral enough
 
+- [ ] Resolved for V1
+
 `BrowserLoadStarted.navigationType` is a raw JCEF enum name stored as `String`. `BrowserLoadFailed` exposes a raw
 integer and JCEF enum name. This contradicts the API-boundary plan to use Graphene-owned navigation and error types.
 
@@ -212,6 +225,8 @@ consider removing `browserId` from session-scoped listener events, or expose a s
 current integer is a JCEF implementation detail and is redundant when listeners are registered on a session.
 
 ### 10. Frame contract is incomplete for custom renderers
+
+- [ ] Resolved for V1
 
 `BrowserFrame` exposes a byte buffer without declaring its public pixel contract. Custom renderers need stable answers
 for:
@@ -230,6 +245,8 @@ provide a non-null frame state abstraction. Add a frame listener/subscription wi
 backpressure semantics.
 
 ### 11. Normalized input still leaks platform/JCEF conventions
+
+- [ ] Resolved for V1
 
 The API-boundary document planned a `BrowserKey` abstraction, but the current API only exposes integer `keyCode`,
 `nativeKeyCode`, and `scanCode`. Custom integrations must understand Windows virtual-key codes and platform-native scan
@@ -340,7 +357,7 @@ packages are supported API and exclude internal/platform implementation packages
 
 ## Suggested implementation order
 
-1. Remove or implement dead settings: browser background, JavaScript enablement, and HTTP `https`.
+1. Complete the default file-dialog filter handling for the remaining advertised-option gap.
 2. Move backend installation and context construction out of consumer API.
 3. Restrict public runtime lifecycle control and define browser creation readiness.
 4. Add bridge-origin and navigation/popup policies.
