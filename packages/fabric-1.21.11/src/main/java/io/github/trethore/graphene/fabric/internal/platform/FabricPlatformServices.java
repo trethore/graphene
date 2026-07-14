@@ -29,7 +29,7 @@ public final class FabricPlatformServices {
         lifecycle(),
         mainThreadExecutor(),
         modResolver(),
-        MinecraftReferences::windowHandle,
+        () -> GlfwNativeWindowHandle.resolve(MinecraftReferences.windowHandle()),
         windowMetrics(),
         startupPresenter(),
         fileDialogPresenter(),
