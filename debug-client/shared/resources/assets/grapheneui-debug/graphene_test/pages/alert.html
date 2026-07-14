@@ -36,7 +36,12 @@
 		<label>Multiple files: <input multiple type="file"></label>
 	</p>
 	<p>
-		<label>Folder: <input type="file" webkitdirectory></label>
+		<label for="folder-upload">Folder:</label> <input
+			aria-describedby="folder-upload-note" disabled id="folder-upload"
+			type="file" webkitdirectory> <br> <small
+			id="folder-upload-note"> Folder uploads are disabled because
+			CEF's Chromium confirmation dialog cannot be safely handled in
+			Graphene's off-screen browser. </small>
 	</p>
 </body>
 </html>

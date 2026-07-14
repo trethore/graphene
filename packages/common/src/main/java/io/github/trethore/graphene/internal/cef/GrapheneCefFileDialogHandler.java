@@ -40,8 +40,13 @@ final class GrapheneCefFileDialogHandler implements CefDialogHandler {
     if (callback == null) {
       return false;
     }
-    if (fileAccessPolicy == BrowserFileAccessPolicy.DENY
-        || mode == FileDialogMode.FILE_DIALOG_OPEN_FOLDER) {
+    if (fileAccessPolicy == BrowserFileAccessPolicy.DENY) {
+      callback.Cancel();
+      return true;
+    }
+    if (mode == FileDialogMode.FILE_DIALOG_OPEN_FOLDER) {
+      // CEF displays an unhandled Chromium confirmation dialog after directory selection, which
+      // is unsafe with off-screen rendering. Cancel until CEF exposes a way to suppress it.
       callback.Cancel();
       return true;
     }
