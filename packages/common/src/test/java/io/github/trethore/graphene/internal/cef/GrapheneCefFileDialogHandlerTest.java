@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.trethore.graphene.api.browser.dialog.BrowserFileDialogPresenter;
+import io.github.trethore.graphene.api.config.BrowserFileAccessPolicy;
 import io.github.trethore.graphene.internal.platform.GrapheneTaskExecutor;
 import java.nio.file.Path;
 import java.util.List;
@@ -19,7 +20,9 @@ class GrapheneCefFileDialogHandlerTest {
   void delegatesWhenCallbackIsMissing() {
     GrapheneCefFileDialogHandler handler =
         new GrapheneCefFileDialogHandler(
-            request -> CompletableFuture.completedFuture(List.of()), GrapheneTaskExecutor.direct());
+            BrowserFileAccessPolicy.ALLOW,
+            request -> CompletableFuture.completedFuture(List.of()),
+            GrapheneTaskExecutor.direct());
 
     assertFalse(
         handler.onFileDialog(
@@ -38,6 +41,7 @@ class GrapheneCefFileDialogHandlerTest {
     RecordingCallback callback = new RecordingCallback();
     GrapheneCefFileDialogHandler handler =
         new GrapheneCefFileDialogHandler(
+            BrowserFileAccessPolicy.ALLOW,
             request -> {
               assertEquals(BrowserFileDialogPresenter.Mode.OPEN_FILE, request.mode());
               assertEquals("Open", request.title());
@@ -68,12 +72,68 @@ class GrapheneCefFileDialogHandlerTest {
   }
 
   @Test
-  void cancelsWhenPresenterFailsAndHandlesSaveDialogs() {
+  void allowsMultipleFileDialogs() {
     RecordingCallback callback = new RecordingCallback();
     GrapheneCefFileDialogHandler handler =
         new GrapheneCefFileDialogHandler(
+            BrowserFileAccessPolicy.ALLOW,
             request -> {
-              throw new IllegalStateException("failed");
+              assertEquals(BrowserFileDialogPresenter.Mode.OPEN_MULTIPLE_FILES, request.mode());
+              return CompletableFuture.completedFuture(
+                  List.of(Path.of("first.txt"), Path.of("second.txt")));
+            },
+            GrapheneTaskExecutor.direct());
+
+    assertTrue(
+        handler.onFileDialog(
+            null,
+            CefDialogHandler.FileDialogMode.FILE_DIALOG_OPEN_MULTIPLE,
+            "Open",
+            "",
+            new Vector<>(),
+            new Vector<>(),
+            new Vector<>(),
+            callback));
+    assertFalse(callback.cancelled);
+    assertEquals(
+        List.of(
+            Path.of("first.txt").toAbsolutePath().toString(),
+            Path.of("second.txt").toAbsolutePath().toString()),
+        callback.paths);
+  }
+
+  @Test
+  void deniesDialogsWithoutInvokingPresenter() {
+    RecordingCallback callback = new RecordingCallback();
+    GrapheneCefFileDialogHandler handler =
+        new GrapheneCefFileDialogHandler(
+            BrowserFileAccessPolicy.DENY,
+            request -> {
+              throw new AssertionError("Presenter must not be invoked");
+            },
+            GrapheneTaskExecutor.direct());
+
+    assertTrue(
+        handler.onFileDialog(
+            null,
+            CefDialogHandler.FileDialogMode.FILE_DIALOG_OPEN,
+            "Open",
+            "",
+            new Vector<>(),
+            new Vector<>(),
+            new Vector<>(),
+            callback));
+    assertTrue(callback.cancelled);
+  }
+
+  @Test
+  void cancelsFolderDialogsWithoutInvokingPresenter() {
+    RecordingCallback callback = new RecordingCallback();
+    GrapheneCefFileDialogHandler handler =
+        new GrapheneCefFileDialogHandler(
+            BrowserFileAccessPolicy.ALLOW,
+            request -> {
+              throw new AssertionError("Presenter must not be invoked");
             },
             GrapheneTaskExecutor.direct());
 
@@ -88,10 +148,35 @@ class GrapheneCefFileDialogHandlerTest {
             new Vector<>(),
             callback));
     assertTrue(callback.cancelled);
+  }
+
+  @Test
+  void cancelsWhenPresenterFailsAndHandlesSaveDialogs() {
+    RecordingCallback callback = new RecordingCallback();
+    GrapheneCefFileDialogHandler handler =
+        new GrapheneCefFileDialogHandler(
+            BrowserFileAccessPolicy.ALLOW,
+            request -> {
+              throw new IllegalStateException("failed");
+            },
+            GrapheneTaskExecutor.direct());
+
+    assertTrue(
+        handler.onFileDialog(
+            null,
+            CefDialogHandler.FileDialogMode.FILE_DIALOG_OPEN,
+            "Open",
+            "",
+            new Vector<>(),
+            new Vector<>(),
+            new Vector<>(),
+            callback));
+    assertTrue(callback.cancelled);
 
     RecordingCallback saveCallback = new RecordingCallback();
     GrapheneCefFileDialogHandler saveHandler =
         new GrapheneCefFileDialogHandler(
+            BrowserFileAccessPolicy.ALLOW,
             request -> {
               assertEquals(BrowserFileDialogPresenter.Mode.SAVE_FILE, request.mode());
               return CompletableFuture.completedFuture(List.of(Path.of("saved.txt")));

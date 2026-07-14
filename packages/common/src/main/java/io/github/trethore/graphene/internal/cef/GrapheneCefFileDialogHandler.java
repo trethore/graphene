@@ -2,6 +2,7 @@ package io.github.trethore.graphene.internal.cef;
 
 import io.github.trethore.graphene.api.browser.BrowserSession;
 import io.github.trethore.graphene.api.browser.dialog.BrowserFileDialogPresenter;
+import io.github.trethore.graphene.api.config.BrowserFileAccessPolicy;
 import io.github.trethore.graphene.internal.platform.GrapheneTaskExecutor;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -13,11 +14,15 @@ import org.cef.callback.CefFileDialogCallback;
 import org.cef.handler.CefDialogHandler;
 
 final class GrapheneCefFileDialogHandler implements CefDialogHandler {
+  private final BrowserFileAccessPolicy fileAccessPolicy;
   private final BrowserFileDialogPresenter defaultPresenter;
   private final GrapheneTaskExecutor mainThreadExecutor;
 
   GrapheneCefFileDialogHandler(
-      BrowserFileDialogPresenter defaultPresenter, GrapheneTaskExecutor mainThreadExecutor) {
+      BrowserFileAccessPolicy fileAccessPolicy,
+      BrowserFileDialogPresenter defaultPresenter,
+      GrapheneTaskExecutor mainThreadExecutor) {
+    this.fileAccessPolicy = Objects.requireNonNull(fileAccessPolicy, "fileAccessPolicy");
     this.defaultPresenter = Objects.requireNonNull(defaultPresenter, "defaultPresenter");
     this.mainThreadExecutor = Objects.requireNonNull(mainThreadExecutor, "mainThreadExecutor");
   }
@@ -34,6 +39,11 @@ final class GrapheneCefFileDialogHandler implements CefDialogHandler {
       CefFileDialogCallback callback) {
     if (callback == null) {
       return false;
+    }
+    if (fileAccessPolicy == BrowserFileAccessPolicy.DENY
+        || mode == FileDialogMode.FILE_DIALOG_OPEN_FOLDER) {
+      callback.Cancel();
+      return true;
     }
     BrowserFileDialogPresenter presenter = presenter(browser);
     BrowserFileDialogPresenter.Request request =

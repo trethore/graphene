@@ -81,6 +81,7 @@ public final class GrapheneCefRuntime implements GrapheneBrowserRuntime {
             loadEventBus,
             bridgeRuntime,
             mainThreadExecutor,
+            config.browserFileAccessPolicy(),
             fileDialogPresenter,
             jsDialogPresenter);
       } catch (RuntimeException exception) {
