@@ -44,16 +44,20 @@ final class GrapheneCefFileDialogHandler implements CefDialogHandler {
       callback.Cancel();
       return true;
     }
-    if (mode == FileDialogMode.FILE_DIALOG_OPEN_FOLDER) {
-      // CEF displays an unhandled Chromium confirmation dialog after directory selection, which
-      // is unsafe with off-screen rendering. Cancel until CEF exposes a way to suppress it.
+    boolean directoryIntent =
+        (mode == FileDialogMode.FILE_DIALOG_OPEN || mode == FileDialogMode.FILE_DIALOG_OPEN_FOLDER)
+            && browser instanceof GrapheneCefBrowserSession session
+            && session.consumeDirectoryPickerIntent();
+    if (mode == FileDialogMode.FILE_DIALOG_OPEN_FOLDER && !directoryIntent) {
+      // CEF displays an unhandled Chromium confirmation dialog after upload-folder selection,
+      // which is unsafe with off-screen rendering.
       callback.Cancel();
       return true;
     }
     BrowserFileDialogPresenter presenter = presenter(browser);
     BrowserFileDialogPresenter.Request request =
         new BrowserFileDialogPresenter.Request(
-            mode(mode),
+            directoryIntent ? BrowserFileDialogPresenter.Mode.OPEN_FOLDER : mode(mode),
             Objects.requireNonNullElse(title, ""),
             Objects.requireNonNullElse(defaultFilePath, ""),
             filters(acceptFilters, acceptExtensions, acceptDescriptions));

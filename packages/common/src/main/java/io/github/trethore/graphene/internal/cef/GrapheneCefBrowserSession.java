@@ -53,6 +53,7 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
   private final Object navigationLock = new Object();
   private final long nativeWindowHandle;
   private final GrapheneBridgeRuntime bridgeRuntime;
+  private final GrapheneCefFileDialogRouting fileDialogRouting = new GrapheneCefFileDialogRouting();
   private final GrapheneLoadEventBus loadEventBus;
   private final GrapheneFrameBuffer frameBuffer = new GrapheneFrameBuffer();
   private final Component uiComponent = new Canvas();
@@ -95,8 +96,10 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
     this.viewRect = new Rectangle(0, 0, requireDimension(width), requireDimension(height));
     this.bridge = bridgeRuntime.attach(this);
     try {
+      fileDialogRouting.attach(bridge);
       createImmediately();
     } catch (RuntimeException exception) {
+      fileDialogRouting.close();
       bridgeRuntime.detach(this);
       throw exception;
     }
@@ -367,6 +370,10 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
     setFocus(true);
   }
 
+  boolean consumeDirectoryPickerIntent() {
+    return fileDialogRouting.consumeDirectoryIntent();
+  }
+
   void initializeBrowserOptions() {
     if (browserOptionsInitialized) {
       return;
@@ -466,6 +473,7 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
     synchronized (dragLock) {
       closeActiveDragLocked();
     }
+    fileDialogRouting.close();
     bridgeRuntime.detach(this);
     frameBuffer.clear();
     try {
