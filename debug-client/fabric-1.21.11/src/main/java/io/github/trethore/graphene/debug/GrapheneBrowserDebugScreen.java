@@ -63,18 +63,12 @@ final class GrapheneBrowserDebugScreen extends Screen {
 
     backButton =
         addRenderableWidget(
-            Button.builder(Component.literal("<-"), ignored -> webView.goBack())
-                .bounds(8, controlsY, 26, 20)
-                .build());
+            browserNavigationButton(8, controlsY, Component.literal("<-"), webView::goBack));
     addRenderableWidget(
-        Button.builder(Component.literal("R"), ignored -> webView.reload())
-            .bounds(38, controlsY, 26, 20)
-            .build());
+        browserNavigationButton(38, controlsY, Component.literal("R"), webView::reload));
     forwardButton =
         addRenderableWidget(
-            Button.builder(Component.literal("->"), ignored -> webView.goForward())
-                .bounds(68, controlsY, 26, 20)
-                .build());
+            browserNavigationButton(68, controlsY, Component.literal("->"), webView::goForward));
     addRenderableWidget(
         Button.builder(Component.literal("DevTools"), ignored -> openDevTools())
             .bounds(98, controlsY, 66, 20)
@@ -102,8 +96,7 @@ final class GrapheneBrowserDebugScreen extends Screen {
   @Override
   public boolean keyPressed(@NonNull KeyEvent event) {
     if (urlBox != null && urlBox.isFocused() && event.isConfirmation()) {
-      webView.navigate(urlBox.getValue());
-      setFocused(webView);
+      navigateBrowser(() -> webView.navigate(urlBox.getValue()));
       return true;
     }
     return super.keyPressed(event);
@@ -136,11 +129,32 @@ final class GrapheneBrowserDebugScreen extends Screen {
     }
   }
 
+  private Button browserNavigationButton(
+      int x, int y, Component message, Runnable navigationAction) {
+    return new BrowserNavigationButton(x, y, message, ignored -> navigateBrowser(navigationAction));
+  }
+
+  private void navigateBrowser(Runnable navigationAction) {
+    setFocused(webView);
+    navigationAction.run();
+  }
+
   private static String defaultUrl() {
     return GrapheneDebugClient.context().appAssets().url("graphene_test/pages/welcome.html");
   }
 
   private static void rememberLastUrl(String url) {
     lastUrl = url;
+  }
+
+  private static final class BrowserNavigationButton extends Button.Plain {
+    private BrowserNavigationButton(int x, int y, Component message, Button.OnPress onPress) {
+      super(x, y, 26, 20, message, onPress, DEFAULT_NARRATION);
+    }
+
+    @Override
+    public boolean shouldTakeFocusAfterInteraction() {
+      return false;
+    }
   }
 }
