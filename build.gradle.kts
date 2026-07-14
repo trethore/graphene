@@ -92,10 +92,22 @@ references {
   git(
       url = "https://github.com/trethore/jcef.git",
       branch = "master",
+      commit = "d47911954d18f66a1908c8192543a1a8412a2740",
   )
   git(
       url = "https://github.com/chromiumembedded/cef.git",
       branch = "master",
+      commit = "82195616d8405e6081a0d90924707b82aa9e4141",
+  )
+  git(
+      url = "https://chromium.googlesource.com/chromium/src.git",
+      branch = "146.0.7680.179",
+      commit = "347d8fd10aba5b885fb19ba5ea809b39b94afd0b",
+      sparsePaths =
+          listOf(
+              "chrome/browser/file_select_helper.cc",
+              "chrome/browser/file_select_helper.h",
+          ),
   )
 
   // Optional Git references can be added like this:

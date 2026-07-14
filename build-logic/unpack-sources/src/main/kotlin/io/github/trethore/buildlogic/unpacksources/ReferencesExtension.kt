@@ -13,12 +13,14 @@ open class ReferencesExtension @Inject constructor() {
         branch: String,
         name: String? = null,
         commit: String? = null,
+        sparsePaths: List<String> = emptyList(),
     ) {
         gitReferences += GitReference(
             name = name,
             url = url,
             branch = branch,
             commit = commit,
+            sparsePaths = sparsePaths.distinct(),
         )
     }
 }

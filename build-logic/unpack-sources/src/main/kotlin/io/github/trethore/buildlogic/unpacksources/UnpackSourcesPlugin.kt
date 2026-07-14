@@ -13,6 +13,12 @@ class UnpackSourcesPlugin : Plugin<Project> {
             UnpackSourcesConstants.REFERENCES_EXTENSION_NAME,
             ReferencesExtension::class.java,
         )
+        val serializedGitReferences = project.providers.provider {
+            references.gitReferences.map(GitReference::serialize)
+        }
+        val referencesDir = project.rootProject.layout.projectDirectory.dir(
+            UnpackSourcesConstants.REFERENCES_DIR_NAME
+        )
 
         project.allprojects.forEach { targetProject ->
             UnpackConfigurations.createUnpackConfiguration(targetProject)
@@ -29,12 +35,30 @@ class UnpackSourcesPlugin : Plugin<Project> {
             group = UnpackSourcesConstants.TASK_GROUP
             description = "Unpacks selected dependency sources and Git references into references/."
             dependencyCoordinates.set(project.providers.provider { collectDependencyCoordinates(project) })
-            gitReferences.set(project.providers.provider { references.gitReferences.map(GitReference::serialize) })
+            gitReferences.set(serializedGitReferences)
             unpackNestedJars.set(project.providers.provider { references.unpackNestedJars })
             cfrClasspath.from(cfrConfiguration)
-            outputDirectory.set(
-                project.rootProject.layout.projectDirectory.dir(UnpackSourcesConstants.REFERENCES_DIR_NAME)
-            )
+            outputDirectory.set(referencesDir)
+            outputs.upToDateWhen {
+                gitReferences.get().map(GitReference::deserialize).all { reference ->
+                    reference.commit != null
+                }
+            }
+        }
+
+        project.tasks.register("unpackGitReferences", UnpackGitReferencesTask::class.java) {
+            group = UnpackSourcesConstants.TASK_GROUP
+            description = "Checks out configured Git references into references/."
+            gitReferences.set(serializedGitReferences)
+            referencesDirectory.set(referencesDir)
+            outputs.dirs(serializedGitReferences.map { references ->
+                references.map { serializedReference ->
+                    GitReferenceUnpacker.targetDirectory(
+                        GitReference.deserialize(serializedReference),
+                        referencesDir.asFile,
+                    )
+                }
+            })
             outputs.upToDateWhen {
                 gitReferences.get().map(GitReference::deserialize).all { reference ->
                     reference.commit != null
