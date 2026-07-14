@@ -82,6 +82,13 @@ tasks.classes {
   dependsOn(grapheneRuntimeSourceSet.classesTaskName)
 }
 
+tasks
+    .matching { it.name.startsWith("genSourcesWith") }
+    .configureEach {
+      dependsOn(grapheneProject.tasks.named(name))
+      enabled = false
+    }
+
 tasks.withType<JavaCompile>().configureEach {
   options.release = 21
 }

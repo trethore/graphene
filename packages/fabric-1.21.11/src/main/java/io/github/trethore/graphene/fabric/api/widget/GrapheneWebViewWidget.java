@@ -169,8 +169,9 @@ public class GrapheneWebViewWidget extends AbstractWidget implements AutoCloseab
     if (!isMouseOver(mouseX, mouseY)) {
       return false;
     }
+    int modifiers = MinecraftReferences.hasControlDown() ? GLFW.GLFW_MOD_CONTROL : 0;
     inputAdapter.mouseScrolled(
-        mouseX, mouseY, getX(), getY(), getWidth(), getHeight(), horizontal, vertical, 0);
+        mouseX, mouseY, getX(), getY(), getWidth(), getHeight(), horizontal, vertical, modifiers);
     return true;
   }
 

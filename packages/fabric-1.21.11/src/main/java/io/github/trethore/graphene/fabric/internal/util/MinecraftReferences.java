@@ -36,6 +36,10 @@ public final class MinecraftReferences {
     return client().options;
   }
 
+  public static boolean hasControlDown() {
+    return client().hasControlDown();
+  }
+
   public static Screen screen() {
     return client().screen;
   }
