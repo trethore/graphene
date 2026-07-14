@@ -1,8 +1,10 @@
 package io.github.trethore.graphene.internal.cef;
 
-import io.github.trethore.graphene.internal.platform.GrapheneFileDialogPresenter;
+import io.github.trethore.graphene.api.browser.BrowserSession;
+import io.github.trethore.graphene.api.browser.dialog.BrowserFileDialogPresenter;
 import io.github.trethore.graphene.internal.platform.GrapheneTaskExecutor;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Vector;
@@ -11,12 +13,12 @@ import org.cef.callback.CefFileDialogCallback;
 import org.cef.handler.CefDialogHandler;
 
 final class GrapheneCefFileDialogHandler implements CefDialogHandler {
-  private final GrapheneFileDialogPresenter presenter;
+  private final BrowserFileDialogPresenter defaultPresenter;
   private final GrapheneTaskExecutor mainThreadExecutor;
 
   GrapheneCefFileDialogHandler(
-      GrapheneFileDialogPresenter presenter, GrapheneTaskExecutor mainThreadExecutor) {
-    this.presenter = Objects.requireNonNull(presenter, "presenter");
+      BrowserFileDialogPresenter defaultPresenter, GrapheneTaskExecutor mainThreadExecutor) {
+    this.defaultPresenter = Objects.requireNonNull(defaultPresenter, "defaultPresenter");
     this.mainThreadExecutor = Objects.requireNonNull(mainThreadExecutor, "mainThreadExecutor");
   }
 
@@ -30,20 +32,62 @@ final class GrapheneCefFileDialogHandler implements CefDialogHandler {
       Vector<String> acceptExtensions,
       Vector<String> acceptDescriptions,
       CefFileDialogCallback callback) {
-    if (mode == FileDialogMode.FILE_DIALOG_SAVE) {
+    if (callback == null) {
       return false;
     }
-    if (callback == null) {
-      return true;
-    }
-    boolean foldersOnly = mode == FileDialogMode.FILE_DIALOG_OPEN_FOLDER;
-    boolean multiple = mode == FileDialogMode.FILE_DIALOG_OPEN_MULTIPLE;
-    presenter
-        .show(foldersOnly, multiple)
+    BrowserFileDialogPresenter presenter = presenter(browser);
+    BrowserFileDialogPresenter.Request request =
+        new BrowserFileDialogPresenter.Request(
+            mode(mode),
+            Objects.requireNonNullElse(title, ""),
+            Objects.requireNonNullElse(defaultFilePath, ""),
+            filters(acceptFilters, acceptExtensions, acceptDescriptions));
+    mainThreadExecutor
+        .supplyStage(() -> presenter.show(request))
         .whenComplete(
             (paths, failure) ->
                 mainThreadExecutor.execute(() -> complete(callback, paths, failure)));
     return true;
+  }
+
+  private BrowserFileDialogPresenter presenter(CefBrowser browser) {
+    if (browser instanceof BrowserSession session) {
+      return session.options().fileDialogPresenter().orElse(defaultPresenter);
+    }
+    return defaultPresenter;
+  }
+
+  private static BrowserFileDialogPresenter.Mode mode(FileDialogMode mode) {
+    if (mode == null) {
+      return BrowserFileDialogPresenter.Mode.OPEN_FILE;
+    }
+    return switch (mode) {
+      case FILE_DIALOG_OPEN -> BrowserFileDialogPresenter.Mode.OPEN_FILE;
+      case FILE_DIALOG_OPEN_MULTIPLE -> BrowserFileDialogPresenter.Mode.OPEN_MULTIPLE_FILES;
+      case FILE_DIALOG_OPEN_FOLDER -> BrowserFileDialogPresenter.Mode.OPEN_FOLDER;
+      case FILE_DIALOG_SAVE -> BrowserFileDialogPresenter.Mode.SAVE_FILE;
+    };
+  }
+
+  private static List<BrowserFileDialogPresenter.Filter> filters(
+      Vector<String> values, Vector<String> extensions, Vector<String> descriptions) {
+    if (values == null || values.isEmpty()) {
+      return List.of();
+    }
+    List<BrowserFileDialogPresenter.Filter> filters = new ArrayList<>(values.size());
+    for (int index = 0; index < values.size(); index++) {
+      filters.add(
+          new BrowserFileDialogPresenter.Filter(
+              valueAt(values, index), valueAt(extensions, index), valueAt(descriptions, index)));
+    }
+    return filters;
+  }
+
+  private static String valueAt(Vector<String> values, int index) {
+    if (values == null || index >= values.size()) {
+      return "";
+    }
+    return Objects.requireNonNullElse(values.get(index), "");
   }
 
   private static void complete(
@@ -53,7 +97,14 @@ final class GrapheneCefFileDialogHandler implements CefDialogHandler {
       return;
     }
     Vector<String> selectedPaths = new Vector<>();
-    paths.stream().map(Path::toAbsolutePath).map(Path::toString).forEach(selectedPaths::add);
+    try {
+      for (Path path : paths) {
+        selectedPaths.add(path.toAbsolutePath().toString());
+      }
+    } catch (RuntimeException exception) {
+      callback.Cancel();
+      return;
+    }
     callback.Continue(selectedPaths);
   }
 }

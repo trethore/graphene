@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.github.trethore.graphene.internal.platform.GrapheneJsDialogPresenter;
+import io.github.trethore.graphene.api.browser.dialog.BrowserJsDialogPresenter;
 import io.github.trethore.graphene.internal.platform.GrapheneTaskExecutor;
 import java.util.concurrent.CompletableFuture;
 import org.cef.callback.CefJSDialogCallback;
@@ -18,11 +18,14 @@ class GrapheneCefJsDialogHandlerTest {
     RecordingCallback callback = new RecordingCallback();
     GrapheneCefJsDialogHandler handler =
         new GrapheneCefJsDialogHandler(
-            (type, origin, message, prompt) -> {
-              assertEquals(GrapheneJsDialogPresenter.DialogType.PROMPT, type);
-              assertEquals("default", prompt);
+            request -> {
+              assertEquals(BrowserJsDialogPresenter.Type.PROMPT, request.type());
+              assertEquals("https://example.invalid", request.originUrl());
+              assertEquals("Question", request.message());
+              assertEquals("default", request.defaultPrompt());
+              assertFalse(request.reload());
               return CompletableFuture.completedFuture(
-                  new GrapheneJsDialogPresenter.Result(true, "answer"));
+                  BrowserJsDialogPresenter.Result.accept("answer"));
             },
             GrapheneTaskExecutor.direct());
 
@@ -43,8 +46,7 @@ class GrapheneCefJsDialogHandlerTest {
   void suppressesMissingCallbacksAndRejectsPresenterFailures() {
     GrapheneCefJsDialogHandler handler =
         new GrapheneCefJsDialogHandler(
-            (type, origin, message, prompt) ->
-                CompletableFuture.failedFuture(new IllegalStateException("failed")),
+            request -> CompletableFuture.failedFuture(new IllegalStateException("failed")),
             GrapheneTaskExecutor.direct());
     BoolRef suppress = new BoolRef(false);
 

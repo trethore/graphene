@@ -1,9 +1,9 @@
 package io.github.trethore.graphene.internal.cef;
 
+import io.github.trethore.graphene.api.browser.dialog.BrowserFileDialogPresenter;
+import io.github.trethore.graphene.api.browser.dialog.BrowserJsDialogPresenter;
 import io.github.trethore.graphene.internal.bridge.GrapheneBridgeRuntime;
 import io.github.trethore.graphene.internal.event.GrapheneLoadEventBus;
-import io.github.trethore.graphene.internal.platform.GrapheneFileDialogPresenter;
-import io.github.trethore.graphene.internal.platform.GrapheneJsDialogPresenter;
 import io.github.trethore.graphene.internal.platform.GrapheneTaskExecutor;
 import java.util.Objects;
 import org.cef.CefClient;
@@ -17,8 +17,8 @@ final class GrapheneCefClientConfig {
       GrapheneLoadEventBus eventBus,
       GrapheneBridgeRuntime bridgeRuntime,
       GrapheneTaskExecutor mainThreadExecutor,
-      GrapheneFileDialogPresenter fileDialogPresenter,
-      GrapheneJsDialogPresenter jsDialogPresenter) {
+      BrowserFileDialogPresenter fileDialogPresenter,
+      BrowserJsDialogPresenter jsDialogPresenter) {
     CefClient validatedClient = Objects.requireNonNull(client, "client");
     validatedClient.addLoadHandler(
         new GrapheneCefLoadHandler(eventBus, bridgeRuntime, mainThreadExecutor));

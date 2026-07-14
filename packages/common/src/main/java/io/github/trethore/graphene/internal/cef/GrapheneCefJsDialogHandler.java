@@ -1,6 +1,7 @@
 package io.github.trethore.graphene.internal.cef;
 
-import io.github.trethore.graphene.internal.platform.GrapheneJsDialogPresenter;
+import io.github.trethore.graphene.api.browser.BrowserSession;
+import io.github.trethore.graphene.api.browser.dialog.BrowserJsDialogPresenter;
 import io.github.trethore.graphene.internal.platform.GrapheneTaskExecutor;
 import java.util.Objects;
 import org.cef.browser.CefBrowser;
@@ -10,12 +11,12 @@ import org.cef.handler.CefJSDialogHandlerAdapter;
 import org.cef.misc.BoolRef;
 
 final class GrapheneCefJsDialogHandler extends CefJSDialogHandlerAdapter {
-  private final GrapheneJsDialogPresenter presenter;
+  private final BrowserJsDialogPresenter defaultPresenter;
   private final GrapheneTaskExecutor mainThreadExecutor;
 
   GrapheneCefJsDialogHandler(
-      GrapheneJsDialogPresenter presenter, GrapheneTaskExecutor mainThreadExecutor) {
-    this.presenter = Objects.requireNonNull(presenter, "presenter");
+      BrowserJsDialogPresenter defaultPresenter, GrapheneTaskExecutor mainThreadExecutor) {
+    this.defaultPresenter = Objects.requireNonNull(defaultPresenter, "defaultPresenter");
     this.mainThreadExecutor = Objects.requireNonNull(mainThreadExecutor, "mainThreadExecutor");
   }
 
@@ -34,8 +35,16 @@ final class GrapheneCefJsDialogHandler extends CefJSDialogHandlerAdapter {
       }
       return false;
     }
-    presenter
-        .show(dialogType(dialogType), originUrl, messageText, defaultPromptText)
+    BrowserJsDialogPresenter presenter = presenter(browser);
+    BrowserJsDialogPresenter.Request request =
+        new BrowserJsDialogPresenter.Request(
+            dialogType(dialogType),
+            Objects.requireNonNullElse(originUrl, ""),
+            Objects.requireNonNullElse(messageText, ""),
+            Objects.requireNonNullElse(defaultPromptText, ""),
+            false);
+    mainThreadExecutor
+        .supplyStage(() -> presenter.show(request))
         .whenComplete(
             (result, failure) ->
                 mainThreadExecutor.execute(
@@ -58,8 +67,16 @@ final class GrapheneCefJsDialogHandler extends CefJSDialogHandlerAdapter {
     if (callback == null) {
       return true;
     }
-    presenter
-        .show(GrapheneJsDialogPresenter.DialogType.BEFORE_UNLOAD, browser.getURL(), messageText, "")
+    BrowserJsDialogPresenter presenter = presenter(browser);
+    BrowserJsDialogPresenter.Request request =
+        new BrowserJsDialogPresenter.Request(
+            BrowserJsDialogPresenter.Type.BEFORE_UNLOAD,
+            Objects.requireNonNullElse(browser.getURL(), ""),
+            Objects.requireNonNullElse(messageText, ""),
+            "",
+            isReload);
+    mainThreadExecutor
+        .supplyStage(() -> presenter.show(request))
         .whenComplete(
             (result, failure) ->
                 mainThreadExecutor.execute(
@@ -69,15 +86,22 @@ final class GrapheneCefJsDialogHandler extends CefJSDialogHandlerAdapter {
     return true;
   }
 
-  private static GrapheneJsDialogPresenter.DialogType dialogType(
+  private BrowserJsDialogPresenter presenter(CefBrowser browser) {
+    if (browser instanceof BrowserSession session) {
+      return session.options().jsDialogPresenter().orElse(defaultPresenter);
+    }
+    return defaultPresenter;
+  }
+
+  private static BrowserJsDialogPresenter.Type dialogType(
       CefJSDialogHandler.JSDialogType dialogType) {
     if (dialogType == null) {
-      return GrapheneJsDialogPresenter.DialogType.ALERT;
+      return BrowserJsDialogPresenter.Type.ALERT;
     }
     return switch (dialogType) {
-      case JSDIALOGTYPE_ALERT -> GrapheneJsDialogPresenter.DialogType.ALERT;
-      case JSDIALOGTYPE_CONFIRM -> GrapheneJsDialogPresenter.DialogType.CONFIRM;
-      case JSDIALOGTYPE_PROMPT -> GrapheneJsDialogPresenter.DialogType.PROMPT;
+      case JSDIALOGTYPE_ALERT -> BrowserJsDialogPresenter.Type.ALERT;
+      case JSDIALOGTYPE_CONFIRM -> BrowserJsDialogPresenter.Type.CONFIRM;
+      case JSDIALOGTYPE_PROMPT -> BrowserJsDialogPresenter.Type.PROMPT;
     };
   }
 }

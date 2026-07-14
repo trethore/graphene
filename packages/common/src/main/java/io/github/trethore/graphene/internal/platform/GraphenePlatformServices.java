@@ -1,5 +1,7 @@
 package io.github.trethore.graphene.internal.platform;
 
+import io.github.trethore.graphene.api.browser.dialog.BrowserFileDialogPresenter;
+import io.github.trethore.graphene.api.browser.dialog.BrowserJsDialogPresenter;
 import java.util.Objects;
 
 public record GraphenePlatformServices(
@@ -9,8 +11,8 @@ public record GraphenePlatformServices(
     GrapheneNativeWindow nativeWindow,
     GrapheneWindowMetrics windowMetrics,
     GrapheneStartupPresenter startupPresenter,
-    GrapheneFileDialogPresenter fileDialogPresenter,
-    GrapheneJsDialogPresenter jsDialogPresenter) {
+    BrowserFileDialogPresenter fileDialogPresenter,
+    BrowserJsDialogPresenter jsDialogPresenter) {
   public GraphenePlatformServices {
     Objects.requireNonNull(lifecycle, "lifecycle");
     Objects.requireNonNull(mainThreadExecutor, "mainThreadExecutor");

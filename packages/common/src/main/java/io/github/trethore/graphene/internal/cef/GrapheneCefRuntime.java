@@ -2,12 +2,12 @@ package io.github.trethore.graphene.internal.cef;
 
 import io.github.trethore.graphene.api.browser.BrowserOptions;
 import io.github.trethore.graphene.api.browser.BrowserSession;
+import io.github.trethore.graphene.api.browser.dialog.BrowserFileDialogPresenter;
+import io.github.trethore.graphene.api.browser.dialog.BrowserJsDialogPresenter;
 import io.github.trethore.graphene.api.config.GrapheneGlobalConfig;
 import io.github.trethore.graphene.internal.bridge.GrapheneBridgeOptions;
 import io.github.trethore.graphene.internal.bridge.GrapheneBridgeRuntime;
 import io.github.trethore.graphene.internal.event.GrapheneLoadEventBus;
-import io.github.trethore.graphene.internal.platform.GrapheneFileDialogPresenter;
-import io.github.trethore.graphene.internal.platform.GrapheneJsDialogPresenter;
 import io.github.trethore.graphene.internal.platform.GrapheneNativeWindow;
 import io.github.trethore.graphene.internal.platform.GrapheneStartupPresenter;
 import io.github.trethore.graphene.internal.platform.GrapheneTaskExecutor;
@@ -37,8 +37,8 @@ public final class GrapheneCefRuntime implements GrapheneBrowserRuntime {
   private final GrapheneStartupPresenter startupPresenter;
   private final GrapheneTaskExecutor mainThreadExecutor;
   private final GrapheneNativeWindow nativeWindow;
-  private final GrapheneFileDialogPresenter fileDialogPresenter;
-  private final GrapheneJsDialogPresenter jsDialogPresenter;
+  private final BrowserFileDialogPresenter fileDialogPresenter;
+  private final BrowserJsDialogPresenter jsDialogPresenter;
   private final GrapheneBridgeRuntime bridgeRuntime;
   private final GrapheneLoadEventBus loadEventBus = new GrapheneLoadEventBus();
   private final Set<GrapheneCefBrowserSession> sessions = new HashSet<>();
@@ -50,8 +50,8 @@ public final class GrapheneCefRuntime implements GrapheneBrowserRuntime {
       GrapheneStartupPresenter startupPresenter,
       GrapheneTaskExecutor mainThreadExecutor,
       GrapheneNativeWindow nativeWindow,
-      GrapheneFileDialogPresenter fileDialogPresenter,
-      GrapheneJsDialogPresenter jsDialogPresenter) {
+      BrowserFileDialogPresenter fileDialogPresenter,
+      BrowserJsDialogPresenter jsDialogPresenter) {
     this.startupPresenter = Objects.requireNonNull(startupPresenter, "startupPresenter");
     this.mainThreadExecutor = Objects.requireNonNull(mainThreadExecutor, "mainThreadExecutor");
     this.nativeWindow = Objects.requireNonNull(nativeWindow, "nativeWindow");

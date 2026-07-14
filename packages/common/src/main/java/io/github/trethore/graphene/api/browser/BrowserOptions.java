@@ -1,5 +1,10 @@
 package io.github.trethore.graphene.api.browser;
 
+import io.github.trethore.graphene.api.browser.dialog.BrowserFileDialogPresenter;
+import io.github.trethore.graphene.api.browser.dialog.BrowserJsDialogPresenter;
+import java.util.Objects;
+import java.util.Optional;
+
 @SuppressWarnings("unused")
 public final class BrowserOptions {
   private static final int DEFAULT_FRAME_RATE = 60;
@@ -9,12 +14,16 @@ public final class BrowserOptions {
   private final boolean transparent;
   private final int backgroundColor;
   private final boolean javascriptEnabled;
+  private final BrowserFileDialogPresenter fileDialogPresenter;
+  private final BrowserJsDialogPresenter jsDialogPresenter;
 
   private BrowserOptions(Builder builder) {
     this.maximumFrameRate = requireFrameRate(builder.maximumFrameRate);
     this.transparent = builder.transparent;
     this.backgroundColor = builder.backgroundColor;
     this.javascriptEnabled = builder.javascriptEnabled;
+    this.fileDialogPresenter = builder.fileDialogPresenter;
+    this.jsDialogPresenter = builder.jsDialogPresenter;
   }
 
   public static BrowserOptions defaults() {
@@ -41,6 +50,14 @@ public final class BrowserOptions {
     return javascriptEnabled;
   }
 
+  public Optional<BrowserFileDialogPresenter> fileDialogPresenter() {
+    return Optional.ofNullable(fileDialogPresenter);
+  }
+
+  public Optional<BrowserJsDialogPresenter> jsDialogPresenter() {
+    return Optional.ofNullable(jsDialogPresenter);
+  }
+
   private static int requireFrameRate(int frameRate) {
     if (frameRate < 1 || frameRate > 60) {
       throw new IllegalArgumentException("maximumFrameRate must be between 1 and 60");
@@ -53,6 +70,8 @@ public final class BrowserOptions {
     private boolean transparent = true;
     private int backgroundColor;
     private boolean javascriptEnabled = true;
+    private BrowserFileDialogPresenter fileDialogPresenter;
+    private BrowserJsDialogPresenter jsDialogPresenter;
 
     private Builder() {}
 
@@ -73,6 +92,16 @@ public final class BrowserOptions {
 
     public Builder javascriptEnabled(boolean javascriptEnabled) {
       this.javascriptEnabled = javascriptEnabled;
+      return this;
+    }
+
+    public Builder fileDialogPresenter(BrowserFileDialogPresenter fileDialogPresenter) {
+      this.fileDialogPresenter = Objects.requireNonNull(fileDialogPresenter, "fileDialogPresenter");
+      return this;
+    }
+
+    public Builder jsDialogPresenter(BrowserJsDialogPresenter jsDialogPresenter) {
+      this.jsDialogPresenter = Objects.requireNonNull(jsDialogPresenter, "jsDialogPresenter");
       return this;
     }
 

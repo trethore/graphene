@@ -1,8 +1,8 @@
 package io.github.trethore.graphene.fabric.internal.platform;
 
+import io.github.trethore.graphene.api.browser.dialog.BrowserFileDialogPresenter;
+import io.github.trethore.graphene.api.browser.dialog.BrowserJsDialogPresenter;
 import io.github.trethore.graphene.fabric.internal.util.MinecraftReferences;
-import io.github.trethore.graphene.internal.platform.GrapheneFileDialogPresenter;
-import io.github.trethore.graphene.internal.platform.GrapheneJsDialogPresenter;
 import io.github.trethore.graphene.internal.platform.GrapheneLifecycle;
 import io.github.trethore.graphene.internal.platform.GrapheneModResolver;
 import io.github.trethore.graphene.internal.platform.GraphenePlatformServices;
@@ -151,15 +151,11 @@ public final class FabricPlatformServices {
     };
   }
 
-  private static GrapheneFileDialogPresenter fileDialogPresenter() {
-    return (foldersOnly, multiple) ->
+  private static BrowserFileDialogPresenter fileDialogPresenter() {
+    return request ->
         CompletableFuture.supplyAsync(
             () -> {
-              String selection =
-                  foldersOnly
-                      ? TinyFileDialogs.tinyfd_selectFolderDialog("Select folder", "")
-                      : TinyFileDialogs.tinyfd_openFileDialog(
-                          "Select file", "", BufferUtils.createPointerBuffer(0), "", multiple);
+              String selection = showFileDialog(request);
               if (selection == null || selection.isBlank()) {
                 return List.of();
               }
@@ -167,35 +163,64 @@ public final class FabricPlatformServices {
             });
   }
 
-  private static GrapheneJsDialogPresenter jsDialogPresenter() {
-    return (type, originUrl, message, defaultPrompt) ->
-        CompletableFuture.supplyAsync(() -> showJsDialog(type, originUrl, message, defaultPrompt));
+  private static String showFileDialog(BrowserFileDialogPresenter.Request request) {
+    String title = fileDialogTitle(request);
+    return switch (request.mode()) {
+      case OPEN_FOLDER ->
+          TinyFileDialogs.tinyfd_selectFolderDialog(title, request.defaultFilePath());
+      case OPEN_FILE, OPEN_MULTIPLE_FILES ->
+          TinyFileDialogs.tinyfd_openFileDialog(
+              title,
+              request.defaultFilePath(),
+              BufferUtils.createPointerBuffer(0),
+              "",
+              request.mode() == BrowserFileDialogPresenter.Mode.OPEN_MULTIPLE_FILES);
+      case SAVE_FILE ->
+          TinyFileDialogs.tinyfd_saveFileDialog(
+              title, request.defaultFilePath(), BufferUtils.createPointerBuffer(0), "");
+    };
   }
 
-  private static GrapheneJsDialogPresenter.Result showJsDialog(
-      GrapheneJsDialogPresenter.DialogType type,
-      String originUrl,
-      String message,
-      String defaultPrompt) {
-    String title = originUrl == null || originUrl.isBlank() ? "Graphene" : originUrl;
-    if (type == GrapheneJsDialogPresenter.DialogType.PROMPT) {
-      return showPrompt(title, message, defaultPrompt);
+  private static String fileDialogTitle(BrowserFileDialogPresenter.Request request) {
+    if (!request.title().isBlank()) {
+      return request.title();
     }
-    return showMessageDialog(type, title, message);
+    return switch (request.mode()) {
+      case OPEN_FILE, OPEN_MULTIPLE_FILES -> "Select file";
+      case OPEN_FOLDER -> "Select folder";
+      case SAVE_FILE -> "Save file";
+    };
   }
 
-  private static GrapheneJsDialogPresenter.Result showPrompt(
+  private static BrowserJsDialogPresenter jsDialogPresenter() {
+    return request -> CompletableFuture.supplyAsync(() -> showJsDialog(request));
+  }
+
+  private static BrowserJsDialogPresenter.Result showJsDialog(
+      BrowserJsDialogPresenter.Request request) {
+    String title = request.originUrl().isBlank() ? "Graphene" : request.originUrl();
+    if (request.type() == BrowserJsDialogPresenter.Type.PROMPT) {
+      return showPrompt(title, request.message(), request.defaultPrompt());
+    }
+    return showMessageDialog(request.type(), title, request.message());
+  }
+
+  private static BrowserJsDialogPresenter.Result showPrompt(
       String title, String message, String defaultPrompt) {
     String response = TinyFileDialogs.tinyfd_inputBox(title, message, defaultPrompt);
-    return new GrapheneJsDialogPresenter.Result(response != null, response == null ? "" : response);
+    return response == null
+        ? BrowserJsDialogPresenter.Result.cancel()
+        : BrowserJsDialogPresenter.Result.accept(response);
   }
 
-  private static GrapheneJsDialogPresenter.Result showMessageDialog(
-      GrapheneJsDialogPresenter.DialogType type, String title, String message) {
-    boolean alert = type == GrapheneJsDialogPresenter.DialogType.ALERT;
+  private static BrowserJsDialogPresenter.Result showMessageDialog(
+      BrowserJsDialogPresenter.Type type, String title, String message) {
+    boolean alert = type == BrowserJsDialogPresenter.Type.ALERT;
     boolean accepted =
         TinyFileDialogs.tinyfd_messageBox(
             title, message, alert ? "ok" : "yesno", alert ? "info" : "question", true);
-    return new GrapheneJsDialogPresenter.Result(accepted, "");
+    return accepted
+        ? BrowserJsDialogPresenter.Result.accept()
+        : BrowserJsDialogPresenter.Result.cancel();
   }
 }

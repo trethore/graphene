@@ -4,23 +4,51 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.github.trethore.graphene.api.browser.dialog.BrowserFileDialogPresenter;
 import io.github.trethore.graphene.internal.platform.GrapheneTaskExecutor;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Vector;
+import java.util.concurrent.CompletableFuture;
 import org.cef.callback.CefFileDialogCallback;
 import org.cef.handler.CefDialogHandler;
 import org.junit.jupiter.api.Test;
 
 class GrapheneCefFileDialogHandlerTest {
   @Test
+  void delegatesWhenCallbackIsMissing() {
+    GrapheneCefFileDialogHandler handler =
+        new GrapheneCefFileDialogHandler(
+            request -> CompletableFuture.completedFuture(List.of()), GrapheneTaskExecutor.direct());
+
+    assertFalse(
+        handler.onFileDialog(
+            null,
+            CefDialogHandler.FileDialogMode.FILE_DIALOG_OPEN,
+            "",
+            "",
+            new Vector<>(),
+            new Vector<>(),
+            new Vector<>(),
+            null));
+  }
+
+  @Test
   void completesOpenDialogWithAbsoluteSelections() {
     RecordingCallback callback = new RecordingCallback();
     GrapheneCefFileDialogHandler handler =
         new GrapheneCefFileDialogHandler(
-            (foldersOnly, multiple) ->
-                java.util.concurrent.CompletableFuture.completedFuture(
-                    List.of(Path.of("file.txt"))),
+            request -> {
+              assertEquals(BrowserFileDialogPresenter.Mode.OPEN_FILE, request.mode());
+              assertEquals("Open", request.title());
+              assertEquals("default.txt", request.defaultFilePath());
+              assertEquals(
+                  List.of(
+                      new BrowserFileDialogPresenter.Filter(
+                          "text/plain", ".txt;.text", "Text files")),
+                  request.filters());
+              return CompletableFuture.completedFuture(List.of(Path.of("file.txt")));
+            },
             GrapheneTaskExecutor.direct());
 
     boolean handled =
@@ -28,10 +56,10 @@ class GrapheneCefFileDialogHandlerTest {
             null,
             CefDialogHandler.FileDialogMode.FILE_DIALOG_OPEN,
             "Open",
-            "",
-            new Vector<>(),
-            new Vector<>(),
-            new Vector<>(),
+            "default.txt",
+            new Vector<>(List.of("text/plain")),
+            new Vector<>(List.of(".txt;.text")),
+            new Vector<>(List.of("Text files")),
             callback);
 
     assertTrue(handled);
@@ -40,13 +68,13 @@ class GrapheneCefFileDialogHandlerTest {
   }
 
   @Test
-  void cancelsWhenPresenterFailsAndDelegatesSaveDialogs() {
+  void cancelsWhenPresenterFailsAndHandlesSaveDialogs() {
     RecordingCallback callback = new RecordingCallback();
     GrapheneCefFileDialogHandler handler =
         new GrapheneCefFileDialogHandler(
-            (foldersOnly, multiple) ->
-                java.util.concurrent.CompletableFuture.failedFuture(
-                    new IllegalStateException("failed")),
+            request -> {
+              throw new IllegalStateException("failed");
+            },
             GrapheneTaskExecutor.direct());
 
     assertTrue(
@@ -60,16 +88,28 @@ class GrapheneCefFileDialogHandlerTest {
             new Vector<>(),
             callback));
     assertTrue(callback.cancelled);
-    assertFalse(
-        handler.onFileDialog(
+
+    RecordingCallback saveCallback = new RecordingCallback();
+    GrapheneCefFileDialogHandler saveHandler =
+        new GrapheneCefFileDialogHandler(
+            request -> {
+              assertEquals(BrowserFileDialogPresenter.Mode.SAVE_FILE, request.mode());
+              return CompletableFuture.completedFuture(List.of(Path.of("saved.txt")));
+            },
+            GrapheneTaskExecutor.direct());
+
+    assertTrue(
+        saveHandler.onFileDialog(
             null,
             CefDialogHandler.FileDialogMode.FILE_DIALOG_SAVE,
             "Save",
-            "",
+            "saved.txt",
             new Vector<>(),
             new Vector<>(),
             new Vector<>(),
-            callback));
+            saveCallback));
+    assertFalse(saveCallback.cancelled);
+    assertEquals(List.of(Path.of("saved.txt").toAbsolutePath().toString()), saveCallback.paths);
   }
 
   private static final class RecordingCallback implements CefFileDialogCallback {

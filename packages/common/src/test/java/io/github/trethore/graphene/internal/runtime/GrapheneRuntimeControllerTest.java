@@ -6,10 +6,10 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.github.trethore.graphene.api.GrapheneContext;
+import io.github.trethore.graphene.api.browser.dialog.BrowserFileDialogPresenter;
+import io.github.trethore.graphene.api.browser.dialog.BrowserJsDialogPresenter;
 import io.github.trethore.graphene.api.config.GrapheneConfig;
 import io.github.trethore.graphene.api.runtime.GrapheneRuntimeState;
-import io.github.trethore.graphene.internal.platform.GrapheneFileDialogPresenter;
-import io.github.trethore.graphene.internal.platform.GrapheneJsDialogPresenter;
 import io.github.trethore.graphene.internal.platform.GrapheneLifecycle;
 import io.github.trethore.graphene.internal.platform.GrapheneModResolver;
 import io.github.trethore.graphene.internal.platform.GraphenePlatformServices;
@@ -71,11 +71,10 @@ class GrapheneRuntimeControllerTest {
             // Runtime tests do not create startup presentation resources.
           }
         };
-    GrapheneFileDialogPresenter fileDialogPresenter =
-        (foldersOnly, multiple) -> CompletableFuture.completedFuture(List.<Path>of());
-    GrapheneJsDialogPresenter jsDialogPresenter =
-        (type, originUrl, message, defaultPrompt) ->
-            CompletableFuture.completedFuture(new GrapheneJsDialogPresenter.Result(false, ""));
+    BrowserFileDialogPresenter fileDialogPresenter =
+        request -> CompletableFuture.completedFuture(List.<Path>of());
+    BrowserJsDialogPresenter jsDialogPresenter =
+        request -> CompletableFuture.completedFuture(BrowserJsDialogPresenter.Result.cancel());
     return new GraphenePlatformServices(
         lifecycle,
         GrapheneTaskExecutor.direct(),
