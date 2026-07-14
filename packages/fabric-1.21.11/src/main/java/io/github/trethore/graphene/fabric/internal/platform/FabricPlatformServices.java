@@ -17,7 +17,8 @@ import java.util.function.Supplier;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
-import org.lwjgl.BufferUtils;
+import org.lwjgl.PointerBuffer;
+import org.lwjgl.system.MemoryStack;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
 public final class FabricPlatformServices {
@@ -168,17 +169,34 @@ public final class FabricPlatformServices {
     return switch (request.mode()) {
       case OPEN_FOLDER ->
           TinyFileDialogs.tinyfd_selectFolderDialog(title, request.defaultFilePath());
-      case OPEN_FILE, OPEN_MULTIPLE_FILES ->
-          TinyFileDialogs.tinyfd_openFileDialog(
-              title,
-              request.defaultFilePath(),
-              BufferUtils.createPointerBuffer(0),
-              "",
-              request.mode() == BrowserFileDialogPresenter.Mode.OPEN_MULTIPLE_FILES);
-      case SAVE_FILE ->
-          TinyFileDialogs.tinyfd_saveFileDialog(
-              title, request.defaultFilePath(), BufferUtils.createPointerBuffer(0), "");
+      case OPEN_FILE, OPEN_MULTIPLE_FILES, SAVE_FILE -> showFileSelectionDialog(request, title);
     };
+  }
+
+  private static String showFileSelectionDialog(
+      BrowserFileDialogPresenter.Request request, String title) {
+    TinyFdFileDialogFilter filter = TinyFdFileDialogFilter.from(request.filters());
+    try (MemoryStack stack = MemoryStack.stackPush()) {
+      List<String> filterPatterns = filter.patterns();
+      PointerBuffer patterns = null;
+      if (!filterPatterns.isEmpty()) {
+        patterns = stack.mallocPointer(filterPatterns.size());
+        for (String pattern : filterPatterns) {
+          patterns.put(stack.UTF8(pattern));
+        }
+        patterns.flip();
+      }
+      if (request.mode() == BrowserFileDialogPresenter.Mode.SAVE_FILE) {
+        return TinyFileDialogs.tinyfd_saveFileDialog(
+            title, request.defaultFilePath(), patterns, filter.description());
+      }
+      return TinyFileDialogs.tinyfd_openFileDialog(
+          title,
+          request.defaultFilePath(),
+          patterns,
+          filter.description(),
+          request.mode() == BrowserFileDialogPresenter.Mode.OPEN_MULTIPLE_FILES);
+    }
   }
 
   private static String fileDialogTitle(BrowserFileDialogPresenter.Request request) {

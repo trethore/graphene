@@ -66,11 +66,11 @@ model publicly. Most of these should not be exposed one-for-one.
 
 ### 1. Advertised options that do not work
 
-- [ ] Resolved for V1
+- [x] Resolved for V1
 - [x] Apply `backgroundColor` with `transparent` controlling alpha.
 - [x] Apply `javascriptEnabled` per browser.
 - [x] Restrict the built-in asset server to HTTP.
-- [ ] Pass file filters to the default Fabric file-dialog presenter.
+- [x] Pass file filters to the default Fabric file-dialog presenter.
 
 `BrowserOptions.backgroundColor` is a 24-bit RGB value. Browser sessions default to transparent with a white RGB
 background. The `transparent` option controls whether the effective background alpha is fully transparent or fully
@@ -80,8 +80,8 @@ requested initial URL.
 The built-in asset server is HTTP-only. `GrapheneHttpConfig` does not expose a configurable URL scheme until TLS and
 its certificate lifecycle have a defined API.
 
-The remaining part of this blocker is the default Fabric file-dialog presenter, which ignores the public filter list.
-The filters should be passed to TinyFD in a follow-up change.
+The default Fabric file-dialog presenter flattens CEF's filter groups into TinyFD's single filter group, preserving
+expanded extension patterns and using a generic description when multiple descriptions are present.
 
 ### 2. Backend SPI is accidentally consumer-facing
 
@@ -357,20 +357,19 @@ packages are supported API and exclude internal/platform implementation packages
 
 ## Suggested implementation order
 
-1. Complete the default file-dialog filter handling for the remaining advertised-option gap.
-2. Move backend installation and context construction out of consumer API.
-3. Restrict public runtime lifecycle control and define browser creation readiness.
-4. Add bridge-origin and navigation/popup policies.
-5. Add title and console state/events.
-6. Add download decision, progress, and control APIs.
-7. Replace raw load-event strings with Graphene-owned types.
-8. Finalize frame format/nullability/subscriptions and normalized key/text input.
-9. Decide and document context-menu, DevTools, profile/cookie, auth, and fullscreen scope.
-10. Complete Javadoc, usage guides, API compatibility checks, and migration notes.
+1. Move backend installation and context construction out of consumer API.
+2. Restrict public runtime lifecycle control and define browser creation readiness.
+3. Add bridge-origin and navigation/popup policies.
+4. Add title and console state/events.
+5. Add download decision, progress, and control APIs.
+6. Replace raw load-event strings with Graphene-owned types.
+7. Finalize frame format/nullability/subscriptions and normalized key/text input.
+8. Decide and document context-menu, DevTools, profile/cookie, auth, and fullscreen scope.
+9. Complete Javadoc, usage guides, API compatibility checks, and migration notes.
 
 ## Proposed V1 acceptance checklist
 
-- [ ] Every public option has tested observable behavior.
+- [x] Every public option has tested observable behavior.
 - [ ] No consumer API exposes JCEF, jcefgithub, internal classes, or backend installation details.
 - [ ] One mod cannot initialize or shut down the process-global runtime for all mods.
 - [ ] Session creation before/after runtime transitions has deterministic behavior.
