@@ -7,7 +7,6 @@ import io.github.trethore.graphene.api.browser.dialog.BrowserJsDialogPresenter;
 import io.github.trethore.graphene.api.config.GrapheneGlobalConfig;
 import io.github.trethore.graphene.internal.bridge.GrapheneBridgeOptions;
 import io.github.trethore.graphene.internal.bridge.GrapheneBridgeRuntime;
-import io.github.trethore.graphene.internal.event.GrapheneLoadEventBus;
 import io.github.trethore.graphene.internal.platform.GrapheneExternalBrowser;
 import io.github.trethore.graphene.internal.platform.GrapheneNativeWindow;
 import io.github.trethore.graphene.internal.platform.GrapheneStartupPresenter;
@@ -42,7 +41,6 @@ public final class GrapheneCefRuntime implements GrapheneBrowserRuntime {
   private final BrowserFileDialogPresenter fileDialogPresenter;
   private final BrowserJsDialogPresenter jsDialogPresenter;
   private final GrapheneBridgeRuntime bridgeRuntime;
-  private final GrapheneLoadEventBus loadEventBus = new GrapheneLoadEventBus();
   private final Set<GrapheneCefBrowserSession> sessions = new HashSet<>();
   private CefApp app;
   private CefClient client;
@@ -82,7 +80,6 @@ public final class GrapheneCefRuntime implements GrapheneBrowserRuntime {
         createdClient = createdApp.createClient();
         GrapheneCefClientConfig.configure(
             createdClient,
-            loadEventBus,
             bridgeRuntime,
             mainThreadExecutor,
             externalBrowser,
@@ -123,7 +120,6 @@ public final class GrapheneCefRuntime implements GrapheneBrowserRuntime {
     List<GrapheneCefBrowserSession> activeSessions = List.copyOf(sessions);
     sessions.clear();
     bridgeRuntime.shutdown();
-    loadEventBus.clear();
     disposePartial(activeApp, activeSessions);
   }
 
@@ -147,7 +143,6 @@ public final class GrapheneCefRuntime implements GrapheneBrowserRuntime {
             height,
             nativeWindow.handle(),
             bridgeRuntime,
-            loadEventBus,
             grapheneHttpBaseUrl,
             this::removeSession);
     sessions.add(session);

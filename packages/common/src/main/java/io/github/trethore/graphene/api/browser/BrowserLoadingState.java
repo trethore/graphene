@@ -1,4 +1,4 @@
 package io.github.trethore.graphene.api.browser;
 
-public record BrowserLoadingState(
-    int browserId, boolean loading, boolean canGoBack, boolean canGoForward) {}
+/** Current session-wide loading and history state. */
+public record BrowserLoadingState(boolean loading, boolean canGoBack, boolean canGoForward) {}

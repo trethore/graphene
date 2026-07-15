@@ -1,5 +1,6 @@
 package io.github.trethore.graphene.internal.event;
 
+import io.github.trethore.graphene.api.GrapheneSubscription;
 import io.github.trethore.graphene.api.browser.BrowserLoadCompleted;
 import io.github.trethore.graphene.api.browser.BrowserLoadFailed;
 import io.github.trethore.graphene.api.browser.BrowserLoadListener;
@@ -12,21 +13,28 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class GrapheneLoadEventBus {
+public final class GrapheneLoadEventBus implements AutoCloseable {
   private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneLoadEventBus.class);
 
   private final List<BrowserLoadListener> listeners = new CopyOnWriteArrayList<>();
+  private boolean closed;
 
-  public void register(BrowserLoadListener listener) {
-    listeners.add(Objects.requireNonNull(listener, "listener"));
-  }
-
-  public void unregister(BrowserLoadListener listener) {
-    listeners.remove(Objects.requireNonNull(listener, "listener"));
-  }
-
-  public void clear() {
+  @Override
+  public synchronized void close() {
+    if (closed) {
+      return;
+    }
+    closed = true;
     listeners.clear();
+  }
+
+  public synchronized GrapheneSubscription subscribe(BrowserLoadListener listener) {
+    BrowserLoadListener validatedListener = Objects.requireNonNull(listener, "listener");
+    if (closed) {
+      return GrapheneSubscriptions.empty();
+    }
+    listeners.add(validatedListener);
+    return GrapheneSubscriptions.create(() -> listeners.remove(validatedListener));
   }
 
   public void publish(BrowserLoadingState state) {

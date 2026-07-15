@@ -210,14 +210,19 @@ all registrations. Listener APIs return the common idempotently closeable `Graph
 
 ### 9. Load event types are not yet implementation-neutral enough
 
-- [ ] Resolved for V1
+- [x] Resolved for V1
 
-`BrowserLoadStarted.navigationType` is a raw JCEF enum name stored as `String`. `BrowserLoadFailed` exposes a raw
-integer and JCEF enum name. This contradicts the API-boundary plan to use Graphene-owned navigation and error types.
+Load events now expose the Graphene-owned `BrowserLoadTransition` and `BrowserLoadFailureReason` enums. Transition
+values describe stable navigation actions, while failures are normalized into semantic categories instead of
+mirroring JCEF or Chromium error names. Both enums include `UNKNOWN` for unsupported or unavailable backend values.
 
-Add stable enums/value types before V1, with an `UNKNOWN` value and optional raw diagnostic code where useful. Also
-consider removing `browserId` from session-scoped listener events, or expose a stable Graphene session identifier. The
-current integer is a JCEF implementation detail and is redundant when listeners are registered on a session.
+`BrowserLoadFailed` retains the backend integer only as an optional diagnostic code documented as unsuitable for
+application control flow. `BrowserLoadCompleted` represents unavailable or non-HTTP status values with
+`OptionalInt.empty()` instead of a backend-specific zero sentinel.
+
+The JCEF browser identifier was removed from every load event. Load listeners are session-scoped and now use a
+session-owned listener registry, so callbacks no longer pass through a process-wide event bus and filter themselves
+using a JCEF implementation detail.
 
 ### 10. Frame contract is incomplete for custom renderers
 
@@ -371,7 +376,7 @@ packages are supported API and exclude internal/platform implementation packages
 - [x] Untrusted navigation cannot inherit bridge access by accident.
 - [x] Popups, external URLs, and downloads have explicit policies.
 - [x] Title, URL, loading, and console state can be observed without JCEF types.
-- [ ] Load events use stable Graphene-owned enums/value types.
+- [x] Load events use stable Graphene-owned enums/value types.
 - [ ] Frame pixel layout and pre-first-frame behavior are documented and tested.
 - [ ] Key and text input support stable keys and full Unicode semantics.
 - [ ] Listener/presenter threading, lifecycle, nullability, and ownership are documented.

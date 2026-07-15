@@ -1,12 +1,22 @@
 package io.github.trethore.graphene.api.browser;
 
 import java.util.Objects;
+import java.util.OptionalInt;
 
+/**
+ * A navigation-level frame load failure. The optional diagnostic code is backend-specific and must
+ * only be used for diagnostics, not application control flow.
+ */
 public record BrowserLoadFailed(
-    int browserId, String url, boolean mainFrame, int errorCode, String errorName, String message) {
+    String url,
+    boolean mainFrame,
+    BrowserLoadFailureReason reason,
+    String message,
+    OptionalInt diagnosticCode) {
   public BrowserLoadFailed {
     url = Objects.requireNonNullElse(url, "");
-    errorName = Objects.requireNonNullElse(errorName, "UNKNOWN");
+    reason = Objects.requireNonNullElse(reason, BrowserLoadFailureReason.UNKNOWN);
     message = Objects.requireNonNullElse(message, "");
+    Objects.requireNonNull(diagnosticCode, "diagnosticCode");
   }
 }
