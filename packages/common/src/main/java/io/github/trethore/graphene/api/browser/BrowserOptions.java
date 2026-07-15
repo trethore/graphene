@@ -2,6 +2,7 @@ package io.github.trethore.graphene.api.browser;
 
 import io.github.trethore.graphene.api.browser.dialog.BrowserFileDialogPresenter;
 import io.github.trethore.graphene.api.browser.dialog.BrowserJsDialogPresenter;
+import io.github.trethore.graphene.api.browser.navigation.BrowserNavigationPolicy;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -15,6 +16,7 @@ public final class BrowserOptions {
   private final boolean transparent;
   private final int backgroundColor;
   private final boolean javascriptEnabled;
+  private final BrowserNavigationPolicy navigationPolicy;
   private final BrowserFileDialogPresenter fileDialogPresenter;
   private final BrowserJsDialogPresenter jsDialogPresenter;
 
@@ -23,6 +25,7 @@ public final class BrowserOptions {
     this.transparent = builder.transparent;
     this.backgroundColor = requireBackgroundColor(builder.backgroundColor);
     this.javascriptEnabled = builder.javascriptEnabled;
+    this.navigationPolicy = Objects.requireNonNull(builder.navigationPolicy, "navigationPolicy");
     this.fileDialogPresenter = builder.fileDialogPresenter;
     this.jsDialogPresenter = builder.jsDialogPresenter;
   }
@@ -49,6 +52,10 @@ public final class BrowserOptions {
 
   public boolean javascriptEnabled() {
     return javascriptEnabled;
+  }
+
+  public BrowserNavigationPolicy navigationPolicy() {
+    return navigationPolicy;
   }
 
   public Optional<BrowserFileDialogPresenter> fileDialogPresenter() {
@@ -78,6 +85,7 @@ public final class BrowserOptions {
     private boolean transparent = true;
     private int backgroundColor = DEFAULT_BACKGROUND_COLOR;
     private boolean javascriptEnabled = true;
+    private BrowserNavigationPolicy navigationPolicy = BrowserNavigationPolicy.defaultPolicy();
     private BrowserFileDialogPresenter fileDialogPresenter;
     private BrowserJsDialogPresenter jsDialogPresenter;
 
@@ -100,6 +108,11 @@ public final class BrowserOptions {
 
     public Builder javascriptEnabled(boolean javascriptEnabled) {
       this.javascriptEnabled = javascriptEnabled;
+      return this;
+    }
+
+    public Builder navigationPolicy(BrowserNavigationPolicy navigationPolicy) {
+      this.navigationPolicy = Objects.requireNonNull(navigationPolicy, "navigationPolicy");
       return this;
     }
 

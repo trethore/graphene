@@ -8,6 +8,7 @@ import io.github.trethore.graphene.api.config.GrapheneGlobalConfig;
 import io.github.trethore.graphene.internal.bridge.GrapheneBridgeOptions;
 import io.github.trethore.graphene.internal.bridge.GrapheneBridgeRuntime;
 import io.github.trethore.graphene.internal.event.GrapheneLoadEventBus;
+import io.github.trethore.graphene.internal.platform.GrapheneExternalBrowser;
 import io.github.trethore.graphene.internal.platform.GrapheneNativeWindow;
 import io.github.trethore.graphene.internal.platform.GrapheneStartupPresenter;
 import io.github.trethore.graphene.internal.platform.GrapheneTaskExecutor;
@@ -37,6 +38,7 @@ public final class GrapheneCefRuntime implements GrapheneBrowserRuntime {
   private final GrapheneStartupPresenter startupPresenter;
   private final GrapheneTaskExecutor mainThreadExecutor;
   private final GrapheneNativeWindow nativeWindow;
+  private final GrapheneExternalBrowser externalBrowser;
   private final BrowserFileDialogPresenter fileDialogPresenter;
   private final BrowserJsDialogPresenter jsDialogPresenter;
   private final GrapheneBridgeRuntime bridgeRuntime;
@@ -50,11 +52,13 @@ public final class GrapheneCefRuntime implements GrapheneBrowserRuntime {
       GrapheneStartupPresenter startupPresenter,
       GrapheneTaskExecutor mainThreadExecutor,
       GrapheneNativeWindow nativeWindow,
+      GrapheneExternalBrowser externalBrowser,
       BrowserFileDialogPresenter fileDialogPresenter,
       BrowserJsDialogPresenter jsDialogPresenter) {
     this.startupPresenter = Objects.requireNonNull(startupPresenter, "startupPresenter");
     this.mainThreadExecutor = Objects.requireNonNull(mainThreadExecutor, "mainThreadExecutor");
     this.nativeWindow = Objects.requireNonNull(nativeWindow, "nativeWindow");
+    this.externalBrowser = Objects.requireNonNull(externalBrowser, "externalBrowser");
     this.fileDialogPresenter = Objects.requireNonNull(fileDialogPresenter, "fileDialogPresenter");
     this.jsDialogPresenter = Objects.requireNonNull(jsDialogPresenter, "jsDialogPresenter");
     this.bridgeRuntime =
@@ -81,6 +85,7 @@ public final class GrapheneCefRuntime implements GrapheneBrowserRuntime {
             loadEventBus,
             bridgeRuntime,
             mainThreadExecutor,
+            externalBrowser,
             config.browserFileAccessPolicy(),
             fileDialogPresenter,
             jsDialogPresenter);

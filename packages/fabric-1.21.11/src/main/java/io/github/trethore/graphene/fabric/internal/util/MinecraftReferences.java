@@ -1,12 +1,14 @@
 package io.github.trethore.graphene.fabric.internal.util;
 
 import com.mojang.blaze3d.platform.Window;
+import java.net.URI;
 import net.minecraft.client.KeyboardHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.screens.Overlay;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.util.Util;
 
 @SuppressWarnings("resource")
 public final class MinecraftReferences {
@@ -58,6 +60,10 @@ public final class MinecraftReferences {
 
   public static void execute(Runnable action) {
     client().execute(action);
+  }
+
+  public static void openUri(String url) {
+    Util.getPlatform().openUri(URI.create(url));
   }
 
   private static Minecraft client() {

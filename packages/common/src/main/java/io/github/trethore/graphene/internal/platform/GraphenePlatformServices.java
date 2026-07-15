@@ -10,6 +10,7 @@ public record GraphenePlatformServices(
     GrapheneModResolver modResolver,
     GrapheneNativeWindow nativeWindow,
     GrapheneWindowMetrics windowMetrics,
+    GrapheneExternalBrowser externalBrowser,
     GrapheneStartupPresenter startupPresenter,
     BrowserFileDialogPresenter fileDialogPresenter,
     BrowserJsDialogPresenter jsDialogPresenter) {
@@ -19,6 +20,7 @@ public record GraphenePlatformServices(
     Objects.requireNonNull(modResolver, "modResolver");
     Objects.requireNonNull(nativeWindow, "nativeWindow");
     Objects.requireNonNull(windowMetrics, "windowMetrics");
+    Objects.requireNonNull(externalBrowser, "externalBrowser");
     Objects.requireNonNull(startupPresenter, "startupPresenter");
     Objects.requireNonNull(fileDialogPresenter, "fileDialogPresenter");
     Objects.requireNonNull(jsDialogPresenter, "jsDialogPresenter");

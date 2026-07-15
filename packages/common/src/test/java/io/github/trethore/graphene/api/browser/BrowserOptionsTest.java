@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.trethore.graphene.api.browser.dialog.BrowserFileDialogPresenter;
 import io.github.trethore.graphene.api.browser.dialog.BrowserJsDialogPresenter;
+import io.github.trethore.graphene.api.browser.navigation.BrowserNavigationPolicy;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -62,5 +63,14 @@ class BrowserOptionsTest {
     assertSame(jsPresenter, options.jsDialogPresenter().orElseThrow());
     assertTrue(BrowserOptions.defaults().fileDialogPresenter().isEmpty());
     assertTrue(BrowserOptions.defaults().jsDialogPresenter().isEmpty());
+  }
+
+  @Test
+  void configuresNavigationPolicy() {
+    BrowserNavigationPolicy customPolicy =
+        request -> BrowserNavigationPolicy.Decision.CONSUMER_MANAGED;
+    BrowserOptions options = BrowserOptions.builder().navigationPolicy(customPolicy).build();
+
+    assertSame(customPolicy, options.navigationPolicy());
   }
 }

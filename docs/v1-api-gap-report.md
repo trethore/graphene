@@ -122,11 +122,11 @@ uninitialized or cleared JCEF client.
 
 ### 5. Navigation and popup behavior needs a public policy
 
-- [ ] Resolved for V1
+- [x] Resolved for V1
 
-JCEF distinguishes normal navigation, `window.open`/popups, and URLs opened from a tab. Graphene currently handles the
-latter two by loading the target URL into the same browser and canceling the new window. This silently destroys the
-current page and gives consumers no way to:
+JCEF distinguishes normal navigation, `window.open`/popups, and URLs opened from a tab. Graphene previously handled
+the latter two by loading the target URL into the same browser and canceling the new window. This silently destroyed
+the current page and gave consumers no way to:
 
 - reject the navigation;
 - open it in an external system browser;
@@ -134,12 +134,19 @@ current page and gives consumers no way to:
 - preserve target-frame information;
 - allow only trusted origins.
 
-Add a Graphene-owned per-browser navigation/popup policy. It should expose the target URL, source URL/frame, whether a
-user gesture caused it, and the requested disposition. The result should support at least cancel, same session,
-external browser, and consumer-managed handling.
+`BrowserNavigationPolicy` is configured per browser through `BrowserOptions`. It synchronously receives Graphene-owned
+snapshots containing the session, request type, target URL, source frame, target frame name, user-gesture and redirect
+flags, and a stable requested-disposition enum. Decisions support cancellation, navigation in the same session,
+opening in the external system browser, and consumer-managed handling.
 
-This policy should also cover or complement main-frame navigation filtering. It is required for safe bridge use on
-pages that can navigate to untrusted origins.
+The default policy preserves ordinary main-frame and current-tab navigation while canceling popups and other new-tab
+or new-window requests. This avoids silently replacing the current page. `CONSUMER_MANAGED` cancels Graphene's default
+handling after the policy callback has arranged any required follow-up work, such as scheduling creation of another
+session.
+
+Main-frame navigation is filtered through the same policy. Policy failures and null decisions fail closed. Policy
+callbacks run synchronously on the browser callback thread and must not block; same-session and external-browser
+actions are marshaled to the platform thread when the original navigation cannot be preserved.
 
 ### 6. Bridge origin policy is missing
 

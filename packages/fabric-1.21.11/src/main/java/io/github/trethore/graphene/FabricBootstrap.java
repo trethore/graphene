@@ -23,6 +23,7 @@ public final class FabricBootstrap implements ModInitializer {
             platformServices.startupPresenter(),
             platformServices.mainThreadExecutor(),
             platformServices.nativeWindow(),
+            platformServices.externalBrowser(),
             platformServices.fileDialogPresenter(),
             platformServices.jsDialogPresenter()));
     LOGGER.info("Installed {} platform services", MOD_ID);

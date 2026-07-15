@@ -1,25 +1,48 @@
 package io.github.trethore.graphene.internal.cef;
 
-import io.github.trethore.graphene.internal.platform.GrapheneTaskExecutor;
 import java.util.Objects;
 import org.cef.browser.CefBrowser;
 import org.cef.browser.CefFrame;
 import org.cef.handler.CefRequestHandlerAdapter;
+import org.cef.handler.CefWindowOpenDisposition;
+import org.cef.network.CefRequest;
 
 final class GrapheneCefRequestHandler extends CefRequestHandlerAdapter {
-  private final GrapheneTaskExecutor mainThreadExecutor;
+  private final GrapheneCefNavigationRouter navigationRouter;
 
-  GrapheneCefRequestHandler(GrapheneTaskExecutor mainThreadExecutor) {
-    this.mainThreadExecutor = Objects.requireNonNull(mainThreadExecutor, "mainThreadExecutor");
+  GrapheneCefRequestHandler(GrapheneCefNavigationRouter navigationRouter) {
+    this.navigationRouter = Objects.requireNonNull(navigationRouter, "navigationRouter");
+  }
+
+  @Override
+  public boolean onBeforeBrowse(
+      CefBrowser browser,
+      CefFrame frame,
+      CefRequest request,
+      boolean userGesture,
+      boolean isRedirect) {
+    if (request == null) {
+      return false;
+    }
+    return navigationRouter.onMainFrameNavigation(
+        browser, frame, request.getURL(), userGesture, isRedirect);
   }
 
   @Override
   public boolean onOpenURLFromTab(
       CefBrowser browser, CefFrame frame, String targetUrl, boolean userGesture) {
-    if (browser == null || targetUrl == null || targetUrl.isBlank()) {
-      return false;
-    }
-    mainThreadExecutor.execute(() -> browser.loadURL(targetUrl));
-    return true;
+    return navigationRouter.onOpenFromTab(
+        browser, frame, targetUrl, CefWindowOpenDisposition.UNKNOWN, userGesture);
+  }
+
+  @Override
+  public boolean onOpenURLFromTab(
+      CefBrowser browser,
+      CefFrame frame,
+      String targetUrl,
+      CefWindowOpenDisposition targetDisposition,
+      boolean userGesture) {
+    return navigationRouter.onOpenFromTab(
+        browser, frame, targetUrl, targetDisposition, userGesture);
   }
 }

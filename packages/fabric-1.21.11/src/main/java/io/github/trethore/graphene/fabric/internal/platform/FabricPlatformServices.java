@@ -31,6 +31,7 @@ public final class FabricPlatformServices {
         modResolver(),
         () -> GlfwNativeWindowHandle.resolve(MinecraftReferences.windowHandle()),
         windowMetrics(),
+        MinecraftReferences::openUri,
         startupPresenter(),
         fileDialogPresenter(),
         jsDialogPresenter());

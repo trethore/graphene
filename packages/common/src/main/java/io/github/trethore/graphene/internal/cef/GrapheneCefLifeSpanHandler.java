@@ -1,16 +1,16 @@
 package io.github.trethore.graphene.internal.cef;
 
-import io.github.trethore.graphene.internal.platform.GrapheneTaskExecutor;
 import java.util.Objects;
 import org.cef.browser.CefBrowser;
 import org.cef.browser.CefFrame;
 import org.cef.handler.CefLifeSpanHandlerAdapter;
+import org.cef.handler.CefWindowOpenDisposition;
 
 final class GrapheneCefLifeSpanHandler extends CefLifeSpanHandlerAdapter {
-  private final GrapheneTaskExecutor mainThreadExecutor;
+  private final GrapheneCefNavigationRouter navigationRouter;
 
-  GrapheneCefLifeSpanHandler(GrapheneTaskExecutor mainThreadExecutor) {
-    this.mainThreadExecutor = Objects.requireNonNull(mainThreadExecutor, "mainThreadExecutor");
+  GrapheneCefLifeSpanHandler(GrapheneCefNavigationRouter navigationRouter) {
+    this.navigationRouter = Objects.requireNonNull(navigationRouter, "navigationRouter");
   }
 
   @Override
@@ -23,13 +23,22 @@ final class GrapheneCefLifeSpanHandler extends CefLifeSpanHandlerAdapter {
   @Override
   public boolean onBeforePopup(
       CefBrowser browser, CefFrame frame, String targetUrl, String targetFrameName) {
-    if (browser == null) {
-      return false;
-    }
-    if (targetUrl == null || targetUrl.isBlank()) {
-      return true;
-    }
-    mainThreadExecutor.execute(() -> browser.loadURL(targetUrl));
+    navigationRouter.onPopup(
+        browser, frame, targetUrl, targetFrameName, CefWindowOpenDisposition.UNKNOWN, false);
+    return true;
+  }
+
+  @Override
+  public boolean onBeforePopup(
+      CefBrowser browser,
+      CefFrame frame,
+      int popupId,
+      String targetUrl,
+      String targetFrameName,
+      CefWindowOpenDisposition targetDisposition,
+      boolean userGesture) {
+    navigationRouter.onPopup(
+        browser, frame, targetUrl, targetFrameName, targetDisposition, userGesture);
     return true;
   }
 }

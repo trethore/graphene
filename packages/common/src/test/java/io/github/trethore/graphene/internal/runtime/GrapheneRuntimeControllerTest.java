@@ -137,6 +137,7 @@ class GrapheneRuntimeControllerTest {
         modResolver,
         () -> 1L,
         new TestWindowMetrics(),
+        url -> {},
         startupPresenter,
         fileDialogPresenter,
         jsDialogPresenter);
