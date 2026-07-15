@@ -109,19 +109,16 @@ through a read-only view rather than the closeable internal server runtime.
 
 ### 4. Browser creation readiness is undefined
 
-- [ ] Resolved for V1
+- [x] Resolved for V1
 
-`BrowserSessions.create` is synchronous, but native runtime initialization is asynchronous and platform-driven. The
-public API does not define what happens when a consumer creates a session while the runtime is `NEW`, `STARTING`,
-`FAILED`, or `STOPPED`.
+`BrowserSessions.create` remains synchronous and succeeds only while the process-wide runtime is `RUNNING`. Creation
+in every other runtime state fails with `BrowserRuntimeUnavailableException`, which exposes the observed
+`GrapheneRuntimeState`. A failure observed in `FAILED` preserves the original initialization failure as its cause.
 
-V1 should choose and document one model:
-
-- synchronous creation that waits for initialization;
-- `createAsync` returning a stage;
-- or deterministic failure with a specific public exception and a readiness stage callers can await.
-
-The current implementation should not leak null-client or native initialization failures from JCEF.
+Consumers that may create browsers before startup completes can await `GrapheneRuntime.initialization()` and marshal
+their continuation to the required platform thread. The initialization-stage lifecycle and callback-thread contract
+are documented. Creation and shutdown are serialized by the runtime controller so readiness races cannot reach an
+uninitialized or cleared JCEF client.
 
 ### 5. Navigation and popup behavior needs a public policy
 
@@ -358,7 +355,7 @@ packages are supported API and exclude internal/platform implementation packages
 - [x] Every public option has tested observable behavior.
 - [x] No consumer API exposes JCEF, jcefgithub, internal classes, or backend installation details.
 - [x] One mod cannot initialize or shut down the process-global runtime for all mods.
-- [ ] Session creation before/after runtime transitions has deterministic behavior.
+- [x] Session creation before/after runtime transitions has deterministic behavior.
 - [ ] Untrusted navigation cannot inherit bridge access by accident.
 - [ ] Popups, external URLs, and downloads have explicit policies.
 - [ ] Title, URL, loading, and console state can be observed without JCEF types.

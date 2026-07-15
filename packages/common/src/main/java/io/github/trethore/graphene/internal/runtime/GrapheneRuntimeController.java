@@ -1,6 +1,9 @@
 package io.github.trethore.graphene.internal.runtime;
 
 import io.github.trethore.graphene.api.GrapheneContext;
+import io.github.trethore.graphene.api.browser.BrowserOptions;
+import io.github.trethore.graphene.api.browser.BrowserRuntimeUnavailableException;
+import io.github.trethore.graphene.api.browser.BrowserSession;
 import io.github.trethore.graphene.api.config.BrowserFileAccessPolicy;
 import io.github.trethore.graphene.api.config.GrapheneConfig;
 import io.github.trethore.graphene.api.config.GrapheneGlobalConfig;
@@ -45,6 +48,7 @@ public final class GrapheneRuntimeController {
   private GrapheneHttpServerRuntime httpServer = GrapheneHttpServerRuntime.disabled();
   private CompletableFuture<Void> shutdown = CompletableFuture.completedFuture(null);
   private ExecutorService startupExecutor;
+  private RuntimeException initializationFailure;
   private boolean registrationClosed;
   private boolean browserRuntimeInstalled;
 
@@ -138,7 +142,7 @@ public final class GrapheneRuntimeController {
   }
 
   private CompletionStage<Void> stopAsync() {
-    IllegalStateException initializationFailure = null;
+    IllegalStateException stoppedBeforeInitialization = null;
     CompletableFuture<Void> shutdownStage;
     synchronized (this) {
       if (state == GrapheneRuntimeState.STOPPED || state == GrapheneRuntimeState.STOPPING) {
@@ -147,7 +151,8 @@ public final class GrapheneRuntimeController {
       if (state == GrapheneRuntimeState.NEW) {
         registrationClosed = true;
         state = GrapheneRuntimeState.STOPPED;
-        initializationFailure = new IllegalStateException("Graphene stopped before initialization");
+        stoppedBeforeInitialization =
+            new IllegalStateException("Graphene stopped before initialization");
         shutdown = CompletableFuture.completedFuture(null);
       } else {
         state = GrapheneRuntimeState.STOPPING;
@@ -162,8 +167,8 @@ public final class GrapheneRuntimeController {
       }
       shutdownStage = shutdown;
     }
-    if (initializationFailure != null) {
-      initialization.completeExceptionally(initializationFailure);
+    if (stoppedBeforeInitialization != null) {
+      initialization.completeExceptionally(stoppedBeforeInitialization);
     }
     return shutdownStage;
   }
@@ -192,8 +197,7 @@ public final class GrapheneRuntimeController {
                     GrapheneClasspathUrls.assets(modId),
                     httpUrls.assets(modId),
                     path -> httpUrls.modUrl(modId, path),
-                    (url, options, width, height) ->
-                        browserRuntime.createSession(url, options, width, height))),
+                    this::createBrowserSession)),
             "contextFactory result");
     contexts.put(modId, context);
     configs.put(modId, validatedConfig);
@@ -229,18 +233,20 @@ public final class GrapheneRuntimeController {
               ? GrapheneHttpServerRuntime.disabled()
               : GrapheneHttpServerRuntime.start(httpConfigs);
       initializeBrowserRuntime(startedHttpServer);
-      boolean stoppedDuringInitialization;
+      IllegalStateException stoppedDuringInitializationFailure;
       synchronized (this) {
         httpServer = startedHttpServer;
-        stoppedDuringInitialization = state == GrapheneRuntimeState.STOPPING;
-        if (!stoppedDuringInitialization) {
+        if (state == GrapheneRuntimeState.STOPPING) {
+          stoppedDuringInitializationFailure =
+              new IllegalStateException("Graphene stopped during initialization");
+        } else {
+          stoppedDuringInitializationFailure = null;
           state = GrapheneRuntimeState.RUNNING;
         }
         closeStartupExecutor();
       }
-      if (stoppedDuringInitialization) {
-        initialization.completeExceptionally(
-            new IllegalStateException("Graphene stopped during initialization"));
+      if (stoppedDuringInitializationFailure != null) {
+        initialization.completeExceptionally(stoppedDuringInitializationFailure);
       } else {
         initialization.complete(null);
       }
@@ -250,6 +256,7 @@ public final class GrapheneRuntimeController {
         httpServer = GrapheneHttpServerRuntime.disabled();
         if (state != GrapheneRuntimeState.STOPPING) {
           state = GrapheneRuntimeState.FAILED;
+          initializationFailure = exception;
         }
         closeStartupExecutor();
       }
@@ -266,16 +273,27 @@ public final class GrapheneRuntimeController {
     }
   }
 
+  private synchronized BrowserSession createBrowserSession(
+      String url, BrowserOptions options, int width, int height) {
+    if (state != GrapheneRuntimeState.RUNNING) {
+      Throwable cause = state == GrapheneRuntimeState.FAILED ? initializationFailure : null;
+      throw new BrowserRuntimeUnavailableException(state, cause);
+    }
+    return browserRuntime.createSession(url, options, width, height);
+  }
+
   private void shutdownRuntime() {
     RuntimeException shutdownFailure = null;
     synchronized (this) {
       httpServer.close();
       httpServer = GrapheneHttpServerRuntime.disabled();
-      try {
-        browserRuntime.shutdown();
-      } catch (RuntimeException exception) {
-        shutdownFailure = exception;
-      }
+    }
+    try {
+      browserRuntime.shutdown();
+    } catch (RuntimeException exception) {
+      shutdownFailure = exception;
+    }
+    synchronized (this) {
       closeStartupExecutor();
       state = GrapheneRuntimeState.STOPPED;
     }
