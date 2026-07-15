@@ -1,11 +1,6 @@
 package io.github.trethore.graphene.api.bridge;
 
-@FunctionalInterface
-public interface GrapheneBridgeSubscription extends AutoCloseable {
-  void unsubscribe();
+import io.github.trethore.graphene.api.GrapheneSubscription;
 
-  @Override
-  default void close() {
-    unsubscribe();
-  }
-}
+@FunctionalInterface
+public interface GrapheneBridgeSubscription extends GrapheneSubscription {}

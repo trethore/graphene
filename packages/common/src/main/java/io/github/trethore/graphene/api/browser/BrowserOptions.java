@@ -3,6 +3,7 @@ package io.github.trethore.graphene.api.browser;
 import io.github.trethore.graphene.api.browser.bridge.BrowserBridgePolicy;
 import io.github.trethore.graphene.api.browser.dialog.BrowserFileDialogPresenter;
 import io.github.trethore.graphene.api.browser.dialog.BrowserJsDialogPresenter;
+import io.github.trethore.graphene.api.browser.download.BrowserDownloadPolicy;
 import io.github.trethore.graphene.api.browser.navigation.BrowserNavigationPolicy;
 import java.util.Objects;
 import java.util.Optional;
@@ -19,6 +20,7 @@ public final class BrowserOptions {
   private final boolean javascriptEnabled;
   private final BrowserBridgePolicy bridgePolicy;
   private final BrowserNavigationPolicy navigationPolicy;
+  private final BrowserDownloadPolicy downloadPolicy;
   private final BrowserFileDialogPresenter fileDialogPresenter;
   private final BrowserJsDialogPresenter jsDialogPresenter;
 
@@ -29,6 +31,7 @@ public final class BrowserOptions {
     this.javascriptEnabled = builder.javascriptEnabled;
     this.bridgePolicy = Objects.requireNonNull(builder.bridgePolicy, "bridgePolicy");
     this.navigationPolicy = Objects.requireNonNull(builder.navigationPolicy, "navigationPolicy");
+    this.downloadPolicy = Objects.requireNonNull(builder.downloadPolicy, "downloadPolicy");
     this.fileDialogPresenter = builder.fileDialogPresenter;
     this.jsDialogPresenter = builder.jsDialogPresenter;
   }
@@ -65,6 +68,10 @@ public final class BrowserOptions {
     return navigationPolicy;
   }
 
+  public BrowserDownloadPolicy downloadPolicy() {
+    return downloadPolicy;
+  }
+
   public Optional<BrowserFileDialogPresenter> fileDialogPresenter() {
     return Optional.ofNullable(fileDialogPresenter);
   }
@@ -94,6 +101,7 @@ public final class BrowserOptions {
     private boolean javascriptEnabled = true;
     private BrowserBridgePolicy bridgePolicy = BrowserBridgePolicy.defaultPolicy();
     private BrowserNavigationPolicy navigationPolicy = BrowserNavigationPolicy.defaultPolicy();
+    private BrowserDownloadPolicy downloadPolicy = BrowserDownloadPolicy.defaultPolicy();
     private BrowserFileDialogPresenter fileDialogPresenter;
     private BrowserJsDialogPresenter jsDialogPresenter;
 
@@ -126,6 +134,11 @@ public final class BrowserOptions {
 
     public Builder navigationPolicy(BrowserNavigationPolicy navigationPolicy) {
       this.navigationPolicy = Objects.requireNonNull(navigationPolicy, "navigationPolicy");
+      return this;
+    }
+
+    public Builder downloadPolicy(BrowserDownloadPolicy downloadPolicy) {
+      this.downloadPolicy = Objects.requireNonNull(downloadPolicy, "downloadPolicy");
       return this;
     }
 

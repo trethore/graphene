@@ -25,9 +25,9 @@ non-functional, incorrectly scoped, security-sensitive, or accidentally public. 
 6. finish the normalized input and frame contracts before they become difficult to change;
 7. document lifecycle, threading, nullability, and compatibility guarantees.
 
-The dialog presenter commit closes the per-session JavaScript and file-dialog customization gap. It does not yet
-provide equivalent policy/presenter hooks for downloads, popups, context menus, authentication, certificate errors,
-or global platform presentation.
+The dialog presenter commit closes the per-session JavaScript and file-dialog customization gap. Downloads and
+popups now have per-session policies, while context menus, authentication, certificate errors, and global platform
+presentation remain intentionally unmodeled.
 
 ## Current coverage
 
@@ -41,6 +41,7 @@ or global platform presentation.
 - CPU frame snapshots and Fabric rendering surfaces;
 - runtime state, HTTP server status, and remote-debugging port discovery;
 - per-browser JavaScript and file-dialog presenters;
+- per-browser download decisions, progress snapshots, observation, and cancellation;
 - Fabric widget, input adapter, and screen auto-close utilities.
 
 ### JCEF integration currently installed
@@ -49,8 +50,8 @@ The shared `CefClient` installs handlers for:
 
 - load events;
 - context menus, currently always suppressed;
-- popups and new-tab navigation, currently redirected into the same browser;
-- downloads, currently saved automatically;
+- popups and new-tab navigation, routed through the per-browser navigation policy;
+- downloads, governed by a per-browser decision and observation API;
 - file dialogs;
 - JavaScript dialogs;
 - the Graphene message router.
@@ -167,21 +168,28 @@ channels, while internal clipboard, mouse, and file-dialog routing use a separat
 
 ### 7. Downloads need a public decision and observation API
 
-- [ ] Resolved for V1
+- [x] Resolved for V1
 
-The current download handler automatically writes files to `~/Downloads/grapheneui`, silently falls back to the temp
-directory, and exposes no progress or cancellation API. JCEF provides all required primitives: suggested path,
-metadata, progress, pause, resume, and cancel.
+`BrowserDownloadPolicy` is configured per browser through `BrowserOptions`. It synchronously receives Graphene-owned
+request metadata and decides whether to cancel, save to an explicit path, or delegate path selection to CEF's native
+Save As dialog. The default policy cancels every download. Policy failures and null decisions fail closed, and the
+automatic `~/Downloads/grapheneui` target and temporary-directory fallback were removed.
 
-For V1, add:
+The decision callback is deliberately synchronous. The current JCEF before-download callback can continue a
+download but cannot asynchronously cancel it; abandoning that callback is also unsafe because its finalizer continues
+to the default temporary target. A Graphene-managed asynchronous download presenter would therefore be unable to
+honor cancellation without first writing remote content. Consumers that need an interactive decision can explicitly
+select CEF's native Save As dialog.
 
-- a `BrowserDownloadPresenter` or decision handler for accept/cancel and target path;
-- immutable `BrowserDownload` snapshots/events;
-- a control handle for cancel, and optionally pause/resume;
-- explicit failure/completion states;
-- a configurable default download directory if automatic downloads remain supported.
+`BrowserSession.activeDownloads()` exposes immutable `BrowserDownload` snapshots, and
+`BrowserSession.onDownloadChanged(...)` returns the shared `GrapheneSubscription` type. Snapshots contain a stable
+Graphene download identifier, source metadata, target path when known, progress, timestamps, state, and a control
+handle. V1 exposes cancellation only; pause and resume are deferred because the current JCEF Java API cannot report
+paused state.
 
-The safe default should not silently download arbitrary remote content without a consumer-visible policy.
+Download states are `REQUESTED`, `IN_PROGRESS`, `COMPLETED`, `CANCELED`, and `FAILED`. `FAILED` includes interruption
+and backend failure cases for which the binding exposes no detailed reason. Closing a browser session requests
+cancellation of its active downloads so they cannot continue silently without session-scoped observation.
 
 ### 8. Core observable browser state is incomplete
 
@@ -364,7 +372,7 @@ packages are supported API and exclude internal/platform implementation packages
 - [x] One mod cannot initialize or shut down the process-global runtime for all mods.
 - [x] Session creation before/after runtime transitions has deterministic behavior.
 - [x] Untrusted navigation cannot inherit bridge access by accident.
-- [ ] Popups, external URLs, and downloads have explicit policies.
+- [x] Popups, external URLs, and downloads have explicit policies.
 - [ ] Title, URL, loading, and console state can be observed without JCEF types.
 - [ ] Load events use stable Graphene-owned enums/value types.
 - [ ] Frame pixel layout and pre-first-frame behavior are documented and tested.
