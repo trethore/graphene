@@ -92,7 +92,7 @@ references {
   git(
       url = "https://github.com/trethore/jcef.git",
       branch = "master",
-      commit = "d47911954d18f66a1908c8192543a1a8412a2740",
+      commit = "2a4137b5232d1d9c77d561329ec1e18f0c8fc506",
   )
   git(
       url = "https://github.com/chromiumembedded/cef.git",
