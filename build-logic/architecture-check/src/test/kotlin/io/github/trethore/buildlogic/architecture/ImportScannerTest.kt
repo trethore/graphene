@@ -46,4 +46,26 @@ class ImportScannerTest {
 
     assertTrue(violations.isEmpty())
   }
+
+  @Test
+  fun `allows explicitly permitted types under forbidden prefixes`() {
+    val sourceFile = Files.createTempFile("architecture-check", ".java")
+    sourceFile.writeText(
+        """
+        import io.github.example.internal.AllowedType;
+        import io.github.example.internal.ForbiddenType;
+        """
+            .trimIndent()
+    )
+
+    val violations =
+        ImportScanner.findViolations(
+            sourceFile.toFile(),
+            listOf("io.github.example.internal."),
+            setOf("io.github.example.internal.AllowedType"),
+        )
+
+    assertEquals(1, violations.size)
+    assertEquals(2, violations[0].lineNumber)
+  }
 }

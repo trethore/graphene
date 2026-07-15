@@ -19,7 +19,7 @@ public final class GrapheneContext {
   private final UnaryOperator<String> httpUrlFactory;
   private final BrowserSessions browsers;
 
-  public GrapheneContext(
+  GrapheneContext(
       String id,
       GrapheneConfig config,
       GrapheneAssetUrls appAssets,

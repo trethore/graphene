@@ -1,7 +1,5 @@
 package io.github.trethore.graphene.internal.runtime;
 
-import io.github.trethore.graphene.api.GrapheneBackend;
-import io.github.trethore.graphene.api.GrapheneBackendRegistry;
 import io.github.trethore.graphene.api.GrapheneContext;
 import io.github.trethore.graphene.api.config.BrowserFileAccessPolicy;
 import io.github.trethore.graphene.api.config.GrapheneConfig;
@@ -30,7 +28,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 @SuppressWarnings("java:S6548")
-public final class GrapheneRuntimeController implements GrapheneRuntime, GrapheneBackend {
+public final class GrapheneRuntimeController implements GrapheneRuntime {
   private static final GrapheneRuntimeController INSTANCE = new GrapheneRuntimeController();
 
   private final Map<Class<?>, String> resolvedModIds = new IdentityHashMap<>();
@@ -47,9 +45,7 @@ public final class GrapheneRuntimeController implements GrapheneRuntime, Graphen
   private boolean registrationClosed;
   private boolean browserRuntimeInstalled;
 
-  private GrapheneRuntimeController() {
-    GrapheneBackendRegistry.install(this);
-  }
+  private GrapheneRuntimeController() {}
 
   public static GrapheneRuntimeController instance() {
     return INSTANCE;
@@ -78,7 +74,8 @@ public final class GrapheneRuntimeController implements GrapheneRuntime, Graphen
     browserRuntimeInstalled = true;
   }
 
-  public synchronized GrapheneContext register(Class<?> anchorClass, GrapheneConfig config) {
+  public synchronized GrapheneContext register(
+      Class<?> anchorClass, GrapheneConfig config, GrapheneContextFactory contextFactory) {
     requireRegistrationOpen();
     Class<?> validatedAnchorClass = Objects.requireNonNull(anchorClass, "anchorClass");
     String modId = resolvedModIds.get(validatedAnchorClass);
@@ -95,17 +92,18 @@ public final class GrapheneRuntimeController implements GrapheneRuntime, Graphen
       modId = normalizeModId(modId);
       resolvedModIds.put(validatedAnchorClass, modId);
     }
-    return registerValidated(modId, config);
+    return registerValidated(modId, config, contextFactory);
   }
 
-  public synchronized GrapheneContext register(String modId, GrapheneConfig config) {
+  public synchronized GrapheneContext register(
+      String modId, GrapheneConfig config, GrapheneContextFactory contextFactory) {
     requireRegistrationOpen();
     String validatedModId = normalizeModId(modId);
     if (!requirePlatformServices().modResolver().isModLoaded(validatedModId)) {
       throw new IllegalArgumentException(
           "No loaded mod with id " + validatedModId + " is available for Graphene registration");
     }
-    return registerValidated(validatedModId, config);
+    return registerValidated(validatedModId, config, contextFactory);
   }
 
   public synchronized GrapheneContext context(Class<?> anchorClass) {
@@ -130,11 +128,6 @@ public final class GrapheneRuntimeController implements GrapheneRuntime, Graphen
 
   public synchronized GrapheneGlobalConfig globalConfig() {
     return mergeGlobalConfig();
-  }
-
-  @Override
-  public GrapheneRuntime runtime() {
-    return this;
   }
 
   public synchronized GrapheneHttpUrls httpUrls() {
@@ -222,8 +215,11 @@ public final class GrapheneRuntimeController implements GrapheneRuntime, Graphen
     return httpServer;
   }
 
-  private synchronized GrapheneContext registerValidated(String modId, GrapheneConfig config) {
+  private synchronized GrapheneContext registerValidated(
+      String modId, GrapheneConfig config, GrapheneContextFactory contextFactory) {
     GrapheneConfig validatedConfig = Objects.requireNonNull(config, "config");
+    GrapheneContextFactory validatedContextFactory =
+        Objects.requireNonNull(contextFactory, "contextFactory");
     GrapheneContext existingContext = contexts.get(modId);
     if (existingContext != null) {
       if (!Objects.equals(configs.get(modId), validatedConfig)) {
@@ -234,15 +230,18 @@ public final class GrapheneRuntimeController implements GrapheneRuntime, Graphen
     }
 
     GrapheneContext context =
-        new GrapheneContext(
-            modId,
-            validatedConfig,
-            GrapheneAppUrls.assets(modId),
-            GrapheneClasspathUrls.assets(modId),
-            httpUrls.assets(modId),
-            path -> httpUrls.modUrl(modId, path),
-            (url, options, width, height) ->
-                browserRuntime.createSession(url, options, width, height));
+        Objects.requireNonNull(
+            validatedContextFactory.create(
+                new GrapheneContextFactory.Parameters(
+                    modId,
+                    validatedConfig,
+                    GrapheneAppUrls.assets(modId),
+                    GrapheneClasspathUrls.assets(modId),
+                    httpUrls.assets(modId),
+                    path -> httpUrls.modUrl(modId, path),
+                    (url, options, width, height) ->
+                        browserRuntime.createSession(url, options, width, height))),
+            "contextFactory result");
     contexts.put(modId, context);
     configs.put(modId, validatedConfig);
     return context;

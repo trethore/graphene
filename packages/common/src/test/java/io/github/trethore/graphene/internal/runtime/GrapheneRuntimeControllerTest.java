@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import io.github.trethore.graphene.api.Graphene;
 import io.github.trethore.graphene.api.GrapheneContext;
 import io.github.trethore.graphene.api.browser.dialog.BrowserFileDialogPresenter;
 import io.github.trethore.graphene.api.browser.dialog.BrowserJsDialogPresenter;
@@ -28,9 +29,9 @@ class GrapheneRuntimeControllerTest {
     GrapheneRuntimeController controller = GrapheneRuntimeController.instance();
     controller.install(platformServices(lifecycle, Set.of("alpha", "beta")));
 
-    GrapheneContext alpha = controller.register("alpha", GrapheneConfig.defaults());
-    assertSame(alpha, controller.register("alpha", GrapheneConfig.defaults()));
-    assertSame(alpha, controller.context("alpha"));
+    GrapheneContext alpha = Graphene.register("alpha", GrapheneConfig.defaults());
+    assertSame(alpha, Graphene.register("alpha", GrapheneConfig.defaults()));
+    assertSame(alpha, Graphene.context("alpha"));
     assertFalse(controller.isInitialized());
 
     lifecycle.started.run();
@@ -39,7 +40,7 @@ class GrapheneRuntimeControllerTest {
     assertEquals(GrapheneRuntimeState.RUNNING, controller.state());
     assertFalse(controller.httpServer().isRunning());
     GrapheneConfig betaConfig = GrapheneConfig.defaults();
-    assertThrows(IllegalStateException.class, () -> controller.register("beta", betaConfig));
+    assertThrows(IllegalStateException.class, () -> Graphene.register("beta", betaConfig));
 
     lifecycle.stopping.run();
     assertEquals(GrapheneRuntimeState.STOPPED, controller.state());

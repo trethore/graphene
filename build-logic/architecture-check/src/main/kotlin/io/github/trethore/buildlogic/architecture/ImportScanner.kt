@@ -3,9 +3,16 @@ package io.github.trethore.buildlogic.architecture
 import java.io.File
 
 internal object ImportScanner {
-  fun findViolations(sourceFile: File, forbiddenPrefixes: List<String>): List<ImportViolation> =
+  fun findViolations(
+      sourceFile: File,
+      forbiddenPrefixes: List<String>,
+      allowedTypes: Set<String> = emptySet(),
+  ): List<ImportViolation> =
       sourceFile.readLines().mapIndexedNotNull { index, line ->
         val importedType = importedType(line) ?: return@mapIndexedNotNull null
+        if (importedType in allowedTypes) {
+          return@mapIndexedNotNull null
+        }
         if (forbiddenPrefixes.none(importedType::startsWith)) {
           return@mapIndexedNotNull null
         }

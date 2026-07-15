@@ -38,6 +38,10 @@ architectureChecks {
         "io.github.trethore.jcefgithub.",
         "io.github.trethore.graphene.internal.",
     )
+    allowedImports.addAll(
+        "io.github.trethore.graphene.internal.runtime.GrapheneContextFactory",
+        "io.github.trethore.graphene.internal.runtime.GrapheneRuntimeController",
+    )
     failureMessage.set("The public common API may only expose Graphene-owned and JDK types.")
   }
 

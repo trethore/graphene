@@ -85,19 +85,14 @@ expanded extension patterns and using a generic description when multiple descri
 
 ### 2. Backend SPI is accidentally consumer-facing
 
-- [ ] Resolved for V1
+- [x] Resolved for V1
 
-The following implementation/bootstrap types are in the main public API package:
+Backend installation is no longer part of the consumer API. `GrapheneBackend` and
+`GrapheneBackendRegistry` were removed, and the public `Graphene` facade now delegates directly to the internal
+runtime controller.
 
-- `GrapheneBackend`;
-- `GrapheneBackendRegistry` and its public `install` method;
-- the public dependency-injection constructor of `GrapheneContext`.
-
-These are platform SPI, not mod-consumer API. Leaving them public expands the compatibility surface and suggests that
-mods may install or construct Graphene backends and contexts themselves.
-
-For V1, move them to an internal or explicit platform SPI package and make `GrapheneContext` construction inaccessible
-to normal consumers.
+The dependency-injection constructor of `GrapheneContext` is package-private. Consumers obtain contexts through
+`Graphene.register(...)` and can no longer install a replacement backend or manually construct a context.
 
 ### 3. Shared runtime lifecycle is unsafe as a consumer API
 
@@ -370,7 +365,7 @@ packages are supported API and exclude internal/platform implementation packages
 ## Proposed V1 acceptance checklist
 
 - [x] Every public option has tested observable behavior.
-- [ ] No consumer API exposes JCEF, jcefgithub, internal classes, or backend installation details.
+- [x] No consumer API exposes JCEF, jcefgithub, internal classes, or backend installation details.
 - [ ] One mod cannot initialize or shut down the process-global runtime for all mods.
 - [ ] Session creation before/after runtime transitions has deterministic behavior.
 - [ ] Untrusted navigation cannot inherit bridge access by accident.

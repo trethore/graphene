@@ -17,19 +17,23 @@ abstract class CheckImportsTask : DefaultTask() {
 
   @get:Input abstract val forbiddenImports: ListProperty<String>
 
+  @get:Input abstract val allowedImports: ListProperty<String>
+
   @get:Input abstract val failureMessage: Property<String>
 
   init {
     group = "verification"
+    allowedImports.convention(emptyList())
     failureMessage.convention("Forbidden imports violate this project's architecture.")
   }
 
   @TaskAction
   fun checkImports() {
     val forbiddenPrefixes = forbiddenImports.get().toList()
+    val allowedTypes = allowedImports.get().toSet()
     val violations =
         sources.files.sortedBy { it.path }.flatMap { sourceFile ->
-          ImportScanner.findViolations(sourceFile, forbiddenPrefixes).map { violation ->
+          ImportScanner.findViolations(sourceFile, forbiddenPrefixes, allowedTypes).map { violation ->
             "${sourceFile.relativeTo(project.projectDir)}:${violation.lineNumber}: ${violation.line}"
           }
         }
