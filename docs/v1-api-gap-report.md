@@ -193,23 +193,20 @@ cancellation of its active downloads so they cannot continue silently without se
 
 ### 8. Core observable browser state is incomplete
 
-- [ ] Resolved for V1
+- [x] Resolved for V1
 
-The previous implementation exposed title state and title listeners. The migration does not install a JCEF display
-handler and `BrowserSession` has no title API. This is a direct regression for screens that display page titles.
+`BrowserSession` exposes non-null current title and main-frame URL state together with subscriptions for title, URL,
+load, download, and console events. Titles default to an empty string, blank URLs normalize to `about:blank`, and
+duplicate title and URL notifications are suppressed after the session state has been updated.
 
-V1 should add:
+A shared JCEF display handler routes Graphene browser callbacks directly to their sessions. URL observation is
+restricted to the main frame and is independent from load events so History API and fragment changes remain
+observable. Console messages expose Graphene-owned severity, message, source, and line values without suppressing
+CEF's normal console logging.
 
-- `currentTitle()`;
-- title-change subscription;
-- address-change subscription or a clearly defined relationship between `currentUrl()` and load events;
-- console-message events with severity, message, source, and line.
-
-Console messages are especially useful because JavaScript execution is otherwise fire-and-forget and embedded UI
-failures are difficult to diagnose.
-
-Use a common subscription type for listeners. `GrapheneBridgeSubscription` should be renamed/generalized, or a new
-`GrapheneSubscription` should be shared by load, title, frame, download, and console listeners.
+Display and load listeners run on the platform thread, listener failures are isolated, and session closure removes
+all registrations. Listener APIs return the common idempotently closeable `GrapheneSubscription` type. The empty
+`GrapheneBridgeSubscription` specialization was removed, and bridge and load registrations now use the common type.
 
 ### 9. Load event types are not yet implementation-neutral enough
 
@@ -373,7 +370,7 @@ packages are supported API and exclude internal/platform implementation packages
 - [x] Session creation before/after runtime transitions has deterministic behavior.
 - [x] Untrusted navigation cannot inherit bridge access by accident.
 - [x] Popups, external URLs, and downloads have explicit policies.
-- [ ] Title, URL, loading, and console state can be observed without JCEF types.
+- [x] Title, URL, loading, and console state can be observed without JCEF types.
 - [ ] Load events use stable Graphene-owned enums/value types.
 - [ ] Frame pixel layout and pre-first-frame behavior are documented and tested.
 - [ ] Key and text input support stable keys and full Unicode semantics.

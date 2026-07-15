@@ -1,5 +1,6 @@
 package io.github.trethore.graphene.api.bridge;
 
+import io.github.trethore.graphene.api.GrapheneSubscription;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -20,13 +21,13 @@ public interface GrapheneBridge {
 
   boolean isReady();
 
-  GrapheneBridgeSubscription onReady(Runnable listener);
+  GrapheneSubscription onReady(Runnable listener);
 
-  GrapheneBridgeSubscription onEvent(String channel, GrapheneBridgeEventListener listener);
+  GrapheneSubscription onEvent(String channel, GrapheneBridgeEventListener listener);
 
-  GrapheneBridgeSubscription onRequest(String channel, GrapheneBridgeRequestHandler handler);
+  GrapheneSubscription onRequest(String channel, GrapheneBridgeRequestHandler handler);
 
-  default <T> GrapheneBridgeSubscription onEventJson(
+  default <T> GrapheneSubscription onEventJson(
       String channel, Class<T> payloadType, GrapheneBridgeJsonEventListener<T> listener) {
     Objects.requireNonNull(payloadType, "payloadType");
     Objects.requireNonNull(listener, "listener");
@@ -37,7 +38,7 @@ public interface GrapheneBridge {
                 receivedChannel, GrapheneBridgeJson.fromJson(payloadJson, payloadType)));
   }
 
-  default <T, U> GrapheneBridgeSubscription onRequestJson(
+  default <T, U> GrapheneSubscription onRequestJson(
       String channel, Class<T> requestType, GrapheneBridgeJsonRequestHandler<T, U> handler) {
     Objects.requireNonNull(requestType, "requestType");
     Objects.requireNonNull(handler, "handler");

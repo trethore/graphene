@@ -10,10 +10,15 @@ import io.github.trethore.graphene.api.browser.input.BrowserScrollInput;
 import io.github.trethore.graphene.api.browser.input.BrowserTextInput;
 import java.util.List;
 
+@SuppressWarnings("unused")
 public interface BrowserSession extends AutoCloseable {
   BrowserOptions options();
 
+  /** Returns the current non-null main-frame URL. Blank URLs are exposed as {@code about:blank}. */
   String currentUrl();
+
+  /** Returns the current non-null page title, or an empty string when the page has no title. */
+  String currentTitle();
 
   boolean isClosed();
 
@@ -62,9 +67,17 @@ public interface BrowserSession extends AutoCloseable {
    */
   GrapheneSubscription onDownloadChanged(BrowserDownloadListener listener);
 
-  void addLoadListener(BrowserLoadListener listener);
+  /** Subscribes to load events delivered on the platform thread. */
+  GrapheneSubscription onLoad(BrowserLoadListener listener);
 
-  void removeLoadListener(BrowserLoadListener listener);
+  /** Subscribes to deduplicated title changes delivered on the platform thread. */
+  GrapheneSubscription onTitleChanged(BrowserTitleListener listener);
+
+  /** Subscribes to deduplicated main-frame URL changes delivered on the platform thread. */
+  GrapheneSubscription onUrlChanged(BrowserUrlListener listener);
+
+  /** Subscribes to browser console messages delivered on the platform thread. */
+  GrapheneSubscription onConsoleMessage(BrowserConsoleMessageListener listener);
 
   @Override
   void close();

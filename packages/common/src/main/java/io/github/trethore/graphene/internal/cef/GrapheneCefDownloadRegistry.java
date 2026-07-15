@@ -8,6 +8,7 @@ import io.github.trethore.graphene.api.browser.download.BrowserDownloadId;
 import io.github.trethore.graphene.api.browser.download.BrowserDownloadListener;
 import io.github.trethore.graphene.api.browser.download.BrowserDownloadPolicy;
 import io.github.trethore.graphene.api.browser.download.BrowserDownloadState;
+import io.github.trethore.graphene.internal.event.GrapheneSubscriptions;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -131,8 +132,7 @@ final class GrapheneCefDownloadRegistry implements AutoCloseable {
         listeners.add(validatedListener);
       }
     }
-    List<BrowserDownloadListener> listenerRegistry = listeners;
-    return () -> listenerRegistry.remove(validatedListener);
+    return GrapheneSubscriptions.create(() -> listeners.remove(validatedListener));
   }
 
   @Override

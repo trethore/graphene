@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import io.github.trethore.graphene.api.bridge.GrapheneBridgeSubscription;
+import io.github.trethore.graphene.api.GrapheneSubscription;
 import io.github.trethore.graphene.api.browser.bridge.BrowserBridgePolicy;
 import io.github.trethore.graphene.internal.platform.GrapheneTaskExecutor;
 import java.util.ArrayList;
@@ -169,7 +169,7 @@ final class GrapheneBridgeEndpointTest {
     GrapheneBridgeEndpoint endpoint = endpoint(browser);
 
     assertThrows(IllegalArgumentException.class, () -> endpoint.emit("graphene:test", "null"));
-    try (GrapheneBridgeSubscription subscription =
+    try (GrapheneSubscription subscription =
         GrapheneBridgeInternals.onEvent(endpoint, "graphene:test", (channel, payload) -> {})) {
       assertNotNull(subscription);
     }

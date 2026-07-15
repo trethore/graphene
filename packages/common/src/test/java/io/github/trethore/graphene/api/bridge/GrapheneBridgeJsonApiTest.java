@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import io.github.trethore.graphene.api.GrapheneSubscription;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -15,13 +16,16 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 
 final class GrapheneBridgeJsonApiTest {
+  private static final String EVENT_CHANNEL = "debug:event";
+  private static final String REQUEST_CHANNEL = "debug:sum";
+
   @Test
   void emitJsonSerializesPayload() {
     TestBridge bridge = new TestBridge();
 
-    bridge.emitJson("debug:event", new SumRequest(3, 4));
+    bridge.emitJson(EVENT_CHANNEL, new SumRequest(3, 4));
 
-    assertEquals("debug:event", bridge.emittedChannel);
+    assertEquals(EVENT_CHANNEL, bridge.emittedChannel);
     JsonObject payload = JsonParser.parseString(bridge.emittedPayloadJson).getAsJsonObject();
     assertEquals(3, payload.get("a").getAsInt());
     assertEquals(4, payload.get("b").getAsInt());
@@ -33,9 +37,9 @@ final class GrapheneBridgeJsonApiTest {
     bridge.nextRequestResponseJson = "{\"result\":10}";
 
     SumResponse response =
-        bridge.requestJson("debug:sum", new SumRequest(6, 4), SumResponse.class).join();
+        bridge.requestJson(REQUEST_CHANNEL, new SumRequest(6, 4), SumResponse.class).join();
 
-    assertEquals("debug:sum", bridge.requestedChannel);
+    assertEquals(REQUEST_CHANNEL, bridge.requestedChannel);
     JsonObject payload = JsonParser.parseString(bridge.requestedPayloadJson).getAsJsonObject();
     assertEquals(6, payload.get("a").getAsInt());
     assertEquals(4, payload.get("b").getAsInt());
@@ -48,12 +52,12 @@ final class GrapheneBridgeJsonApiTest {
     TestBridge bridge = new TestBridge();
     AtomicReference<BridgeEvent> payloadRef = new AtomicReference<>();
 
-    try (GrapheneBridgeSubscription ignoredSubscription =
+    try (GrapheneSubscription ignoredSubscription =
         bridge.onEventJson(
-            "debug:event",
+            EVENT_CHANNEL,
             BridgeEvent.class,
             (ignoredChannel, payload) -> payloadRef.set(payload))) {
-      bridge.dispatchEvent("debug:event", "{\"kind\":\"ready\",\"ok\":true}");
+      bridge.dispatchEvent("{\"kind\":\"ready\",\"ok\":true}");
     }
 
     BridgeEvent payload = payloadRef.get();
@@ -65,13 +69,13 @@ final class GrapheneBridgeJsonApiTest {
   @Test
   void onRequestJsonParsesRequestAndSerializesResponse() {
     TestBridge bridge = new TestBridge();
-    try (GrapheneBridgeSubscription ignoredSubscription =
+    try (GrapheneSubscription ignoredSubscription =
         bridge.onRequestJson(
-            "debug:sum",
+            REQUEST_CHANNEL,
             SumRequest.class,
             (ignoredChannel, payload) ->
                 CompletableFuture.completedFuture(new SumResponse(payload.a() + payload.b())))) {
-      String responseJson = bridge.dispatchRequest("debug:sum", "{\"a\":2,\"b\":5}").join();
+      String responseJson = bridge.dispatchRequest().join();
       SumResponse response = GrapheneBridgeJson.fromJson(responseJson, SumResponse.class);
 
       assertEquals(7, response.result());
@@ -81,9 +85,11 @@ final class GrapheneBridgeJsonApiTest {
   @Test
   void onEventJsonFailsFastForMalformedPayload() {
     TestBridge bridge = new TestBridge();
-    bridge.onEventJson("debug:event", BridgeEvent.class, (ignoredChannel, ignoredPayload) -> {});
-
-    assertThrows(IllegalArgumentException.class, () -> bridge.dispatchEvent("debug:event", "{"));
+    try (GrapheneSubscription ignoredSubscription =
+        bridge.onEventJson(
+            EVENT_CHANNEL, BridgeEvent.class, (ignoredChannel, ignoredPayload) -> {})) {
+      assertThrows(IllegalArgumentException.class, () -> bridge.dispatchEvent("{"));
+    }
   }
 
   private record SumRequest(int a, int b) {}
@@ -110,21 +116,19 @@ final class GrapheneBridgeJsonApiTest {
     }
 
     @Override
-    public GrapheneBridgeSubscription onReady(Runnable listener) {
+    public GrapheneSubscription onReady(Runnable listener) {
       listener.run();
       return () -> {};
     }
 
     @Override
-    public GrapheneBridgeSubscription onEvent(
-        String channel, GrapheneBridgeEventListener listener) {
+    public GrapheneSubscription onEvent(String channel, GrapheneBridgeEventListener listener) {
       eventListenersByChannel.put(channel, listener);
       return () -> eventListenersByChannel.remove(channel, listener);
     }
 
     @Override
-    public GrapheneBridgeSubscription onRequest(
-        String channel, GrapheneBridgeRequestHandler handler) {
+    public GrapheneSubscription onRequest(String channel, GrapheneBridgeRequestHandler handler) {
       requestHandlersByChannel.put(channel, handler);
       return () -> requestHandlersByChannel.remove(channel, handler);
     }
@@ -143,21 +147,21 @@ final class GrapheneBridgeJsonApiTest {
       return CompletableFuture.completedFuture(nextRequestResponseJson);
     }
 
-    private void dispatchEvent(String channel, String payloadJson) {
-      GrapheneBridgeEventListener listener = eventListenersByChannel.get(channel);
+    private void dispatchEvent(String payloadJson) {
+      GrapheneBridgeEventListener listener = eventListenersByChannel.get(EVENT_CHANNEL);
       if (listener != null) {
-        listener.onEvent(channel, payloadJson);
+        listener.onEvent(EVENT_CHANNEL, payloadJson);
       }
     }
 
-    private CompletableFuture<String> dispatchRequest(String channel, String payloadJson) {
-      GrapheneBridgeRequestHandler requestHandler = requestHandlersByChannel.get(channel);
+    private CompletableFuture<String> dispatchRequest() {
+      GrapheneBridgeRequestHandler requestHandler = requestHandlersByChannel.get(REQUEST_CHANNEL);
       if (requestHandler == null) {
         return CompletableFuture.failedFuture(
-            new IllegalStateException("Missing handler for " + channel));
+            new IllegalStateException("Missing handler for " + REQUEST_CHANNEL));
       }
 
-      return requestHandler.handle(channel, payloadJson);
+      return requestHandler.handle(REQUEST_CHANNEL, "{\"a\":2,\"b\":5}");
     }
   }
 }

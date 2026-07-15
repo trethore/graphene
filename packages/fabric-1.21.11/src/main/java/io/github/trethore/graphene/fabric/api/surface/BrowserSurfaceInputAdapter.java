@@ -1,6 +1,6 @@
 package io.github.trethore.graphene.fabric.api.surface;
 
-import io.github.trethore.graphene.api.bridge.GrapheneBridgeSubscription;
+import io.github.trethore.graphene.api.GrapheneSubscription;
 import io.github.trethore.graphene.api.browser.BrowserSession;
 import io.github.trethore.graphene.api.browser.input.BrowserModifier;
 import io.github.trethore.graphene.api.browser.input.BrowserPointerAction;
@@ -31,7 +31,7 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
 
   private final BrowserSurface surface;
   private final GrapheneClipboard clipboard = new GrapheneClipboard();
-  private final GrapheneBridgeSubscription clipboardWriteSubscription;
+  private final GrapheneSubscription clipboardWriteSubscription;
   private char pendingSyntheticCharacter;
   private long pendingSyntheticTimestamp;
   private boolean pasteShortcutPressed;

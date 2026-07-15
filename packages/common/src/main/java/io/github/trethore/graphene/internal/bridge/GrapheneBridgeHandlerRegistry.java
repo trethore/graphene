@@ -1,8 +1,9 @@
 package io.github.trethore.graphene.internal.bridge;
 
+import io.github.trethore.graphene.api.GrapheneSubscription;
 import io.github.trethore.graphene.api.bridge.GrapheneBridgeEventListener;
 import io.github.trethore.graphene.api.bridge.GrapheneBridgeRequestHandler;
-import io.github.trethore.graphene.api.bridge.GrapheneBridgeSubscription;
+import io.github.trethore.graphene.internal.event.GrapheneSubscriptions;
 import io.github.trethore.graphene.internal.logging.GrapheneDebugLogger;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +29,7 @@ final class GrapheneBridgeHandlerRegistry {
     this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
   }
 
-  GrapheneBridgeSubscription onReady(Runnable listener, boolean ready) {
+  GrapheneSubscription onReady(Runnable listener, boolean ready) {
     readyListeners.add(listener);
     DEBUG_LOGGER.debug(
         "Registered bridge ready listener total={} readyNow={}", readyListeners.size(), ready);
@@ -36,10 +37,10 @@ final class GrapheneBridgeHandlerRegistry {
       runReadyListener(listener);
     }
 
-    return () -> readyListeners.remove(listener);
+    return GrapheneSubscriptions.create(() -> readyListeners.remove(listener));
   }
 
-  GrapheneBridgeSubscription onEvent(String channel, GrapheneBridgeEventListener listener) {
+  GrapheneSubscription onEvent(String channel, GrapheneBridgeEventListener listener) {
     CopyOnWriteArrayList<GrapheneBridgeEventListener> listeners =
         eventListenersByChannel.computeIfAbsent(channel, ignored -> new CopyOnWriteArrayList<>());
     listeners.add(listener);
@@ -47,10 +48,10 @@ final class GrapheneBridgeHandlerRegistry {
         "Registered bridge event listener channel={} totalForChannel={}",
         channel,
         listeners.size());
-    return () -> removeEventListener(channel, listener);
+    return GrapheneSubscriptions.create(() -> removeEventListener(channel, listener));
   }
 
-  GrapheneBridgeSubscription onRequest(String channel, GrapheneBridgeRequestHandler handler) {
+  GrapheneSubscription onRequest(String channel, GrapheneBridgeRequestHandler handler) {
     GrapheneBridgeRequestHandler previousHandler = requestHandlersByChannel.put(channel, handler);
     if (previousHandler != null && previousHandler != handler) {
       LOGGER.warn("Replacing existing Graphene bridge request handler for channel {}", channel);
@@ -61,7 +62,7 @@ final class GrapheneBridgeHandlerRegistry {
         "Registered bridge request handler channel={} replaced={}",
         channel,
         previousHandler != null);
-    return () -> requestHandlersByChannel.remove(channel, handler);
+    return GrapheneSubscriptions.create(() -> requestHandlersByChannel.remove(channel, handler));
   }
 
   GrapheneBridgeRequestHandler requestHandler(String channel) {

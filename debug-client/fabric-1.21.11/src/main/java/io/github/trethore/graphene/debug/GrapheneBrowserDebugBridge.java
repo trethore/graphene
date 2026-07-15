@@ -4,8 +4,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import io.github.trethore.graphene.api.GrapheneSubscription;
 import io.github.trethore.graphene.api.bridge.GrapheneBridge;
-import io.github.trethore.graphene.api.bridge.GrapheneBridgeSubscription;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -16,7 +16,7 @@ final class GrapheneBrowserDebugBridge implements AutoCloseable {
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(3);
 
   private final GrapheneBridge bridge;
-  private final List<GrapheneBridgeSubscription> subscriptions = new ArrayList<>();
+  private final List<GrapheneSubscription> subscriptions = new ArrayList<>();
 
   GrapheneBrowserDebugBridge(GrapheneBridge bridge) {
     this.bridge = bridge;
@@ -25,7 +25,7 @@ final class GrapheneBrowserDebugBridge implements AutoCloseable {
 
   @Override
   public void close() {
-    subscriptions.forEach(GrapheneBridgeSubscription::unsubscribe);
+    subscriptions.forEach(GrapheneSubscription::unsubscribe);
     subscriptions.clear();
   }
 

@@ -1,10 +1,10 @@
 package io.github.trethore.graphene.internal.bridge;
 
 import com.google.gson.JsonElement;
+import io.github.trethore.graphene.api.GrapheneSubscription;
 import io.github.trethore.graphene.api.bridge.GrapheneBridge;
 import io.github.trethore.graphene.api.bridge.GrapheneBridgeEventListener;
 import io.github.trethore.graphene.api.bridge.GrapheneBridgeRequestHandler;
-import io.github.trethore.graphene.api.bridge.GrapheneBridgeSubscription;
 import io.github.trethore.graphene.api.browser.bridge.BrowserBridgeOrigin;
 import io.github.trethore.graphene.api.browser.bridge.BrowserBridgePolicy;
 import io.github.trethore.graphene.internal.logging.GrapheneDebugLogger;
@@ -88,20 +88,19 @@ public final class GrapheneBridgeEndpoint implements GrapheneBridge {
   }
 
   @Override
-  public GrapheneBridgeSubscription onReady(Runnable listener) {
+  public GrapheneSubscription onReady(Runnable listener) {
     Objects.requireNonNull(listener, LISTENER_NAME);
     ensureOpen();
     return handlers.onReady(listener, isReady());
   }
 
   @Override
-  public GrapheneBridgeSubscription onEvent(String channel, GrapheneBridgeEventListener listener) {
+  public GrapheneSubscription onEvent(String channel, GrapheneBridgeEventListener listener) {
     return onEventValidated(validateConsumerChannel(channel), listener);
   }
 
   @Override
-  public GrapheneBridgeSubscription onRequest(
-      String channel, GrapheneBridgeRequestHandler handler) {
+  public GrapheneSubscription onRequest(String channel, GrapheneBridgeRequestHandler handler) {
     return onRequestValidated(validateConsumerChannel(channel), handler);
   }
 
@@ -302,12 +301,11 @@ public final class GrapheneBridgeEndpoint implements GrapheneBridge {
     }
   }
 
-  GrapheneBridgeSubscription onInternalEvent(String channel, GrapheneBridgeEventListener listener) {
+  GrapheneSubscription onInternalEvent(String channel, GrapheneBridgeEventListener listener) {
     return onEventValidated(validateInternalChannel(channel), listener);
   }
 
-  GrapheneBridgeSubscription onInternalRequest(
-      String channel, GrapheneBridgeRequestHandler handler) {
+  GrapheneSubscription onInternalRequest(String channel, GrapheneBridgeRequestHandler handler) {
     return onRequestValidated(validateInternalChannel(channel), handler);
   }
 
@@ -338,14 +336,14 @@ public final class GrapheneBridgeEndpoint implements GrapheneBridge {
         && documentGeneration.get() == readyDocumentGeneration;
   }
 
-  private GrapheneBridgeSubscription onEventValidated(
+  private GrapheneSubscription onEventValidated(
       String validatedChannel, GrapheneBridgeEventListener listener) {
     Objects.requireNonNull(listener, LISTENER_NAME);
     ensureOpen();
     return handlers.onEvent(validatedChannel, listener);
   }
 
-  private GrapheneBridgeSubscription onRequestValidated(
+  private GrapheneSubscription onRequestValidated(
       String validatedChannel, GrapheneBridgeRequestHandler handler) {
     Objects.requireNonNull(handler, "handler");
     ensureOpen();

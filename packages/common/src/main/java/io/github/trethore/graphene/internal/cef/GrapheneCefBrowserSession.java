@@ -2,6 +2,8 @@ package io.github.trethore.graphene.internal.cef;
 
 import io.github.trethore.graphene.api.GrapheneSubscription;
 import io.github.trethore.graphene.api.bridge.GrapheneBridge;
+import io.github.trethore.graphene.api.browser.BrowserConsoleMessageListener;
+import io.github.trethore.graphene.api.browser.BrowserConsoleSeverity;
 import io.github.trethore.graphene.api.browser.BrowserCursor;
 import io.github.trethore.graphene.api.browser.BrowserDirtyRegion;
 import io.github.trethore.graphene.api.browser.BrowserFrame;
@@ -12,6 +14,8 @@ import io.github.trethore.graphene.api.browser.BrowserLoadStarted;
 import io.github.trethore.graphene.api.browser.BrowserLoadingState;
 import io.github.trethore.graphene.api.browser.BrowserOptions;
 import io.github.trethore.graphene.api.browser.BrowserSession;
+import io.github.trethore.graphene.api.browser.BrowserTitleListener;
+import io.github.trethore.graphene.api.browser.BrowserUrlListener;
 import io.github.trethore.graphene.api.browser.download.BrowserDownload;
 import io.github.trethore.graphene.api.browser.download.BrowserDownloadListener;
 import io.github.trethore.graphene.api.browser.input.BrowserKeyAction;
@@ -22,15 +26,16 @@ import io.github.trethore.graphene.api.browser.input.BrowserTextInput;
 import io.github.trethore.graphene.internal.bridge.BridgeBrowser;
 import io.github.trethore.graphene.internal.bridge.GrapheneBridgeExposureConfig;
 import io.github.trethore.graphene.internal.bridge.GrapheneBridgeRuntime;
+import io.github.trethore.graphene.internal.browser.GrapheneBrowserDisplayState;
 import io.github.trethore.graphene.internal.browser.GrapheneFrameBuffer;
 import io.github.trethore.graphene.internal.event.GrapheneLoadEventBus;
+import io.github.trethore.graphene.internal.event.GrapheneSubscriptions;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -60,12 +65,12 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
   private final GrapheneCefFileDialogRouting fileDialogRouting = new GrapheneCefFileDialogRouting();
   private final GrapheneCefDownloadRegistry downloadRegistry;
   private final GrapheneLoadEventBus loadEventBus;
+  private final GrapheneBrowserDisplayState displayState;
   private final GrapheneFrameBuffer frameBuffer = new GrapheneFrameBuffer();
   private final Component uiComponent = new Canvas();
   private final Rectangle viewRect;
   private final Consumer<GrapheneCefBrowserSession> closeCallback;
-  private final Map<BrowserLoadListener, BrowserLoadListener> listenerAdapters =
-      new IdentityHashMap<>();
+  private final List<BrowserLoadListener> listenerAdapters = new ArrayList<>();
   private final GrapheneBridge bridge;
   private final Object dragLock = new Object();
   private CefDragData activeDragData;
@@ -99,6 +104,7 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
     this.nativeWindowHandle = nativeWindowHandle;
     this.bridgeRuntime = Objects.requireNonNull(bridgeRuntime, "bridgeRuntime");
     this.loadEventBus = Objects.requireNonNull(loadEventBus, "loadEventBus");
+    this.displayState = new GrapheneBrowserDisplayState(getUrl());
     this.closeCallback = Objects.requireNonNull(closeCallback, "closeCallback");
     this.viewRect = new Rectangle(0, 0, requireDimension(width), requireDimension(height));
     this.bridge =
@@ -297,8 +303,12 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
 
   @Override
   public String currentUrl() {
-    String url = getURL();
-    return url == null || url.isBlank() ? BLANK_URL : url;
+    return displayState.currentUrl();
+  }
+
+  @Override
+  public String currentTitle() {
+    return displayState.currentTitle();
   }
 
   @Override
@@ -460,23 +470,30 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
   }
 
   @Override
-  public synchronized void addLoadListener(BrowserLoadListener listener) {
+  public synchronized GrapheneSubscription onLoad(BrowserLoadListener listener) {
     BrowserLoadListener validatedListener = Objects.requireNonNull(listener, "listener");
-    if (listenerAdapters.containsKey(validatedListener)) {
-      return;
+    if (closed) {
+      return GrapheneSubscriptions.empty();
     }
     BrowserLoadListener adapter = new SessionLoadListener(validatedListener);
-    listenerAdapters.put(validatedListener, adapter);
+    listenerAdapters.add(adapter);
     loadEventBus.register(adapter);
+    return GrapheneSubscriptions.create(() -> unsubscribeLoadListener(adapter));
   }
 
   @Override
-  public synchronized void removeLoadListener(BrowserLoadListener listener) {
-    BrowserLoadListener adapter =
-        listenerAdapters.remove(Objects.requireNonNull(listener, "listener"));
-    if (adapter != null) {
-      loadEventBus.unregister(adapter);
-    }
+  public GrapheneSubscription onTitleChanged(BrowserTitleListener listener) {
+    return displayState.onTitleChanged(listener);
+  }
+
+  @Override
+  public GrapheneSubscription onUrlChanged(BrowserUrlListener listener) {
+    return displayState.onUrlChanged(listener);
+  }
+
+  @Override
+  public GrapheneSubscription onConsoleMessage(BrowserConsoleMessageListener listener) {
+    return displayState.onConsoleMessage(listener);
   }
 
   @Override
@@ -488,13 +505,14 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
     synchronized (navigationLock) {
       pendingUrl = null;
     }
-    listenerAdapters.values().forEach(loadEventBus::unregister);
+    listenerAdapters.forEach(loadEventBus::unregister);
     listenerAdapters.clear();
     synchronized (dragLock) {
       closeActiveDragLocked();
     }
     fileDialogRouting.close();
     downloadRegistry.close();
+    displayState.close();
     bridgeRuntime.detach(this);
     frameBuffer.clear();
     try {
@@ -508,6 +526,19 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
     return downloadRegistry;
   }
 
+  Runnable updateTitle(String title) {
+    return displayState.updateTitle(title);
+  }
+
+  Runnable updateUrl(String url) {
+    return displayState.updateUrl(url);
+  }
+
+  Runnable consoleMessage(
+      BrowserConsoleSeverity severity, String message, String source, int line) {
+    return displayState.consoleMessage(severity, message, source, line);
+  }
+
   private static CefBrowserSettings cefSettings(BrowserOptions options) {
     BrowserOptions validatedOptions = Objects.requireNonNull(options, "options");
     CefBrowserSettings settings = new CefBrowserSettings();
@@ -518,6 +549,12 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
   private static String initialBrowserUrl(String url, BrowserOptions options) {
     String validatedUrl = requireUrl(url);
     return GrapheneCefBrowserOptions.requiresInitialization(options) ? BLANK_URL : validatedUrl;
+  }
+
+  private synchronized void unsubscribeLoadListener(BrowserLoadListener listener) {
+    if (listenerAdapters.remove(listener)) {
+      loadEventBus.unregister(listener);
+    }
   }
 
   private void completeBrowserOptionInitialization() {

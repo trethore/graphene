@@ -1,7 +1,7 @@
 package io.github.trethore.graphene.internal.cef;
 
+import io.github.trethore.graphene.api.GrapheneSubscription;
 import io.github.trethore.graphene.api.bridge.GrapheneBridge;
-import io.github.trethore.graphene.api.bridge.GrapheneBridgeSubscription;
 import io.github.trethore.graphene.internal.bridge.GrapheneBridgeInternals;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
@@ -11,7 +11,7 @@ final class GrapheneCefFileDialogRouting implements AutoCloseable {
   private static final long INTENT_LIFETIME_NANOS = 2_000_000_000L;
 
   private final AtomicLong directoryIntentDeadlineNanos = new AtomicLong();
-  private GrapheneBridgeSubscription requestSubscription;
+  private GrapheneSubscription requestSubscription;
 
   @Override
   public void close() {

@@ -1,22 +1,22 @@
 package io.github.trethore.graphene.internal.bridge;
 
+import io.github.trethore.graphene.api.GrapheneSubscription;
 import io.github.trethore.graphene.api.bridge.GrapheneBridge;
 import io.github.trethore.graphene.api.bridge.GrapheneBridgeEventListener;
 import io.github.trethore.graphene.api.bridge.GrapheneBridgeJson;
 import io.github.trethore.graphene.api.bridge.GrapheneBridgeJsonEventListener;
 import io.github.trethore.graphene.api.bridge.GrapheneBridgeRequestHandler;
-import io.github.trethore.graphene.api.bridge.GrapheneBridgeSubscription;
 import java.util.Objects;
 
 public final class GrapheneBridgeInternals {
   private GrapheneBridgeInternals() {}
 
-  public static GrapheneBridgeSubscription onEvent(
+  public static GrapheneSubscription onEvent(
       GrapheneBridge bridge, String channel, GrapheneBridgeEventListener listener) {
     return endpoint(bridge).onInternalEvent(channel, listener);
   }
 
-  public static <T> GrapheneBridgeSubscription onEventJson(
+  public static <T> GrapheneSubscription onEventJson(
       GrapheneBridge bridge,
       String channel,
       Class<T> payloadType,
@@ -31,7 +31,7 @@ public final class GrapheneBridgeInternals {
                 receivedChannel, GrapheneBridgeJson.fromJson(payloadJson, payloadType)));
   }
 
-  public static GrapheneBridgeSubscription onRequest(
+  public static GrapheneSubscription onRequest(
       GrapheneBridge bridge, String channel, GrapheneBridgeRequestHandler handler) {
     return endpoint(bridge).onInternalRequest(channel, handler);
   }

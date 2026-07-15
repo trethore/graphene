@@ -26,6 +26,7 @@ final class GrapheneCefClientConfig {
     CefClient validatedClient = Objects.requireNonNull(client, "client");
     validatedClient.addLoadHandler(
         new GrapheneCefLoadHandler(eventBus, bridgeRuntime, mainThreadExecutor));
+    validatedClient.addDisplayHandler(new GrapheneCefDisplayHandler(mainThreadExecutor));
     validatedClient.addContextMenuHandler(new GrapheneCefContextMenuHandler());
     GrapheneCefNavigationRouter navigationRouter =
         new GrapheneCefNavigationRouter(mainThreadExecutor, externalBrowser);
