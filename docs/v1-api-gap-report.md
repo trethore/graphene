@@ -96,25 +96,16 @@ The dependency-injection constructor of `GrapheneContext` is package-private. Co
 
 ### 3. Shared runtime lifecycle is unsafe as a consumer API
 
-- [ ] Resolved for V1
+- [x] Resolved for V1
 
-`GrapheneRuntime` publicly exposes `initialize`, `initializeAsync`, and `shutdownAsync`. The runtime is process-global
-and shared by all registered mods. One consumer can therefore close registration early or shut down every other
-consumer's browser runtime.
+`GrapheneRuntime` is now a read-only consumer view exposing state, initialization completion or failure, remote
+debugging information, and HTTP status. Initialization, registration closure, and shutdown are owned exclusively by
+the internal platform lifecycle controller.
 
-This conflicts with the architecture decision that startup and controlled shutdown are owned by the platform
-lifecycle. The V1 consumer API should normally expose observation only:
-
-- `state()`;
-- `isInitialized()`;
-- an initialization completion/failure stage;
-- remote-debugging information;
-- HTTP status.
-
-Manual lifecycle control should be internal, test-only, or placed in a clearly separated host/platform API.
-
-The failure contract also needs improvement. After a failed initialization, callers need access to the original
-failure rather than only seeing that the runtime is in `FAILED` state.
+The public view is a separate object from `GrapheneRuntimeController`, preventing consumers from casting the returned
+runtime back to the lifecycle controller. Its initialization stage preserves the original startup failure for both
+early and late observers and does not expose the controller's mutable completion future. HTTP status is exposed
+through a read-only view rather than the closeable internal server runtime.
 
 ### 4. Browser creation readiness is undefined
 
@@ -366,7 +357,7 @@ packages are supported API and exclude internal/platform implementation packages
 
 - [x] Every public option has tested observable behavior.
 - [x] No consumer API exposes JCEF, jcefgithub, internal classes, or backend installation details.
-- [ ] One mod cannot initialize or shut down the process-global runtime for all mods.
+- [x] One mod cannot initialize or shut down the process-global runtime for all mods.
 - [ ] Session creation before/after runtime transitions has deterministic behavior.
 - [ ] Untrusted navigation cannot inherit bridge access by accident.
 - [ ] Popups, external URLs, and downloads have explicit policies.

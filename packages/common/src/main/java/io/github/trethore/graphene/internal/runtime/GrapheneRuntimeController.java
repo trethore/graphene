@@ -28,18 +28,21 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 @SuppressWarnings("java:S6548")
-public final class GrapheneRuntimeController implements GrapheneRuntime {
+public final class GrapheneRuntimeController {
   private static final GrapheneRuntimeController INSTANCE = new GrapheneRuntimeController();
 
   private final Map<Class<?>, String> resolvedModIds = new IdentityHashMap<>();
   private final Map<String, GrapheneContext> contexts = new LinkedHashMap<>();
   private final Map<String, GrapheneConfig> configs = new LinkedHashMap<>();
   private final GrapheneHttpUrls httpUrls = new GrapheneHttpUrls(this::httpBaseUrl);
+  private final CompletableFuture<Void> initialization = new CompletableFuture<>();
+  private final CompletionStage<Void> initializationView = initialization.minimalCompletionStage();
+  private final GrapheneRuntime runtimeView = new RuntimeView();
+  private final GrapheneHttpServer httpServerView = new HttpServerView();
   private GraphenePlatformServices platformServices;
   private GrapheneBrowserRuntime browserRuntime = GrapheneBrowserRuntime.disabled();
   private GrapheneRuntimeState state = GrapheneRuntimeState.NEW;
   private GrapheneHttpServerRuntime httpServer = GrapheneHttpServerRuntime.disabled();
-  private CompletableFuture<Void> initialization = new CompletableFuture<>();
   private CompletableFuture<Void> shutdown = CompletableFuture.completedFuture(null);
   private ExecutorService startupExecutor;
   private boolean registrationClosed;
@@ -49,6 +52,10 @@ public final class GrapheneRuntimeController implements GrapheneRuntime {
 
   public static GrapheneRuntimeController instance() {
     return INSTANCE;
+  }
+
+  public GrapheneRuntime runtime() {
+    return runtimeView;
   }
 
   public synchronized void install(GraphenePlatformServices services) {
@@ -130,89 +137,35 @@ public final class GrapheneRuntimeController implements GrapheneRuntime {
     return mergeGlobalConfig();
   }
 
-  public synchronized GrapheneHttpUrls httpUrls() {
-    return httpUrls;
-  }
-
-  public synchronized void closeRegistration() {
-    registrationClosed = true;
-  }
-
-  @Override
-  public synchronized GrapheneRuntimeState state() {
-    return state;
-  }
-
-  @Override
-  public synchronized CompletionStage<Void> initializeAsync() {
-    if (state == GrapheneRuntimeState.RUNNING || state == GrapheneRuntimeState.STARTING) {
-      return initialization;
+  private CompletionStage<Void> stopAsync() {
+    IllegalStateException initializationFailure = null;
+    CompletableFuture<Void> shutdownStage;
+    synchronized (this) {
+      if (state == GrapheneRuntimeState.STOPPED || state == GrapheneRuntimeState.STOPPING) {
+        return shutdown;
+      }
+      if (state == GrapheneRuntimeState.NEW) {
+        registrationClosed = true;
+        state = GrapheneRuntimeState.STOPPED;
+        initializationFailure = new IllegalStateException("Graphene stopped before initialization");
+        shutdown = CompletableFuture.completedFuture(null);
+      } else {
+        state = GrapheneRuntimeState.STOPPING;
+        if (!initialization.isDone()) {
+          shutdown =
+              initialization
+                  .handle((ignoredResult, ignoredFailure) -> null)
+                  .thenRunAsync(this::shutdownRuntime);
+        } else {
+          shutdown = CompletableFuture.runAsync(this::shutdownRuntime);
+        }
+      }
+      shutdownStage = shutdown;
     }
-    if (state != GrapheneRuntimeState.NEW) {
-      return CompletableFuture.failedFuture(
-          new IllegalStateException("Graphene cannot initialize from state " + state));
+    if (initializationFailure != null) {
+      initialization.completeExceptionally(initializationFailure);
     }
-    if (contexts.isEmpty()) {
-      return CompletableFuture.failedFuture(
-          new IllegalStateException("No Graphene consumer is registered"));
-    }
-
-    requirePlatformServices();
-    registrationClosed = true;
-    state = GrapheneRuntimeState.STARTING;
-    initialization = new CompletableFuture<>();
-    startupExecutor =
-        Executors.newSingleThreadExecutor(
-            runnable -> {
-              Thread thread = new Thread(runnable, "Graphene Startup");
-              thread.setDaemon(false);
-              return thread;
-            });
-    startupExecutor.execute(this::initializeRuntime);
-    return initialization;
-  }
-
-  @Override
-  public void initialize() {
-    join(initializeAsync());
-  }
-
-  @Override
-  public synchronized CompletionStage<Void> shutdownAsync() {
-    if (state == GrapheneRuntimeState.STOPPED) {
-      return shutdown;
-    }
-    if (state == GrapheneRuntimeState.STOPPING) {
-      return shutdown;
-    }
-    if (state == GrapheneRuntimeState.NEW) {
-      registrationClosed = true;
-      state = GrapheneRuntimeState.STOPPED;
-      shutdown = CompletableFuture.completedFuture(null);
-      return shutdown;
-    }
-
-    state = GrapheneRuntimeState.STOPPING;
-    shutdown = CompletableFuture.runAsync(this::shutdownRuntime);
-    return shutdown;
-  }
-
-  @Override
-  public synchronized boolean isInitialized() {
-    return state == GrapheneRuntimeState.RUNNING;
-  }
-
-  @Override
-  public synchronized OptionalInt remoteDebuggingPort() {
-    if (state != GrapheneRuntimeState.RUNNING) {
-      return OptionalInt.empty();
-    }
-    return browserRuntime.remoteDebuggingPort();
-  }
-
-  @Override
-  public synchronized GrapheneHttpServer httpServer() {
-    return httpServer;
+    return shutdownStage;
   }
 
   private synchronized GrapheneContext registerValidated(
@@ -247,14 +200,25 @@ public final class GrapheneRuntimeController implements GrapheneRuntime {
     return context;
   }
 
-  private void startRegisteredConsumers() {
-    synchronized (this) {
-      registrationClosed = true;
-      if (contexts.isEmpty()) {
-        return;
-      }
+  private synchronized void startRegisteredConsumers() {
+    registrationClosed = true;
+    if (contexts.isEmpty()) {
+      return;
     }
-    initializeAsync();
+    if (state != GrapheneRuntimeState.NEW) {
+      throw new IllegalStateException("Graphene cannot initialize from state " + state);
+    }
+
+    requirePlatformServices();
+    state = GrapheneRuntimeState.STARTING;
+    startupExecutor =
+        Executors.newSingleThreadExecutor(
+            runnable -> {
+              Thread thread = new Thread(runnable, "Graphene Startup");
+              thread.setDaemon(false);
+              return thread;
+            });
+    startupExecutor.execute(this::initializeRuntime);
   }
 
   private void initializeRuntime() {
@@ -265,20 +229,31 @@ public final class GrapheneRuntimeController implements GrapheneRuntime {
               ? GrapheneHttpServerRuntime.disabled()
               : GrapheneHttpServerRuntime.start(httpConfigs);
       initializeBrowserRuntime(startedHttpServer);
+      boolean stoppedDuringInitialization;
       synchronized (this) {
         httpServer = startedHttpServer;
-        state = GrapheneRuntimeState.RUNNING;
-        initialization.complete(null);
+        stoppedDuringInitialization = state == GrapheneRuntimeState.STOPPING;
+        if (!stoppedDuringInitialization) {
+          state = GrapheneRuntimeState.RUNNING;
+        }
         closeStartupExecutor();
+      }
+      if (stoppedDuringInitialization) {
+        initialization.completeExceptionally(
+            new IllegalStateException("Graphene stopped during initialization"));
+      } else {
+        initialization.complete(null);
       }
     } catch (RuntimeException exception) {
       synchronized (this) {
         httpServer.close();
         httpServer = GrapheneHttpServerRuntime.disabled();
-        state = GrapheneRuntimeState.FAILED;
-        initialization.completeExceptionally(exception);
+        if (state != GrapheneRuntimeState.STOPPING) {
+          state = GrapheneRuntimeState.FAILED;
+        }
         closeStartupExecutor();
       }
+      initialization.completeExceptionally(exception);
     }
   }
 
@@ -310,7 +285,7 @@ public final class GrapheneRuntimeController implements GrapheneRuntime {
   }
 
   private void shutdown() {
-    join(shutdownAsync());
+    join(stopAsync());
   }
 
   private static void join(CompletionStage<Void> stage) {
@@ -419,6 +394,68 @@ public final class GrapheneRuntimeController implements GrapheneRuntime {
 
   private synchronized String httpBaseUrl() {
     return httpServer.isRunning() ? httpServer.baseUrl() : "";
+  }
+
+  private final class RuntimeView implements GrapheneRuntime {
+    @Override
+    public GrapheneRuntimeState state() {
+      synchronized (GrapheneRuntimeController.this) {
+        return state;
+      }
+    }
+
+    @Override
+    public boolean isInitialized() {
+      return state() == GrapheneRuntimeState.RUNNING;
+    }
+
+    @Override
+    public CompletionStage<Void> initialization() {
+      return initializationView;
+    }
+
+    @Override
+    public OptionalInt remoteDebuggingPort() {
+      synchronized (GrapheneRuntimeController.this) {
+        if (state != GrapheneRuntimeState.RUNNING) {
+          return OptionalInt.empty();
+        }
+        return browserRuntime.remoteDebuggingPort();
+      }
+    }
+
+    @Override
+    public GrapheneHttpServer httpServer() {
+      return httpServerView;
+    }
+  }
+
+  private final class HttpServerView implements GrapheneHttpServer {
+    @Override
+    public boolean isRunning() {
+      return current().isRunning();
+    }
+
+    @Override
+    public String host() {
+      return current().host();
+    }
+
+    @Override
+    public int port() {
+      return current().port();
+    }
+
+    @Override
+    public String baseUrl() {
+      return current().baseUrl();
+    }
+
+    private GrapheneHttpServer current() {
+      synchronized (GrapheneRuntimeController.this) {
+        return httpServer;
+      }
+    }
   }
 
   private record OwnedValue<T>(T value, String owner) {}

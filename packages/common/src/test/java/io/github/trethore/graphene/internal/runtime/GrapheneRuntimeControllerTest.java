@@ -10,6 +10,8 @@ import io.github.trethore.graphene.api.GrapheneContext;
 import io.github.trethore.graphene.api.browser.dialog.BrowserFileDialogPresenter;
 import io.github.trethore.graphene.api.browser.dialog.BrowserJsDialogPresenter;
 import io.github.trethore.graphene.api.config.GrapheneConfig;
+import io.github.trethore.graphene.api.runtime.GrapheneHttpServer;
+import io.github.trethore.graphene.api.runtime.GrapheneRuntime;
 import io.github.trethore.graphene.api.runtime.GrapheneRuntimeState;
 import io.github.trethore.graphene.internal.platform.GrapheneLifecycle;
 import io.github.trethore.graphene.internal.platform.GrapheneModResolver;
@@ -32,18 +34,25 @@ class GrapheneRuntimeControllerTest {
     GrapheneContext alpha = Graphene.register("alpha", GrapheneConfig.defaults());
     assertSame(alpha, Graphene.register("alpha", GrapheneConfig.defaults()));
     assertSame(alpha, Graphene.context("alpha"));
-    assertFalse(controller.isInitialized());
+    GrapheneRuntime runtime = Graphene.runtime();
+    GrapheneHttpServer httpServer = runtime.httpServer();
+    assertSame(runtime, alpha.runtime());
+    assertFalse(runtime.isInitialized());
+    assertFalse(httpServer instanceof AutoCloseable);
+    assertSame(httpServer, runtime.httpServer());
+    runtime.initialization().toCompletableFuture().complete(null);
+    assertFalse(runtime.initialization().toCompletableFuture().isDone());
 
     lifecycle.started.run();
-    controller.initializeAsync().toCompletableFuture().join();
+    runtime.initialization().toCompletableFuture().join();
 
-    assertEquals(GrapheneRuntimeState.RUNNING, controller.state());
-    assertFalse(controller.httpServer().isRunning());
+    assertEquals(GrapheneRuntimeState.RUNNING, runtime.state());
+    assertFalse(httpServer.isRunning());
     GrapheneConfig betaConfig = GrapheneConfig.defaults();
     assertThrows(IllegalStateException.class, () -> Graphene.register("beta", betaConfig));
 
     lifecycle.stopping.run();
-    assertEquals(GrapheneRuntimeState.STOPPED, controller.state());
+    assertEquals(GrapheneRuntimeState.STOPPED, runtime.state());
   }
 
   private static GraphenePlatformServices platformServices(

@@ -52,6 +52,6 @@ public final class Graphene {
   }
 
   public static GrapheneRuntime runtime() {
-    return RUNTIME_CONTROLLER;
+    return RUNTIME_CONTROLLER.runtime();
   }
 }

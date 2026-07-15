@@ -7,13 +7,9 @@ import java.util.concurrent.CompletionStage;
 public interface GrapheneRuntime {
   GrapheneRuntimeState state();
 
-  CompletionStage<Void> initializeAsync();
-
-  void initialize();
-
-  CompletionStage<Void> shutdownAsync();
-
   boolean isInitialized();
+
+  CompletionStage<Void> initialization();
 
   OptionalInt remoteDebuggingPort();
 

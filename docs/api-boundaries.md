@@ -65,6 +65,10 @@ String registration must:
 Registration returns the `GrapheneContext` directly. Context lookup remains available for consumers that do not retain
 the returned instance.
 
+`Graphene.runtime()` and `GrapheneContext.runtime()` return the same process-global, read-only runtime view. Consumers
+may observe runtime state, await initialization, and inspect HTTP or remote-debugging information. Runtime startup,
+registration closure, and shutdown are controlled exclusively by the platform lifecycle.
+
 ## Browser and Surface Model
 
 Common owns a public, Minecraft-independent `BrowserSession`. Fabric owns `BrowserSurface`.
