@@ -12,7 +12,8 @@ public interface GrapheneBrowserRuntime {
 
   OptionalInt remoteDebuggingPort();
 
-  BrowserSession createSession(String url, BrowserOptions options, int width, int height);
+  BrowserSession createSession(
+      String url, BrowserOptions options, int width, int height, String grapheneHttpBaseUrl);
 
   static GrapheneBrowserRuntime disabled() {
     return new GrapheneBrowserRuntime() {
@@ -33,7 +34,7 @@ public interface GrapheneBrowserRuntime {
 
       @Override
       public BrowserSession createSession(
-          String url, BrowserOptions options, int width, int height) {
+          String url, BrowserOptions options, int width, int height, String grapheneHttpBaseUrl) {
         throw new IllegalStateException("Graphene browser runtime is not installed");
       }
     };

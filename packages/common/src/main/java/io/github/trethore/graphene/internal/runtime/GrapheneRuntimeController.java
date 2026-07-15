@@ -279,7 +279,7 @@ public final class GrapheneRuntimeController {
       Throwable cause = state == GrapheneRuntimeState.FAILED ? initializationFailure : null;
       throw new BrowserRuntimeUnavailableException(state, cause);
     }
-    return browserRuntime.createSession(url, options, width, height);
+    return browserRuntime.createSession(url, options, width, height, httpBaseUrl());
   }
 
   private void shutdownRuntime() {

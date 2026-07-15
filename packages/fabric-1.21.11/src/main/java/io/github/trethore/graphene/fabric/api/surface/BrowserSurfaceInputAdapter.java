@@ -10,6 +10,7 @@ import io.github.trethore.graphene.api.browser.input.BrowserScrollInput;
 import io.github.trethore.graphene.api.browser.input.BrowserTextInput;
 import io.github.trethore.graphene.fabric.internal.input.GrapheneKeyboardMapper;
 import io.github.trethore.graphene.fabric.internal.util.MinecraftReferences;
+import io.github.trethore.graphene.internal.bridge.GrapheneBridgeInternals;
 import io.github.trethore.graphene.internal.platform.GrapheneClipboard;
 import io.github.trethore.graphene.internal.platform.GrapheneClipboardContent;
 import java.util.Base64;
@@ -40,13 +41,11 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
   public BrowserSurfaceInputAdapter(BrowserSurface surface) {
     this.surface = Objects.requireNonNull(surface, "surface");
     clipboardWriteSubscription =
-        surface
-            .browser()
-            .bridge()
-            .onEventJson(
-                CLIPBOARD_WRITE_CHANNEL,
-                ClipboardPayload.class,
-                (channel, payload) -> writeClipboard(payload));
+        GrapheneBridgeInternals.onEventJson(
+            surface.browser().bridge(),
+            CLIPBOARD_WRITE_CHANNEL,
+            ClipboardPayload.class,
+            (channel, payload) -> writeClipboard(payload));
   }
 
   public void setFocused(boolean focused) {
@@ -207,15 +206,13 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
     String nativeText = MinecraftReferences.keyboardHandler().getClipboard();
     GrapheneClipboardContent content = resolveClipboardContent(richContent, nativeText);
     byte[] png = content.png();
-    surface
-        .browser()
-        .bridge()
-        .emitJson(
-            CLIPBOARD_PASTE_CHANNEL,
-            new ClipboardPayload(
-                content.text(),
-                content.html(),
-                png.length == 0 ? null : Base64.getEncoder().encodeToString(png)));
+    GrapheneBridgeInternals.emitJson(
+        surface.browser().bridge(),
+        CLIPBOARD_PASTE_CHANNEL,
+        new ClipboardPayload(
+            content.text(),
+            content.html(),
+            png.length == 0 ? null : Base64.getEncoder().encodeToString(png)));
   }
 
   private void writeClipboard(ClipboardPayload payload) {
@@ -361,16 +358,14 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
     if (button < GLFW.GLFW_MOUSE_BUTTON_6 || button > GLFW.GLFW_MOUSE_BUTTON_8) {
       return;
     }
-    surface
-        .browser()
-        .bridge()
-        .emitJson(
-            EXTRA_MOUSE_BUTTON_CHANNEL,
-            new ExtraMouseButtonInput(
-                button,
-                pressed,
-                surface.toBrowserX(mouseX - surfaceX, renderedWidth),
-                surface.toBrowserY(mouseY - surfaceY, renderedHeight)));
+    GrapheneBridgeInternals.emitJson(
+        surface.browser().bridge(),
+        EXTRA_MOUSE_BUTTON_CHANNEL,
+        new ExtraMouseButtonInput(
+            button,
+            pressed,
+            surface.toBrowserX(mouseX - surfaceX, renderedWidth),
+            surface.toBrowserY(mouseY - surfaceY, renderedHeight)));
   }
 
   private static BrowserPointerButton pointerButton(int button) {

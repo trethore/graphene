@@ -7,11 +7,16 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Interface for the Graphene Bridge, which facilitates communication between the Java client and
  * the Graphene UI. It allows registering event listeners, handling requests, emitting events, and
- * making requests with optional JSON serialization.
+ * making requests with optional JSON serialization. Consumer channels beginning with {@link
+ * #RESERVED_CHANNEL_PREFIX} are rejected because that namespace belongs to Graphene platform
+ * integrations.
  */
 @SuppressWarnings("unused")
 public interface GrapheneBridge {
   Duration DEFAULT_REQUEST_TIMEOUT = Duration.ofSeconds(10);
+
+  /** Channel prefix reserved for Graphene platform integrations. */
+  String RESERVED_CHANNEL_PREFIX = "graphene:";
 
   boolean isReady();
 

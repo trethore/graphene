@@ -134,7 +134,7 @@ public final class GrapheneCefRuntime implements GrapheneBrowserRuntime {
 
   @Override
   public synchronized BrowserSession createSession(
-      String url, BrowserOptions options, int width, int height) {
+      String url, BrowserOptions options, int width, int height, String grapheneHttpBaseUrl) {
     if (client == null) {
       throw new IllegalStateException("Graphene browser runtime is not initialized");
     }
@@ -148,6 +148,7 @@ public final class GrapheneCefRuntime implements GrapheneBrowserRuntime {
             nativeWindow.handle(),
             bridgeRuntime,
             loadEventBus,
+            grapheneHttpBaseUrl,
             this::removeSession);
     sessions.add(session);
     return session;

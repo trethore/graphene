@@ -150,20 +150,20 @@ actions are marshaled to the platform thread when the original navigation cannot
 
 ### 6. Bridge origin policy is missing
 
-- [ ] Resolved for V1
+- [x] Resolved for V1
 
-The bridge bootstrap is injected for every loaded page. A browser that navigates from a trusted mod page to an
-untrusted remote page therefore continues to expose registered Java handlers to that page.
+`BrowserBridgePolicy` is configured per browser through `BrowserOptions`. The default policy exposes the bridge only
+to main-frame documents loaded from Graphene-owned app, classpath, or built-in HTTP URLs. Policies are also provided
+for disabling the bridge, following the requested initial origin, and allowing an exact set of origins. Custom policy
+failures and null decisions fail closed.
 
-Before V1, add a bridge exposure policy with safe defaults. Reasonable choices include:
+Bridge authorization is enforced both before bootstrap injection and for every inbound CEF query using the requesting
+frame URL. Subframes are denied for V1, preventing an untrusted iframe from bypassing bootstrap controls by invoking
+CEF's query function directly. Navigation immediately resets bridge readiness, denied documents clear queued outbound
+messages, and stale ready handshakes cannot reactivate a later document.
 
-- only Graphene-owned app/classpath/HTTP origins by default;
-- same-origin with the initial URL;
-- an explicit origin allowlist;
-- disabled bridge mode.
-
-Also reserve and document the `graphene:` channel namespace. Fabric clipboard and extra-mouse-button behavior already
-uses private channels in that namespace, but consumers are currently not told that those names are reserved.
+The `graphene:` channel namespace is reserved for Graphene integrations. Consumer bridge methods reject reserved
+channels, while internal clipboard, mouse, and file-dialog routing use a separate internal access path.
 
 ### 7. Downloads need a public decision and observation API
 
@@ -363,7 +363,7 @@ packages are supported API and exclude internal/platform implementation packages
 - [x] No consumer API exposes JCEF, jcefgithub, internal classes, or backend installation details.
 - [x] One mod cannot initialize or shut down the process-global runtime for all mods.
 - [x] Session creation before/after runtime transitions has deterministic behavior.
-- [ ] Untrusted navigation cannot inherit bridge access by accident.
+- [x] Untrusted navigation cannot inherit bridge access by accident.
 - [ ] Popups, external URLs, and downloads have explicit policies.
 - [ ] Title, URL, loading, and console state can be observed without JCEF types.
 - [ ] Load events use stable Graphene-owned enums/value types.

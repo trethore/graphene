@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import io.github.trethore.graphene.api.browser.bridge.BrowserBridgePolicy;
 import io.github.trethore.graphene.api.browser.dialog.BrowserFileDialogPresenter;
 import io.github.trethore.graphene.api.browser.dialog.BrowserJsDialogPresenter;
 import io.github.trethore.graphene.api.browser.navigation.BrowserNavigationPolicy;
@@ -72,5 +73,13 @@ class BrowserOptionsTest {
     BrowserOptions options = BrowserOptions.builder().navigationPolicy(customPolicy).build();
 
     assertSame(customPolicy, options.navigationPolicy());
+  }
+
+  @Test
+  void configuresBridgePolicy() {
+    BrowserBridgePolicy customPolicy = request -> BrowserBridgePolicy.Decision.ALLOW;
+    BrowserOptions options = BrowserOptions.builder().bridgePolicy(customPolicy).build();
+
+    assertSame(customPolicy, options.bridgePolicy());
   }
 }

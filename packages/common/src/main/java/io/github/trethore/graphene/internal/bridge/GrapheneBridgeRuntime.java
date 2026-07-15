@@ -45,11 +45,12 @@ public final class GrapheneBridgeRuntime {
     }
   }
 
-  public GrapheneBridge attach(BridgeBrowser browser) {
+  public GrapheneBridge attach(BridgeBrowser browser, GrapheneBridgeExposureConfig exposureConfig) {
     Objects.requireNonNull(browser, BROWSER_NAME);
 
     GrapheneBridgeEndpoint previousEndpoint;
-    GrapheneBridgeEndpoint newEndpoint = new GrapheneBridgeEndpoint(browser, options, taskExecutor);
+    GrapheneBridgeEndpoint newEndpoint =
+        new GrapheneBridgeEndpoint(browser, options, taskExecutor, exposureConfig);
     synchronized (lock) {
       previousEndpoint = endpointsByBrowser.put(browser, newEndpoint);
       if (previousEndpoint != null) {
@@ -109,10 +110,10 @@ public final class GrapheneBridgeRuntime {
     }
   }
 
-  public void onLoadEnd(BridgeBrowser browser) {
+  public void onLoadEnd(BridgeBrowser browser, String documentUrl) {
     GrapheneBridgeEndpoint endpoint = endpoint(browser);
     if (endpoint != null) {
-      endpoint.onPageLoadEnd();
+      endpoint.onPageLoadEnd(documentUrl);
       DEBUG_LOGGER.debug("Bridge onLoadEnd browserId={}", browserIdentifier(browser));
     }
   }
@@ -127,7 +128,8 @@ public final class GrapheneBridgeRuntime {
     DEBUG_LOGGER.debug("Bridge ensureBootstrap browserId={}", browserIdentifier(browser));
   }
 
-  public boolean onQuery(BridgeBrowser browser, String request, BridgeQueryCallback callback) {
+  public boolean onQuery(
+      BridgeBrowser browser, BridgeFrame frame, String request, BridgeQueryCallback callback) {
     GrapheneBridgeEndpoint endpoint = endpoint(browser);
     if (endpoint == null) {
       DEBUG_LOGGER.debug(
@@ -136,7 +138,7 @@ public final class GrapheneBridgeRuntime {
       return false;
     }
 
-    boolean handled = endpoint.handleQuery(request, callback);
+    boolean handled = endpoint.handleQuery(frame, request, callback);
     DEBUG_LOGGER.debugIfEnabled(
         logger -> {
           int requestSize = request == null ? 0 : request.length();

@@ -1,5 +1,6 @@
 package io.github.trethore.graphene.internal.cef;
 
+import io.github.trethore.graphene.internal.bridge.BridgeFrame;
 import io.github.trethore.graphene.internal.bridge.GrapheneBridgeRuntime;
 import java.util.Objects;
 import org.cef.browser.CefBrowser;
@@ -24,6 +25,7 @@ final class GrapheneCefMessageRouterHandler extends CefMessageRouterHandlerAdapt
       CefQueryCallback callback) {
     return bridgeRuntime.onQuery(
         new GrapheneCefBrowserAdapter(browser),
+        frame(frame),
         request,
         new GrapheneCefQueryCallbackAdapter(callback));
   }
@@ -31,5 +33,20 @@ final class GrapheneCefMessageRouterHandler extends CefMessageRouterHandlerAdapt
   @Override
   public void onQueryCanceled(CefBrowser browser, CefFrame frame, long queryId) {
     bridgeRuntime.onQueryCanceled(new GrapheneCefBrowserAdapter(browser));
+  }
+
+  private static BridgeFrame frame(CefFrame frame) {
+    if (frame == null) {
+      return new BridgeFrame("", false);
+    }
+    try {
+      return new BridgeFrame(value(frame.getURL()), frame.isMain());
+    } catch (RuntimeException exception) {
+      return new BridgeFrame("", false);
+    }
+  }
+
+  private static String value(String value) {
+    return value == null ? "" : value;
   }
 }

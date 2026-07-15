@@ -1,5 +1,6 @@
 package io.github.trethore.graphene.api.browser;
 
+import io.github.trethore.graphene.api.browser.bridge.BrowserBridgePolicy;
 import io.github.trethore.graphene.api.browser.dialog.BrowserFileDialogPresenter;
 import io.github.trethore.graphene.api.browser.dialog.BrowserJsDialogPresenter;
 import io.github.trethore.graphene.api.browser.navigation.BrowserNavigationPolicy;
@@ -16,6 +17,7 @@ public final class BrowserOptions {
   private final boolean transparent;
   private final int backgroundColor;
   private final boolean javascriptEnabled;
+  private final BrowserBridgePolicy bridgePolicy;
   private final BrowserNavigationPolicy navigationPolicy;
   private final BrowserFileDialogPresenter fileDialogPresenter;
   private final BrowserJsDialogPresenter jsDialogPresenter;
@@ -25,6 +27,7 @@ public final class BrowserOptions {
     this.transparent = builder.transparent;
     this.backgroundColor = requireBackgroundColor(builder.backgroundColor);
     this.javascriptEnabled = builder.javascriptEnabled;
+    this.bridgePolicy = Objects.requireNonNull(builder.bridgePolicy, "bridgePolicy");
     this.navigationPolicy = Objects.requireNonNull(builder.navigationPolicy, "navigationPolicy");
     this.fileDialogPresenter = builder.fileDialogPresenter;
     this.jsDialogPresenter = builder.jsDialogPresenter;
@@ -52,6 +55,10 @@ public final class BrowserOptions {
 
   public boolean javascriptEnabled() {
     return javascriptEnabled;
+  }
+
+  public BrowserBridgePolicy bridgePolicy() {
+    return bridgePolicy;
   }
 
   public BrowserNavigationPolicy navigationPolicy() {
@@ -85,6 +92,7 @@ public final class BrowserOptions {
     private boolean transparent = true;
     private int backgroundColor = DEFAULT_BACKGROUND_COLOR;
     private boolean javascriptEnabled = true;
+    private BrowserBridgePolicy bridgePolicy = BrowserBridgePolicy.defaultPolicy();
     private BrowserNavigationPolicy navigationPolicy = BrowserNavigationPolicy.defaultPolicy();
     private BrowserFileDialogPresenter fileDialogPresenter;
     private BrowserJsDialogPresenter jsDialogPresenter;
@@ -108,6 +116,11 @@ public final class BrowserOptions {
 
     public Builder javascriptEnabled(boolean javascriptEnabled) {
       this.javascriptEnabled = javascriptEnabled;
+      return this;
+    }
+
+    public Builder bridgePolicy(BrowserBridgePolicy bridgePolicy) {
+      this.bridgePolicy = Objects.requireNonNull(bridgePolicy, "bridgePolicy");
       return this;
     }
 

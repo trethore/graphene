@@ -47,13 +47,10 @@ final class GrapheneCefLoadHandler extends CefLoadHandlerAdapter {
             frameUrl(frame),
             isMainFrame(frame),
             transitionType == null ? "UNKNOWN" : transitionType.name());
-    taskExecutor.execute(
-        () -> {
-          eventBus.publish(event);
-          if (event.mainFrame()) {
-            bridgeRuntime.onLoadStart(browserAdapter);
-          }
-        });
+    if (event.mainFrame()) {
+      bridgeRuntime.onLoadStart(browserAdapter);
+    }
+    taskExecutor.execute(() -> eventBus.publish(event));
   }
 
   @Override
@@ -69,7 +66,7 @@ final class GrapheneCefLoadHandler extends CefLoadHandlerAdapter {
         () -> {
           eventBus.publish(event);
           if (event.mainFrame()) {
-            bridgeRuntime.onLoadEnd(browserAdapter);
+            bridgeRuntime.onLoadEnd(browserAdapter, event.url());
           }
         });
   }

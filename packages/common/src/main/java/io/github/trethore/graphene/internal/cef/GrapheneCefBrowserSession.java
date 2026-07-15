@@ -17,6 +17,7 @@ import io.github.trethore.graphene.api.browser.input.BrowserPointerInput;
 import io.github.trethore.graphene.api.browser.input.BrowserScrollInput;
 import io.github.trethore.graphene.api.browser.input.BrowserTextInput;
 import io.github.trethore.graphene.internal.bridge.BridgeBrowser;
+import io.github.trethore.graphene.internal.bridge.GrapheneBridgeExposureConfig;
 import io.github.trethore.graphene.internal.bridge.GrapheneBridgeRuntime;
 import io.github.trethore.graphene.internal.browser.GrapheneFrameBuffer;
 import io.github.trethore.graphene.internal.event.GrapheneLoadEventBus;
@@ -84,6 +85,7 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
       long nativeWindowHandle,
       GrapheneBridgeRuntime bridgeRuntime,
       GrapheneLoadEventBus loadEventBus,
+      String grapheneHttpBaseUrl,
       Consumer<GrapheneCefBrowserSession> closeCallback) {
     super(client, initialBrowserUrl(url, options), null, cefSettings(options));
     this.options = Objects.requireNonNull(options, "options");
@@ -94,7 +96,10 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
     this.loadEventBus = Objects.requireNonNull(loadEventBus, "loadEventBus");
     this.closeCallback = Objects.requireNonNull(closeCallback, "closeCallback");
     this.viewRect = new Rectangle(0, 0, requireDimension(width), requireDimension(height));
-    this.bridge = bridgeRuntime.attach(this);
+    this.bridge =
+        bridgeRuntime.attach(
+            this,
+            new GrapheneBridgeExposureConfig(options.bridgePolicy(), url, grapheneHttpBaseUrl));
     try {
       fileDialogRouting.attach(bridge);
       createImmediately();

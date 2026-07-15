@@ -2,7 +2,7 @@
 	"use strict";
 
 	const WRAPPED_FLAG = "__grapheneFileDialogRoutingWrapped";
-	const ARM_CHANNEL = "graphene.internal.file-dialog.arm-directory";
+	const ARM_CHANNEL = "graphene:file-dialog:arm-directory";
 	const nativeShowDirectoryPicker = globalThis.showDirectoryPicker;
 	if (
 		typeof nativeShowDirectoryPicker !== "function" ||

@@ -16,23 +16,21 @@ final class GrapheneBridgeInboundRouter {
   private final GrapheneBridgeMessageCodec codec;
   private final GrapheneBridgeHandlerRegistry handlers;
   private final GrapheneBridgeRequestLifecycle requestLifecycle;
-  private final Runnable onReady;
   private final GrapheneTaskExecutor taskExecutor;
 
   GrapheneBridgeInboundRouter(
       GrapheneBridgeMessageCodec codec,
       GrapheneBridgeHandlerRegistry handlers,
       GrapheneBridgeRequestLifecycle requestLifecycle,
-      Runnable onReady,
       GrapheneTaskExecutor taskExecutor) {
     this.codec = Objects.requireNonNull(codec, "codec");
     this.handlers = Objects.requireNonNull(handlers, "handlers");
     this.requestLifecycle = Objects.requireNonNull(requestLifecycle, "requestLifecycle");
-    this.onReady = Objects.requireNonNull(onReady, "onReady");
     this.taskExecutor = Objects.requireNonNull(taskExecutor, "taskExecutor");
   }
 
-  boolean route(String requestJson, BridgeQueryCallback callback) {
+  boolean route(String requestJson, BridgeQueryCallback callback, Runnable onReady) {
+    Runnable validatedOnReady = Objects.requireNonNull(onReady, "onReady");
     GrapheneBridgePacket packet = codec.parsePacket(requestJson);
     if (packet == null) {
       DEBUG_LOGGER.debugIfEnabled(
@@ -60,7 +58,7 @@ final class GrapheneBridgeInboundRouter {
     switch (packet.kind) {
       case GrapheneBridgeProtocol.KIND_READY -> {
         callback.success(GrapheneBridgeProtocol.EMPTY_RESPONSE_JSON);
-        taskExecutor.execute(onReady);
+        taskExecutor.execute(validatedOnReady);
       }
       case GrapheneBridgeProtocol.KIND_EVENT -> handleEvent(packet, callback);
       case GrapheneBridgeProtocol.KIND_REQUEST -> handleRequest(packet, callback);

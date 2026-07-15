@@ -202,7 +202,8 @@ class GrapheneRuntimeControllerTest {
     }
 
     @Override
-    public BrowserSession createSession(String url, BrowserOptions options, int width, int height) {
+    public BrowserSession createSession(
+        String url, BrowserOptions options, int width, int height, String grapheneHttpBaseUrl) {
       throw creationException;
     }
 
