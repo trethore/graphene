@@ -2,6 +2,7 @@ package io.github.trethore.graphene.internal.cef;
 
 import io.github.trethore.graphene.api.browser.input.BrowserKeyAction;
 import io.github.trethore.graphene.api.browser.input.BrowserKeyInput;
+import io.github.trethore.graphene.api.browser.input.BrowserKeyLocation;
 import io.github.trethore.graphene.api.browser.input.BrowserModifier;
 import io.github.trethore.graphene.api.browser.input.BrowserPointerAction;
 import io.github.trethore.graphene.api.browser.input.BrowserPointerButton;
@@ -34,36 +35,48 @@ final class GrapheneCefInputTranslator {
   }
 
   static CefKeyEvent key(BrowserKeyInput input) {
+    GrapheneCefKeyMapper.ResolvedKey key = GrapheneCefKeyMapper.resolve(input);
     return new CefKeyEvent(
         input.action() == BrowserKeyAction.PRESS
             ? CefKeyEvent.KEYEVENT_RAWKEYDOWN
             : CefKeyEvent.KEYEVENT_KEYUP,
-        modifiers(input.modifiers()),
-        input.keyCode(),
-        input.nativeKeyCode(),
-        input.systemKey(),
-        input.character(),
-        input.unmodifiedCharacter(),
-        input.scanCode());
+        modifiers(input.modifiers()) | locationModifier(input.location()),
+        key.windowsKeyCode(),
+        key.nativeKeyCode(),
+        key.systemKey(),
+        key.character(),
+        key.unmodifiedCharacter(),
+        key.scanCode());
   }
 
-  static CefKeyEvent text(BrowserTextInput input, BrowserKeyInput originatingKey) {
-    int windowsKeyCode = originatingKey == null ? input.character() : originatingKey.keyCode();
-    int nativeKeyCode = originatingKey == null ? 0 : originatingKey.nativeKeyCode();
-    long scanCode = originatingKey == null ? 0 : originatingKey.scanCode();
-    char unmodifiedCharacter =
-        originatingKey == null || originatingKey.unmodifiedCharacter() == 0
-            ? input.character()
-            : originatingKey.unmodifiedCharacter();
-    return new CefKeyEvent(
-        CefKeyEvent.KEYEVENT_CHAR,
-        modifiers(input.modifiers()),
-        windowsKeyCode,
-        nativeKeyCode,
-        originatingKey != null && originatingKey.systemKey(),
-        input.character(),
-        unmodifiedCharacter,
-        scanCode);
+  static CefKeyEvent[] text(BrowserTextInput input, BrowserKeyInput originatingKey) {
+    GrapheneCefKeyMapper.ResolvedKey key =
+        originatingKey == null ? null : GrapheneCefKeyMapper.resolve(originatingKey);
+    String text = input.text();
+    int eventModifiers =
+        modifiers(input.modifiers())
+            | (originatingKey == null
+                ? EventFlags.EVENTFLAG_NONE
+                : locationModifier(originatingKey.location()));
+    CefKeyEvent[] events = new CefKeyEvent[text.length()];
+    for (int index = 0; index < text.length(); index++) {
+      char character = text.charAt(index);
+      char unmodifiedCharacter =
+          key != null && text.length() == 1 && key.unmodifiedCharacter() != 0
+              ? key.unmodifiedCharacter()
+              : character;
+      events[index] =
+          new CefKeyEvent(
+              CefKeyEvent.KEYEVENT_CHAR,
+              eventModifiers,
+              key == null ? character : key.windowsKeyCode(),
+              key == null ? 0 : key.nativeKeyCode(),
+              key != null && key.systemKey(),
+              character,
+              unmodifiedCharacter,
+              key == null ? 0 : key.scanCode());
+    }
+    return events;
   }
 
   static int modifiers(Set<BrowserModifier> modifiers) {
@@ -82,9 +95,15 @@ final class GrapheneCefInputTranslator {
       case META -> EventFlags.EVENTFLAG_COMMAND_DOWN;
       case CAPS_LOCK -> EventFlags.EVENTFLAG_CAPS_LOCK_ON;
       case NUM_LOCK -> EventFlags.EVENTFLAG_NUM_LOCK_ON;
-      case KEYPAD -> EventFlags.EVENTFLAG_IS_KEY_PAD;
+    };
+  }
+
+  private static int locationModifier(BrowserKeyLocation location) {
+    return switch (location) {
+      case STANDARD -> EventFlags.EVENTFLAG_NONE;
       case LEFT -> EventFlags.EVENTFLAG_IS_LEFT;
       case RIGHT -> EventFlags.EVENTFLAG_IS_RIGHT;
+      case NUMPAD -> EventFlags.EVENTFLAG_IS_KEY_PAD;
     };
   }
 

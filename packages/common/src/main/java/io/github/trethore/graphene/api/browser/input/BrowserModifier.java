@@ -6,8 +6,5 @@ public enum BrowserModifier {
   ALT,
   META,
   CAPS_LOCK,
-  NUM_LOCK,
-  KEYPAD,
-  LEFT,
-  RIGHT
+  NUM_LOCK
 }

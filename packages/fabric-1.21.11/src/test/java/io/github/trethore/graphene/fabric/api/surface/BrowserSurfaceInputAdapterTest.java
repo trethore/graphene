@@ -65,6 +65,19 @@ class BrowserSurfaceInputAdapterTest {
     assertSame(richContent, result);
   }
 
+  @Test
+  void preservesUnicodeTextWithoutAllocatingAnUnchangedReplacement() {
+    String text = "\uD83D\uDE00e\u0301";
+
+    assertSame(text, BrowserSurfaceInputAdapter.normalizeText(text));
+  }
+
+  @Test
+  void normalizesSupportedControlsAndFiltersUnsupportedControls() {
+    assertEquals("a\b\rb", BrowserSurfaceInputAdapter.normalizeText("a\u007F\n\uF700\u0001b"));
+    assertNull(BrowserSurfaceInputAdapter.normalizeText("\uF700\u0001"));
+  }
+
   private static int shortcutModifier() {
     return System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("mac")
         ? GLFW.GLFW_MOD_SUPER

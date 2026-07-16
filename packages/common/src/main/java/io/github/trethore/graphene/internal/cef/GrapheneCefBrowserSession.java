@@ -51,6 +51,7 @@ import org.cef.browser.CefRequestContext;
 import org.cef.callback.CefDragData;
 import org.cef.handler.CefRenderHandler;
 import org.cef.handler.CefScreenInfo;
+import org.cef.input.CefKeyEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -455,9 +456,11 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
 
   @Override
   public void sendTextInput(BrowserTextInput input) {
-    sendCefKeyEvent(
+    for (CefKeyEvent event :
         GrapheneCefInputTranslator.text(
-            Objects.requireNonNull(input, INPUT_NAME), lastPressedKeyInput));
+            Objects.requireNonNull(input, INPUT_NAME), lastPressedKeyInput)) {
+      sendCefKeyEvent(event);
+    }
   }
 
   @Override

@@ -189,9 +189,7 @@ public class GrapheneWebViewWidget extends AbstractWidget implements AutoCloseab
 
   @Override
   public boolean charTyped(CharacterEvent event) {
-    for (char character : event.codepointAsString().toCharArray()) {
-      inputAdapter.text(character, event.modifiers());
-    }
+    inputAdapter.text(event.codepointAsString(), event.modifiers());
     return true;
   }
 

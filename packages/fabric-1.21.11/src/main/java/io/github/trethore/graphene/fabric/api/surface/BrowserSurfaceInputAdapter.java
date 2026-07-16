@@ -2,6 +2,7 @@ package io.github.trethore.graphene.fabric.api.surface;
 
 import io.github.trethore.graphene.api.GrapheneSubscription;
 import io.github.trethore.graphene.api.browser.BrowserSession;
+import io.github.trethore.graphene.api.browser.input.BrowserKeyPlatform;
 import io.github.trethore.graphene.api.browser.input.BrowserModifier;
 import io.github.trethore.graphene.api.browser.input.BrowserPointerAction;
 import io.github.trethore.graphene.api.browser.input.BrowserPointerButton;
@@ -15,7 +16,6 @@ import io.github.trethore.graphene.internal.platform.GrapheneClipboard;
 import io.github.trethore.graphene.internal.platform.GrapheneClipboardContent;
 import java.util.Base64;
 import java.util.EnumSet;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import org.lwjgl.glfw.GLFW;
@@ -24,14 +24,14 @@ import org.lwjgl.glfw.GLFW;
 public final class BrowserSurfaceInputAdapter implements AutoCloseable {
   private static final String CLIPBOARD_WRITE_CHANNEL = "graphene:clipboard:write";
   private static final String EXTRA_MOUSE_BUTTON_CHANNEL = "graphene:mouse:button";
+  private static final int FILTERED_CHARACTER = -1;
   private static final int SCROLL_DELTA = 120;
   private static final long SYNTHETIC_DUPLICATE_WINDOW_MILLIS = 250;
-  private static final boolean MAC = osName().contains("mac");
 
   private final BrowserSurface surface;
   private final GrapheneClipboard clipboard = new GrapheneClipboard();
   private final GrapheneSubscription clipboardWriteSubscription;
-  private char pendingSyntheticCharacter;
+  private String pendingSyntheticText;
   private long pendingSyntheticTimestamp;
   private boolean pasteShortcutPressed;
   private boolean rightAltPressed;
@@ -181,21 +181,21 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
             GrapheneKeyboardMapper.map(
                 keyCode, scanCode, pressed, modifiers, modifiers(modifiers)));
     if (pressed) {
-      char syntheticCharacter = syntheticCharacter(keyCode, modifiers);
-      if (syntheticCharacter != 0) {
-        sendText(syntheticCharacter, modifiers);
-        pendingSyntheticCharacter = syntheticCharacter;
+      String syntheticText = syntheticText(keyCode, modifiers);
+      if (syntheticText != null) {
+        sendText(syntheticText, modifiers);
+        pendingSyntheticText = syntheticText;
         pendingSyntheticTimestamp = System.currentTimeMillis();
       }
     }
   }
 
-  public void text(char character, int modifiers) {
-    char normalizedCharacter = normalizeTextCharacter(character);
-    if (normalizedCharacter == 0 || isSyntheticDuplicate(normalizedCharacter)) {
+  public void text(String text, int modifiers) {
+    String normalizedText = normalizeText(text);
+    if (normalizedText == null || isSyntheticDuplicate(normalizedText)) {
       return;
     }
-    sendText(normalizedCharacter, modifiers);
+    sendText(normalizedText, modifiers);
   }
 
   @Override
@@ -241,7 +241,7 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
     }
   }
 
-  private void sendText(char character, int modifiers) {
+  private void sendText(String text, int modifiers) {
     Set<BrowserModifier> browserModifiers = modifiers(modifiers);
     if (rightAltPressed
         && browserModifiers.contains(BrowserModifier.ALT)
@@ -251,46 +251,75 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
       sanitized.remove(BrowserModifier.CONTROL);
       browserModifiers = Set.copyOf(sanitized);
     }
-    surface.browser().sendTextInput(new BrowserTextInput(character, browserModifiers));
+    surface.browser().sendTextInput(new BrowserTextInput(text, browserModifiers));
   }
 
-  private boolean isSyntheticDuplicate(char character) {
-    if (pendingSyntheticCharacter == 0) {
+  private boolean isSyntheticDuplicate(String text) {
+    if (pendingSyntheticText == null) {
       return false;
     }
     boolean duplicate =
-        pendingSyntheticCharacter == character
+        pendingSyntheticText.equals(text)
             && System.currentTimeMillis() - pendingSyntheticTimestamp
                 <= SYNTHETIC_DUPLICATE_WINDOW_MILLIS;
-    pendingSyntheticCharacter = 0;
+    pendingSyntheticText = null;
     pendingSyntheticTimestamp = 0;
     return duplicate;
   }
 
-  private static char syntheticCharacter(int keyCode, int modifiers) {
+  private static String syntheticText(int keyCode, int modifiers) {
     if (keyCode == GLFW.GLFW_KEY_BACKSPACE) {
-      return '\b';
+      return "\b";
     }
     if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
-      return '\r';
+      return "\r";
     }
     if (keyCode >= GLFW.GLFW_KEY_KP_0
         && keyCode <= GLFW.GLFW_KEY_KP_9
         && (modifiers & GLFW.GLFW_MOD_NUM_LOCK) != 0) {
-      return (char) ('0' + keyCode - GLFW.GLFW_KEY_KP_0);
+      return Character.toString('0' + keyCode - GLFW.GLFW_KEY_KP_0);
     }
     return switch (keyCode) {
-      case GLFW.GLFW_KEY_KP_DECIMAL -> (modifiers & GLFW.GLFW_MOD_NUM_LOCK) != 0 ? '.' : 0;
-      case GLFW.GLFW_KEY_KP_DIVIDE -> '/';
-      case GLFW.GLFW_KEY_KP_MULTIPLY -> '*';
-      case GLFW.GLFW_KEY_KP_SUBTRACT -> '-';
-      case GLFW.GLFW_KEY_KP_ADD -> '+';
-      case GLFW.GLFW_KEY_KP_EQUAL -> '=';
-      default -> 0;
+      case GLFW.GLFW_KEY_KP_DECIMAL -> (modifiers & GLFW.GLFW_MOD_NUM_LOCK) != 0 ? "." : null;
+      case GLFW.GLFW_KEY_KP_DIVIDE -> "/";
+      case GLFW.GLFW_KEY_KP_MULTIPLY -> "*";
+      case GLFW.GLFW_KEY_KP_SUBTRACT -> "-";
+      case GLFW.GLFW_KEY_KP_ADD -> "+";
+      case GLFW.GLFW_KEY_KP_EQUAL -> "=";
+      default -> null;
     };
   }
 
-  private static char normalizeTextCharacter(char character) {
+  static String normalizeText(String text) {
+    Objects.requireNonNull(text, "text");
+    if (text.isEmpty()) {
+      return null;
+    }
+    StringBuilder normalized = null;
+    int unchangedStart = 0;
+    for (int index = 0; index < text.length(); index++) {
+      char character = text.charAt(index);
+      int replacement = normalizeTextCharacter(character);
+      if (replacement == character) {
+        continue;
+      }
+      if (normalized == null) {
+        normalized = new StringBuilder(text.length());
+      }
+      normalized.append(text, unchangedStart, index);
+      if (replacement != FILTERED_CHARACTER) {
+        normalized.append((char) replacement);
+      }
+      unchangedStart = index + 1;
+    }
+    if (normalized == null) {
+      return text;
+    }
+    normalized.append(text, unchangedStart, text.length());
+    return normalized.isEmpty() ? null : normalized.toString();
+  }
+
+  private static int normalizeTextCharacter(char character) {
     if (character == 0x7F) {
       return '\b';
     }
@@ -302,7 +331,7 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
             && character != '\b'
             && character != '\t'
             && character != '\r')) {
-      return 0;
+      return FILTERED_CHARACTER;
     }
     return character;
   }
@@ -422,17 +451,16 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
   }
 
   private static boolean hasPlainShortcutModifier(int modifiers) {
-    int shortcutModifier = MAC ? GLFW.GLFW_MOD_SUPER : GLFW.GLFW_MOD_CONTROL;
+    int shortcutModifier =
+        BrowserKeyPlatform.current() == BrowserKeyPlatform.MACOS
+            ? GLFW.GLFW_MOD_SUPER
+            : GLFW.GLFW_MOD_CONTROL;
     int disallowedModifiers = GLFW.GLFW_MOD_SHIFT | GLFW.GLFW_MOD_ALT;
     return (modifiers & shortcutModifier) != 0 && (modifiers & disallowedModifiers) == 0;
   }
 
   private static String emptyToNull(String value) {
     return value == null || value.isEmpty() ? null : value;
-  }
-
-  private static String osName() {
-    return System.getProperty("os.name", "").toLowerCase(Locale.ROOT);
   }
 
   private record ExtraMouseButtonInput(int button, boolean pressed, int x, int y) {}

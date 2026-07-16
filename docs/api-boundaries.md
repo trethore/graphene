@@ -145,9 +145,11 @@ BrowserKeyAction
 BrowserModifier
 ```
 
-Common does not expose or depend on GLFW constants. Fabric maps Minecraft and GLFW values into Graphene types.
-Normalized key events retain raw key and scan codes where necessary for unknown keys, keyboard layouts, and
-platform-specific behavior.
+Common does not expose or depend on GLFW constants. Fabric maps Minecraft and GLFW values into physical
+`BrowserKey` and `BrowserKeyLocation` values. Normalized key events may retain platform-scoped scan codes and layout
+code points where necessary for unknown keys, keyboard layouts, and platform-specific behavior. Committed Unicode
+text is represented separately by `BrowserTextInput`; input-method composition and preedit state are outside the V1
+contract.
 
 Common owns shared logic for:
 

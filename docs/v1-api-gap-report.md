@@ -249,20 +249,24 @@ format.
 
 ### 11. Normalized input still leaks platform/JCEF conventions
 
-- [ ] Resolved for V1
+- [x] Resolved for V1
 
-The API-boundary document planned a `BrowserKey` abstraction, but the current API only exposes integer `keyCode`,
-`nativeKeyCode`, and `scanCode`. Custom integrations must understand Windows virtual-key codes and platform-native scan
-code packing to produce correct input.
+`BrowserKeyInput` identifies physical keys through the stable Graphene-owned `BrowserKey` and
+`BrowserKeyLocation` enums. Key location is separate from modifier state, and the public contract no longer exposes
+CEF's Windows virtual-key code, native-key code, system-key, character, or unmodified-character fields.
 
-V1 should add a stable `BrowserKey` enum/value while retaining optional raw metadata for unknown keys and unusual
-layouts.
+Optional `BrowserRawKeyMetadata` preserves a platform namespace, platform scan code, and layout code point for
+unknown keys and unusual layouts. Common owns the conversion from normalized keys and optional raw metadata into CEF
+keyboard events. Fabric only maps GLFW values into the Graphene-owned input model.
 
-`BrowserTextInput` stores one Java `char`, which does not represent a Unicode code point. Change it to a code point or
-string before the record is frozen.
+`BrowserTextInput` contains non-empty, well-formed Unicode strings and represents committed text rather than IME
+composition or preedit state. The JCEF adapter preserves supplementary characters and multi-code-point sequences by
+emitting ordered UTF-16 character events.
 
-Extra mouse buttons are handled by Fabric through private bridge events instead of the common input contract. Decide
-whether V1 supports them as public browser input and expose that consistently if it does.
+Extra mouse buttons are intentionally excluded from the common pointer-input contract because the current JCEF
+binding cannot inject them. Fabric buttons 6 through 8 remain an internal bridge extension for Graphene-enabled
+documents and are not a backend-independent `BrowserPointerInput` guarantee. Buttons 4 and 5 remain Fabric history
+navigation shortcuts.
 
 ## Strong V1 candidates
 
@@ -381,7 +385,7 @@ packages are supported API and exclude internal/platform implementation packages
 - [x] Title, URL, loading, and console state can be observed without JCEF types.
 - [x] Load events use stable Graphene-owned enums/value types.
 - [x] Frame pixel layout and pre-first-frame behavior are documented and tested.
-- [ ] Key and text input support stable keys and full Unicode semantics.
+- [x] Key and text input support stable keys and full Unicode semantics.
 - [ ] Listener/presenter threading, lifecycle, nullability, and ownership are documented.
 - [ ] Global configuration conflicts and security-sensitive merge behavior are defined.
 - [ ] Public API compatibility is checked in CI.
