@@ -19,6 +19,8 @@ import io.github.trethore.graphene.api.browser.BrowserTitleListener;
 import io.github.trethore.graphene.api.browser.BrowserUrlListener;
 import io.github.trethore.graphene.api.browser.download.BrowserDownload;
 import io.github.trethore.graphene.api.browser.download.BrowserDownloadListener;
+import io.github.trethore.graphene.api.browser.find.BrowserFindDirection;
+import io.github.trethore.graphene.api.browser.find.BrowserFindQuery;
 import io.github.trethore.graphene.api.browser.input.BrowserKeyAction;
 import io.github.trethore.graphene.api.browser.input.BrowserKeyInput;
 import io.github.trethore.graphene.api.browser.input.BrowserPointerInput;
@@ -76,7 +78,9 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
   private final Consumer<GrapheneCefBrowserSession> closeCallback;
   private final GrapheneBridge bridge;
   private final Object dragLock = new Object();
+  private final Object findLock = new Object();
   private CefDragData activeDragData;
+  private BrowserFindQuery activeFindQuery;
   private int activeDragMask = CefDragData.DragOperations.DRAG_OPERATION_NONE;
   private boolean dragTargetEntered;
   private BrowserKeyInput lastPressedKeyInput;
@@ -359,6 +363,56 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
   }
 
   @Override
+  public double zoomLevel() {
+    return getZoomLevel();
+  }
+
+  @Override
+  public void setZoomLevel(double zoomLevel) {
+    if (!Double.isFinite(zoomLevel)) {
+      throw new IllegalArgumentException("zoomLevel must be finite");
+    }
+    super.setZoomLevel(zoomLevel);
+  }
+
+  @Override
+  public void resetZoom() {
+    setZoomLevel(0.0);
+  }
+
+  @Override
+  public void startFinding(BrowserFindQuery query) {
+    BrowserFindQuery validatedQuery = Objects.requireNonNull(query, "query");
+    synchronized (findLock) {
+      activeFindQuery = validatedQuery;
+      super.find(validatedQuery.text(), true, validatedQuery.matchCase(), false);
+    }
+  }
+
+  @Override
+  public void findNext(BrowserFindDirection direction) {
+    BrowserFindDirection validatedDirection = Objects.requireNonNull(direction, "direction");
+    synchronized (findLock) {
+      if (activeFindQuery == null) {
+        throw new IllegalStateException("No page-text search is active");
+      }
+      super.find(
+          activeFindQuery.text(),
+          validatedDirection == BrowserFindDirection.FORWARD,
+          activeFindQuery.matchCase(),
+          true);
+    }
+  }
+
+  @Override
+  public void stopFinding() {
+    synchronized (findLock) {
+      activeFindQuery = null;
+      super.stopFinding(true);
+    }
+  }
+
+  @Override
   public void executeScript(String script, String sourceUrl) {
     String validatedScript = Objects.requireNonNull(script, "script");
     String validatedSourceUrl = Objects.requireNonNull(sourceUrl, "sourceUrl");
@@ -517,6 +571,7 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
     synchronized (navigationLock) {
       pendingUrl = null;
     }
+    clearActiveFindQuery();
     loadEvents.close();
     frameEvents.close();
     synchronized (dragLock) {
@@ -556,6 +611,9 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
   }
 
   void publishLoadStarted(BrowserLoadStarted event) {
+    if (event.mainFrame()) {
+      clearActiveFindQuery();
+    }
     loadEvents.publish(event);
   }
 
@@ -585,6 +643,12 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
       return component;
     }
     return Math.min(255, (component * 255 + alpha / 2) / alpha);
+  }
+
+  private void clearActiveFindQuery() {
+    synchronized (findLock) {
+      activeFindQuery = null;
+    }
   }
 
   private static CefBrowserSettings cefSettings(BrowserOptions options) {

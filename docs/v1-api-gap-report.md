@@ -36,6 +36,7 @@ presentation remain intentionally unmodeled.
 - consumer registration through `Graphene` and `GrapheneContext`;
 - implementation-neutral asset URLs;
 - browser lifecycle, navigation, history, focus, resizing, normalized low-level input, and closure;
+- browser zoom and command-only page-text search;
 - load events represented by Graphene-owned values;
 - Java/JavaScript events and request/response bridge;
 - CPU frame snapshots and Fabric rendering surfaces;
@@ -59,9 +60,9 @@ The shared `CefClient` installs handlers for:
 Rendering, cursor changes, and drag source/target behavior are implemented directly by
 `GrapheneCefBrowserSession`.
 
-JCEF also provides display, focus, keyboard, print, request/resource, authentication, certificate, window, cookie,
-zoom, find, source/text, screenshot, download control, and DevTools capabilities that Graphene does not currently
-model publicly. Most of these should not be exposed one-for-one.
+JCEF also provides print, request/resource, authentication, certificate, window, cookie, source/text, screenshot,
+additional download control, and DevTools capabilities that Graphene does not currently model publicly. Most of
+these should not be exposed one-for-one.
 
 ## Release blockers
 
@@ -290,14 +291,16 @@ unimplemented, so V1 should either:
 
 ### Zoom, find, screenshot, and source/text extraction
 
-JCEF already supports these operations. Suggested V1 additions, in descending value:
+- [x] Resolved for V1
 
-- zoom get/set/reset;
-- find/stop finding;
-- screenshot as a Graphene image/frame result;
-- asynchronous page source or text retrieval.
+`BrowserSession` exposes zoom get/set/reset operations and command-only page-text search with forward and backward
+continuation. Search queries support case-sensitive matching. The current JCEF binding does not report match counts
+or the active match index, so V1 does not model find-result observation.
 
-The implementation already overrides JCEF screenshot creation internally, but `BrowserSession` does not expose it.
+Screenshot and source/text extraction are deferred until a concrete consumer requires them. `latestFrame()` already
+provides an immutable complete CPU snapshot for basic screenshot use cases; the internal JCEF screenshot override
+does not produce a fresher or higher-resolution capture. Source and text extraction would require asynchronous
+navigation and session-closure semantics that are unnecessary for current consumers.
 
 ### Profile, storage, and cookies
 

@@ -4,6 +4,8 @@ import io.github.trethore.graphene.api.GrapheneSubscription;
 import io.github.trethore.graphene.api.bridge.GrapheneBridge;
 import io.github.trethore.graphene.api.browser.download.BrowserDownload;
 import io.github.trethore.graphene.api.browser.download.BrowserDownloadListener;
+import io.github.trethore.graphene.api.browser.find.BrowserFindDirection;
+import io.github.trethore.graphene.api.browser.find.BrowserFindQuery;
 import io.github.trethore.graphene.api.browser.input.BrowserKeyInput;
 import io.github.trethore.graphene.api.browser.input.BrowserPointerInput;
 import io.github.trethore.graphene.api.browser.input.BrowserScrollInput;
@@ -42,6 +44,24 @@ public interface BrowserSession extends AutoCloseable {
   void stopLoading();
 
   void executeScript(String script);
+
+  /** Returns the current zoom level. The default level is {@code 0.0}. */
+  double zoomLevel();
+
+  /** Sets the zoom level. Positive values magnify and negative values reduce the page. */
+  void setZoomLevel(double zoomLevel);
+
+  /** Resets the zoom level to {@code 0.0}. */
+  void resetZoom();
+
+  /** Starts a new forward page-text search, replacing any active search. */
+  void startFinding(BrowserFindQuery query);
+
+  /** Continues the active page-text search in the requested direction. */
+  void findNext(BrowserFindDirection direction);
+
+  /** Stops the active page-text search and clears its selection. */
+  void stopFinding();
 
   void resize(int width, int height);
 
