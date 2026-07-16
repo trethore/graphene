@@ -2,6 +2,7 @@ package io.github.trethore.graphene.fabric.internal.browser;
 
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
+import io.github.trethore.graphene.api.browser.BrowserDirtyRegion;
 import io.github.trethore.graphene.api.browser.BrowserFrame;
 import java.nio.ByteBuffer;
 
@@ -14,15 +15,18 @@ final class GrapheneBrowserFrameUploader {
     if (texture.isUploaded(frame.sequence())) {
       return;
     }
-    if (shouldUploadFullFrame(frame)) {
-      uploadRegion(texture, frame, transparent, 0, 0, frame.width(), frame.height());
+    ByteBuffer pixels = frame.pixels();
+    int rowStrideBytes = frame.rowStrideBytes();
+    if (shouldUploadFullFrame(frame, texture.canApplyDirtyRegions(frame.sequence()))) {
+      uploadRegion(
+          texture, pixels, rowStrideBytes, transparent, 0, 0, frame.width(), frame.height());
     } else {
-      for (io.github.trethore.graphene.api.browser.BrowserDirtyRegion region :
-          frame.dirtyRegions()) {
+      for (BrowserDirtyRegion region : frame.dirtyRegions()) {
         int width = Math.min(region.width(), frame.width() - region.x());
         int height = Math.min(region.height(), frame.height() - region.y());
         if (width > 0 && height > 0) {
-          uploadRegion(texture, frame, transparent, region.x(), region.y(), width, height);
+          uploadRegion(
+              texture, pixels, rowStrideBytes, transparent, region.x(), region.y(), width, height);
         }
       }
     }
@@ -31,7 +35,8 @@ final class GrapheneBrowserFrameUploader {
 
   private void uploadRegion(
       GrapheneBrowserGpuTexture texture,
-      BrowserFrame frame,
+      ByteBuffer source,
+      int rowStrideBytes,
       boolean transparent,
       int x,
       int y,
@@ -39,10 +44,9 @@ final class GrapheneBrowserFrameUploader {
       int height) {
     int byteCount = Math.multiplyExact(Math.multiplyExact(width, height), 4);
     ByteBuffer converted = ensureBuffer(byteCount);
-    ByteBuffer source = frame.pixels();
     converted.clear();
     for (int row = 0; row < height; row++) {
-      int sourceIndex = ((y + row) * frame.width() + x) * 4;
+      int sourceIndex = (y + row) * rowStrideBytes + x * 4;
       for (int column = 0; column < width; column++) {
         byte blue = source.get(sourceIndex++);
         byte green = source.get(sourceIndex++);
@@ -58,13 +62,13 @@ final class GrapheneBrowserFrameUploader {
             texture.texture(), converted, NativeImage.Format.RGBA, 0, 0, x, y, width, height);
   }
 
-  private static boolean shouldUploadFullFrame(BrowserFrame frame) {
-    if (frame.dirtyRegions().isEmpty() || frame.dirtyRegions().size() >= MAX_PARTIAL_UPLOADS) {
+  static boolean shouldUploadFullFrame(BrowserFrame frame, boolean consecutiveSequence) {
+    if (!consecutiveSequence || frame.dirtyRegions().size() >= MAX_PARTIAL_UPLOADS) {
       return true;
     }
     long dirtyPixels = 0;
     long framePixels = (long) frame.width() * frame.height();
-    for (io.github.trethore.graphene.api.browser.BrowserDirtyRegion region : frame.dirtyRegions()) {
+    for (BrowserDirtyRegion region : frame.dirtyRegions()) {
       int availableWidth = Math.max(0, frame.width() - region.x());
       int availableHeight = Math.max(0, frame.height() - region.y());
       int width = Math.clamp(region.width(), 0, availableWidth);

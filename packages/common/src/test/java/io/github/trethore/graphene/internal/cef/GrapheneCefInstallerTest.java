@@ -26,6 +26,7 @@ class GrapheneCefInstallerTest {
     assertEquals(9333, builder.getCefSettings().remote_debugging_port);
     assertTrue(builder.getCefSettings().windowless_rendering_enabled);
     assertTrue(builder.getJcefArgs().contains("--disable-extensions"));
+    assertTrue(builder.getJcefArgs().contains("--force-color-profile=srgb"));
     assertTrue(Path.of(builder.getCefSettings().cache_path).startsWith(temporaryDirectory));
   }
 

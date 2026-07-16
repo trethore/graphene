@@ -40,6 +40,10 @@ final class GrapheneBrowserGpuTexture implements AutoCloseable {
     return uploadedSequence == sequence;
   }
 
+  boolean canApplyDirtyRegions(long sequence) {
+    return uploadedSequence != Long.MIN_VALUE && sequence == uploadedSequence + 1;
+  }
+
   void markUploaded(long sequence) {
     uploadedSequence = sequence;
   }

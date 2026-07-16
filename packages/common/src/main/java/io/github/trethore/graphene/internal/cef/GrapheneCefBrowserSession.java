@@ -7,6 +7,7 @@ import io.github.trethore.graphene.api.browser.BrowserConsoleSeverity;
 import io.github.trethore.graphene.api.browser.BrowserCursor;
 import io.github.trethore.graphene.api.browser.BrowserDirtyRegion;
 import io.github.trethore.graphene.api.browser.BrowserFrame;
+import io.github.trethore.graphene.api.browser.BrowserFrameListener;
 import io.github.trethore.graphene.api.browser.BrowserLoadCompleted;
 import io.github.trethore.graphene.api.browser.BrowserLoadFailed;
 import io.github.trethore.graphene.api.browser.BrowserLoadListener;
@@ -28,13 +29,16 @@ import io.github.trethore.graphene.internal.bridge.GrapheneBridgeExposureConfig;
 import io.github.trethore.graphene.internal.bridge.GrapheneBridgeRuntime;
 import io.github.trethore.graphene.internal.browser.GrapheneBrowserDisplayState;
 import io.github.trethore.graphene.internal.browser.GrapheneFrameBuffer;
+import io.github.trethore.graphene.internal.browser.GrapheneFrameEventBus;
 import io.github.trethore.graphene.internal.event.GrapheneLoadEventBus;
+import io.github.trethore.graphene.internal.platform.GrapheneTaskExecutor;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import org.cef.CefBrowserSettings;
@@ -65,6 +69,7 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
   private final GrapheneLoadEventBus loadEvents = new GrapheneLoadEventBus();
   private final GrapheneBrowserDisplayState displayState;
   private final GrapheneFrameBuffer frameBuffer = new GrapheneFrameBuffer();
+  private final GrapheneFrameEventBus frameEvents;
   private final Component uiComponent = new Canvas();
   private final Rectangle viewRect;
   private final Consumer<GrapheneCefBrowserSession> closeCallback;
@@ -90,6 +95,7 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
       int height,
       long nativeWindowHandle,
       GrapheneBridgeRuntime bridgeRuntime,
+      GrapheneTaskExecutor mainThreadExecutor,
       String grapheneHttpBaseUrl,
       Consumer<GrapheneCefBrowserSession> closeCallback) {
     super(client, initialBrowserUrl(url, options), null, cefSettings(options));
@@ -99,6 +105,7 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
     this.pendingUrl = browserOptionsInitialized ? null : requireUrl(url);
     this.nativeWindowHandle = nativeWindowHandle;
     this.bridgeRuntime = Objects.requireNonNull(bridgeRuntime, "bridgeRuntime");
+    this.frameEvents = new GrapheneFrameEventBus(mainThreadExecutor);
     this.displayState = new GrapheneBrowserDisplayState(getUrl());
     this.closeCallback = Objects.requireNonNull(closeCallback, "closeCallback");
     this.viewRect = new Rectangle(0, 0, requireDimension(width), requireDimension(height));
@@ -161,7 +168,7 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
   @Override
   public void onPopupShow(CefBrowser browser, boolean show) {
     if (!show) {
-      frameBuffer.closePopup();
+      publishFrame(frameBuffer.closePopup());
       invalidate();
     }
   }
@@ -169,7 +176,9 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
   @Override
   public void onPopupSize(CefBrowser browser, Rectangle size) {
     if (size != null && size.x >= 0 && size.y >= 0 && size.width > 0 && size.height > 0) {
-      frameBuffer.setPopupBounds(new BrowserDirtyRegion(size.x, size.y, size.width, size.height));
+      publishFrame(
+          frameBuffer.setPopupBounds(
+              new BrowserDirtyRegion(size.x, size.y, size.width, size.height)));
     }
     invalidate();
   }
@@ -189,20 +198,23 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
     pixels.position(0);
     pixels.limit(Math.multiplyExact(Math.multiplyExact(width, height), 4));
     if (popup) {
-      frameBuffer.capturePopup(width, height, pixels);
+      publishFrame(frameBuffer.capturePopup(width, height, pixels));
       return;
     }
-    List<BrowserDirtyRegion> regions =
-        dirtyRects == null
-            ? List.of()
-            : Arrays.stream(dirtyRects)
-                .filter(Objects::nonNull)
-                .map(
-                    rectangle ->
-                        new BrowserDirtyRegion(
-                            rectangle.x, rectangle.y, rectangle.width, rectangle.height))
-                .toList();
-    frameBuffer.capture(width, height, regions, pixels);
+    List<BrowserDirtyRegion> regions = new ArrayList<>(dirtyRects == null ? 0 : dirtyRects.length);
+    if (dirtyRects != null) {
+      for (Rectangle rectangle : dirtyRects) {
+        if (rectangle != null
+            && rectangle.x >= 0
+            && rectangle.y >= 0
+            && rectangle.width > 0
+            && rectangle.height > 0) {
+          regions.add(
+              new BrowserDirtyRegion(rectangle.x, rectangle.y, rectangle.width, rectangle.height));
+        }
+      }
+    }
+    publishFrame(frameBuffer.capture(width, height, regions, pixels));
   }
 
   @Override
@@ -261,11 +273,12 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
 
   @Override
   public CompletableFuture<BufferedImage> createScreenshot(boolean nativeResolution) {
-    BrowserFrame frame = latestFrame();
-    if (frame == null) {
+    Optional<BrowserFrame> availableFrame = latestFrame();
+    if (availableFrame.isEmpty()) {
       return CompletableFuture.failedFuture(
           new IllegalStateException("No browser frame is available"));
     }
+    BrowserFrame frame = availableFrame.get();
     BufferedImage image =
         new BufferedImage(frame.width(), frame.height(), BufferedImage.TYPE_INT_ARGB);
     ByteBuffer pixels = frame.pixels();
@@ -275,6 +288,9 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
         int green = Byte.toUnsignedInt(pixels.get());
         int red = Byte.toUnsignedInt(pixels.get());
         int alpha = Byte.toUnsignedInt(pixels.get());
+        red = unpremultiply(red, alpha);
+        green = unpremultiply(green, alpha);
+        blue = unpremultiply(blue, alpha);
         image.setRGB(x, y, alpha << 24 | red << 16 | green << 8 | blue);
       }
     }
@@ -445,8 +461,13 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
   }
 
   @Override
-  public BrowserFrame latestFrame() {
-    return frameBuffer.latestFrame();
+  public Optional<BrowserFrame> latestFrame() {
+    return closed ? Optional.empty() : Optional.ofNullable(frameBuffer.latestFrame());
+  }
+
+  @Override
+  public GrapheneSubscription onFrame(BrowserFrameListener listener) {
+    return frameEvents.subscribe(listener);
   }
 
   @Override
@@ -494,6 +515,7 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
       pendingUrl = null;
     }
     loadEvents.close();
+    frameEvents.close();
     synchronized (dragLock) {
       closeActiveDragLocked();
     }
@@ -540,6 +562,26 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
 
   void publishLoadFailed(BrowserLoadFailed event) {
     loadEvents.publish(event);
+  }
+
+  private void publishFrame(BrowserFrame frame) {
+    if (closed) {
+      frameBuffer.clear();
+      return;
+    }
+    if (frame != null) {
+      frameEvents.publish(frame);
+    }
+  }
+
+  private static int unpremultiply(int component, int alpha) {
+    if (alpha == 0) {
+      return 0;
+    }
+    if (alpha == 255) {
+      return component;
+    }
+    return Math.min(255, (component * 255 + alpha / 2) / alpha);
   }
 
   private static CefBrowserSettings cefSettings(BrowserOptions options) {

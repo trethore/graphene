@@ -143,6 +143,7 @@ public final class GrapheneCefRuntime implements GrapheneBrowserRuntime {
             height,
             nativeWindow.handle(),
             bridgeRuntime,
+            mainThreadExecutor,
             grapheneHttpBaseUrl,
             this::removeSession);
     sessions.add(session);

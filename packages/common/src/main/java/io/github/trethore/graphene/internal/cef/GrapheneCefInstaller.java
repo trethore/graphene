@@ -42,6 +42,7 @@ public final class GrapheneCefInstaller {
     configureExtensions(builder, validatedConfig);
     configureRemoteDebugging(builder, validatedConfig);
     configurePlatformCompatibility(builder);
+    builder.addJcefArgs("--force-color-profile=srgb");
 
     try {
       Path cacheDirectory = Files.createDirectories(installPath.resolve("cache"));

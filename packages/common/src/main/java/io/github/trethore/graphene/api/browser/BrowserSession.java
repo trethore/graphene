@@ -9,6 +9,7 @@ import io.github.trethore.graphene.api.browser.input.BrowserPointerInput;
 import io.github.trethore.graphene.api.browser.input.BrowserScrollInput;
 import io.github.trethore.graphene.api.browser.input.BrowserTextInput;
 import java.util.List;
+import java.util.Optional;
 
 @SuppressWarnings("unused")
 public interface BrowserSession extends AutoCloseable {
@@ -54,7 +55,18 @@ public interface BrowserSession extends AutoCloseable {
 
   void sendTextInput(BrowserTextInput input);
 
-  BrowserFrame latestFrame();
+  /**
+   * Returns the latest complete frame snapshot, or an empty value before the first paint and after
+   * session closure.
+   */
+  Optional<BrowserFrame> latestFrame();
+
+  /**
+   * Subscribes to frame snapshots delivered on the platform thread. Notifications are latest-only:
+   * at most one is queued per session and intermediate frames may be coalesced. The returned
+   * subscription is idempotently closeable.
+   */
+  GrapheneSubscription onFrame(BrowserFrameListener listener);
 
   GrapheneBridge bridge();
 

@@ -21,14 +21,16 @@ public final class GrapheneBrowserGpuRenderer implements AutoCloseable {
       int y,
       int width,
       int height) {
-    if (frame == null || width <= 0 || height <= 0) {
+    if (width <= 0 || height <= 0) {
       return;
     }
     texture.ensureSize(frame.width(), frame.height());
     uploader.upload(texture, frame, transparent);
     graphics.guiRenderState.submitGuiElement(
         new BlitRenderState(
-            RenderPipelines.GUI_TEXTURED,
+            transparent
+                ? RenderPipelines.GUI_TEXTURED_PREMULTIPLIED_ALPHA
+                : RenderPipelines.GUI_TEXTURED,
             TextureSetup.singleTexture(
                 texture.view(), RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST)),
             new Matrix3x2f(graphics.pose()),

@@ -1,12 +1,14 @@
 package io.github.trethore.graphene.fabric.api.surface;
 
 import io.github.trethore.graphene.api.GrapheneContext;
+import io.github.trethore.graphene.api.browser.BrowserFrame;
 import io.github.trethore.graphene.api.browser.BrowserOptions;
 import io.github.trethore.graphene.api.browser.BrowserSession;
 import io.github.trethore.graphene.fabric.internal.browser.GrapheneBrowserGpuRenderer;
 import io.github.trethore.graphene.fabric.internal.util.MinecraftReferences;
 import io.github.trethore.graphene.internal.browser.GrapheneSurfaceSizingState;
 import java.util.Objects;
+import java.util.Optional;
 import net.minecraft.client.gui.GuiGraphics;
 
 @SuppressWarnings("unused")
@@ -70,14 +72,21 @@ public final class BrowserSurface implements AutoCloseable {
 
   public void render(GuiGraphics graphics, int x, int y, int renderedWidth, int renderedHeight) {
     ensureOpen();
+    GuiGraphics validatedGraphics = Objects.requireNonNull(graphics, "graphics");
+    int validatedWidth = requirePositive(renderedWidth, "renderedWidth");
+    int validatedHeight = requirePositive(renderedHeight, "renderedHeight");
+    Optional<BrowserFrame> availableFrame = browser.latestFrame();
+    if (availableFrame.isEmpty()) {
+      return;
+    }
     renderer.render(
-        Objects.requireNonNull(graphics, "graphics"),
-        browser.latestFrame(),
+        validatedGraphics,
+        availableFrame.get(),
         browser.options().transparent(),
         x,
         y,
-        requirePositive(renderedWidth, "renderedWidth"),
-        requirePositive(renderedHeight, "renderedHeight"));
+        validatedWidth,
+        validatedHeight);
   }
 
   public void resize(int width, int height) {

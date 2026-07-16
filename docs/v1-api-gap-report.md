@@ -226,23 +226,26 @@ using a JCEF implementation detail.
 
 ### 10. Frame contract is incomplete for custom renderers
 
-- [ ] Resolved for V1
+- [x] Resolved for V1
 
-`BrowserFrame` exposes a byte buffer without declaring its public pixel contract. Custom renderers need stable answers
-for:
+`BrowserFrame` is an immutable, self-contained snapshot using Graphene's
+`BGRA_8888_PREMULTIPLIED_SRGB` format. Rows are tightly packed from the upper-left origin, and the explicit row stride
+is `width * 4` bytes. Chromium is forced to sRGB output so the color-space promise does not depend on the host display
+profile.
 
-- channel order;
-- alpha premultiplication;
-- row order and stride;
-- color space;
-- whether dirty regions apply to the returned full-frame snapshot.
+Dirty regions are clipped to the frame and describe changes relative to the immediately preceding sequence. They may
+be used for partial updates only when the consumer holds that exact preceding sequence with matching dimensions;
+otherwise the complete snapshot must be consumed. Initial frames, resized frames, and paints without usable damage
+information are marked fully dirty. Popup movement marks both the old and new bounds dirty.
 
-`latestFrame()` also returns `null` before the first paint without annotation or documentation, and there is no frame
-availability subscription. Polling is acceptable for the Fabric renderer but weak for headless/custom integrations.
+`latestFrame()` returns `Optional<BrowserFrame>`, which is empty before the first paint and after session closure.
+`BrowserSession.onFrame(...)` delivers snapshots on the platform thread. Delivery is latest-only with at most one
+queued notification per session, so intermediate frames may be coalesced without creating an unbounded queue.
+Listener failures are isolated and closure discards queued notifications.
 
-Before V1, define the pixel format explicitly and either return `Optional<BrowserFrame>`, annotate nullability, or
-provide a non-null frame state abstraction. Add a frame listener/subscription with documented coalescing and
-backpressure semantics.
+The Fabric uploader performs partial uploads only for consecutive frame sequences and falls back to a complete upload
+after skipped frames. Transparent browser surfaces use Minecraft's premultiplied-alpha pipeline, matching the frame
+format.
 
 ### 11. Normalized input still leaks platform/JCEF conventions
 
@@ -377,7 +380,7 @@ packages are supported API and exclude internal/platform implementation packages
 - [x] Popups, external URLs, and downloads have explicit policies.
 - [x] Title, URL, loading, and console state can be observed without JCEF types.
 - [x] Load events use stable Graphene-owned enums/value types.
-- [ ] Frame pixel layout and pre-first-frame behavior are documented and tested.
+- [x] Frame pixel layout and pre-first-frame behavior are documented and tested.
 - [ ] Key and text input support stable keys and full Unicode semantics.
 - [ ] Listener/presenter threading, lifecycle, nullability, and ownership are documented.
 - [ ] Global configuration conflicts and security-sensitive merge behavior are defined.
