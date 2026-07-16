@@ -17,6 +17,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +27,7 @@ public final class GrapheneBridgeEndpoint implements GrapheneBridge {
       GrapheneDebugLogger.of(GrapheneBridgeEndpoint.class);
 
   private static final String CHANNEL_NAME = "channel";
+  private static final String CLIPBOARD_PASTE_FUNCTION = "__grapheneClipboardPasteFromHost";
   private static final String LISTENER_NAME = "listener";
   private static final String TIMEOUT_NAME = "timeout";
   private static final long BOOTSTRAP_FALLBACK_RETRY_NANOS = TimeUnit.MILLISECONDS.toNanos(500);
@@ -40,8 +42,10 @@ public final class GrapheneBridgeEndpoint implements GrapheneBridge {
   private final GrapheneBridgeOutboundQueue outboundQueue;
   private final GrapheneBridgeRequestLifecycle requestLifecycle;
   private final GrapheneBridgeInboundRouter inboundRouter;
+  private final GrapheneBridgeClipboardAccess clipboardAccess = new GrapheneBridgeClipboardAccess();
   private final AtomicBoolean closed = new AtomicBoolean(false);
   private final AtomicLong documentGeneration = new AtomicLong();
+  private final AtomicReference<DocumentIdentity> documentScriptsDocument = new AtomicReference<>();
   private long lastBootstrapFallbackAttemptNanos;
   private String lastBootstrapFallbackUrl;
   private String readyUrl;
@@ -168,12 +172,14 @@ public final class GrapheneBridgeEndpoint implements GrapheneBridge {
 
     String validatedDocumentUrl = Objects.requireNonNull(documentUrl, "documentUrl");
     if (!allows(validatedDocumentUrl)) {
+      tryInjectDocumentScripts(validatedDocumentUrl, "load end");
       denyDocument(validatedDocumentUrl);
       return;
     }
 
     try {
       injectBootstrapScript(validatedDocumentUrl);
+      documentScriptsDocument.set(documentIdentity(validatedDocumentUrl));
       exposureState = ExposureState.ALLOWED;
       DEBUG_LOGGER.debug(
           "Injected bridge bootstrap on load end browserId={} url={}",
@@ -198,9 +204,11 @@ public final class GrapheneBridgeEndpoint implements GrapheneBridge {
 
     BridgeFrame validatedFrame = Objects.requireNonNull(frame, "frame");
     BridgeQueryCallback validatedCallback = Objects.requireNonNull(callback, "callback");
-    if (exposureState != ExposureState.ALLOWED
-        || !validatedFrame.mainFrame()
-        || !allows(validatedFrame.url())) {
+    boolean bridgeAllowed =
+        exposureState == ExposureState.ALLOWED
+            && validatedFrame.mainFrame()
+            && allows(validatedFrame.url());
+    if (!bridgeAllowed && !allowsAuthorizedClipboardWrite(validatedFrame, requestJson)) {
       validatedCallback.failure(403, "Graphene bridge access is denied for this document");
       return true;
     }
@@ -279,12 +287,14 @@ public final class GrapheneBridgeEndpoint implements GrapheneBridge {
     lastBootstrapFallbackUrl = currentUrl;
 
     if (!allows(currentUrl)) {
+      tryInjectDocumentScripts(currentUrl, "fallback");
       denyDocument(currentUrl);
       return;
     }
 
     try {
       injectBootstrapScript(currentUrl);
+      documentScriptsDocument.set(documentIdentity(currentUrl));
       exposureState = ExposureState.ALLOWED;
       DEBUG_LOGGER.debug(
           "Injected bridge bootstrap fallback browserId={} url={}",
@@ -311,6 +321,19 @@ public final class GrapheneBridgeEndpoint implements GrapheneBridge {
 
   void emitInternal(String channel, String payloadJson) {
     emitValidated(validateInternalChannel(channel), payloadJson);
+  }
+
+  void authorizeClipboardWrite() {
+    ensureOpen();
+    clipboardAccess.authorize(documentGeneration.get());
+  }
+
+  void pasteClipboard(String payloadJson) {
+    JsonElement payload = codec.parsePayloadJson(payloadJson);
+    ensureOpen();
+    browser.executeScript(
+        "globalThis." + CLIPBOARD_PASTE_FUNCTION + "?.(" + codec.payloadToJson(payload) + ");",
+        currentUrl());
   }
 
   private void onBridgeReady(long readyDocumentGeneration, String documentUrl) {
@@ -372,6 +395,42 @@ public final class GrapheneBridgeEndpoint implements GrapheneBridge {
     for (String script : bootstrapScripts) {
       browser.executeScript(script, scriptUrl);
     }
+  }
+
+  private boolean allowsAuthorizedClipboardWrite(BridgeFrame frame, String requestJson) {
+    GrapheneBridgePacket packet = codec.parsePacket(requestJson);
+    return clipboardAccess.allows(frame, packet, documentGeneration.get());
+  }
+
+  private void tryInjectDocumentScripts(String documentUrl, String injectionPath) {
+    DocumentIdentity currentDocument = documentIdentity(documentUrl);
+    if (currentDocument.equals(documentScriptsDocument.get())) {
+      return;
+    }
+
+    try {
+      for (String script : GrapheneBridgeScriptLoader.documentScripts()) {
+        browser.executeScript(script, documentUrl);
+      }
+      documentScriptsDocument.set(currentDocument);
+      DEBUG_LOGGER.debug(
+          "Injected document support scripts on {} browserId={} url={}",
+          injectionPath,
+          browserIdentifier(),
+          documentUrl);
+    } catch (RuntimeException exception) {
+      DEBUG_LOGGER.debug(
+          "Document support script injection failed on {} browserId={} url={} reason={}",
+          injectionPath,
+          browserIdentifier(),
+          documentUrl,
+          exception.getMessage());
+      DEBUG_LOGGER.debug("Document support script injection failure stack trace", exception);
+    }
+  }
+
+  private DocumentIdentity documentIdentity(String documentUrl) {
+    return new DocumentIdentity(documentGeneration.get(), documentUrl);
   }
 
   private void queueOrDispatch(String outboundPacketJson) {
@@ -495,4 +554,6 @@ public final class GrapheneBridgeEndpoint implements GrapheneBridge {
     ALLOWED,
     DENIED
   }
+
+  private record DocumentIdentity(long generation, String url) {}
 }

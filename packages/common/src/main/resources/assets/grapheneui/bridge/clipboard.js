@@ -1,8 +1,13 @@
 (function () {
 	"use strict";
 
-	const INSTALLED_FLAG = "__grapheneClipboardInstalled";
-	const PASTE_CHANNEL = "graphene:clipboard:paste";
+	const BRIDGE_NAME = "grapheneui";
+	const BRIDGE_INSTALLED_PROPERTY = "__grapheneInstalled";
+	const PROTOCOL_VERSION = 1;
+	const DOCUMENT_INSTALLED_FLAG = "__grapheneClipboardDocumentInstalled";
+	const WRITE_PATCHES_INSTALLED_FLAG =
+		"__grapheneClipboardWritePatchesInstalled";
+	const PASTE_FUNCTION = "__grapheneClipboardPasteFromHost";
 	const WRITE_CHANNEL = "graphene:clipboard:write";
 
 	function reportSuppressedError(context, error) {
@@ -69,11 +74,35 @@
 		return Boolean(payload.text || payload.html || payload.png);
 	}
 
-	function emitPayload(bridge, payload) {
+	function emitDirect(payload) {
+		return new Promise(function (resolve, reject) {
+			const cefQuery = globalThis["cefQuery"];
+			if (typeof cefQuery !== "function") {
+				reject(new Error("cefQuery is unavailable"));
+				return;
+			}
+
+			cefQuery({
+				request: JSON.stringify({
+					bridge: BRIDGE_NAME,
+					version: PROTOCOL_VERSION,
+					kind: "event",
+					channel: WRITE_CHANNEL,
+					payload: payload,
+				}),
+				onSuccess: resolve,
+				onFailure: function (_, errorMessage) {
+					reject(new Error(errorMessage));
+				},
+			});
+		});
+	}
+
+	function emitPayload(payload) {
 		if (!hasPayload(payload)) {
 			return Promise.resolve();
 		}
-		return bridge.emit(WRITE_CHANNEL, payload);
+		return emitDirect(payload);
 	}
 
 	function bufferToBase64(buffer) {
@@ -113,7 +142,7 @@
 		return payload;
 	}
 
-	function syncNativeRead(bridge) {
+	function syncNativeRead() {
 		const clipboard = globalThis.navigator?.clipboard;
 		if (!clipboard || typeof clipboard.read !== "function") {
 			return;
@@ -124,7 +153,7 @@
 				.read()
 				.then(payloadFromItems)
 				.then(function (payload) {
-					return emitPayload(bridge, payload);
+					return emitPayload(payload);
 				})
 				.catch(function (error) {
 					reportSuppressedError(
@@ -135,7 +164,7 @@
 		}, 0);
 	}
 
-	function onCopy(bridge, event) {
+	function onCopy(event) {
 		if (!event.isTrusted) {
 			return;
 		}
@@ -145,11 +174,11 @@
 			html: selectedHtml(event),
 			png: null,
 		};
-		emitPayload(bridge, payload).catch(function (error) {
+		emitPayload(payload).catch(function (error) {
 			reportSuppressedError("Failed to write host clipboard", error);
 		});
 		if (payload.html.includes("<img")) {
-			syncNativeRead(bridge);
+			syncNativeRead();
 		}
 	}
 
@@ -312,7 +341,7 @@
 		insertRichContent(target, normalizedPayload);
 	}
 
-	function patchWrites(bridge) {
+	function patchWrites() {
 		const clipboard = globalThis.navigator?.clipboard;
 		if (!clipboard || typeof clipboard.writeText !== "function") {
 			return;
@@ -322,7 +351,7 @@
 		const synchronizedWriteText = function (text) {
 			const normalizedText = String(text);
 			return nativeWriteText(normalizedText).then(function () {
-				return emitPayload(bridge, {
+				return emitPayload({
 					text: normalizedText,
 					html: null,
 					png: null,
@@ -353,7 +382,7 @@
 					return payloadFromItems(items);
 				})
 				.then(function (payload) {
-					return emitPayload(bridge, payload);
+					return emitPayload(payload);
 				});
 		};
 
@@ -370,28 +399,23 @@
 		}
 	}
 
-	function install(bridge) {
-		const copyHandler = function (event) {
-			onCopy(bridge, event);
-		};
-
-		globalThis[INSTALLED_FLAG] = true;
-		globalThis.addEventListener("copy", copyHandler);
-		globalThis.addEventListener("cut", copyHandler);
-		bridge.on(PASTE_CHANNEL, onPaste);
-		patchWrites(bridge);
+	function installWritePatches() {
+		globalThis[WRITE_PATCHES_INSTALLED_FLAG] = true;
+		patchWrites();
 	}
 
-	if (globalThis[INSTALLED_FLAG]) {
-		return;
+	globalThis[PASTE_FUNCTION] = onPaste;
+	if (!globalThis[DOCUMENT_INSTALLED_FLAG]) {
+		globalThis[DOCUMENT_INSTALLED_FLAG] = true;
+		globalThis.addEventListener("copy", onCopy);
+		globalThis.addEventListener("cut", onCopy);
 	}
 
 	const bridge = globalThis.grapheneBridge;
 	if (
-		bridge &&
-		typeof bridge.on === "function" &&
-		typeof bridge.emit === "function"
+		!globalThis[WRITE_PATCHES_INSTALLED_FLAG] &&
+		bridge?.[BRIDGE_INSTALLED_PROPERTY] === true
 	) {
-		install(bridge);
+		installWritePatches();
 	}
 })();

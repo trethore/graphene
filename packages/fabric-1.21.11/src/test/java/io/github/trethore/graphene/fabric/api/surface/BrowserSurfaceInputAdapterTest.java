@@ -15,10 +15,7 @@ import org.lwjgl.glfw.GLFW;
 class BrowserSurfaceInputAdapterTest {
   @Test
   void recognizesPlainPasteShortcut() {
-    int shortcutModifier =
-        System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("mac")
-            ? GLFW.GLFW_MOD_SUPER
-            : GLFW.GLFW_MOD_CONTROL;
+    int shortcutModifier = shortcutModifier();
 
     assertTrue(BrowserSurfaceInputAdapter.isPasteShortcut(GLFW.GLFW_KEY_V, shortcutModifier));
     assertFalse(BrowserSurfaceInputAdapter.isPasteShortcut(GLFW.GLFW_KEY_V, 0));
@@ -26,6 +23,22 @@ class BrowserSurfaceInputAdapterTest {
         BrowserSurfaceInputAdapter.isPasteShortcut(
             GLFW.GLFW_KEY_V, shortcutModifier | GLFW.GLFW_MOD_SHIFT));
     assertFalse(BrowserSurfaceInputAdapter.isPasteShortcut(GLFW.GLFW_KEY_C, shortcutModifier));
+  }
+
+  @Test
+  void recognizesClipboardWriteShortcuts() {
+    int shortcutModifier = shortcutModifier();
+
+    assertTrue(
+        BrowserSurfaceInputAdapter.isClipboardWriteShortcut(GLFW.GLFW_KEY_C, shortcutModifier));
+    assertTrue(
+        BrowserSurfaceInputAdapter.isClipboardWriteShortcut(GLFW.GLFW_KEY_X, shortcutModifier));
+    assertFalse(
+        BrowserSurfaceInputAdapter.isClipboardWriteShortcut(GLFW.GLFW_KEY_V, shortcutModifier));
+    assertFalse(BrowserSurfaceInputAdapter.isClipboardWriteShortcut(GLFW.GLFW_KEY_C, 0));
+    assertFalse(
+        BrowserSurfaceInputAdapter.isClipboardWriteShortcut(
+            GLFW.GLFW_KEY_C, shortcutModifier | GLFW.GLFW_MOD_SHIFT));
   }
 
   @Test
@@ -50,5 +63,11 @@ class BrowserSurfaceInputAdapterTest {
         BrowserSurfaceInputAdapter.resolveClipboardContent(richContent, "shared");
 
     assertSame(richContent, result);
+  }
+
+  private static int shortcutModifier() {
+    return System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("mac")
+        ? GLFW.GLFW_MOD_SUPER
+        : GLFW.GLFW_MOD_CONTROL;
   }
 }

@@ -4,20 +4,27 @@ import io.github.trethore.graphene.internal.logging.GrapheneDebugLogger;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 
 final class GrapheneBridgeScriptLoader {
   private static final GrapheneDebugLogger DEBUG_LOGGER =
       GrapheneDebugLogger.of(GrapheneBridgeScriptLoader.class);
 
+  private static final String CLIPBOARD_SCRIPT_RESOURCE_PATH =
+      "assets/grapheneui/bridge/clipboard.js";
   private static final List<String> SCRIPT_RESOURCE_PATHS =
       List.of(
           "assets/grapheneui/bridge/bridge.js",
           "assets/grapheneui/file-dialog-routing.js",
           "assets/grapheneui/bridge/navigation.js",
-          "assets/grapheneui/bridge/clipboard.js",
+          CLIPBOARD_SCRIPT_RESOURCE_PATH,
           "assets/grapheneui/bridge/mouse.js");
+  private static final String CLIPBOARD_SCRIPT =
+      loadSingleScript(
+          GrapheneBridgeScriptLoader.class.getClassLoader(), CLIPBOARD_SCRIPT_RESOURCE_PATH);
   private static final List<String> SCRIPTS = loadScripts();
+  private static final List<String> DOCUMENT_SCRIPTS = List.of(CLIPBOARD_SCRIPT);
 
   private GrapheneBridgeScriptLoader() {}
 
@@ -25,11 +32,18 @@ final class GrapheneBridgeScriptLoader {
     return SCRIPTS;
   }
 
+  static List<String> documentScripts() {
+    return DOCUMENT_SCRIPTS;
+  }
+
   private static List<String> loadScripts() {
     ClassLoader classLoader = GrapheneBridgeScriptLoader.class.getClassLoader();
-    List<String> loadedScripts = new java.util.ArrayList<>(SCRIPT_RESOURCE_PATHS.size());
+    List<String> loadedScripts = new ArrayList<>(SCRIPT_RESOURCE_PATHS.size());
     for (String scriptResourcePath : SCRIPT_RESOURCE_PATHS) {
-      loadedScripts.add(loadSingleScript(classLoader, scriptResourcePath));
+      loadedScripts.add(
+          CLIPBOARD_SCRIPT_RESOURCE_PATH.equals(scriptResourcePath)
+              ? CLIPBOARD_SCRIPT
+              : loadSingleScript(classLoader, scriptResourcePath));
     }
 
     DEBUG_LOGGER.debug("Loaded {} Graphene bridge bootstrap script(s)", loadedScripts.size());

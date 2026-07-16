@@ -40,6 +40,14 @@ public final class GrapheneBridgeInternals {
     endpoint(bridge).emitInternal(channel, GrapheneBridgeJson.toJson(payload));
   }
 
+  public static void authorizeClipboardWrite(GrapheneBridge bridge) {
+    endpoint(bridge).authorizeClipboardWrite();
+  }
+
+  public static void pasteClipboard(GrapheneBridge bridge, Object payload) {
+    endpoint(bridge).pasteClipboard(GrapheneBridgeJson.toJson(payload));
+  }
+
   private static GrapheneBridgeEndpoint endpoint(GrapheneBridge bridge) {
     if (Objects.requireNonNull(bridge, "bridge") instanceof GrapheneBridgeEndpoint endpoint) {
       return endpoint;

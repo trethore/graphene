@@ -16,6 +16,10 @@ import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
 
 final class GrapheneBridgeEndpointTest {
+  private static final String CLIPBOARD_WRITE_REQUEST =
+      "{\"bridge\":\"grapheneui\",\"version\":1,\"kind\":\"event\","
+          + "\"channel\":\"graphene:clipboard:write\",\"payload\":{\"text\":\"copied\"}}";
+
   @Test
   void injectsBootstrapAndFlushesQueuedMessagesAfterReadyHandshake() {
     TestBrowser browser = new TestBrowser();
@@ -90,9 +94,119 @@ final class GrapheneBridgeEndpointTest {
             callback);
 
     assertTrue(handled);
-    assertTrue(browser.executedScripts.isEmpty());
+    assertEquals(
+        GrapheneBridgeScriptLoader.documentScripts().size(), browser.executedScripts.size());
     assertEquals(403, callback.failureCode);
     assertFalse(endpoint.isReady());
+  }
+
+  @Test
+  void allowsAuthorizedClipboardWritesFromRemoteDocuments() {
+    TestBrowser browser = new TestBrowser();
+    browser.currentUrl = "https://example.com/index.html";
+    GrapheneBridgeEndpoint endpoint = endpoint(browser);
+    List<String> payloads = new ArrayList<>();
+    try (GrapheneSubscription subscription =
+        GrapheneBridgeInternals.onEvent(
+            endpoint, "graphene:clipboard:write", (channel, payload) -> payloads.add(payload))) {
+      assertNotNull(subscription);
+      endpoint.onPageLoadEnd(browser.currentUrl());
+      endpoint.authorizeClipboardWrite();
+      TestQueryCallback callback = new TestQueryCallback();
+
+      boolean handled =
+          endpoint.handleQuery(mainFrame(browser.currentUrl()), CLIPBOARD_WRITE_REQUEST, callback);
+
+      assertTrue(handled);
+      assertEquals("{}", callback.successResponse);
+      assertEquals(List.of("{\"text\":\"copied\"}"), payloads);
+    }
+  }
+
+  @Test
+  void deniesUnauthorizedClipboardWritesFromRemoteDocuments() {
+    TestBrowser browser = new TestBrowser();
+    browser.currentUrl = "https://example.com/index.html";
+    GrapheneBridgeEndpoint endpoint = endpoint(browser);
+    endpoint.onPageLoadEnd(browser.currentUrl());
+    RecordingQueryCallback callback = new RecordingQueryCallback();
+
+    boolean handled =
+        endpoint.handleQuery(mainFrame(browser.currentUrl()), CLIPBOARD_WRITE_REQUEST, callback);
+
+    assertTrue(handled);
+    assertEquals(403, callback.failureCode);
+  }
+
+  @Test
+  void dispatchesClipboardPasteWithoutBridgeExposure() {
+    TestBrowser browser = new TestBrowser();
+    browser.currentUrl = "https://example.com/index.html";
+    GrapheneBridgeEndpoint endpoint = endpoint(browser);
+    endpoint.onPageLoadEnd(browser.currentUrl());
+    browser.executedScripts.clear();
+
+    endpoint.pasteClipboard("{\"text\":\"pasted\",\"html\":null,\"png\":null}");
+
+    assertEquals(1, browser.executedScripts.size());
+    assertTrue(browser.executedScripts.getFirst().contains("__grapheneClipboardPasteFromHost"));
+    assertTrue(browser.executedScripts.getFirst().contains("\"text\":\"pasted\""));
+  }
+
+  @Test
+  void clipboardAuthorizationDoesNotAllowOtherChannels() {
+    TestBrowser browser = new TestBrowser();
+    browser.currentUrl = "https://example.com/index.html";
+    GrapheneBridgeEndpoint endpoint = endpoint(browser);
+    endpoint.onPageLoadEnd(browser.currentUrl());
+    endpoint.authorizeClipboardWrite();
+    RecordingQueryCallback callback = new RecordingQueryCallback();
+
+    boolean handled =
+        endpoint.handleQuery(
+            mainFrame(browser.currentUrl()),
+            "{\"bridge\":\"grapheneui\",\"version\":1,\"kind\":\"event\","
+                + "\"channel\":\"graphene:other\",\"payload\":null}",
+            callback);
+
+    assertTrue(handled);
+    assertEquals(403, callback.failureCode);
+  }
+
+  @Test
+  void clipboardAuthorizationDoesNotAllowSubframes() {
+    TestBrowser browser = new TestBrowser();
+    browser.currentUrl = "https://example.com/index.html";
+    GrapheneBridgeEndpoint endpoint = endpoint(browser);
+    endpoint.onPageLoadEnd(browser.currentUrl());
+    endpoint.authorizeClipboardWrite();
+    RecordingQueryCallback callback = new RecordingQueryCallback();
+
+    boolean handled =
+        endpoint.handleQuery(
+            new BridgeFrame(browser.currentUrl(), false), CLIPBOARD_WRITE_REQUEST, callback);
+
+    assertTrue(handled);
+    assertEquals(403, callback.failureCode);
+  }
+
+  @Test
+  void clipboardAuthorizationDoesNotSurviveNavigation() {
+    TestBrowser browser = new TestBrowser();
+    browser.currentUrl = "https://example.com/index.html";
+    GrapheneBridgeEndpoint endpoint = endpoint(browser);
+    endpoint.onPageLoadEnd(browser.currentUrl());
+    endpoint.authorizeClipboardWrite();
+    browser.currentUrl = "https://example.com/next.html";
+    endpoint.onNavigationRequested();
+    endpoint.onPageLoadEnd(browser.currentUrl());
+    RecordingQueryCallback callback = new RecordingQueryCallback();
+
+    boolean handled =
+        endpoint.handleQuery(mainFrame(browser.currentUrl()), CLIPBOARD_WRITE_REQUEST, callback);
+
+    assertTrue(handled);
+    assertEquals(403, callback.failureCode);
   }
 
   @Test
@@ -133,7 +247,8 @@ final class GrapheneBridgeEndpointTest {
     browser.currentUrl = "http://127.0.0.1:31001/mods/test/index.html";
     endpoint.onNavigationRequested();
     endpoint.onPageLoadEnd(browser.currentUrl());
-    assertTrue(browser.executedScripts.isEmpty());
+    assertEquals(
+        GrapheneBridgeScriptLoader.documentScripts().size(), browser.executedScripts.size());
   }
 
   @Test
@@ -219,7 +334,8 @@ final class GrapheneBridgeEndpointTest {
 
     endpoint.onPageLoadEnd(browser.currentUrl());
 
-    assertTrue(browser.executedScripts.isEmpty());
+    assertEquals(
+        GrapheneBridgeScriptLoader.documentScripts().size(), browser.executedScripts.size());
   }
 
   private static BridgeFrame mainFrame(String url) {

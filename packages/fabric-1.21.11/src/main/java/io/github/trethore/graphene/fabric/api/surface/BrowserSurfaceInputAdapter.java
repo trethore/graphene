@@ -22,7 +22,6 @@ import org.lwjgl.glfw.GLFW;
 
 @SuppressWarnings("unused")
 public final class BrowserSurfaceInputAdapter implements AutoCloseable {
-  private static final String CLIPBOARD_PASTE_CHANNEL = "graphene:clipboard:paste";
   private static final String CLIPBOARD_WRITE_CHANNEL = "graphene:clipboard:write";
   private static final String EXTRA_MOUSE_BUTTON_CHANNEL = "graphene:mouse:button";
   private static final int SCROLL_DELTA = 120;
@@ -166,6 +165,9 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
       pasteClipboard();
       return;
     }
+    if (pressed && isClipboardWriteShortcut(keyCode, modifiers)) {
+      GrapheneBridgeInternals.authorizeClipboardWrite(surface.browser().bridge());
+    }
     if (!pressed && keyCode == GLFW.GLFW_KEY_V && pasteShortcutPressed) {
       pasteShortcutPressed = false;
       return;
@@ -206,13 +208,12 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
     String nativeText = MinecraftReferences.keyboardHandler().getClipboard();
     GrapheneClipboardContent content = resolveClipboardContent(richContent, nativeText);
     byte[] png = content.png();
-    GrapheneBridgeInternals.emitJson(
-        surface.browser().bridge(),
-        CLIPBOARD_PASTE_CHANNEL,
+    ClipboardPayload payload =
         new ClipboardPayload(
             content.text(),
             content.html(),
-            png.length == 0 ? null : Base64.getEncoder().encodeToString(png)));
+            png.length == 0 ? null : Base64.getEncoder().encodeToString(png));
+    GrapheneBridgeInternals.pasteClipboard(surface.browser().bridge(), payload);
   }
 
   private void writeClipboard(ClipboardPayload payload) {
@@ -412,11 +413,18 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
   }
 
   static boolean isPasteShortcut(int keyCode, int modifiers) {
+    return keyCode == GLFW.GLFW_KEY_V && hasPlainShortcutModifier(modifiers);
+  }
+
+  static boolean isClipboardWriteShortcut(int keyCode, int modifiers) {
+    return (keyCode == GLFW.GLFW_KEY_C || keyCode == GLFW.GLFW_KEY_X)
+        && hasPlainShortcutModifier(modifiers);
+  }
+
+  private static boolean hasPlainShortcutModifier(int modifiers) {
     int shortcutModifier = MAC ? GLFW.GLFW_MOD_SUPER : GLFW.GLFW_MOD_CONTROL;
     int disallowedModifiers = GLFW.GLFW_MOD_SHIFT | GLFW.GLFW_MOD_ALT;
-    return keyCode == GLFW.GLFW_KEY_V
-        && (modifiers & shortcutModifier) != 0
-        && (modifiers & disallowedModifiers) == 0;
+    return (modifiers & shortcutModifier) != 0 && (modifiers & disallowedModifiers) == 0;
   }
 
   private static String emptyToNull(String value) {
