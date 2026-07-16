@@ -5,6 +5,8 @@ import io.github.trethore.graphene.api.browser.BrowserSession;
 import io.github.trethore.graphene.api.browser.dialog.BrowserFileDialogPresenter;
 import io.github.trethore.graphene.api.browser.dialog.BrowserJsDialogPresenter;
 import io.github.trethore.graphene.api.config.GrapheneGlobalConfig;
+import io.github.trethore.graphene.api.devtools.DevToolsDisabledException;
+import io.github.trethore.graphene.api.devtools.DevToolsPageTarget;
 import io.github.trethore.graphene.internal.bridge.GrapheneBridgeOptions;
 import io.github.trethore.graphene.internal.bridge.GrapheneBridgeRuntime;
 import io.github.trethore.graphene.internal.platform.GrapheneExternalBrowser;
@@ -22,6 +24,8 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
 import org.cef.CefApp;
@@ -126,6 +130,38 @@ public final class GrapheneCefRuntime implements GrapheneBrowserRuntime {
   @Override
   public synchronized OptionalInt remoteDebuggingPort() {
     return remoteDebuggingPort > 0 ? OptionalInt.of(remoteDebuggingPort) : OptionalInt.empty();
+  }
+
+  @Override
+  public CompletionStage<List<DevToolsPageTarget>> devToolsPageTargets() {
+    int port;
+    synchronized (this) {
+      port = remoteDebuggingPort;
+    }
+    if (port <= 0) {
+      return CompletableFuture.failedFuture(new DevToolsDisabledException());
+    }
+    return GrapheneCefDevToolsDiscovery.pageTargets(port);
+  }
+
+  @Override
+  public CompletionStage<DevToolsPageTarget> devToolsTargetFor(BrowserSession session) {
+    Objects.requireNonNull(session, "session");
+    GrapheneCefBrowserSession cefSession;
+    int port;
+    synchronized (this) {
+      port = remoteDebuggingPort;
+      if (port <= 0) {
+        return CompletableFuture.failedFuture(new DevToolsDisabledException());
+      }
+      if (!(session instanceof GrapheneCefBrowserSession candidate)
+          || !sessions.contains(candidate)) {
+        return CompletableFuture.failedFuture(
+            new IllegalArgumentException("session is not owned by the active Graphene runtime"));
+      }
+      cefSession = candidate;
+    }
+    return GrapheneCefDevToolsDiscovery.targetFor(cefSession, port);
   }
 
   @Override

@@ -85,6 +85,7 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
   private boolean dragTargetEntered;
   private BrowserKeyInput lastPressedKeyInput;
   private volatile BrowserCursor pageCursor = BrowserCursor.ARROW;
+  private volatile String devToolsTargetId;
   private boolean browserOptionsInitialized;
   private RuntimeException browserOptionsFailure;
   private String pendingUrl;
@@ -591,6 +592,14 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
 
   GrapheneCefDownloadRegistry downloadRegistry() {
     return downloadRegistry;
+  }
+
+  String devToolsTargetId() {
+    return devToolsTargetId;
+  }
+
+  void bindDevToolsTarget(String targetId) {
+    devToolsTargetId = Objects.requireNonNull(targetId, "targetId");
   }
 
   Runnable updateTitle(String title) {

@@ -9,6 +9,9 @@ import io.github.trethore.graphene.api.config.GrapheneConfig;
 import io.github.trethore.graphene.api.config.GrapheneGlobalConfig;
 import io.github.trethore.graphene.api.config.GrapheneHttpConfig;
 import io.github.trethore.graphene.api.config.GrapheneRemoteDebugConfig;
+import io.github.trethore.graphene.api.devtools.DevToolsPageTarget;
+import io.github.trethore.graphene.api.devtools.DevToolsRuntimeUnavailableException;
+import io.github.trethore.graphene.api.devtools.GrapheneDevTools;
 import io.github.trethore.graphene.api.runtime.GrapheneHttpServer;
 import io.github.trethore.graphene.api.runtime.GrapheneRuntime;
 import io.github.trethore.graphene.api.runtime.GrapheneRuntimeState;
@@ -21,6 +24,7 @@ import io.github.trethore.graphene.internal.url.GrapheneHttpUrls;
 import java.nio.file.Path;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalInt;
@@ -42,6 +46,7 @@ public final class GrapheneRuntimeController {
   private final CompletionStage<Void> initializationView = initialization.minimalCompletionStage();
   private final GrapheneRuntime runtimeView = new RuntimeView();
   private final GrapheneHttpServer httpServerView = new HttpServerView();
+  private final GrapheneDevTools devToolsView = new DevToolsView();
   private GraphenePlatformServices platformServices;
   private GrapheneBrowserRuntime browserRuntime = GrapheneBrowserRuntime.disabled();
   private GrapheneRuntimeState state = GrapheneRuntimeState.NEW;
@@ -443,8 +448,52 @@ public final class GrapheneRuntimeController {
     }
 
     @Override
+    public GrapheneDevTools devTools() {
+      return devToolsView;
+    }
+
+    @Override
     public GrapheneHttpServer httpServer() {
       return httpServerView;
+    }
+  }
+
+  private final class DevToolsView implements GrapheneDevTools {
+    @Override
+    public boolean isEnabled() {
+      GrapheneBrowserRuntime activeBrowserRuntime;
+      synchronized (GrapheneRuntimeController.this) {
+        if (state != GrapheneRuntimeState.RUNNING) {
+          return false;
+        }
+        activeBrowserRuntime = browserRuntime;
+      }
+      return activeBrowserRuntime.remoteDebuggingPort().isPresent();
+    }
+
+    @Override
+    public CompletionStage<List<DevToolsPageTarget>> pageTargets() {
+      GrapheneBrowserRuntime activeBrowserRuntime;
+      synchronized (GrapheneRuntimeController.this) {
+        if (state != GrapheneRuntimeState.RUNNING) {
+          return CompletableFuture.failedFuture(new DevToolsRuntimeUnavailableException(state));
+        }
+        activeBrowserRuntime = browserRuntime;
+      }
+      return activeBrowserRuntime.devToolsPageTargets();
+    }
+
+    @Override
+    public CompletionStage<DevToolsPageTarget> targetFor(BrowserSession session) {
+      Objects.requireNonNull(session, "session");
+      GrapheneBrowserRuntime activeBrowserRuntime;
+      synchronized (GrapheneRuntimeController.this) {
+        if (state != GrapheneRuntimeState.RUNNING) {
+          return CompletableFuture.failedFuture(new DevToolsRuntimeUnavailableException(state));
+        }
+        activeBrowserRuntime = browserRuntime;
+      }
+      return activeBrowserRuntime.devToolsTargetFor(session);
     }
   }
 

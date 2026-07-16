@@ -2,7 +2,8 @@ package io.github.trethore.graphene.debug;
 
 import io.github.trethore.graphene.fabric.api.screen.GrapheneScreens;
 import io.github.trethore.graphene.fabric.api.widget.GrapheneWebViewWidget;
-import java.net.URI;
+import java.util.concurrent.CompletionException;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -10,8 +11,11 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
 import org.jspecify.annotations.NonNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 final class GrapheneBrowserDebugScreen extends Screen {
+  private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneBrowserDebugScreen.class);
   private static final GrapheneBrowserDebugScreen INSTANCE = new GrapheneBrowserDebugScreen();
   private static String lastUrl;
 
@@ -113,9 +117,28 @@ final class GrapheneBrowserDebugScreen extends Screen {
   private void openDevTools() {
     GrapheneDebugClient.context()
         .runtime()
-        .remoteDebuggingPort()
-        .ifPresent(
-            port -> Util.getPlatform().openUri(URI.create("http://127.0.0.1:" + port + "/json")));
+        .devTools()
+        .targetFor(webView.surface().browser())
+        .whenComplete(
+            (target, failure) ->
+                Minecraft.getInstance()
+                    .execute(
+                        () -> {
+                          if (failure != null) {
+                            LOGGER.error(
+                                "Failed to discover browser DevTools target", unwrap(failure));
+                            return;
+                          }
+                          Util.getPlatform().openUri(target.inspectorUri());
+                        }));
+  }
+
+  private static Throwable unwrap(Throwable failure) {
+    Throwable cause = failure;
+    while (cause instanceof CompletionException && cause.getCause() != null) {
+      cause = cause.getCause();
+    }
+    return cause;
   }
 
   private void closePersistentSession() {

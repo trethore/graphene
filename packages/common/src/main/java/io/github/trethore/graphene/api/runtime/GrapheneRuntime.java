@@ -1,5 +1,6 @@
 package io.github.trethore.graphene.api.runtime;
 
+import io.github.trethore.graphene.api.devtools.GrapheneDevTools;
 import java.util.OptionalInt;
 import java.util.concurrent.CompletionStage;
 
@@ -23,6 +24,8 @@ public interface GrapheneRuntime {
   CompletionStage<Void> initialization();
 
   OptionalInt remoteDebuggingPort();
+
+  GrapheneDevTools devTools();
 
   GrapheneHttpServer httpServer();
 }

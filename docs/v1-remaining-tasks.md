@@ -2,9 +2,9 @@
 
 ## 1. DevTools target discovery
 
-- [ ] Discover remote DevTools page targets through Graphene-owned APIs.
-- [ ] Expose target metadata and inspector URIs without leaking JCEF types.
-- [ ] Handle disabled remote debugging, missing targets, and ambiguous session matches explicitly.
+- [x] Discover remote DevTools page targets through Graphene-owned APIs.
+- [x] Expose target metadata and inspector URIs without leaking JCEF types.
+- [x] Handle disabled remote debugging, missing targets, and ambiguous session matches explicitly.
 
 ## 2. Context-menu policy or presenter
 

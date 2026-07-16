@@ -2,6 +2,7 @@ package io.github.trethore.graphene.internal.runtime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -16,6 +17,10 @@ import io.github.trethore.graphene.api.browser.dialog.BrowserFileDialogPresenter
 import io.github.trethore.graphene.api.browser.dialog.BrowserJsDialogPresenter;
 import io.github.trethore.graphene.api.config.GrapheneConfig;
 import io.github.trethore.graphene.api.config.GrapheneGlobalConfig;
+import io.github.trethore.graphene.api.devtools.DevToolsDisabledException;
+import io.github.trethore.graphene.api.devtools.DevToolsPageTarget;
+import io.github.trethore.graphene.api.devtools.DevToolsRuntimeUnavailableException;
+import io.github.trethore.graphene.api.devtools.GrapheneDevTools;
 import io.github.trethore.graphene.api.runtime.GrapheneHttpServer;
 import io.github.trethore.graphene.api.runtime.GrapheneRuntime;
 import io.github.trethore.graphene.api.runtime.GrapheneRuntimeState;
@@ -29,6 +34,8 @@ import java.util.List;
 import java.util.OptionalInt;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
@@ -48,10 +55,12 @@ class GrapheneRuntimeControllerTest {
     assertSame(alpha, Graphene.context("alpha"));
     GrapheneRuntime runtime = Graphene.runtime();
     GrapheneHttpServer httpServer = runtime.httpServer();
+    GrapheneDevTools devTools = runtime.devTools();
     assertSame(runtime, alpha.runtime());
     assertFalse(runtime.isInitialized());
     assertFalse(httpServer instanceof AutoCloseable);
     assertSame(httpServer, runtime.httpServer());
+    assertDevToolsUnavailableBeforeStartup(runtime, devTools);
     runtime.initialization().toCompletableFuture().complete(null);
     assertFalse(runtime.initialization().toCompletableFuture().isDone());
     assertUnavailable(browserSessions, GrapheneRuntimeState.NEW);
@@ -67,6 +76,8 @@ class GrapheneRuntimeControllerTest {
     runtime.initialization().toCompletableFuture().join();
 
     assertEquals(GrapheneRuntimeState.RUNNING, runtime.state());
+    assertFalse(devTools.isEnabled());
+    assertStageFailure(DevToolsDisabledException.class, devTools.pageTargets());
     IllegalArgumentException creationException =
         assertThrows(IllegalArgumentException.class, () -> createAndClose(browserSessions));
     assertSame(browserRuntime.creationException(), creationException);
@@ -99,6 +110,22 @@ class GrapheneRuntimeControllerTest {
     try (BrowserSession createdSession = browserSessions.create("about:blank")) {
       assertNotNull(createdSession);
     }
+  }
+
+  private static <T extends Throwable> T assertStageFailure(
+      Class<T> exceptionType, CompletionStage<?> stage) {
+    CompletableFuture<?> future = stage.toCompletableFuture();
+    CompletionException completionException = assertThrows(CompletionException.class, future::join);
+    return assertInstanceOf(exceptionType, completionException.getCause());
+  }
+
+  private static void assertDevToolsUnavailableBeforeStartup(
+      GrapheneRuntime runtime, GrapheneDevTools devTools) {
+    assertSame(devTools, runtime.devTools());
+    assertFalse(devTools.isEnabled());
+    DevToolsRuntimeUnavailableException unavailableException =
+        assertStageFailure(DevToolsRuntimeUnavailableException.class, devTools.pageTargets());
+    assertEquals(GrapheneRuntimeState.NEW, unavailableException.runtimeState());
   }
 
   private static GraphenePlatformServices platformServices(
@@ -199,6 +226,16 @@ class GrapheneRuntimeControllerTest {
     @Override
     public OptionalInt remoteDebuggingPort() {
       return OptionalInt.empty();
+    }
+
+    @Override
+    public CompletionStage<List<DevToolsPageTarget>> devToolsPageTargets() {
+      return CompletableFuture.failedFuture(new DevToolsDisabledException());
+    }
+
+    @Override
+    public CompletionStage<DevToolsPageTarget> devToolsTargetFor(BrowserSession session) {
+      return CompletableFuture.failedFuture(new DevToolsDisabledException());
     }
 
     @Override
