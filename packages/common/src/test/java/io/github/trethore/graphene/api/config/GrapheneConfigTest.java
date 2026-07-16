@@ -73,7 +73,7 @@ final class GrapheneConfigTest {
     GrapheneGlobalConfig config =
         GrapheneGlobalConfig.builder()
             .extensionFolder("extensions/a")
-            .disableExtensions()
+            .clearExtensionFolders()
             .remoteDebugging(GrapheneRemoteDebugConfig.builder().port(20_000).build())
             .disableRemoteDebugging()
             .allowBrowserFileAccess()

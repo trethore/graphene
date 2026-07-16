@@ -14,6 +14,11 @@
 
 ## 3. Global configuration conflict handling
 
-- [ ] Detect incompatible process-wide configuration contributions from different consumers.
-- [ ] Define deterministic behavior for security-sensitive settings, especially file-system access.
-- [ ] Report conflicts with enough ownership information to identify the contributing mods.
+- [x] Detect incompatible process-wide configuration contributions from different consumers.
+- [x] Define deterministic behavior for security-sensitive settings, especially file-system access.
+- [x] Report conflicts with enough ownership information to identify the contributing mods.
+
+Global configuration is resolved transactionally during registration. Browser runtime paths and explicit remote
+debugging configurations must agree, extension folders are combined, and browser file-system access is enabled only
+when every registered consumer allows it. Conflicts reject the new registration and report every contributing mod and
+its requested value in deterministic mod-ID order.

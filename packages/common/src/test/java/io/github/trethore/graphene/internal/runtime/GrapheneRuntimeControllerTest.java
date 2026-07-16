@@ -17,6 +17,7 @@ import io.github.trethore.graphene.api.browser.dialog.BrowserFileDialogPresenter
 import io.github.trethore.graphene.api.browser.dialog.BrowserJsDialogPresenter;
 import io.github.trethore.graphene.api.config.GrapheneConfig;
 import io.github.trethore.graphene.api.config.GrapheneGlobalConfig;
+import io.github.trethore.graphene.api.config.GrapheneGlobalConfigConflictException;
 import io.github.trethore.graphene.api.devtools.DevToolsDisabledException;
 import io.github.trethore.graphene.api.devtools.DevToolsPageTarget;
 import io.github.trethore.graphene.api.devtools.DevToolsRuntimeUnavailableException;
@@ -53,6 +54,19 @@ class GrapheneRuntimeControllerTest {
     BrowserSessions browserSessions = alpha.browsers();
     assertSame(alpha, Graphene.register("alpha", GrapheneConfig.defaults()));
     assertSame(alpha, Graphene.context("alpha"));
+    GrapheneConfig incompatibleBetaConfig =
+        GrapheneConfig.builder()
+            .global(GrapheneGlobalConfig.builder().allowBrowserFileAccess().build())
+            .build();
+    GrapheneGlobalConfigConflictException conflict =
+        assertThrows(
+            GrapheneGlobalConfigConflictException.class,
+            () -> Graphene.register("beta", incompatibleBetaConfig));
+    assertEquals(
+        GrapheneGlobalConfigConflictException.Setting.BROWSER_FILE_ACCESS_POLICY,
+        conflict.setting());
+    assertThrows(IllegalStateException.class, () -> Graphene.context("beta"));
+    assertEquals(GrapheneGlobalConfig.defaults(), Graphene.globalConfig());
     GrapheneRuntime runtime = Graphene.runtime();
     GrapheneHttpServer httpServer = runtime.httpServer();
     GrapheneDevTools devTools = runtime.devTools();

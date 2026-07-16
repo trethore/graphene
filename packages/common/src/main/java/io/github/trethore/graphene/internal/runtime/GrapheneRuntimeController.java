@@ -4,11 +4,9 @@ import io.github.trethore.graphene.api.GrapheneContext;
 import io.github.trethore.graphene.api.browser.BrowserOptions;
 import io.github.trethore.graphene.api.browser.BrowserRuntimeUnavailableException;
 import io.github.trethore.graphene.api.browser.BrowserSession;
-import io.github.trethore.graphene.api.config.BrowserFileAccessPolicy;
 import io.github.trethore.graphene.api.config.GrapheneConfig;
 import io.github.trethore.graphene.api.config.GrapheneGlobalConfig;
 import io.github.trethore.graphene.api.config.GrapheneHttpConfig;
-import io.github.trethore.graphene.api.config.GrapheneRemoteDebugConfig;
 import io.github.trethore.graphene.api.devtools.DevToolsPageTarget;
 import io.github.trethore.graphene.api.devtools.DevToolsRuntimeUnavailableException;
 import io.github.trethore.graphene.api.devtools.GrapheneDevTools;
@@ -21,7 +19,6 @@ import io.github.trethore.graphene.internal.http.GrapheneHttpServerRuntime;
 import io.github.trethore.graphene.internal.platform.GraphenePlatformServices;
 import io.github.trethore.graphene.internal.url.GrapheneAppUrls;
 import io.github.trethore.graphene.internal.url.GrapheneHttpUrls;
-import java.nio.file.Path;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -143,7 +140,7 @@ public final class GrapheneRuntimeController {
   }
 
   public synchronized GrapheneGlobalConfig globalConfig() {
-    return mergeGlobalConfig();
+    return GrapheneGlobalConfigResolver.resolve(configs);
   }
 
   private CompletionStage<Void> stopAsync() {
@@ -191,6 +188,10 @@ public final class GrapheneRuntimeController {
       }
       return existingContext;
     }
+
+    LinkedHashMap<String, GrapheneConfig> candidateConfigs = new LinkedHashMap<>(configs);
+    candidateConfigs.put(modId, validatedConfig);
+    GrapheneGlobalConfigResolver.resolve(candidateConfigs);
 
     GrapheneContext context =
         Objects.requireNonNull(
@@ -330,66 +331,6 @@ public final class GrapheneRuntimeController {
     return Map.copyOf(httpConfigs);
   }
 
-  private GrapheneGlobalConfig mergeGlobalConfig() {
-    GrapheneGlobalConfig.Builder builder = GrapheneGlobalConfig.builder();
-    OwnedValue<Path> runtimePath = null;
-    OwnedValue<GrapheneRemoteDebugConfig> remoteDebug = null;
-    BrowserFileAccessPolicy fileAccessPolicy = BrowserFileAccessPolicy.DENY;
-
-    for (Map.Entry<String, GrapheneConfig> entry : configs.entrySet()) {
-      String owner = entry.getKey();
-      GrapheneGlobalConfig globalConfig = entry.getValue().global();
-      runtimePath =
-          mergeOwnedValue(
-              runtimePath,
-              globalConfig
-                  .browserRuntimePath()
-                  .map(path -> path.toAbsolutePath().normalize())
-                  .orElse(null),
-              owner,
-              "browser runtime path");
-      remoteDebug =
-          mergeOwnedValue(
-              remoteDebug,
-              globalConfig.remoteDebugging().orElse(null),
-              owner,
-              "remote debugging config");
-      globalConfig.extensionFolders().forEach(builder::extensionFolder);
-      if (globalConfig.browserFileAccessPolicy() == BrowserFileAccessPolicy.ALLOW) {
-        fileAccessPolicy = BrowserFileAccessPolicy.ALLOW;
-      }
-    }
-
-    if (runtimePath != null) {
-      builder.browserRuntimePath(runtimePath.value());
-    }
-    if (remoteDebug != null) {
-      builder.remoteDebugging(remoteDebug.value());
-    }
-    builder.browserFileAccessPolicy(fileAccessPolicy);
-    return builder.build();
-  }
-
-  private static <T> OwnedValue<T> mergeOwnedValue(
-      OwnedValue<T> selected, T candidate, String owner, String setting) {
-    if (candidate == null) {
-      return selected;
-    }
-    if (selected == null) {
-      return new OwnedValue<>(candidate, owner);
-    }
-    if (Objects.equals(selected.value(), candidate)) {
-      return selected;
-    }
-    throw new IllegalStateException(
-        "Conflicting Graphene "
-            + setting
-            + " between consumers "
-            + selected.owner()
-            + " and "
-            + owner);
-  }
-
   private static String normalizeModId(String modId) {
     return AssetId.normalizeNamespace(Objects.requireNonNull(modId, "modId").trim());
   }
@@ -524,6 +465,4 @@ public final class GrapheneRuntimeController {
       }
     }
   }
-
-  private record OwnedValue<T>(T value, String owner) {}
 }

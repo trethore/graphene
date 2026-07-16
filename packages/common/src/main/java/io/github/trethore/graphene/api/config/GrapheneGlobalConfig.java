@@ -119,7 +119,7 @@ public final class GrapheneGlobalConfig {
           Path.of(Objects.requireNonNull(extensionFolder, EXTENSION_FOLDER_NAME)));
     }
 
-    public Builder disableExtensions() {
+    public Builder clearExtensionFolders() {
       this.extensionFolders.clear();
       return this;
     }
