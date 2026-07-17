@@ -1,6 +1,5 @@
 package io.github.trethore.graphene.internal.bridge;
 
-import io.github.trethore.graphene.internal.logging.GrapheneDebugLogger;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
@@ -11,29 +10,19 @@ import org.slf4j.LoggerFactory;
 
 final class GrapheneBridgeOutboundQueue {
   private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneBridgeOutboundQueue.class);
-  private static final GrapheneDebugLogger DEBUG_LOGGER =
-      GrapheneDebugLogger.of(GrapheneBridgeOutboundQueue.class);
 
   private final Object lock = new Object();
   private final ArrayDeque<String> queuedMessages = new ArrayDeque<>();
   private final Consumer<String> dispatcher;
   private final int maxQueuedMessages;
-  private final GrapheneBridgeQueueOverflowPolicy overflowPolicy;
-  private final GrapheneBridgeDiagnostics diagnostics;
   private State state = State.NOT_READY;
 
-  GrapheneBridgeOutboundQueue(
-      Consumer<String> dispatcher,
-      int maxQueuedMessages,
-      GrapheneBridgeQueueOverflowPolicy overflowPolicy,
-      GrapheneBridgeDiagnostics diagnostics) {
+  GrapheneBridgeOutboundQueue(Consumer<String> dispatcher, int maxQueuedMessages) {
     this.dispatcher = Objects.requireNonNull(dispatcher, "dispatcher");
     if (maxQueuedMessages < 1) {
       throw new IllegalArgumentException("maxQueuedMessages must be >= 1");
     }
     this.maxQueuedMessages = maxQueuedMessages;
-    this.overflowPolicy = Objects.requireNonNull(overflowPolicy, "overflowPolicy");
-    this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
   }
 
   boolean isReady() {
@@ -45,7 +34,7 @@ final class GrapheneBridgeOutboundQueue {
   void markNotReady() {
     synchronized (lock) {
       state = State.NOT_READY;
-      DEBUG_LOGGER.debug("Bridge outbound queue marked NOT_READY queued={}", queuedMessages.size());
+      LOGGER.debug("Bridge outbound queue marked NOT_READY queued={}", queuedMessages.size());
     }
   }
 
@@ -74,7 +63,7 @@ final class GrapheneBridgeOutboundQueue {
         }
       }
 
-      DEBUG_LOGGER.debug("Flushed {} queued bridge outbound message(s)", messagesToDispatch.size());
+      LOGGER.debug("Flushed {} queued bridge outbound message(s)", messagesToDispatch.size());
     }
   }
 
@@ -84,7 +73,7 @@ final class GrapheneBridgeOutboundQueue {
     synchronized (lock) {
       if (state != State.READY) {
         queueMessageLocked(outboundPacketJson);
-        DEBUG_LOGGER.debug(
+        LOGGER.debug(
             "Queued bridge outbound message size={} queued={}",
             outboundPacketJson.length(),
             queuedMessages.size());
@@ -93,7 +82,7 @@ final class GrapheneBridgeOutboundQueue {
 
       try {
         dispatcher.accept(outboundPacketJson);
-        DEBUG_LOGGER.debug(
+        LOGGER.debug(
             "Dispatched bridge outbound message immediately size={}", outboundPacketJson.length());
       } catch (RuntimeException exception) {
         LOGGER.warn("Failed to dispatch immediate Graphene bridge message", exception);
@@ -113,29 +102,13 @@ final class GrapheneBridgeOutboundQueue {
       return;
     }
 
-    if (overflowPolicy == GrapheneBridgeQueueOverflowPolicy.DROP_NEWEST) {
-      diagnostics.onOutboundMessageDropped(outboundPacketJson, overflowPolicy, maxQueuedMessages);
-      DEBUG_LOGGER.debug(
-          "Dropped newest bridge outbound message size={} policy={} maxQueued={}",
-          outboundPacketJson.length(),
-          overflowPolicy,
-          maxQueuedMessages);
-      return;
-    }
-
-    if (overflowPolicy == GrapheneBridgeQueueOverflowPolicy.DROP_OLDEST) {
-      String droppedMessage = queuedMessages.removeFirst();
-      queuedMessages.addLast(outboundPacketJson);
-      diagnostics.onOutboundMessageDropped(droppedMessage, overflowPolicy, maxQueuedMessages);
-      DEBUG_LOGGER.debug(
-          "Dropped oldest bridge outbound message droppedSize={} newSize={} maxQueued={}",
-          droppedMessage.length(),
-          outboundPacketJson.length(),
-          maxQueuedMessages);
-      return;
-    }
-
-    throw new IllegalStateException("Bridge outbound queue reached max size " + maxQueuedMessages);
+    String droppedMessage = queuedMessages.removeFirst();
+    queuedMessages.addLast(outboundPacketJson);
+    LOGGER.debug(
+        "Dropped oldest bridge outbound message droppedSize={} newSize={} maxQueued={}",
+        droppedMessage.length(),
+        outboundPacketJson.length(),
+        maxQueuedMessages);
   }
 
   private List<String> drainQueuedMessagesLocked() {

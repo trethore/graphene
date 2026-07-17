@@ -1,15 +1,15 @@
 package io.github.trethore.graphene.internal.bridge;
 
-import io.github.trethore.graphene.internal.logging.GrapheneDebugLogger;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 final class GrapheneBridgeScriptLoader {
-  private static final GrapheneDebugLogger DEBUG_LOGGER =
-      GrapheneDebugLogger.of(GrapheneBridgeScriptLoader.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneBridgeScriptLoader.class);
 
   private static final String CLIPBOARD_SCRIPT_RESOURCE_PATH =
       "assets/grapheneui/bridge/clipboard.js";
@@ -49,7 +49,7 @@ final class GrapheneBridgeScriptLoader {
               : loadSingleScript(classLoader, scriptResourcePath));
     }
 
-    DEBUG_LOGGER.debug("Loaded {} Graphene bridge bootstrap script(s)", loadedScripts.size());
+    LOGGER.debug("Loaded {} Graphene bridge bootstrap script(s)", loadedScripts.size());
 
     return List.copyOf(loadedScripts);
   }
@@ -62,7 +62,7 @@ final class GrapheneBridgeScriptLoader {
 
       return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
     } catch (IOException exception) {
-      DEBUG_LOGGER.debug("Failed to read bridge script resource {}", scriptResourcePath, exception);
+      LOGGER.debug("Failed to read bridge script resource {}", scriptResourcePath, exception);
       throw new IllegalStateException(
           "Failed to read bridge script resource: " + scriptResourcePath, exception);
     }

@@ -3,15 +3,15 @@ package io.github.trethore.graphene.internal.bridge;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
 import io.github.trethore.graphene.api.bridge.GrapheneBridgeRequestHandler;
-import io.github.trethore.graphene.internal.logging.GrapheneDebugLogger;
 import io.github.trethore.graphene.internal.platform.GrapheneTaskExecutor;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 final class GrapheneBridgeInboundRouter {
-  private static final GrapheneDebugLogger DEBUG_LOGGER =
-      GrapheneDebugLogger.of(GrapheneBridgeInboundRouter.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneBridgeInboundRouter.class);
 
   private final GrapheneBridgeMessageCodec codec;
   private final GrapheneBridgeHandlerRegistry handlers;
@@ -33,17 +33,15 @@ final class GrapheneBridgeInboundRouter {
     Runnable validatedOnReady = Objects.requireNonNull(onReady, "onReady");
     GrapheneBridgePacket packet = codec.parsePacket(requestJson);
     if (packet == null) {
-      DEBUG_LOGGER.debugIfEnabled(
-          logger -> {
-            int requestSize = requestJson == null ? 0 : requestJson.length();
-            logger.debug(
-                "Ignored inbound bridge query because packet parse failed requestSize={}",
-                requestSize);
-          });
+      if (LOGGER.isDebugEnabled()) {
+        int requestSize = requestJson == null ? 0 : requestJson.length();
+        LOGGER.debug(
+            "Ignored inbound bridge query because packet parse failed requestSize={}", requestSize);
+      }
       return false;
     }
 
-    DEBUG_LOGGER.debug(
+    LOGGER.debug(
         "Routing inbound bridge packet kind={} id={} channel={} VERSION={}",
         packet.kind,
         packet.id,
@@ -80,14 +78,13 @@ final class GrapheneBridgeInboundRouter {
 
     callback.success(GrapheneBridgeProtocol.EMPTY_RESPONSE_JSON);
     String payloadJson = codec.payloadToJson(packet.payload);
-    DEBUG_LOGGER.debugIfEnabled(
-        logger -> {
-          int payloadSize = payloadJson == null ? 0 : payloadJson.length();
-          logger.debug(
-              "Dispatching inbound bridge event channel={} payloadSize={}",
-              packet.channel,
-              payloadSize);
-        });
+    if (LOGGER.isDebugEnabled()) {
+      int payloadSize = payloadJson == null ? 0 : payloadJson.length();
+      LOGGER.debug(
+          "Dispatching inbound bridge event channel={} payloadSize={}",
+          packet.channel,
+          payloadSize);
+    }
     taskExecutor.execute(() -> handlers.dispatchEvent(packet.channel, payloadJson));
   }
 
@@ -118,22 +115,21 @@ final class GrapheneBridgeInboundRouter {
     }
 
     String requestPayloadJson = codec.payloadToJson(packet.payload);
-    DEBUG_LOGGER.debugIfEnabled(
-        logger -> {
-          int payloadSize = requestPayloadJson == null ? 0 : requestPayloadJson.length();
-          logger.debug(
-              "Dispatching inbound bridge request id={} channel={} payloadSize={}",
-              packet.id,
-              packet.channel,
-              payloadSize);
-        });
+    if (LOGGER.isDebugEnabled()) {
+      int payloadSize = requestPayloadJson == null ? 0 : requestPayloadJson.length();
+      LOGGER.debug(
+          "Dispatching inbound bridge request id={} channel={} payloadSize={}",
+          packet.id,
+          packet.channel,
+          payloadSize);
+    }
     taskExecutor
         .supply(() -> requestHandler.handle(packet.channel, requestPayloadJson))
         .whenComplete(
             (responseFuture, throwable) -> {
               if (throwable != null) {
                 Throwable rootCause = unwrap(throwable);
-                DEBUG_LOGGER.debug(
+                LOGGER.debug(
                     "Bridge request handler failed id={} channel={} message={}",
                     packet.id,
                     packet.channel,
@@ -155,7 +151,7 @@ final class GrapheneBridgeInboundRouter {
     if (responseFuture == null) {
       callback.success(
           codec.createSuccessResponseJson(packet.id, packet.channel, JsonNull.INSTANCE));
-      DEBUG_LOGGER.debug(
+      LOGGER.debug(
           "Bridge request completed with null response future id={} channel={}",
           packet.id,
           packet.channel);
@@ -166,7 +162,7 @@ final class GrapheneBridgeInboundRouter {
         (responsePayloadJson, throwable) -> {
           if (throwable != null) {
             Throwable rootCause = unwrap(throwable);
-            DEBUG_LOGGER.debug(
+            LOGGER.debug(
                 "Bridge request future failed id={} channel={} message={}",
                 packet.id,
                 packet.channel,
@@ -187,15 +183,14 @@ final class GrapheneBridgeInboundRouter {
             return;
           }
 
-          DEBUG_LOGGER.debugIfEnabled(
-              logger -> {
-                int payloadSize = responsePayloadJson == null ? 0 : responsePayloadJson.length();
-                logger.debug(
-                    "Bridge request completed successfully id={} channel={} payloadSize={}",
-                    packet.id,
-                    packet.channel,
-                    payloadSize);
-              });
+          if (LOGGER.isDebugEnabled()) {
+            int payloadSize = responsePayloadJson == null ? 0 : responsePayloadJson.length();
+            LOGGER.debug(
+                "Bridge request completed successfully id={} channel={} payloadSize={}",
+                packet.id,
+                packet.channel,
+                payloadSize);
+          }
           callback.success(
               codec.createSuccessResponseJson(packet.id, packet.channel, responsePayload));
         });

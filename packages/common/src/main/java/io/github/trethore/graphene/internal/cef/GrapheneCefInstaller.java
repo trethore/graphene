@@ -25,14 +25,14 @@ import org.cef.CefSettings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public final class GrapheneCefInstaller {
+final class GrapheneCefInstaller {
   private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneCefInstaller.class);
   private static final Gson GSON = new Gson();
   private static final String BUILD_METADATA = "/jcefgithub_build_meta.json";
 
   private GrapheneCefInstaller() {}
 
-  public static CefAppBuilder createBuilder(GrapheneGlobalConfig config) {
+  static CefAppBuilder createBuilder(GrapheneGlobalConfig config) {
     GrapheneGlobalConfig validatedConfig = Objects.requireNonNull(config, "config");
     Path installPath = resolveInstallPath(validatedConfig);
     File installDirectory = installPath.toFile();
@@ -59,7 +59,7 @@ public final class GrapheneCefInstaller {
     return builder;
   }
 
-  public static String currentPlatformIdentifier() {
+  static String currentPlatformIdentifier() {
     try {
       return EnumPlatform.getCurrentPlatform().getIdentifier();
     } catch (UnsupportedPlatformException exception) {

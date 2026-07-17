@@ -6,7 +6,7 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
-public abstract class AbstractGrapheneSchemedAssetUrls extends AbstractGrapheneAssetUrls {
+abstract class AbstractGrapheneSchemedAssetUrls extends AbstractGrapheneAssetUrls {
   private final String scheme;
 
   protected AbstractGrapheneSchemedAssetUrls(String scheme, String defaultNamespace) {

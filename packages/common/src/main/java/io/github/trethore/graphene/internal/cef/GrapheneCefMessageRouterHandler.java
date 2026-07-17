@@ -30,11 +30,6 @@ final class GrapheneCefMessageRouterHandler extends CefMessageRouterHandlerAdapt
         new GrapheneCefQueryCallbackAdapter(callback));
   }
 
-  @Override
-  public void onQueryCanceled(CefBrowser browser, CefFrame frame, long queryId) {
-    bridgeRuntime.onQueryCanceled(new GrapheneCefBrowserAdapter(browser));
-  }
-
   private static BridgeFrame frame(CefFrame frame) {
     if (frame == null) {
       return new BridgeFrame("", false);

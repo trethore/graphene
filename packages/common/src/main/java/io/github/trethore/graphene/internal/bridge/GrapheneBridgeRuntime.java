@@ -1,7 +1,6 @@
 package io.github.trethore.graphene.internal.bridge;
 
 import io.github.trethore.graphene.api.bridge.GrapheneBridge;
-import io.github.trethore.graphene.internal.logging.GrapheneDebugLogger;
 import io.github.trethore.graphene.internal.platform.GrapheneTaskExecutor;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -9,31 +8,22 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class GrapheneBridgeRuntime {
-  private static final GrapheneDebugLogger DEBUG_LOGGER =
-      GrapheneDebugLogger.of(GrapheneBridgeRuntime.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneBridgeRuntime.class);
 
   private static final String BROWSER_NAME = "browser";
   private static final int MIN_BROWSER_IDENTIFIER = 1;
 
   private final Object lock = new Object();
-  private final GrapheneBridgeOptions options;
   private final GrapheneTaskExecutor taskExecutor;
   private final Map<BridgeBrowser, GrapheneBridgeEndpoint> endpointsByBrowser =
       new IdentityHashMap<>();
   private final Map<Integer, GrapheneBridgeEndpoint> endpointsByBrowserId = new HashMap<>();
 
-  public GrapheneBridgeRuntime() {
-    this(GrapheneBridgeOptions.defaults(), GrapheneTaskExecutor.direct());
-  }
-
-  public GrapheneBridgeRuntime(GrapheneBridgeOptions options) {
-    this(options, GrapheneTaskExecutor.direct());
-  }
-
-  public GrapheneBridgeRuntime(GrapheneBridgeOptions options, GrapheneTaskExecutor taskExecutor) {
-    this.options = Objects.requireNonNull(options, "options");
+  public GrapheneBridgeRuntime(GrapheneTaskExecutor taskExecutor) {
     this.taskExecutor = Objects.requireNonNull(taskExecutor, "taskExecutor");
   }
 
@@ -50,7 +40,7 @@ public final class GrapheneBridgeRuntime {
 
     GrapheneBridgeEndpoint previousEndpoint;
     GrapheneBridgeEndpoint newEndpoint =
-        new GrapheneBridgeEndpoint(browser, options, taskExecutor, exposureConfig);
+        new GrapheneBridgeEndpoint(browser, taskExecutor, exposureConfig);
     synchronized (lock) {
       previousEndpoint = endpointsByBrowser.put(browser, newEndpoint);
       if (previousEndpoint != null) {
@@ -58,7 +48,7 @@ public final class GrapheneBridgeRuntime {
       }
       cacheEndpointByIdentifierLocked(browser, newEndpoint);
 
-      DEBUG_LOGGER.debug(
+      LOGGER.debug(
           "Attached bridge endpoint browserId={} replaced={} trackedBrowsers={}",
           browserIdentifier(browser),
           previousEndpoint != null,
@@ -82,7 +72,7 @@ public final class GrapheneBridgeRuntime {
         removeEndpointMappingsLocked(endpoint);
       }
 
-      DEBUG_LOGGER.debug(
+      LOGGER.debug(
           "Detaching bridge endpoint browserId={} found={} trackedBrowsers={}",
           browserIdentifier(browser),
           endpoint != null,
@@ -97,8 +87,8 @@ public final class GrapheneBridgeRuntime {
   public void onLoadStart(BridgeBrowser browser) {
     GrapheneBridgeEndpoint endpoint = endpoint(browser);
     if (endpoint != null) {
-      endpoint.onPageLoadStart();
-      DEBUG_LOGGER.debug("Bridge onLoadStart browserId={}", browserIdentifier(browser));
+      endpoint.onNavigationRequested();
+      LOGGER.debug("Bridge onLoadStart browserId={}", browserIdentifier(browser));
     }
   }
 
@@ -106,7 +96,7 @@ public final class GrapheneBridgeRuntime {
     GrapheneBridgeEndpoint endpoint = endpoint(browser);
     if (endpoint != null) {
       endpoint.onNavigationRequested();
-      DEBUG_LOGGER.debug("Bridge onNavigationRequested browserId={}", browserIdentifier(browser));
+      LOGGER.debug("Bridge onNavigationRequested browserId={}", browserIdentifier(browser));
     }
   }
 
@@ -114,7 +104,7 @@ public final class GrapheneBridgeRuntime {
     GrapheneBridgeEndpoint endpoint = endpoint(browser);
     if (endpoint != null) {
       endpoint.onPageLoadEnd(documentUrl);
-      DEBUG_LOGGER.debug("Bridge onLoadEnd browserId={}", browserIdentifier(browser));
+      LOGGER.debug("Bridge onLoadEnd browserId={}", browserIdentifier(browser));
     }
   }
 
@@ -125,39 +115,30 @@ public final class GrapheneBridgeRuntime {
     }
 
     endpoint.tryBootstrapFallback();
-    DEBUG_LOGGER.debug("Bridge ensureBootstrap browserId={}", browserIdentifier(browser));
+    LOGGER.debug("Bridge ensureBootstrap browserId={}", browserIdentifier(browser));
   }
 
   public boolean onQuery(
       BridgeBrowser browser, BridgeFrame frame, String request, BridgeQueryCallback callback) {
     GrapheneBridgeEndpoint endpoint = endpoint(browser);
     if (endpoint == null) {
-      DEBUG_LOGGER.debug(
+      LOGGER.debug(
           "Bridge query ignored because endpoint is missing browserId={}",
           browserIdentifier(browser));
       return false;
     }
 
     boolean handled = endpoint.handleQuery(frame, request, callback);
-    DEBUG_LOGGER.debugIfEnabled(
-        logger -> {
-          int requestSize = request == null ? 0 : request.length();
-          logger.debug(
-              "Bridge query routed browserId={} requestSize={} handled={}",
-              browserIdentifier(browser),
-              requestSize,
-              handled);
-        });
+    if (LOGGER.isDebugEnabled()) {
+      int requestSize = request == null ? 0 : request.length();
+      LOGGER.debug(
+          "Bridge query routed browserId={} requestSize={} handled={}",
+          browserIdentifier(browser),
+          requestSize,
+          handled);
+    }
 
     return handled;
-  }
-
-  public void onQueryCanceled(BridgeBrowser browser) {
-    GrapheneBridgeEndpoint endpoint = endpoint(browser);
-    if (endpoint != null) {
-      endpoint.onQueryCanceled();
-      DEBUG_LOGGER.debug("Bridge query canceled browserId={}", browserIdentifier(browser));
-    }
   }
 
   public void shutdown() {
@@ -167,7 +148,7 @@ public final class GrapheneBridgeRuntime {
       endpointsByBrowser.clear();
       endpointsByBrowserId.clear();
 
-      DEBUG_LOGGER.debug("Shutting down bridge runtime endpointCount={}", endpoints.size());
+      LOGGER.debug("Shutting down bridge runtime endpointCount={}", endpoints.size());
     }
 
     for (GrapheneBridgeEndpoint endpoint : endpoints) {

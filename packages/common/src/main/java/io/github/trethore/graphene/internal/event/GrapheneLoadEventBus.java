@@ -6,9 +6,6 @@ import io.github.trethore.graphene.api.browser.BrowserLoadFailed;
 import io.github.trethore.graphene.api.browser.BrowserLoadListener;
 import io.github.trethore.graphene.api.browser.BrowserLoadStarted;
 import io.github.trethore.graphene.api.browser.BrowserLoadingState;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,25 +13,15 @@ import org.slf4j.LoggerFactory;
 public final class GrapheneLoadEventBus implements AutoCloseable {
   private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneLoadEventBus.class);
 
-  private final List<BrowserLoadListener> listeners = new CopyOnWriteArrayList<>();
-  private boolean closed;
+  private final GrapheneListenerList<BrowserLoadListener> listeners = new GrapheneListenerList<>();
 
   @Override
-  public synchronized void close() {
-    if (closed) {
-      return;
-    }
-    closed = true;
-    listeners.clear();
+  public void close() {
+    listeners.close();
   }
 
-  public synchronized GrapheneSubscription subscribe(BrowserLoadListener listener) {
-    BrowserLoadListener validatedListener = Objects.requireNonNull(listener, "listener");
-    if (closed) {
-      return GrapheneSubscriptions.empty();
-    }
-    listeners.add(validatedListener);
-    return GrapheneSubscriptions.create(() -> listeners.remove(validatedListener));
+  public GrapheneSubscription subscribe(BrowserLoadListener listener) {
+    return listeners.subscribe(listener);
   }
 
   public void publish(BrowserLoadingState state) {
@@ -54,12 +41,6 @@ public final class GrapheneLoadEventBus implements AutoCloseable {
   }
 
   private void dispatch(Consumer<BrowserLoadListener> callback) {
-    for (BrowserLoadListener listener : listeners) {
-      try {
-        callback.accept(listener);
-      } catch (RuntimeException exception) {
-        LOGGER.error("Unhandled Graphene browser load listener exception", exception);
-      }
-    }
+    listeners.dispatch(callback, LOGGER, "browser load listener");
   }
 }

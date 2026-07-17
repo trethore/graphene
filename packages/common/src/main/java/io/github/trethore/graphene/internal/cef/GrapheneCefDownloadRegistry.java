@@ -8,7 +8,7 @@ import io.github.trethore.graphene.api.browser.download.BrowserDownloadId;
 import io.github.trethore.graphene.api.browser.download.BrowserDownloadListener;
 import io.github.trethore.graphene.api.browser.download.BrowserDownloadPolicy;
 import io.github.trethore.graphene.api.browser.download.BrowserDownloadState;
-import io.github.trethore.graphene.internal.event.GrapheneSubscriptions;
+import io.github.trethore.graphene.internal.event.GrapheneListenerList;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -19,7 +19,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.OptionalLong;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 import org.cef.callback.CefBeforeDownloadCallback;
@@ -38,7 +37,8 @@ final class GrapheneCefDownloadRegistry implements AutoCloseable {
   private final BrowserSession session;
   private final BrowserDownloadPolicy policy;
   private final Map<Integer, ActiveDownload> activeDownloads = new LinkedHashMap<>();
-  private final List<BrowserDownloadListener> listeners = new CopyOnWriteArrayList<>();
+  private final GrapheneListenerList<BrowserDownloadListener> listeners =
+      new GrapheneListenerList<>();
   private boolean closed;
 
   GrapheneCefDownloadRegistry(BrowserSession session, BrowserDownloadPolicy policy) {
@@ -126,13 +126,7 @@ final class GrapheneCefDownloadRegistry implements AutoCloseable {
   }
 
   GrapheneSubscription subscribe(BrowserDownloadListener listener) {
-    BrowserDownloadListener validatedListener = Objects.requireNonNull(listener, "listener");
-    synchronized (this) {
-      if (!closed) {
-        listeners.add(validatedListener);
-      }
-    }
-    return GrapheneSubscriptions.create(() -> listeners.remove(validatedListener));
+    return listeners.subscribe(listener);
   }
 
   @Override
@@ -147,7 +141,7 @@ final class GrapheneCefDownloadRegistry implements AutoCloseable {
       activeDownloads.clear();
     }
     downloads.forEach(ActiveDownload::abort);
-    listeners.clear();
+    listeners.close();
   }
 
   private ActiveDownload createDownload(CefDownloadItem item, String suggestedName) {
@@ -184,13 +178,8 @@ final class GrapheneCefDownloadRegistry implements AutoCloseable {
   }
 
   private void publish(BrowserDownload download) {
-    for (BrowserDownloadListener listener : listeners) {
-      try {
-        listener.onDownloadChanged(download);
-      } catch (RuntimeException exception) {
-        LOGGER.error("Unhandled Graphene browser download listener exception", exception);
-      }
-    }
+    listeners.dispatch(
+        listener -> listener.onDownloadChanged(download), LOGGER, "browser download listener");
   }
 
   private static String sanitizeFileName(String suggestedName) {

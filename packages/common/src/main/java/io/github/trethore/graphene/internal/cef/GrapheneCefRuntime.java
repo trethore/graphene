@@ -8,7 +8,6 @@ import io.github.trethore.graphene.api.browser.menu.BrowserContextMenuPresenter;
 import io.github.trethore.graphene.api.config.GrapheneGlobalConfig;
 import io.github.trethore.graphene.api.devtools.DevToolsDisabledException;
 import io.github.trethore.graphene.api.devtools.DevToolsPageTarget;
-import io.github.trethore.graphene.internal.bridge.GrapheneBridgeOptions;
 import io.github.trethore.graphene.internal.bridge.GrapheneBridgeRuntime;
 import io.github.trethore.graphene.internal.platform.GrapheneExternalBrowser;
 import io.github.trethore.graphene.internal.platform.GrapheneNativeWindow;
@@ -68,8 +67,7 @@ public final class GrapheneCefRuntime implements GrapheneBrowserRuntime {
         Objects.requireNonNull(contextMenuPresenter, "contextMenuPresenter");
     this.fileDialogPresenter = Objects.requireNonNull(fileDialogPresenter, "fileDialogPresenter");
     this.jsDialogPresenter = Objects.requireNonNull(jsDialogPresenter, "jsDialogPresenter");
-    this.bridgeRuntime =
-        new GrapheneBridgeRuntime(GrapheneBridgeOptions.defaults(), mainThreadExecutor);
+    this.bridgeRuntime = new GrapheneBridgeRuntime(mainThreadExecutor);
   }
 
   @Override

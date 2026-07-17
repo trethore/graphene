@@ -1,6 +1,5 @@
 package io.github.trethore.graphene.internal.bridge;
 
-import io.github.trethore.graphene.internal.logging.GrapheneDebugLogger;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -8,17 +7,18 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 final class GrapheneBridgePendingRequests {
-  private static final GrapheneDebugLogger DEBUG_LOGGER =
-      GrapheneDebugLogger.of(GrapheneBridgePendingRequests.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneBridgePendingRequests.class);
 
   private final Map<String, CompletableFuture<String>> pendingById = new ConcurrentHashMap<>();
 
   CompletableFuture<String> register(String requestId, Duration timeout) {
     CompletableFuture<String> responseFuture = new CompletableFuture<>();
     pendingById.put(requestId, responseFuture);
-    DEBUG_LOGGER.debug(
+    LOGGER.debug(
         "Registered pending bridge request id={} timeoutMs={} pendingCount={}",
         requestId,
         timeout.toMillis(),
@@ -32,14 +32,13 @@ final class GrapheneBridgePendingRequests {
     CompletableFuture<String> pendingFuture = pendingById.remove(requestId);
     if (pendingFuture != null) {
       pendingFuture.complete(payloadJson);
-      DEBUG_LOGGER.debugIfEnabled(
-          logger -> {
-            int payloadSize = payloadJson == null ? 0 : payloadJson.length();
-            logger.debug(
-                "Completed pending bridge request successfully id={} payloadSize={}",
-                requestId,
-                payloadSize);
-          });
+      if (LOGGER.isDebugEnabled()) {
+        int payloadSize = payloadJson == null ? 0 : payloadJson.length();
+        LOGGER.debug(
+            "Completed pending bridge request successfully id={} payloadSize={}",
+            requestId,
+            payloadSize);
+      }
     }
   }
 
@@ -47,7 +46,7 @@ final class GrapheneBridgePendingRequests {
     CompletableFuture<String> pendingFuture = pendingById.remove(requestId);
     if (pendingFuture != null) {
       pendingFuture.completeExceptionally(throwable);
-      DEBUG_LOGGER.debug(
+      LOGGER.debug(
           "Completed pending bridge request as failure id={} reason={}",
           requestId,
           throwable.getMessage());
@@ -57,7 +56,7 @@ final class GrapheneBridgePendingRequests {
   void failAll(Throwable throwable) {
     List<CompletableFuture<String>> pendingFutures = new ArrayList<>(pendingById.values());
     pendingById.clear();
-    DEBUG_LOGGER.debug(
+    LOGGER.debug(
         "Failing all pending bridge requests count={} reason={}",
         pendingFutures.size(),
         throwable.getMessage());

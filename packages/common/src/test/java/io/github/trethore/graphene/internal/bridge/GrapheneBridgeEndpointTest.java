@@ -216,7 +216,6 @@ final class GrapheneBridgeEndpointTest {
     GrapheneBridgeEndpoint endpoint =
         new GrapheneBridgeEndpoint(
             browser,
-            GrapheneBridgeOptions.defaults(),
             GrapheneTaskExecutor.direct(),
             new GrapheneBridgeExposureConfig(
                 BrowserBridgePolicy.initialOrigin(), browser.currentUrl(), ""));
@@ -233,7 +232,6 @@ final class GrapheneBridgeEndpointTest {
     GrapheneBridgeEndpoint endpoint =
         new GrapheneBridgeEndpoint(
             browser,
-            GrapheneBridgeOptions.defaults(),
             GrapheneTaskExecutor.direct(),
             new GrapheneBridgeExposureConfig(
                 BrowserBridgePolicy.defaultPolicy(),
@@ -317,7 +315,6 @@ final class GrapheneBridgeEndpointTest {
       TestBrowser browser, GrapheneTaskExecutor taskExecutor) {
     return new GrapheneBridgeEndpoint(
         browser,
-        GrapheneBridgeOptions.defaults(),
         taskExecutor,
         new GrapheneBridgeExposureConfig(
             BrowserBridgePolicy.defaultPolicy(), browser.currentUrl(), ""));
@@ -328,7 +325,6 @@ final class GrapheneBridgeEndpointTest {
     GrapheneBridgeEndpoint endpoint =
         new GrapheneBridgeEndpoint(
             browser,
-            GrapheneBridgeOptions.defaults(),
             GrapheneTaskExecutor.direct(),
             new GrapheneBridgeExposureConfig(policy, browser.currentUrl(), ""));
 

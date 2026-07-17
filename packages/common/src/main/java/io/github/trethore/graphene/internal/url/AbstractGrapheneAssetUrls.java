@@ -4,7 +4,7 @@ import io.github.trethore.graphene.api.url.AssetId;
 import io.github.trethore.graphene.api.url.GrapheneAssetUrls;
 import java.util.Objects;
 
-public abstract class AbstractGrapheneAssetUrls implements GrapheneAssetUrls {
+abstract class AbstractGrapheneAssetUrls implements GrapheneAssetUrls {
   protected static final String ASSET_HOST = "assets";
   protected static final String PATH_DELIMITER = "/";
 

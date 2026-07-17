@@ -6,10 +6,8 @@ import io.github.trethore.graphene.api.browser.BrowserConsoleMessageListener;
 import io.github.trethore.graphene.api.browser.BrowserConsoleSeverity;
 import io.github.trethore.graphene.api.browser.BrowserTitleListener;
 import io.github.trethore.graphene.api.browser.BrowserUrlListener;
-import io.github.trethore.graphene.internal.event.GrapheneSubscriptions;
-import java.util.List;
+import io.github.trethore.graphene.internal.event.GrapheneListenerList;
 import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,10 +16,12 @@ public final class GrapheneBrowserDisplayState implements AutoCloseable {
   private static final String BLANK_URL = "about:blank";
   private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneBrowserDisplayState.class);
 
-  private final List<BrowserTitleListener> titleListeners = new CopyOnWriteArrayList<>();
-  private final List<BrowserUrlListener> urlListeners = new CopyOnWriteArrayList<>();
-  private final List<BrowserConsoleMessageListener> consoleMessageListeners =
-      new CopyOnWriteArrayList<>();
+  private final GrapheneListenerList<BrowserTitleListener> titleListeners =
+      new GrapheneListenerList<>();
+  private final GrapheneListenerList<BrowserUrlListener> urlListeners =
+      new GrapheneListenerList<>();
+  private final GrapheneListenerList<BrowserConsoleMessageListener> consoleMessageListeners =
+      new GrapheneListenerList<>();
   private volatile String currentTitle = "";
   private volatile String currentUrl;
   private boolean closed;
@@ -36,21 +36,21 @@ public final class GrapheneBrowserDisplayState implements AutoCloseable {
       return;
     }
     closed = true;
-    titleListeners.clear();
-    urlListeners.clear();
-    consoleMessageListeners.clear();
+    titleListeners.close();
+    urlListeners.close();
+    consoleMessageListeners.close();
   }
 
   public GrapheneSubscription onTitleChanged(BrowserTitleListener listener) {
-    return subscribe(titleListeners, listener);
+    return titleListeners.subscribe(listener);
   }
 
   public GrapheneSubscription onUrlChanged(BrowserUrlListener listener) {
-    return subscribe(urlListeners, listener);
+    return urlListeners.subscribe(listener);
   }
 
   public GrapheneSubscription onConsoleMessage(BrowserConsoleMessageListener listener) {
-    return subscribe(consoleMessageListeners, listener);
+    return consoleMessageListeners.subscribe(listener);
   }
 
   public Runnable updateTitle(String title) {
@@ -65,7 +65,7 @@ public final class GrapheneBrowserDisplayState implements AutoCloseable {
         titleListeners,
         BrowserTitleListener::onTitleChanged,
         normalizedTitle,
-        "title-change listener");
+        "browser title-change listener");
   }
 
   public Runnable updateUrl(String url) {
@@ -77,7 +77,10 @@ public final class GrapheneBrowserDisplayState implements AutoCloseable {
       currentUrl = normalizedUrl;
     }
     return notification(
-        urlListeners, BrowserUrlListener::onUrlChanged, normalizedUrl, "URL-change listener");
+        urlListeners,
+        BrowserUrlListener::onUrlChanged,
+        normalizedUrl,
+        "browser URL-change listener");
   }
 
   public Runnable consoleMessage(
@@ -97,35 +100,20 @@ public final class GrapheneBrowserDisplayState implements AutoCloseable {
         consoleMessageListeners,
         BrowserConsoleMessageListener::onConsoleMessage,
         consoleMessage,
-        "console-message listener");
-  }
-
-  private synchronized <T> GrapheneSubscription subscribe(List<T> listeners, T listener) {
-    T validatedListener = Objects.requireNonNull(listener, "listener");
-    if (closed) {
-      return GrapheneSubscriptions.empty();
-    }
-    listeners.add(validatedListener);
-    return GrapheneSubscriptions.create(() -> listeners.remove(validatedListener));
-  }
-
-  private static <T, U> void dispatch(
-      List<T> listeners, BiConsumer<T, U> callback, U event, String listenerDescription) {
-    for (T listener : listeners) {
-      try {
-        callback.accept(listener, event);
-      } catch (RuntimeException exception) {
-        LOGGER.error("Unhandled Graphene browser {} exception", listenerDescription, exception);
-      }
-    }
+        "browser console-message listener");
   }
 
   private static <T, U> Runnable notification(
-      List<T> listeners, BiConsumer<T, U> callback, U event, String listenerDescription) {
+      GrapheneListenerList<T> listeners,
+      BiConsumer<T, U> callback,
+      U event,
+      String listenerDescription) {
     if (listeners.isEmpty()) {
       return null;
     }
-    return () -> dispatch(listeners, callback, event, listenerDescription);
+    return () ->
+        listeners.dispatch(
+            listener -> callback.accept(listener, event), LOGGER, listenerDescription);
   }
 
   private static String normalizeUrl(String url) {

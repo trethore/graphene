@@ -6,12 +6,12 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
-import io.github.trethore.graphene.internal.logging.GrapheneDebugLogger;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 final class GrapheneBridgeMessageCodec {
-  private static final GrapheneDebugLogger DEBUG_LOGGER =
-      GrapheneDebugLogger.of(GrapheneBridgeMessageCodec.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneBridgeMessageCodec.class);
   private static final String FIELD_BRIDGE = "bridge";
   private static final String FIELD_PAYLOAD = "payload";
   private final Gson gson;
@@ -40,11 +40,10 @@ final class GrapheneBridgeMessageCodec {
       return packet;
     } catch (RuntimeException exception) {
       int requestSize = requestJson.length();
-      DEBUG_LOGGER.debugIfEnabled(
-          logger -> {
-            logger.debug("Failed to parse bridge packet JSON requestSize={}", requestSize);
-            logger.debug("Bridge packet parse failure stack trace", exception);
-          });
+      if (LOGGER.isDebugEnabled()) {
+        LOGGER.debug("Failed to parse bridge packet JSON requestSize={}", requestSize);
+        LOGGER.debug("Bridge packet parse failure stack trace", exception);
+      }
       return null;
     }
   }

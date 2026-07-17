@@ -44,10 +44,6 @@ loom {
       appendProjectPathToDisplayName.set(false)
       generateRunConfig.set(true)
       runDirectory.set(layout.projectDirectory.dir("run/client"))
-      systemProperties.put(
-          "graphene.debug",
-          providers.gradleProperty("grapheneDebug").orElse("*"),
-      )
     }
   }
 }
