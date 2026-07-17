@@ -4,8 +4,10 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPlugin
 import org.gradle.kotlin.dsl.configure
+import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.withType
+import org.gradle.testing.jacoco.tasks.JacocoReport
 import org.sonarqube.gradle.SonarExtension
 
 @Suppress("unused")
@@ -22,12 +24,14 @@ class SonarConventionsPlugin : Plugin<Project> {
         val sonarToken = envValue(SonarConstants.TOKEN_ENV)
         val sonarHostUrl = envValue(SonarConstants.HOST_URL_ENV)
             .orElse(SonarConstants.DEFAULT_HOST_URL)
+        val sonarMetadataFile = project.layout.buildDirectory.file("sonar/report-task.txt")
 
         project.extensions.configure<SonarExtension> {
             properties {
                 property("sonar.projectKey", project.rootProject.name)
                 property("sonar.projectName", project.rootProject.name)
                 property("sonar.host.url", sonarHostUrl.get())
+                property("sonar.scanner.metadataFilePath", sonarMetadataFile.get().asFile.absolutePath)
                 property("sonar.inclusions", "**/*.java")
                 property("sonar.exclusions", "references/**,**/build/**")
                 property("sonar.gradle.scanAll", "false")
@@ -48,12 +52,27 @@ class SonarConventionsPlugin : Plugin<Project> {
             token.set(sonarToken)
         }
 
+        project.tasks.register<SonarCoverageTask>(SonarConstants.COVERAGE_TASK_NAME) {
+            group = SonarConstants.TASK_GROUP
+            description = "Runs SonarQube analysis and shows coverage for this project."
+            dependsOn(SonarConstants.SONAR_TASK_NAME)
+            hostUrl.set(sonarHostUrl)
+            projectKey.set(project.rootProject.name)
+            reportTaskFile.set(sonarMetadataFile)
+            token.set(sonarToken)
+        }
+
         project.subprojects.forEach { subproject ->
             subproject.plugins.withType<JavaPlugin> {
                 val subprojectClasses = subproject.tasks.named(JavaPlugin.CLASSES_TASK_NAME)
                 val subprojectTest = subproject.tasks.named(JavaPlugin.TEST_TASK_NAME)
+                subproject.pluginManager.apply("jacoco")
+                val subprojectCoverageReport = subproject.tasks.named<JacocoReport>("jacocoTestReport") {
+                    dependsOn(subprojectTest)
+                    reports.xml.required.set(true)
+                }
                 project.tasks.named(SonarConstants.SONAR_TASK_NAME) {
-                    dependsOn(subprojectClasses, subprojectTest)
+                    dependsOn(subprojectClasses, subprojectCoverageReport)
                 }
             }
         }
