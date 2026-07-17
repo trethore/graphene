@@ -176,7 +176,7 @@ final class GrapheneCefInstaller {
     }
   }
 
-  private static boolean isLinux() {
+  static boolean isLinux() {
     return osName().contains("linux");
   }
 

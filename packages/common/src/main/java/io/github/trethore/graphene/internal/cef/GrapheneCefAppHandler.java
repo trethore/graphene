@@ -4,7 +4,6 @@ import io.github.trethore.graphene.api.config.BrowserFileAccessPolicy;
 import io.github.trethore.graphene.api.url.GrapheneClasspathUrls;
 import io.github.trethore.graphene.internal.url.GrapheneAppUrls;
 import io.github.trethore.jcefgithub.MavenCefAppHandlerAdapter;
-import java.util.Locale;
 import java.util.Objects;
 import org.cef.CefApp;
 import org.cef.browser.CefRequestContext;
@@ -28,8 +27,7 @@ final class GrapheneCefAppHandler extends MavenCefAppHandlerAdapter {
   @Override
   public synchronized void onRegisterCustomSchemes(CefSchemeRegistrar registrar) {
     super.onRegisterCustomSchemes(registrar);
-    boolean standardAppScheme =
-        !System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("linux");
+    boolean standardAppScheme = !GrapheneCefInstaller.isLinux();
     registrar.addCustomScheme(
         GrapheneAppUrls.SCHEME, standardAppScheme, false, false, true, true, false, true);
     registrar.addCustomScheme(

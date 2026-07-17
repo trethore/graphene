@@ -30,22 +30,18 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
   private static final long SYNTHETIC_DUPLICATE_WINDOW_MILLIS = 250;
 
   private final BrowserSurface surface;
-  private final GrapheneClipboard clipboard = new GrapheneClipboard();
-  private final GrapheneSubscription clipboardWriteSubscription;
+  private final ClipboardWorkaround clipboardWorkaround;
   private String pendingSyntheticText;
   private long pendingSyntheticTimestamp;
-  private boolean pasteShortcutPressed;
   private boolean rightAltPressed;
   private BrowserPointerButton pressedButton = BrowserPointerButton.NONE;
 
   public BrowserSurfaceInputAdapter(BrowserSurface surface) {
     this.surface = Objects.requireNonNull(surface, "surface");
-    clipboardWriteSubscription =
-        GrapheneBridgeInternals.onEventJson(
-            surface.browser().bridge(),
-            CLIPBOARD_WRITE_CHANNEL,
-            ClipboardPayload.class,
-            (channel, payload) -> writeClipboard(payload));
+    clipboardWorkaround =
+        BrowserKeyPlatform.current() == BrowserKeyPlatform.LINUX
+            ? new ClipboardWorkaround(surface.browser())
+            : null;
   }
 
   public void setFocused(boolean focused) {
@@ -161,16 +157,7 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
   }
 
   public void key(int keyCode, int scanCode, boolean pressed, int modifiers) {
-    if (pressed && isPasteShortcut(keyCode, modifiers)) {
-      pasteShortcutPressed = true;
-      pasteClipboard();
-      return;
-    }
-    if (pressed && isClipboardWriteShortcut(keyCode, modifiers)) {
-      GrapheneBridgeInternals.authorizeClipboardWrite(surface.browser().bridge());
-    }
-    if (!pressed && keyCode == GLFW.GLFW_KEY_V && pasteShortcutPressed) {
-      pasteShortcutPressed = false;
+    if (clipboardWorkaround != null && clipboardWorkaround.handleKey(keyCode, pressed, modifiers)) {
       return;
     }
     if (keyCode == GLFW.GLFW_KEY_RIGHT_ALT) {
@@ -201,33 +188,8 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
 
   @Override
   public void close() {
-    clipboardWriteSubscription.unsubscribe();
-  }
-
-  private void pasteClipboard() {
-    GrapheneClipboardContent richContent = clipboard.read();
-    String nativeText = MinecraftReferences.keyboardHandler().getClipboard();
-    GrapheneClipboardContent content = resolveClipboardContent(richContent, nativeText);
-    byte[] png = content.png();
-    ClipboardPayload payload =
-        new ClipboardPayload(
-            content.text(),
-            content.html(),
-            png.length == 0 ? null : Base64.getEncoder().encodeToString(png));
-    GrapheneBridgeInternals.pasteClipboard(surface.browser().bridge(), payload);
-  }
-
-  private void writeClipboard(ClipboardPayload payload) {
-    if (payload == null) {
-      return;
-    }
-    byte[] png = decodePng(payload.png());
-    GrapheneClipboardContent content =
-        new GrapheneClipboardContent(payload.text(), payload.html(), png);
-    if (clipboard.isAvailable()) {
-      clipboard.write(content);
-    } else if (content.text() != null && !content.text().isEmpty()) {
-      MinecraftReferences.keyboardHandler().setClipboard(content.text());
+    if (clipboardWorkaround != null) {
+      clipboardWorkaround.close();
     }
   }
 
@@ -439,6 +401,71 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
 
   private static String emptyToNull(String value) {
     return value == null || value.isEmpty() ? null : value;
+  }
+
+  private static final class ClipboardWorkaround implements AutoCloseable {
+    private final BrowserSession browser;
+    private final GrapheneClipboard clipboard = new GrapheneClipboard();
+    private final GrapheneSubscription writeSubscription;
+    private boolean pasteShortcutPressed;
+
+    private ClipboardWorkaround(BrowserSession browser) {
+      this.browser = browser;
+      writeSubscription =
+          GrapheneBridgeInternals.onEventJson(
+              browser.bridge(),
+              CLIPBOARD_WRITE_CHANNEL,
+              ClipboardPayload.class,
+              (channel, payload) -> writeClipboard(payload));
+    }
+
+    @Override
+    public void close() {
+      writeSubscription.unsubscribe();
+    }
+
+    private boolean handleKey(int keyCode, boolean pressed, int modifiers) {
+      if (pressed && isPasteShortcut(keyCode, modifiers)) {
+        pasteShortcutPressed = true;
+        pasteClipboard();
+        return true;
+      }
+      if (pressed && isClipboardWriteShortcut(keyCode, modifiers)) {
+        GrapheneBridgeInternals.authorizeClipboardWrite(browser.bridge());
+      }
+      if (!pressed && keyCode == GLFW.GLFW_KEY_V && pasteShortcutPressed) {
+        pasteShortcutPressed = false;
+        return true;
+      }
+      return false;
+    }
+
+    private void pasteClipboard() {
+      GrapheneClipboardContent richContent = clipboard.read();
+      String nativeText = MinecraftReferences.keyboardHandler().getClipboard();
+      GrapheneClipboardContent content = resolveClipboardContent(richContent, nativeText);
+      byte[] png = content.png();
+      ClipboardPayload payload =
+          new ClipboardPayload(
+              content.text(),
+              content.html(),
+              png.length == 0 ? null : Base64.getEncoder().encodeToString(png));
+      GrapheneBridgeInternals.pasteClipboard(browser.bridge(), payload);
+    }
+
+    private void writeClipboard(ClipboardPayload payload) {
+      if (payload == null) {
+        return;
+      }
+      byte[] png = decodePng(payload.png());
+      GrapheneClipboardContent content =
+          new GrapheneClipboardContent(payload.text(), payload.html(), png);
+      if (clipboard.isAvailable()) {
+        clipboard.write(content);
+      } else if (content.text() != null && !content.text().isEmpty()) {
+        MinecraftReferences.keyboardHandler().setClipboard(content.text());
+      }
+    }
   }
 
   private record ExtraMouseButtonInput(int button, boolean pressed, int x, int y) {}
