@@ -110,21 +110,14 @@ final class GrapheneContextMenuOverlay {
 
   void keyPressed(KeyEvent event) {
     switch (event.key()) {
-      case GLFW.GLFW_KEY_ESCAPE -> {
-        cancel();
+      case GLFW.GLFW_KEY_ESCAPE -> cancel();
+      case GLFW.GLFW_KEY_UP -> moveSelection(-1);
+      case GLFW.GLFW_KEY_DOWN -> moveSelection(1);
+      case GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER ->
+          selectKeyboardSelection(event.modifiers());
+      default -> {
+        // Ignore keys that do not control the context menu.
       }
-      case GLFW.GLFW_KEY_UP -> {
-        moveSelection(-1);
-      }
-      case GLFW.GLFW_KEY_DOWN -> {
-        moveSelection(1);
-      }
-      case GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> {
-        if (keyboardSelection >= 0) {
-          select((BrowserContextMenuItem.Command) items.get(keyboardSelection), event.modifiers());
-        }
-      }
-      default -> {}
     }
   }
 
@@ -139,6 +132,13 @@ final class GrapheneContextMenuOverlay {
     completion.complete(
         BrowserContextMenuPresenter.Result.select(
             command, GrapheneInputModifiers.fromGlfw(modifiers)));
+  }
+
+  private void selectKeyboardSelection(int modifiers) {
+    if (keyboardSelection < 0) {
+      return;
+    }
+    select((BrowserContextMenuItem.Command) items.get(keyboardSelection), modifiers);
   }
 
   private void moveSelection(int direction) {
