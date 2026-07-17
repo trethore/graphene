@@ -9,6 +9,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import io.github.trethore.graphene.api.browser.bridge.BrowserBridgePolicy;
 import io.github.trethore.graphene.api.browser.dialog.BrowserFileDialogPresenter;
 import io.github.trethore.graphene.api.browser.dialog.BrowserJsDialogPresenter;
+import io.github.trethore.graphene.api.browser.menu.BrowserContextMenuPolicy;
+import io.github.trethore.graphene.api.browser.menu.BrowserContextMenuPresenter;
 import io.github.trethore.graphene.api.browser.navigation.BrowserNavigationPolicy;
 import java.nio.file.Path;
 import java.util.List;
@@ -73,6 +75,20 @@ class BrowserOptionsTest {
     BrowserOptions options = BrowserOptions.builder().navigationPolicy(customPolicy).build();
 
     assertSame(customPolicy, options.navigationPolicy());
+  }
+
+  @Test
+  void configuresContextMenus() {
+    BrowserContextMenuPolicy policy = BrowserContextMenuPolicy.disabled();
+    BrowserContextMenuPresenter presenter =
+        request -> CompletableFuture.completedFuture(BrowserContextMenuPresenter.Result.cancel());
+
+    BrowserOptions options =
+        BrowserOptions.builder().contextMenuPolicy(policy).contextMenuPresenter(presenter).build();
+
+    assertSame(policy, options.contextMenuPolicy());
+    assertSame(presenter, options.contextMenuPresenter().orElseThrow());
+    assertTrue(BrowserOptions.defaults().contextMenuPresenter().isEmpty());
   }
 
   @Test

@@ -1,6 +1,9 @@
 package io.github.trethore.graphene.debug;
 
+import io.github.trethore.graphene.api.browser.BrowserOptions;
+import io.github.trethore.graphene.api.browser.menu.BrowserContextMenuPolicy;
 import io.github.trethore.graphene.fabric.api.screen.GrapheneScreens;
+import io.github.trethore.graphene.fabric.api.surface.BrowserSurface;
 import io.github.trethore.graphene.fabric.api.widget.GrapheneWebViewWidget;
 import java.util.concurrent.CompletionException;
 import net.minecraft.client.Minecraft;
@@ -17,6 +20,8 @@ import org.slf4j.LoggerFactory;
 final class GrapheneBrowserDebugScreen extends Screen {
   private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneBrowserDebugScreen.class);
   private static final GrapheneBrowserDebugScreen INSTANCE = new GrapheneBrowserDebugScreen();
+  private static final BrowserOptions BROWSER_OPTIONS =
+      BrowserOptions.builder().contextMenuPolicy(BrowserContextMenuPolicy.standard()).build();
   private static String lastUrl;
 
   private GrapheneWebViewWidget webView;
@@ -48,16 +53,15 @@ final class GrapheneBrowserDebugScreen extends Screen {
     String initialUrl = lastUrl == null ? defaultUrl() : lastUrl;
 
     if (webView == null) {
+      BrowserSurface surface =
+          BrowserSurface.builder(GrapheneDebugClient.context())
+              .url(initialUrl)
+              .options(BROWSER_OPTIONS)
+              .size(webViewWidth, webViewHeight)
+              .build();
       webView =
           new GrapheneWebViewWidget(
-              GrapheneDebugClient.context(),
-              this,
-              8,
-              webViewY,
-              webViewWidth,
-              webViewHeight,
-              Component.empty(),
-              initialUrl);
+              this, 8, webViewY, webViewWidth, webViewHeight, Component.empty(), surface);
       debugBridge = new GrapheneBrowserDebugBridge(webView.bridge());
     } else {
       webView.setPosition(8, webViewY);

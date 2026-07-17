@@ -4,6 +4,7 @@ import io.github.trethore.graphene.api.browser.BrowserOptions;
 import io.github.trethore.graphene.api.browser.BrowserSession;
 import io.github.trethore.graphene.api.browser.dialog.BrowserFileDialogPresenter;
 import io.github.trethore.graphene.api.browser.dialog.BrowserJsDialogPresenter;
+import io.github.trethore.graphene.api.browser.menu.BrowserContextMenuPresenter;
 import io.github.trethore.graphene.api.config.GrapheneGlobalConfig;
 import io.github.trethore.graphene.api.devtools.DevToolsDisabledException;
 import io.github.trethore.graphene.api.devtools.DevToolsPageTarget;
@@ -42,6 +43,7 @@ public final class GrapheneCefRuntime implements GrapheneBrowserRuntime {
   private final GrapheneTaskExecutor mainThreadExecutor;
   private final GrapheneNativeWindow nativeWindow;
   private final GrapheneExternalBrowser externalBrowser;
+  private final BrowserContextMenuPresenter contextMenuPresenter;
   private final BrowserFileDialogPresenter fileDialogPresenter;
   private final BrowserJsDialogPresenter jsDialogPresenter;
   private final GrapheneBridgeRuntime bridgeRuntime;
@@ -55,12 +57,15 @@ public final class GrapheneCefRuntime implements GrapheneBrowserRuntime {
       GrapheneTaskExecutor mainThreadExecutor,
       GrapheneNativeWindow nativeWindow,
       GrapheneExternalBrowser externalBrowser,
+      BrowserContextMenuPresenter contextMenuPresenter,
       BrowserFileDialogPresenter fileDialogPresenter,
       BrowserJsDialogPresenter jsDialogPresenter) {
     this.startupPresenter = Objects.requireNonNull(startupPresenter, "startupPresenter");
     this.mainThreadExecutor = Objects.requireNonNull(mainThreadExecutor, "mainThreadExecutor");
     this.nativeWindow = Objects.requireNonNull(nativeWindow, "nativeWindow");
     this.externalBrowser = Objects.requireNonNull(externalBrowser, "externalBrowser");
+    this.contextMenuPresenter =
+        Objects.requireNonNull(contextMenuPresenter, "contextMenuPresenter");
     this.fileDialogPresenter = Objects.requireNonNull(fileDialogPresenter, "fileDialogPresenter");
     this.jsDialogPresenter = Objects.requireNonNull(jsDialogPresenter, "jsDialogPresenter");
     this.bridgeRuntime =
@@ -87,6 +92,7 @@ public final class GrapheneCefRuntime implements GrapheneBrowserRuntime {
             bridgeRuntime,
             mainThreadExecutor,
             externalBrowser,
+            contextMenuPresenter,
             config.browserFileAccessPolicy(),
             fileDialogPresenter,
             jsDialogPresenter);

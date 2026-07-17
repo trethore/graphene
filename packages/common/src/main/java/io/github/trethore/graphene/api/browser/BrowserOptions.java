@@ -4,6 +4,8 @@ import io.github.trethore.graphene.api.browser.bridge.BrowserBridgePolicy;
 import io.github.trethore.graphene.api.browser.dialog.BrowserFileDialogPresenter;
 import io.github.trethore.graphene.api.browser.dialog.BrowserJsDialogPresenter;
 import io.github.trethore.graphene.api.browser.download.BrowserDownloadPolicy;
+import io.github.trethore.graphene.api.browser.menu.BrowserContextMenuPolicy;
+import io.github.trethore.graphene.api.browser.menu.BrowserContextMenuPresenter;
 import io.github.trethore.graphene.api.browser.navigation.BrowserNavigationPolicy;
 import java.util.Objects;
 import java.util.Optional;
@@ -21,6 +23,8 @@ public final class BrowserOptions {
   private final BrowserBridgePolicy bridgePolicy;
   private final BrowserNavigationPolicy navigationPolicy;
   private final BrowserDownloadPolicy downloadPolicy;
+  private final BrowserContextMenuPolicy contextMenuPolicy;
+  private final BrowserContextMenuPresenter contextMenuPresenter;
   private final BrowserFileDialogPresenter fileDialogPresenter;
   private final BrowserJsDialogPresenter jsDialogPresenter;
 
@@ -32,6 +36,8 @@ public final class BrowserOptions {
     this.bridgePolicy = Objects.requireNonNull(builder.bridgePolicy, "bridgePolicy");
     this.navigationPolicy = Objects.requireNonNull(builder.navigationPolicy, "navigationPolicy");
     this.downloadPolicy = Objects.requireNonNull(builder.downloadPolicy, "downloadPolicy");
+    this.contextMenuPolicy = Objects.requireNonNull(builder.contextMenuPolicy, "contextMenuPolicy");
+    this.contextMenuPresenter = builder.contextMenuPresenter;
     this.fileDialogPresenter = builder.fileDialogPresenter;
     this.jsDialogPresenter = builder.jsDialogPresenter;
   }
@@ -72,6 +78,14 @@ public final class BrowserOptions {
     return downloadPolicy;
   }
 
+  public BrowserContextMenuPolicy contextMenuPolicy() {
+    return contextMenuPolicy;
+  }
+
+  public Optional<BrowserContextMenuPresenter> contextMenuPresenter() {
+    return Optional.ofNullable(contextMenuPresenter);
+  }
+
   public Optional<BrowserFileDialogPresenter> fileDialogPresenter() {
     return Optional.ofNullable(fileDialogPresenter);
   }
@@ -102,6 +116,8 @@ public final class BrowserOptions {
     private BrowserBridgePolicy bridgePolicy = BrowserBridgePolicy.defaultPolicy();
     private BrowserNavigationPolicy navigationPolicy = BrowserNavigationPolicy.defaultPolicy();
     private BrowserDownloadPolicy downloadPolicy = BrowserDownloadPolicy.defaultPolicy();
+    private BrowserContextMenuPolicy contextMenuPolicy = BrowserContextMenuPolicy.disabled();
+    private BrowserContextMenuPresenter contextMenuPresenter;
     private BrowserFileDialogPresenter fileDialogPresenter;
     private BrowserJsDialogPresenter jsDialogPresenter;
 
@@ -139,6 +155,17 @@ public final class BrowserOptions {
 
     public Builder downloadPolicy(BrowserDownloadPolicy downloadPolicy) {
       this.downloadPolicy = Objects.requireNonNull(downloadPolicy, "downloadPolicy");
+      return this;
+    }
+
+    public Builder contextMenuPolicy(BrowserContextMenuPolicy contextMenuPolicy) {
+      this.contextMenuPolicy = Objects.requireNonNull(contextMenuPolicy, "contextMenuPolicy");
+      return this;
+    }
+
+    public Builder contextMenuPresenter(BrowserContextMenuPresenter contextMenuPresenter) {
+      this.contextMenuPresenter =
+          Objects.requireNonNull(contextMenuPresenter, "contextMenuPresenter");
       return this;
     }
 

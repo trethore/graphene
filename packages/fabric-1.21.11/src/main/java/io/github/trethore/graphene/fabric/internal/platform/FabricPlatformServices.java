@@ -2,6 +2,8 @@ package io.github.trethore.graphene.fabric.internal.platform;
 
 import io.github.trethore.graphene.api.browser.dialog.BrowserFileDialogPresenter;
 import io.github.trethore.graphene.api.browser.dialog.BrowserJsDialogPresenter;
+import io.github.trethore.graphene.api.browser.menu.BrowserContextMenuPresenter;
+import io.github.trethore.graphene.fabric.internal.screen.GrapheneScreenBridge;
 import io.github.trethore.graphene.fabric.internal.util.MinecraftReferences;
 import io.github.trethore.graphene.internal.platform.GrapheneLifecycle;
 import io.github.trethore.graphene.internal.platform.GrapheneModResolver;
@@ -33,6 +35,7 @@ public final class FabricPlatformServices {
         windowMetrics(),
         MinecraftReferences::openUri,
         startupPresenter(),
+        contextMenuPresenter(),
         fileDialogPresenter(),
         jsDialogPresenter());
   }
@@ -163,6 +166,15 @@ public final class FabricPlatformServices {
               }
               return Arrays.stream(selection.split("\\|")).map(Path::of).toList();
             });
+  }
+
+  private static BrowserContextMenuPresenter contextMenuPresenter() {
+    return request -> {
+      if (MinecraftReferences.screen() instanceof GrapheneScreenBridge bridge) {
+        return bridge.graphene$showContextMenu(request);
+      }
+      return CompletableFuture.completedFuture(BrowserContextMenuPresenter.Result.cancel());
+    };
   }
 
   private static String showFileDialog(BrowserFileDialogPresenter.Request request) {

@@ -2,6 +2,7 @@ package io.github.trethore.graphene.mixin;
 
 import io.github.trethore.graphene.fabric.internal.input.GrapheneKeyboardHandlerHook;
 import net.minecraft.client.KeyboardHandler;
+import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -15,6 +16,14 @@ abstract class KeyboardHandlerMixin {
   private void graphene$routeGlobalKeyToBrowser(
       long windowHandle, int action, KeyEvent event, CallbackInfo callbackInfo) {
     if (GrapheneKeyboardHandlerHook.handleKeyPress(windowHandle, action, event)) {
+      callbackInfo.cancel();
+    }
+  }
+
+  @Inject(method = "charTyped", at = @At("HEAD"), cancellable = true)
+  private void graphene$suppressContextMenuCharacter(
+      long windowHandle, CharacterEvent event, CallbackInfo callbackInfo) {
+    if (GrapheneKeyboardHandlerHook.handleCharacterInput(windowHandle)) {
       callbackInfo.cancel();
     }
   }

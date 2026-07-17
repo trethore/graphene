@@ -1,5 +1,7 @@
 package io.github.trethore.graphene.internal.cef;
 
+import static io.github.trethore.graphene.internal.cef.CefTestProxies.defaultValue;
+import static io.github.trethore.graphene.internal.cef.CefTestProxies.objectMethod;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -178,30 +180,5 @@ class GrapheneCefNavigationRouterTest {
                       objectMethod(proxy, method.getName(), arguments);
                   default -> defaultValue(method.getReturnType());
                 });
-  }
-
-  private static Object objectMethod(Object proxy, String methodName, Object[] arguments) {
-    return switch (methodName) {
-      case "equals" -> proxy == arguments[0];
-      case "hashCode" -> System.identityHashCode(proxy);
-      case "toString" -> proxy.getClass().getSimpleName();
-      default -> throw new IllegalArgumentException(methodName);
-    };
-  }
-
-  private static Object defaultValue(Class<?> type) {
-    if (type == boolean.class) {
-      return false;
-    }
-    if (type == int.class) {
-      return 0;
-    }
-    if (type == long.class) {
-      return 0L;
-    }
-    if (type == double.class) {
-      return 0.0;
-    }
-    return null;
   }
 }

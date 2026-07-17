@@ -8,9 +8,14 @@
 
 ## 2. Context-menu policy or presenter
 
-- [ ] Define per-browser context-menu configuration.
-- [ ] Expose Graphene-owned request metadata and common browser actions.
-- [ ] Determine whether CEF's native menu works with windowless Minecraft surfaces or a Fabric presenter is required.
+- [x] Define per-browser context-menu configuration.
+- [x] Expose Graphene-owned request metadata and common browser actions.
+- [x] Determine whether CEF's native menu works with windowless Minecraft surfaces or a Fabric presenter is required.
+
+Context menus are disabled by default and can be enabled with Graphene's standard action policy. Graphene always uses a
+custom context-menu runner for off-screen browsers and never falls back to JCEF's native presenter. Fabric presents menus
+as Minecraft screen overlays associated with the originating web-view widget. Consumers can replace the policy and
+presenter per browser.
 
 ## 3. Global configuration conflict handling
 

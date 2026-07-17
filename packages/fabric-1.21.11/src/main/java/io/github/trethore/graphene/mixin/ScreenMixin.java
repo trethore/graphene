@@ -2,6 +2,7 @@ package io.github.trethore.graphene.mixin;
 
 import io.github.trethore.graphene.fabric.internal.screen.GrapheneScreenBridge;
 import io.github.trethore.graphene.fabric.internal.screen.GrapheneScreenState;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.components.events.AbstractContainerEventHandler;
 import net.minecraft.client.gui.screens.Screen;
@@ -30,5 +31,11 @@ public abstract class ScreenMixin extends AbstractContainerEventHandler
   @Inject(method = "resize", at = @At("HEAD"))
   private void grapheneui$onResize(int width, int height, CallbackInfo callbackInfo) {
     grapheneui$state.resizeWebViews();
+  }
+
+  @Inject(method = "renderWithTooltipAndSubtitles", at = @At("TAIL"))
+  private void grapheneui$renderContextMenu(
+      GuiGraphics graphics, int mouseX, int mouseY, float partialTick, CallbackInfo callbackInfo) {
+    graphene$renderContextMenu(graphics, mouseX, mouseY);
   }
 }

@@ -9,6 +9,7 @@ import io.github.trethore.graphene.api.browser.input.BrowserPointerButton;
 import io.github.trethore.graphene.api.browser.input.BrowserPointerInput;
 import io.github.trethore.graphene.api.browser.input.BrowserScrollInput;
 import io.github.trethore.graphene.api.browser.input.BrowserTextInput;
+import io.github.trethore.graphene.fabric.internal.input.GrapheneInputModifiers;
 import io.github.trethore.graphene.fabric.internal.input.GrapheneKeyboardMapper;
 import io.github.trethore.graphene.fabric.internal.util.MinecraftReferences;
 import io.github.trethore.graphene.internal.bridge.GrapheneBridgeInternals;
@@ -156,7 +157,7 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
                 browserY,
                 (int) Math.round(horizontal * SCROLL_DELTA),
                 (int) Math.round(vertical * SCROLL_DELTA),
-                modifiers(modifiers)));
+                GrapheneInputModifiers.fromGlfw(modifiers)));
   }
 
   public void key(int keyCode, int scanCode, boolean pressed, int modifiers) {
@@ -179,7 +180,7 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
         .browser()
         .sendKeyInput(
             GrapheneKeyboardMapper.map(
-                keyCode, scanCode, pressed, modifiers, modifiers(modifiers)));
+                keyCode, scanCode, pressed, modifiers, GrapheneInputModifiers.fromGlfw(modifiers)));
     if (pressed) {
       String syntheticText = syntheticText(keyCode, modifiers);
       if (syntheticText != null) {
@@ -242,7 +243,7 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
   }
 
   private void sendText(String text, int modifiers) {
-    Set<BrowserModifier> browserModifiers = modifiers(modifiers);
+    Set<BrowserModifier> browserModifiers = GrapheneInputModifiers.fromGlfw(modifiers);
     if (rightAltPressed
         && browserModifiers.contains(BrowserModifier.ALT)
         && browserModifiers.contains(BrowserModifier.CONTROL)) {
@@ -355,7 +356,7 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
             surface.toBrowserY(mouseY - surfaceY, renderedHeight),
             button,
             clickCount,
-            modifiers(modifiers)));
+            GrapheneInputModifiers.fromGlfw(modifiers)));
   }
 
   private boolean handleHistoryNavigation(int button, boolean pressed) {
@@ -405,29 +406,6 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
       case GLFW.GLFW_MOUSE_BUTTON_RIGHT -> BrowserPointerButton.RIGHT;
       default -> BrowserPointerButton.NONE;
     };
-  }
-
-  private static Set<BrowserModifier> modifiers(int modifiers) {
-    EnumSet<BrowserModifier> result = EnumSet.noneOf(BrowserModifier.class);
-    if ((modifiers & GLFW.GLFW_MOD_SHIFT) != 0) {
-      result.add(BrowserModifier.SHIFT);
-    }
-    if ((modifiers & GLFW.GLFW_MOD_CONTROL) != 0) {
-      result.add(BrowserModifier.CONTROL);
-    }
-    if ((modifiers & GLFW.GLFW_MOD_ALT) != 0) {
-      result.add(BrowserModifier.ALT);
-    }
-    if ((modifiers & GLFW.GLFW_MOD_SUPER) != 0) {
-      result.add(BrowserModifier.META);
-    }
-    if ((modifiers & GLFW.GLFW_MOD_CAPS_LOCK) != 0) {
-      result.add(BrowserModifier.CAPS_LOCK);
-    }
-    if ((modifiers & GLFW.GLFW_MOD_NUM_LOCK) != 0) {
-      result.add(BrowserModifier.NUM_LOCK);
-    }
-    return Set.copyOf(result);
   }
 
   static GrapheneClipboardContent resolveClipboardContent(

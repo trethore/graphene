@@ -15,6 +15,7 @@ import io.github.trethore.graphene.api.browser.BrowserSession;
 import io.github.trethore.graphene.api.browser.BrowserSessions;
 import io.github.trethore.graphene.api.browser.dialog.BrowserFileDialogPresenter;
 import io.github.trethore.graphene.api.browser.dialog.BrowserJsDialogPresenter;
+import io.github.trethore.graphene.api.browser.menu.BrowserContextMenuPresenter;
 import io.github.trethore.graphene.api.config.GrapheneConfig;
 import io.github.trethore.graphene.api.config.GrapheneGlobalConfig;
 import io.github.trethore.graphene.api.config.GrapheneGlobalConfigConflictException;
@@ -52,8 +53,7 @@ class GrapheneRuntimeControllerTest {
 
     GrapheneContext alpha = Graphene.register("alpha", GrapheneConfig.defaults());
     BrowserSessions browserSessions = alpha.browsers();
-    assertSame(alpha, Graphene.register("alpha", GrapheneConfig.defaults()));
-    assertSame(alpha, Graphene.context("alpha"));
+    assertRegisteredContext(alpha);
     GrapheneConfig incompatibleBetaConfig =
         GrapheneConfig.builder()
             .global(GrapheneGlobalConfig.builder().allowBrowserFileAccess().build())
@@ -72,8 +72,7 @@ class GrapheneRuntimeControllerTest {
     GrapheneDevTools devTools = runtime.devTools();
     assertSame(runtime, alpha.runtime());
     assertFalse(runtime.isInitialized());
-    assertFalse(httpServer instanceof AutoCloseable);
-    assertSame(httpServer, runtime.httpServer());
+    assertHttpServerView(runtime, httpServer);
     assertDevToolsUnavailableBeforeStartup(runtime, devTools);
     runtime.initialization().toCompletableFuture().complete(null);
     assertFalse(runtime.initialization().toCompletableFuture().isDone());
@@ -110,6 +109,16 @@ class GrapheneRuntimeControllerTest {
     stopping.join();
     assertEquals(GrapheneRuntimeState.STOPPED, runtime.state());
     assertUnavailable(browserSessions, GrapheneRuntimeState.STOPPED);
+  }
+
+  private static void assertRegisteredContext(GrapheneContext expectedContext) {
+    assertSame(expectedContext, Graphene.register("alpha", GrapheneConfig.defaults()));
+    assertSame(expectedContext, Graphene.context("alpha"));
+  }
+
+  private static void assertHttpServerView(GrapheneRuntime runtime, GrapheneHttpServer httpServer) {
+    assertFalse(httpServer instanceof AutoCloseable);
+    assertSame(httpServer, runtime.httpServer());
   }
 
   private static void assertUnavailable(
@@ -172,6 +181,8 @@ class GrapheneRuntimeControllerTest {
         request -> CompletableFuture.completedFuture(List.<Path>of());
     BrowserJsDialogPresenter jsDialogPresenter =
         request -> CompletableFuture.completedFuture(BrowserJsDialogPresenter.Result.cancel());
+    BrowserContextMenuPresenter contextMenuPresenter =
+        request -> CompletableFuture.completedFuture(BrowserContextMenuPresenter.Result.cancel());
     return new GraphenePlatformServices(
         lifecycle,
         GrapheneTaskExecutor.direct(),
@@ -180,6 +191,7 @@ class GrapheneRuntimeControllerTest {
         new TestWindowMetrics(),
         url -> {},
         startupPresenter,
+        contextMenuPresenter,
         fileDialogPresenter,
         jsDialogPresenter);
   }

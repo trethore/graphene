@@ -2,6 +2,7 @@ package io.github.trethore.graphene.internal.cef;
 
 import io.github.trethore.graphene.api.browser.dialog.BrowserFileDialogPresenter;
 import io.github.trethore.graphene.api.browser.dialog.BrowserJsDialogPresenter;
+import io.github.trethore.graphene.api.browser.menu.BrowserContextMenuPresenter;
 import io.github.trethore.graphene.api.config.BrowserFileAccessPolicy;
 import io.github.trethore.graphene.internal.bridge.GrapheneBridgeRuntime;
 import io.github.trethore.graphene.internal.platform.GrapheneExternalBrowser;
@@ -18,13 +19,15 @@ final class GrapheneCefClientConfig {
       GrapheneBridgeRuntime bridgeRuntime,
       GrapheneTaskExecutor mainThreadExecutor,
       GrapheneExternalBrowser externalBrowser,
+      BrowserContextMenuPresenter contextMenuPresenter,
       BrowserFileAccessPolicy fileAccessPolicy,
       BrowserFileDialogPresenter fileDialogPresenter,
       BrowserJsDialogPresenter jsDialogPresenter) {
     CefClient validatedClient = Objects.requireNonNull(client, "client");
     validatedClient.addLoadHandler(new GrapheneCefLoadHandler(bridgeRuntime, mainThreadExecutor));
     validatedClient.addDisplayHandler(new GrapheneCefDisplayHandler(mainThreadExecutor));
-    validatedClient.addContextMenuHandler(new GrapheneCefContextMenuHandler());
+    validatedClient.addContextMenuHandler(
+        new GrapheneCefContextMenuHandler(contextMenuPresenter, mainThreadExecutor));
     GrapheneCefNavigationRouter navigationRouter =
         new GrapheneCefNavigationRouter(mainThreadExecutor, externalBrowser);
     validatedClient.addLifeSpanHandler(new GrapheneCefLifeSpanHandler(navigationRouter));
