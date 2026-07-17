@@ -13,6 +13,11 @@ final class GrapheneBridgeScriptLoader {
 
   private static final String CLIPBOARD_SCRIPT_RESOURCE_PATH =
       "assets/grapheneui/bridge/clipboard.js";
+
+  private static final String CLIPBOARD_SCRIPT =
+      loadSingleScript(
+          GrapheneBridgeScriptLoader.class.getClassLoader(), CLIPBOARD_SCRIPT_RESOURCE_PATH);
+
   private static final List<String> SCRIPT_RESOURCE_PATHS =
       List.of(
           "assets/grapheneui/bridge/bridge.js",
@@ -20,9 +25,7 @@ final class GrapheneBridgeScriptLoader {
           "assets/grapheneui/bridge/navigation.js",
           CLIPBOARD_SCRIPT_RESOURCE_PATH,
           "assets/grapheneui/bridge/mouse.js");
-  private static final String CLIPBOARD_SCRIPT =
-      loadSingleScript(
-          GrapheneBridgeScriptLoader.class.getClassLoader(), CLIPBOARD_SCRIPT_RESOURCE_PATH);
+
   private static final List<String> SCRIPTS = loadScripts();
   private static final List<String> DOCUMENT_SCRIPTS = List.of(CLIPBOARD_SCRIPT);
 

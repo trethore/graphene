@@ -1,18 +1,22 @@
 package io.github.trethore.graphene.api.config;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
 /** Thrown when consumers contribute incompatible process-wide Graphene configuration. */
 public final class GrapheneGlobalConfigConflictException extends IllegalStateException {
+  @Serial private static final long serialVersionUID = 1L;
+
   private final Setting setting;
-  private final List<Contribution> contributions;
+  private final Contribution[] contributions;
 
   public GrapheneGlobalConfigConflictException(Setting setting, List<Contribution> contributions) {
     super(message(setting, contributions));
     this.setting = setting;
-    this.contributions = List.copyOf(contributions);
+    this.contributions = contributions.toArray(Contribution[]::new);
   }
 
   public Setting setting() {
@@ -20,7 +24,7 @@ public final class GrapheneGlobalConfigConflictException extends IllegalStateExc
   }
 
   public List<Contribution> contributions() {
-    return contributions;
+    return List.of(contributions);
   }
 
   private static String message(Setting setting, List<Contribution> contributions) {
@@ -40,18 +44,19 @@ public final class GrapheneGlobalConfigConflictException extends IllegalStateExc
         + contributionSummary;
   }
 
-  private static String requireText(String value, String name) {
+  private static void requireText(String value, String name) {
     String validatedValue = Objects.requireNonNull(value, name);
     if (validatedValue.isBlank()) {
       throw new IllegalArgumentException(name + " must not be blank");
     }
-    return validatedValue;
   }
 
-  public record Contribution(String consumerId, String value) {
+  public record Contribution(String consumerId, String value) implements Serializable {
+    @Serial private static final long serialVersionUID = 1L;
+
     public Contribution {
-      consumerId = requireText(consumerId, "consumerId");
-      value = requireText(value, "value");
+      requireText(consumerId, "consumerId");
+      requireText(value, "value");
     }
   }
 

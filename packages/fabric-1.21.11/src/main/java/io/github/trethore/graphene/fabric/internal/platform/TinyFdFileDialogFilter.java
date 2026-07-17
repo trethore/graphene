@@ -11,7 +11,7 @@ record TinyFdFileDialogFilter(List<String> patterns, String description) {
 
   TinyFdFileDialogFilter {
     patterns = List.copyOf(Objects.requireNonNull(patterns, "patterns"));
-    description = Objects.requireNonNull(description, "description");
+    Objects.requireNonNull(description, "description");
   }
 
   static TinyFdFileDialogFilter from(List<BrowserFileDialogPresenter.Filter> filters) {
