@@ -32,7 +32,13 @@ final class GrapheneCefKeyMapper {
     boolean systemKey =
         platform == BrowserKeyPlatform.WINDOWS && input.modifiers().contains(BrowserModifier.ALT);
     return new ResolvedKey(
-        windowsKeyCode, nativeKeyCode, systemKey, character, unmodifiedCharacter, scanCode);
+        platform,
+        windowsKeyCode,
+        nativeKeyCode,
+        systemKey,
+        character,
+        unmodifiedCharacter,
+        scanCode);
   }
 
   private static char layoutCharacter(BrowserKeyInput input, BrowserRawKeyMetadata rawMetadata) {
@@ -94,14 +100,14 @@ final class GrapheneCefKeyMapper {
       }
       return '0' + digit;
     }
+    if (layoutCharacter >= 'a' && layoutCharacter <= 'z') {
+      return Character.toUpperCase(layoutCharacter);
+    }
+    if (layoutCharacter >= 'A' && layoutCharacter <= 'Z') {
+      return layoutCharacter;
+    }
     int letter = letter(key);
     if (letter >= 0) {
-      if (layoutCharacter >= 'a' && layoutCharacter <= 'z') {
-        return Character.toUpperCase(layoutCharacter);
-      }
-      if (layoutCharacter >= 'A' && layoutCharacter <= 'Z') {
-        return layoutCharacter;
-      }
       return 'A' + letter;
     }
     return switch (key) {
@@ -631,6 +637,7 @@ final class GrapheneCefKeyMapper {
   }
 
   record ResolvedKey(
+      BrowserKeyPlatform platform,
       int windowsKeyCode,
       int nativeKeyCode,
       boolean systemKey,

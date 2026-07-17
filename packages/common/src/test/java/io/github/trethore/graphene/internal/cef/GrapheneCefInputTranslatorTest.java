@@ -75,7 +75,27 @@ class GrapheneCefInputTranslatorTest {
   }
 
   @Test
-  void preservesOriginatingKeyCodesForCharacterEvents() {
+  void usesTypedCharacterAsWindowsCharacterEventKeyCode() {
+    BrowserKeyInput keyInput =
+        new BrowserKeyInput(
+            BrowserKeyAction.PRESS,
+            BrowserKey.KEY_A,
+            BrowserKeyLocation.STANDARD,
+            Set.of(),
+            new BrowserRawKeyMetadata(BrowserKeyPlatform.WINDOWS, 30, 'a'));
+    CefKeyEvent event =
+        GrapheneCefInputTranslator.text(new BrowserTextInput("a", Set.of()), keyInput)[0];
+
+    assertEquals(CefKeyEvent.KEYEVENT_CHAR, event.type);
+    assertEquals('a', event.windows_key_code);
+    assertEquals(CefKeyEvent.buildWindowsNativeKeyCode(30, false, false), event.native_key_code);
+    assertEquals(30, event.scan_code);
+    assertEquals('a', event.character);
+    assertEquals('a', event.unmodified_character);
+  }
+
+  @Test
+  void preservesOriginatingVirtualKeyForNonWindowsCharacterEvents() {
     BrowserKeyInput keyInput =
         new BrowserKeyInput(
             BrowserKeyAction.PRESS,
@@ -83,15 +103,32 @@ class GrapheneCefInputTranslatorTest {
             BrowserKeyLocation.STANDARD,
             Set.of(),
             new BrowserRawKeyMetadata(BrowserKeyPlatform.LINUX, 38, 'a'));
+
     CefKeyEvent event =
         GrapheneCefInputTranslator.text(new BrowserTextInput("a", Set.of()), keyInput)[0];
 
-    assertEquals(CefKeyEvent.KEYEVENT_CHAR, event.type);
-    assertEquals(65, event.windows_key_code);
+    assertEquals('A', event.windows_key_code);
     assertEquals(38, event.native_key_code);
-    assertEquals(38, event.scan_code);
-    assertEquals('a', event.character);
-    assertEquals('a', event.unmodified_character);
+  }
+
+  @Test
+  void usesTypedDigitInsteadOfNumpadVirtualKeyForWindowsCharacterEvents() {
+    BrowserKeyInput keyInput =
+        new BrowserKeyInput(
+            BrowserKeyAction.PRESS,
+            BrowserKey.DIGIT_1,
+            BrowserKeyLocation.NUMPAD,
+            Set.of(BrowserModifier.NUM_LOCK),
+            new BrowserRawKeyMetadata(BrowserKeyPlatform.WINDOWS, 79, '1'));
+
+    CefKeyEvent event =
+        GrapheneCefInputTranslator.text(
+            new BrowserTextInput("1", Set.of(BrowserModifier.NUM_LOCK)), keyInput)[0];
+
+    assertEquals('1', event.windows_key_code);
+    assertEquals('1', event.character);
+    assertEquals(
+        EventFlags.EVENTFLAG_NUM_LOCK_ON | EventFlags.EVENTFLAG_IS_KEY_PAD, event.modifiers);
   }
 
   @Test
@@ -129,6 +166,21 @@ class GrapheneCefInputTranslatorTest {
 
     assertEquals('Q', event.windows_key_code);
     assertEquals('q', event.unmodified_character);
+  }
+
+  @Test
+  void mapsLayoutLettersLocatedOnOemKeys() {
+    BrowserKeyInput input =
+        new BrowserKeyInput(
+            BrowserKeyAction.PRESS,
+            BrowserKey.SEMICOLON,
+            BrowserKeyLocation.STANDARD,
+            Set.of(),
+            new BrowserRawKeyMetadata(BrowserKeyPlatform.WINDOWS, 39, 'm'));
+
+    CefKeyEvent event = GrapheneCefInputTranslator.key(input);
+
+    assertEquals('M', event.windows_key_code);
   }
 
   @Test

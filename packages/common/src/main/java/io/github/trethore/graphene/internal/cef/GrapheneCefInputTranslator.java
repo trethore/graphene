@@ -3,6 +3,7 @@ package io.github.trethore.graphene.internal.cef;
 import io.github.trethore.graphene.api.browser.input.BrowserKeyAction;
 import io.github.trethore.graphene.api.browser.input.BrowserKeyInput;
 import io.github.trethore.graphene.api.browser.input.BrowserKeyLocation;
+import io.github.trethore.graphene.api.browser.input.BrowserKeyPlatform;
 import io.github.trethore.graphene.api.browser.input.BrowserModifier;
 import io.github.trethore.graphene.api.browser.input.BrowserPointerAction;
 import io.github.trethore.graphene.api.browser.input.BrowserPointerButton;
@@ -69,7 +70,9 @@ final class GrapheneCefInputTranslator {
           new CefKeyEvent(
               CefKeyEvent.KEYEVENT_CHAR,
               eventModifiers,
-              key == null ? character : key.windowsKeyCode(),
+              key == null || key.platform() == BrowserKeyPlatform.WINDOWS
+                  ? character
+                  : key.windowsKeyCode(),
               key == null ? 0 : key.nativeKeyCode(),
               key != null && key.systemKey(),
               character,
