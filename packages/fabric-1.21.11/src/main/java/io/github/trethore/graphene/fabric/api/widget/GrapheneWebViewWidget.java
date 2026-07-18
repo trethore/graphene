@@ -22,6 +22,11 @@ import net.minecraft.util.Util;
 import org.jspecify.annotations.NonNull;
 import org.lwjgl.glfw.GLFW;
 
+/**
+ * A Minecraft widget that owns, renders, and forwards input to a browser surface. The containing
+ * screen must have Graphene's screen integration, which tracks the widget for resize and optional
+ * automatic closure.
+ */
 @SuppressWarnings("unused")
 public class GrapheneWebViewWidget extends AbstractWidget implements AutoCloseable {
   private final Screen screen;
@@ -205,10 +210,12 @@ public class GrapheneWebViewWidget extends AbstractWidget implements AutoCloseab
     surface.resize(width, height);
   }
 
+  /** Resynchronizes browser resolution after the containing screen changes size. */
   public void handleScreenResize() {
     surface.resize(getWidth(), getHeight());
   }
 
+  /** Unregisters the widget and closes its input adapter and owned surface. */
   @Override
   public void close() {
     if (closed) {

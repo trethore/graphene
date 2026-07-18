@@ -3,6 +3,10 @@ package io.github.trethore.graphene.api.browser.input;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * A pointer event expressed in browser viewport coordinates. The click count is zero for movement
+ * and otherwise identifies the current repeated-click sequence.
+ */
 public record BrowserPointerInput(
     BrowserPointerAction action,
     int x,

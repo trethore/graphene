@@ -1,5 +1,6 @@
 package io.github.trethore.graphene.api.browser.download;
 
+/** Receives immutable state changes for browser downloads. */
 @FunctionalInterface
 public interface BrowserDownloadListener {
   /**

@@ -1,5 +1,6 @@
 package io.github.trethore.graphene.api.browser.menu;
 
+/** Stable action represented by a browser context-menu command. */
 public enum BrowserContextMenuAction {
   BACK,
   FORWARD,

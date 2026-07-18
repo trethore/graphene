@@ -4,6 +4,7 @@ import io.github.trethore.graphene.api.devtools.GrapheneDevTools;
 import java.util.OptionalInt;
 import java.util.concurrent.CompletionStage;
 
+/** Read-only access to the process-wide Graphene runtime lifecycle and services. */
 @SuppressWarnings("unused")
 public interface GrapheneRuntime {
   GrapheneRuntimeState state();

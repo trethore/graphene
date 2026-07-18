@@ -4,6 +4,7 @@ import io.github.trethore.graphene.api.browser.BrowserSession;
 import java.util.Objects;
 import java.util.Optional;
 
+/** Selects how Graphene handles navigation and requests for new browsing contexts. */
 @FunctionalInterface
 public interface BrowserNavigationPolicy {
   /**
@@ -23,6 +24,7 @@ public interface BrowserNavigationPolicy {
             : Decision.CANCEL;
   }
 
+  /** Action Graphene takes for a navigation request. */
   enum Decision {
     /** Cancels the requested navigation. */
     CANCEL,
@@ -34,12 +36,14 @@ public interface BrowserNavigationPolicy {
     CONSUMER_MANAGED
   }
 
+  /** Kind of navigation requested by browser content. */
   enum Type {
     MAIN_FRAME_NAVIGATION,
     POPUP,
     OPEN_FROM_TAB
   }
 
+  /** Browser-requested destination for an opened URL. */
   enum Disposition {
     UNKNOWN,
     CURRENT_TAB,

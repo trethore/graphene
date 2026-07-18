@@ -5,6 +5,7 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
+/** Creates and interprets {@code classpath:///assets/<namespace>/<path>} asset URLs. */
 public final class GrapheneClasspathUrls {
   public static final String SCHEME = "classpath";
 
@@ -29,6 +30,7 @@ public final class GrapheneClasspathUrls {
     return new GrapheneClasspathUrlsSupport(namespace);
   }
 
+  /** Returns the normalized classpath resource path, or an empty string for an invalid URL. */
   public static String normalizeResourcePath(String url) {
     return SUPPORT.normalizeResourcePath(url);
   }

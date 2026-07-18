@@ -7,10 +7,16 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
+/** Presents a configured browser context menu through a consumer-provided user interface. */
 @FunctionalInterface
 public interface BrowserContextMenuPresenter {
+  /**
+   * Presents the menu asynchronously. Failed or {@code null} completion, an unknown command, or an
+   * empty selection cancels the menu.
+   */
   CompletionStage<Result> show(Request request);
 
+  /** Context and configured items supplied to a context-menu presenter. */
   record Request(BrowserContextMenuContext context, List<BrowserContextMenuItem> items) {
     public Request {
       Objects.requireNonNull(context, "context");
@@ -18,6 +24,7 @@ public interface BrowserContextMenuPresenter {
     }
   }
 
+  /** The command selected by the user, or a canceled presentation. */
   record Result(
       Optional<BrowserContextMenuItem.CommandId> selectedCommand, Set<BrowserModifier> modifiers) {
     public Result {

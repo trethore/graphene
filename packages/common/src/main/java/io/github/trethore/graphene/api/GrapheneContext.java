@@ -9,6 +9,11 @@ import io.github.trethore.graphene.api.url.GrapheneAssetUrls;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 
+/**
+ * Consumer-scoped access to Graphene configuration, assets, and browser sessions. A context keeps
+ * the configuration contributed during registration; process-wide settings may differ after
+ * Graphene resolves contributions from all registered consumers.
+ */
 @SuppressWarnings("unused")
 public final class GrapheneContext {
   private final String id;
@@ -52,6 +57,7 @@ public final class GrapheneContext {
     return config.global();
   }
 
+  /** Returns the effective process-wide configuration resolved from all registered consumers. */
   public GrapheneGlobalConfig effectiveGlobalConfig() {
     return Graphene.globalConfig();
   }
@@ -72,6 +78,7 @@ public final class GrapheneContext {
     return httpAssets;
   }
 
+  /** Creates a URL under this consumer's HTTP asset mount. */
   public String httpUrl(String path) {
     return httpUrlFactory.apply(path);
   }

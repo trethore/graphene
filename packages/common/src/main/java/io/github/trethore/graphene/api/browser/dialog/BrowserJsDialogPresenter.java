@@ -3,10 +3,13 @@ package io.github.trethore.graphene.api.browser.dialog;
 import java.util.Objects;
 import java.util.concurrent.CompletionStage;
 
+/** Presents JavaScript dialogs through a consumer-provided user interface. */
 @FunctionalInterface
 public interface BrowserJsDialogPresenter {
+  /** Presents the request asynchronously. Failed or {@code null} completion rejects the dialog. */
   CompletionStage<Result> show(Request request);
 
+  /** Kind of JavaScript dialog requested by browser content. */
   enum Type {
     ALERT,
     CONFIRM,
@@ -14,6 +17,7 @@ public interface BrowserJsDialogPresenter {
     BEFORE_UNLOAD
   }
 
+  /** Immutable details of a JavaScript dialog request. */
   record Request(
       Type type, String originUrl, String message, String defaultPrompt, boolean reload) {
     public Request {
@@ -24,6 +28,7 @@ public interface BrowserJsDialogPresenter {
     }
   }
 
+  /** The consumer-selected outcome of a JavaScript dialog. */
   record Result(boolean accepted, String promptText) {
     public Result {
       Objects.requireNonNull(promptText, "promptText");

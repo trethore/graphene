@@ -1,5 +1,6 @@
 package io.github.trethore.graphene.api.browser.download;
 
+/** Lifecycle state of a browser download. */
 public enum BrowserDownloadState {
   REQUESTED,
   IN_PROGRESS,

@@ -51,6 +51,7 @@ public final class GrapheneGlobalConfigConflictException extends IllegalStateExc
     }
   }
 
+  /** A consumer and the value it contributed to a conflicting setting. */
   public record Contribution(String consumerId, String value) implements Serializable {
     @Serial private static final long serialVersionUID = 1L;
 
@@ -60,6 +61,7 @@ public final class GrapheneGlobalConfigConflictException extends IllegalStateExc
     }
   }
 
+  /** Process-wide setting that may conflict between consumers. */
   public enum Setting {
     BROWSER_RUNTIME_PATH,
     REMOTE_DEBUGGING,

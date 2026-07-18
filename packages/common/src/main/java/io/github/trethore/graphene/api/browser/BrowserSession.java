@@ -13,6 +13,10 @@ import io.github.trethore.graphene.api.browser.input.BrowserTextInput;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * A closeable, off-screen browser session independent of any platform render surface. Closing the
+ * session releases its browser resources and makes further state-changing operations invalid.
+ */
 @SuppressWarnings("unused")
 public interface BrowserSession extends AutoCloseable {
   BrowserOptions options();
@@ -111,6 +115,7 @@ public interface BrowserSession extends AutoCloseable {
   /** Subscribes to browser console messages delivered on the platform thread. */
   GrapheneSubscription onConsoleMessage(BrowserConsoleMessageListener listener);
 
+  /** Closes the browser session. Repeated calls have no additional effect. */
   @Override
   void close();
 }

@@ -1,5 +1,6 @@
 package io.github.trethore.graphene.api.browser;
 
+/** Creates browser sessions owned by a Graphene consumer context. */
 public interface BrowserSessions {
   default BrowserSession create(String url) {
     return create(url, BrowserOptions.defaults(), 1, 1);

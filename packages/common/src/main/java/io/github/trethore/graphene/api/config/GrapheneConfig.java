@@ -2,6 +2,10 @@ package io.github.trethore.graphene.api.config;
 
 import java.util.Objects;
 
+/**
+ * Immutable consumer configuration composed of container-scoped settings and a process-wide
+ * configuration contribution. Defaults use the default values of both configuration groups.
+ */
 @SuppressWarnings("unused")
 public final class GrapheneConfig {
   private static final GrapheneConfig DEFAULT = builder().build();
@@ -51,6 +55,7 @@ public final class GrapheneConfig {
     return Objects.hash(containerConfig, globalConfig);
   }
 
+  /** Builds a consumer configuration. */
   public static final class Builder {
     private GrapheneContainerConfig containerConfig = GrapheneContainerConfig.defaults();
     private GrapheneGlobalConfig globalConfig = GrapheneGlobalConfig.defaults();

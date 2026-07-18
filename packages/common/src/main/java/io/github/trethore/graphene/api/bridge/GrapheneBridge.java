@@ -6,11 +6,8 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Interface for the Graphene Bridge, which facilitates communication between the Java client and
- * the Graphene UI. It allows registering event listeners, handling requests, emitting events, and
- * making requests with optional JSON serialization. Consumer channels beginning with {@link
- * #RESERVED_CHANNEL_PREFIX} are rejected because that namespace belongs to Graphene platform
- * integrations.
+ * Bidirectional event and request bridge between Java and browser content. Consumer channels must
+ * not begin with {@link #RESERVED_CHANNEL_PREFIX}, which is reserved for platform integrations.
  */
 @SuppressWarnings("unused")
 public interface GrapheneBridge {
@@ -19,8 +16,10 @@ public interface GrapheneBridge {
   /** Channel prefix reserved for Graphene platform integrations. */
   String RESERVED_CHANNEL_PREFIX = "graphene:";
 
+  /** Returns whether the bridge is exposed to the current document and ready to send messages. */
   boolean isReady();
 
+  /** Subscribes to transitions into the ready state, invoking the listener immediately if ready. */
   GrapheneSubscription onReady(Runnable listener);
 
   GrapheneSubscription onEvent(String channel, GrapheneBridgeEventListener listener);
@@ -55,6 +54,7 @@ public interface GrapheneBridge {
         });
   }
 
+  /** Emits an event to the current document. */
   void emit(String channel, String payloadJson);
 
   default void emitJson(String channel, Object payload) {
@@ -77,5 +77,10 @@ public interface GrapheneBridge {
         .thenApply(responseJson -> GrapheneBridgeJson.fromJson(responseJson, responseType));
   }
 
+  /**
+   * Sends a request and completes with its response payload.
+   *
+   * @throws GrapheneBridgeRequestException if the remote request fails
+   */
   CompletableFuture<String> request(String channel, String payloadJson, Duration timeout);
 }

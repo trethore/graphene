@@ -49,11 +49,13 @@ public interface BrowserBridgePolicy {
     return allowOrigins(Set.copyOf(Arrays.asList(origins)));
   }
 
+  /** Decision to expose or withhold the bridge from a document. */
   enum Decision {
     ALLOW,
     DENY
   }
 
+  /** Document information used to decide whether the bridge is exposed. */
   record Request(
       String documentUrl,
       BrowserBridgeDocumentSource source,

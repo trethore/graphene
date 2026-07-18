@@ -21,6 +21,11 @@ import java.util.Objects;
 import java.util.Set;
 import org.lwjgl.glfw.GLFW;
 
+/**
+ * Translates Minecraft and GLFW input into normalized input for a browser surface. Pointer methods
+ * accept window coordinates, the rendered surface bounds, and a GLFW modifier bit field; key
+ * methods accept GLFW key and scan codes.
+ */
 @SuppressWarnings("unused")
 public final class BrowserSurfaceInputAdapter implements AutoCloseable {
   private static final String CLIPBOARD_WRITE_CHANNEL = "graphene:clipboard:write";
@@ -186,6 +191,7 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
     sendText(normalizedText, modifiers);
   }
 
+  /** Releases adapter-specific bridge subscriptions without closing the surface. */
   @Override
   public void close() {
     if (clipboardWorkaround != null) {
@@ -206,6 +212,7 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
 
   private void sendText(String text, int modifiers) {
     Set<BrowserModifier> browserModifiers = GrapheneInputModifiers.fromGlfw(modifiers);
+    // AltGr is reported as Right Alt plus Control, but those modifiers must not alter its text.
     if (rightAltPressed
         && browserModifiers.contains(BrowserModifier.ALT)
         && browserModifiers.contains(BrowserModifier.CONTROL)) {
@@ -221,6 +228,7 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
     if (pendingSyntheticText == null) {
       return false;
     }
+    // Minecraft may emit the same committed text after the compatibility text sent on key press.
     boolean duplicate =
         pendingSyntheticText.equals(text)
             && System.currentTimeMillis() - pendingSyntheticTimestamp
@@ -378,6 +386,7 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
     if (Objects.equals(normalizedNativeText, emptyToNull(validatedRichContent.text()))) {
       return validatedRichContent;
     }
+    // A native clipboard change invalidates richer formats cached by Graphene for the old text.
     return new GrapheneClipboardContent(normalizedNativeText, null, null);
   }
 

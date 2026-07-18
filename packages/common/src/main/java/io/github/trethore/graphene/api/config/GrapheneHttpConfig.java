@@ -4,6 +4,10 @@ import java.nio.file.Path;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * Configuration for a consumer-scoped HTTP asset mount. By default the shared server binds to
+ * {@code 127.0.0.1} using an available port from {@code 20000} through {@code 21000}.
+ */
 @SuppressWarnings("unused")
 public final class GrapheneHttpConfig {
   private static final String DEFAULT_BIND_HOST = "127.0.0.1";
@@ -119,6 +123,7 @@ public final class GrapheneHttpConfig {
     return Objects.hash(bindHost, fixedPort, randomPortRange, fileRoot, spaFallback);
   }
 
+  /** Builds consumer-scoped HTTP server configuration. */
   public static final class Builder {
     private String bindHost = DEFAULT_BIND_HOST;
     private Integer fixedPort;
@@ -133,12 +138,14 @@ public final class GrapheneHttpConfig {
       return this;
     }
 
+    /** Selects one fixed port from {@code 1024} through {@code 65535}. */
     public Builder port(int port) {
       this.fixedPort = requireValidPort(port, "port");
       this.randomPortRange = null;
       return this;
     }
 
+    /** Selects an available port from the inclusive range. */
     public Builder randomPortInRange(int minPort, int maxPort) {
       int validatedMinPort = requireValidPort(minPort, "minPort");
       int validatedMaxPort = requireValidPort(maxPort, "maxPort");
@@ -151,11 +158,13 @@ public final class GrapheneHttpConfig {
       return this;
     }
 
+    /** Sets the asset path served when no requested HTTP resource exists. */
     public Builder spaFallback(String spaFallback) {
       this.spaFallback = normalizeSpaFallback(spaFallback);
       return this;
     }
 
+    /** Sets an optional filesystem root whose files take precedence over packaged assets. */
     public Builder fileRoot(Path fileRoot) {
       this.fileRoot = normalizeFileRoot(Objects.requireNonNull(fileRoot, FILE_ROOT_NAME));
       return this;
@@ -180,6 +189,7 @@ public final class GrapheneHttpConfig {
     }
   }
 
+  /** Inclusive port range used for random HTTP server port selection. */
   public record PortRange(int minPort, int maxPort) {
     public PortRange {
       requireValidPort(minPort, "minPort");

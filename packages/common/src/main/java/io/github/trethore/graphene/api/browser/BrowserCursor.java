@@ -1,5 +1,6 @@
 package io.github.trethore.graphene.api.browser;
 
+/** Cursor shape requested by browser content. */
 public enum BrowserCursor {
   ARROW,
   CROSSHAIR,

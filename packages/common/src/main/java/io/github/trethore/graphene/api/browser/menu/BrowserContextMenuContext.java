@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+/** Immutable browser and document state captured for a context-menu request. */
 public record BrowserContextMenuContext(
     BrowserSession session,
     Position position,
@@ -25,8 +26,10 @@ public record BrowserContextMenuContext(
     Objects.requireNonNull(editing, "editing");
   }
 
+  /** Browser viewport position at which the context menu was requested. */
   public record Position(int x, int y) {}
 
+  /** Document and frame metadata for the context-menu request. */
   public record Document(String pageUrl, String frameUrl, String frameCharset) {
     public Document {
       Objects.requireNonNull(pageUrl, "pageUrl");
@@ -35,6 +38,7 @@ public record BrowserContextMenuContext(
     }
   }
 
+  /** Link or resource targeted by the context-menu request. */
   public record Target(String linkUrl, String sourceUrl, boolean imageContents) {
     public Target {
       Objects.requireNonNull(linkUrl, "linkUrl");
@@ -42,6 +46,7 @@ public record BrowserContextMenuContext(
     }
   }
 
+  /** Media type and state targeted by the context-menu request. */
   public record Media(MediaType type, Set<MediaState> states) {
     public Media {
       Objects.requireNonNull(type, "type");
@@ -49,6 +54,7 @@ public record BrowserContextMenuContext(
     }
   }
 
+  /** Editing state and available actions at the requested position. */
   public record Editing(
       boolean spellCheckEnabled,
       Set<EditCapability> capabilities,
@@ -62,6 +68,7 @@ public record BrowserContextMenuContext(
     }
   }
 
+  /** Kind of content targeted by the context-menu request. */
   public enum TargetType {
     PAGE,
     FRAME,
@@ -71,6 +78,7 @@ public record BrowserContextMenuContext(
     EDITABLE
   }
 
+  /** Kind of media targeted by the context-menu request. */
   public enum MediaType {
     NONE,
     IMAGE,
@@ -80,6 +88,7 @@ public record BrowserContextMenuContext(
     PLUGIN
   }
 
+  /** State or capability reported for targeted media. */
   public enum MediaState {
     ERROR,
     PAUSED,
@@ -93,6 +102,7 @@ public record BrowserContextMenuContext(
     CAN_ROTATE
   }
 
+  /** Editing operation available at the requested position. */
   public enum EditCapability {
     UNDO,
     REDO,

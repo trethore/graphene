@@ -5,6 +5,7 @@ import java.nio.file.Path;
 import java.util.Objects;
 import java.util.OptionalLong;
 
+/** Selects how Graphene handles each browser download request. */
 @FunctionalInterface
 public interface BrowserDownloadPolicy {
   /**
@@ -19,6 +20,7 @@ public interface BrowserDownloadPolicy {
     return request -> Decision.cancel();
   }
 
+  /** Selected handling for a requested download. */
   sealed interface Decision permits Cancel, SaveTo, ShowSaveDialog {
     static Decision cancel() {
       return Cancel.INSTANCE;

@@ -3,6 +3,10 @@ package io.github.trethore.graphene.api.url;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
+/**
+ * A validated asset namespace and resource path. Values use lowercase resource-identifier
+ * characters, and paths cannot contain empty, current-directory, or parent-directory segments.
+ */
 public record AssetId(String namespace, String path) {
   private static final Pattern NAMESPACE_PATTERN = Pattern.compile("[a-z0-9._-]+");
   private static final Pattern PATH_PATTERN = Pattern.compile("[a-z0-9/._-]+");

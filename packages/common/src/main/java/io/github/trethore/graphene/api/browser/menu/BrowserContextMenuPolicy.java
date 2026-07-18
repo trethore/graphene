@@ -6,8 +6,13 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+/** Configures which proposed items are available in a browser context menu. */
 @FunctionalInterface
 public interface BrowserContextMenuPolicy {
+  /**
+   * Returns the proposed commands to present. Exceptions, {@code null}, and empty results disable
+   * the menu for this request; unknown commands are discarded.
+   */
   List<BrowserContextMenuItem> configure(Request request);
 
   static BrowserContextMenuPolicy standard() {
@@ -34,6 +39,7 @@ public interface BrowserContextMenuPolicy {
     return request -> List.of();
   }
 
+  /** Context and browser-proposed items supplied to a context-menu policy. */
   record Request(BrowserContextMenuContext context, List<BrowserContextMenuItem> proposedItems) {
     public Request {
       Objects.requireNonNull(context, "context");

@@ -25,10 +25,13 @@ public interface BrowserDownload {
 
   long receivedBytes();
 
+  /** Returns the expected total byte count when reported by the server. */
   OptionalLong totalBytes();
 
+  /** Returns the current transfer speed in bytes per second. */
   long currentSpeed();
 
+  /** Returns completion from {@code 0} through {@code 100} when the total size is known. */
   OptionalInt percentComplete();
 
   Optional<Instant> startedAt();

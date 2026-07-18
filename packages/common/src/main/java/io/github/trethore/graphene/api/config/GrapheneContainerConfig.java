@@ -3,6 +3,10 @@ package io.github.trethore.graphene.api.config;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * Immutable settings scoped to one registered Graphene consumer. The consumer HTTP asset mount is
+ * disabled by default.
+ */
 @SuppressWarnings("unused")
 public final class GrapheneContainerConfig {
   private static final GrapheneContainerConfig DEFAULT = builder().build();
@@ -44,6 +48,7 @@ public final class GrapheneContainerConfig {
     return Objects.hash(httpConfig);
   }
 
+  /** Builds consumer-scoped Graphene settings. */
   public static final class Builder {
     private GrapheneHttpConfig httpConfig;
 

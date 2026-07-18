@@ -6,6 +6,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * Immutable process-wide browser runtime settings contributed by a consumer. Graphene resolves
+ * contributions from every registered consumer before starting the shared runtime.
+ */
 @SuppressWarnings("unused")
 public final class GrapheneGlobalConfig {
   private static final Path DEFAULT_BROWSER_RUNTIME_PATH =
@@ -53,6 +57,7 @@ public final class GrapheneGlobalConfig {
     return Optional.ofNullable(browserRuntimePath);
   }
 
+  /** Returns the configured runtime path or Graphene's normalized default path. */
   public Path resolvedBrowserRuntimePath() {
     return browserRuntimePath == null ? DEFAULT_BROWSER_RUNTIME_PATH : browserRuntimePath;
   }
@@ -91,6 +96,7 @@ public final class GrapheneGlobalConfig {
         browserRuntimePath, extensionFolders, remoteDebugConfig, browserFileAccessPolicy);
   }
 
+  /** Builds a process-wide configuration contribution. */
   public static final class Builder {
     private final LinkedHashSet<Path> extensionFolders = new LinkedHashSet<>();
     private Path browserRuntimePath;
@@ -109,6 +115,7 @@ public final class GrapheneGlobalConfig {
           Path.of(Objects.requireNonNull(browserRuntimePath, BROWSER_RUNTIME_PATH_NAME)));
     }
 
+    /** Adds an extension directory; resolved configuration combines all consumer entries. */
     public Builder extensionFolder(Path extensionFolder) {
       this.extensionFolders.add(normalizePath(extensionFolder, EXTENSION_FOLDER_NAME));
       return this;

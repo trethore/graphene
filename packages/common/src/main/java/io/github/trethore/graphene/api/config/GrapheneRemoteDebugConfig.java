@@ -3,6 +3,10 @@ package io.github.trethore.graphene.api.config;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * Configuration for process-wide remote browser debugging. A new builder is enabled with a random
+ * available port; {@link #disabled()} creates an explicitly disabled contribution.
+ */
 @SuppressWarnings("unused")
 public final class GrapheneRemoteDebugConfig {
   private static final int MIN_PORT = 1024;
@@ -85,6 +89,7 @@ public final class GrapheneRemoteDebugConfig {
     return Objects.hash(enabled, fixedPort, allowedOrigins);
   }
 
+  /** Builds remote browser debugging configuration. */
   public static final class Builder {
     private boolean enabled = true;
     private Integer fixedPort;

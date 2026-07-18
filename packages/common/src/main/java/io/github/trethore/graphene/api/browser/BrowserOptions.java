@@ -10,6 +10,11 @@ import io.github.trethore.graphene.api.browser.navigation.BrowserNavigationPolic
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * Immutable options controlling browser behavior, policies, and presentation hooks. Defaults use a
+ * transparent 60 FPS browser with JavaScript enabled, expose the bridge only to Graphene-owned
+ * documents, cancel downloads, allow ordinary same-session navigation, and disable context menus.
+ */
 @SuppressWarnings("unused")
 public final class BrowserOptions {
   private static final int DEFAULT_FRAME_RATE = 60;
@@ -108,6 +113,7 @@ public final class BrowserOptions {
     return backgroundColor;
   }
 
+  /** Builds immutable browser options. */
   public static final class Builder {
     private int maximumFrameRate = DEFAULT_FRAME_RATE;
     private boolean transparent = true;
@@ -123,6 +129,7 @@ public final class BrowserOptions {
 
     private Builder() {}
 
+    /** Sets the maximum off-screen frame rate from {@code 1} through {@code 60}. */
     public Builder maximumFrameRate(int maximumFrameRate) {
       this.maximumFrameRate = requireFrameRate(maximumFrameRate);
       return this;
@@ -133,6 +140,7 @@ public final class BrowserOptions {
       return this;
     }
 
+    /** Sets the opaque background color as a 24-bit {@code 0xRRGGBB} value. */
     public Builder backgroundColor(int backgroundColor) {
       this.backgroundColor = requireBackgroundColor(backgroundColor);
       return this;

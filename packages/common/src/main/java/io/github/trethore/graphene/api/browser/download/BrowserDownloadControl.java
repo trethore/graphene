@@ -1,5 +1,6 @@
 package io.github.trethore.graphene.api.browser.download;
 
+/** Thread-safe cancellation control for a browser download. */
 @FunctionalInterface
 public interface BrowserDownloadControl {
   /**
