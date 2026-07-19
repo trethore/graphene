@@ -3,6 +3,15 @@ name: release
 on:
   workflow_dispatch:
     inputs:
+      target:
+        description: Release destination
+        required: true
+        default: maven+github
+        type: choice
+        options:
+          - maven+github
+          - maven
+          - github
       version:
         description: Release version (defaults to mod_version from gradle.properties)
         required: false
@@ -20,16 +29,43 @@ jobs:
     outputs:
       tag: ${{ steps.metadata.outputs.tag }}
       version: ${{ steps.metadata.outputs.version }}
+      release_github: ${{ steps.targets.outputs.release_github }}
+      release_maven: ${{ steps.targets.outputs.release_maven }}
     steps:
       - name: checkout repository
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
+      - name: resolve release targets
+        id: targets
+        env:
+          RELEASE_TARGET: ${{ inputs.target }}
+        run: |
+          case "$RELEASE_TARGET" in
+            maven+github)
+              echo "release_github=true" >> "$GITHUB_OUTPUT"
+              echo "release_maven=true" >> "$GITHUB_OUTPUT"
+              ;;
+            maven)
+              echo "release_github=false" >> "$GITHUB_OUTPUT"
+              echo "release_maven=true" >> "$GITHUB_OUTPUT"
+              ;;
+            github)
+              echo "release_github=true" >> "$GITHUB_OUTPUT"
+              echo "release_maven=false" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Unsupported release target: $RELEASE_TARGET" >&2
+              exit 1
+              ;;
+          esac
+
       - name: prepare release metadata
         id: metadata
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_GITHUB: ${{ steps.targets.outputs.release_github }}
           REQUESTED_VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
@@ -51,7 +87,7 @@ jobs:
           fi
 
           tag="v${version}"
-          if git rev-parse --verify --quiet "refs/tags/${tag}" >/dev/null; then
+          if [[ "$RELEASE_GITHUB" == "true" ]] && git rev-parse --verify --quiet "refs/tags/${tag}" >/dev/null; then
             echo "Tag ${tag} already exists" >&2
             exit 1
           fi
@@ -131,6 +167,7 @@ jobs:
 
   build:
     needs: prepare
+    if: needs.prepare.outputs.release_github == 'true'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -200,11 +237,124 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-  release:
+  release-maven:
+    needs:
+      - prepare
+      - verify
+    if: needs.prepare.outputs.release_maven == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v6
+
+      - name: validate gradle wrapper
+        uses: gradle/actions/wrapper-validation@v6
+
+      - name: setup jdk
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: microsoft
+          cache: gradle
+
+      - name: make gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: validate maven central secrets
+        env:
+          MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+          MAVEN_GPG_PRIVATE_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+
+          for secret in \
+            MAVEN_CENTRAL_PASSWORD \
+            MAVEN_CENTRAL_USERNAME \
+            MAVEN_GPG_PASSPHRASE \
+            MAVEN_GPG_PRIVATE_KEY; do
+            if [[ -z "${!secret}" ]]; then
+              echo "Missing required GitHub Actions secret: ${secret}" >&2
+              exit 1
+            fi
+          done
+
+      - name: stage maven central publication
+        env:
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+          MAVEN_GPG_PRIVATE_KEY: ${{ secrets.MAVEN_GPG_PRIVATE_KEY }}
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          ./gradlew \
+            :packages:fabric-1.21.11:publishMavenJavaPublicationToMavenCentralBundleRepository \
+            -Pmod_version="$RELEASE_VERSION"
+
+      - name: create maven central bundle
+        env:
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          staging_directory="build/central-portal/staging"
+          component_directory="${staging_directory}/io/github/trethore/graphene-ui/${RELEASE_VERSION}"
+          bundle_path="build/central-portal/central-bundle.zip"
+
+          if [[ ! -d "$component_directory" ]]; then
+            echo "Expected staged Maven component at ${component_directory}" >&2
+            exit 1
+          fi
+
+          find "$staging_directory" -type f -name 'maven-metadata.xml*' -delete
+
+          while IFS= read -r -d '' artifact; do
+            md5sum "$artifact" | cut -d ' ' -f1 > "${artifact}.md5"
+            sha1sum "$artifact" | cut -d ' ' -f1 > "${artifact}.sha1"
+            sha256sum "$artifact" | cut -d ' ' -f1 > "${artifact}.sha256"
+            sha512sum "$artifact" | cut -d ' ' -f1 > "${artifact}.sha512"
+          done < <(
+            find "$staging_directory" -type f \
+              ! -name '*.md5' \
+              ! -name '*.sha1' \
+              ! -name '*.sha256' \
+              ! -name '*.sha512' \
+              -print0
+          )
+
+          rm -f "$bundle_path"
+          (
+            cd "$staging_directory"
+            zip --quiet --recurse-paths ../central-bundle.zip .
+          )
+
+      - name: upload bundle to maven central
+        env:
+          MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          bundle_path="build/central-portal/central-bundle.zip"
+          auth_token="$(printf '%s:%s' "$MAVEN_CENTRAL_USERNAME" "$MAVEN_CENTRAL_PASSWORD" | base64 | tr -d '\n')"
+          deployment_id="$(
+            curl --fail-with-body --silent --show-error \
+              --request POST \
+              --header "Authorization: Bearer ${auth_token}" \
+              --form "bundle=@${bundle_path};type=application/octet-stream" \
+              "https://central.sonatype.com/api/v1/publisher/upload?name=io.github.trethore%3Agraphene-ui%3A${RELEASE_VERSION}&publishingType=AUTOMATIC"
+          )"
+
+          echo "Maven Central deployment: ${deployment_id}"
+
+  release-github:
     needs:
       - prepare
       - verify
       - build
+    if: needs.prepare.outputs.release_github == 'true'
     runs-on: ubuntu-24.04
     permissions:
       contents: write
