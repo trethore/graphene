@@ -6,7 +6,6 @@ mod integration.
 
 ![A Three.js scene rendered by Graphene inside Minecraft](docs/images/threejs-showcase.png)
 
-
 ## Documentation
 
 Start [HERE](docs/README.md)!
