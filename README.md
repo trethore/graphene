@@ -4,6 +4,9 @@ Graphene is a client-side UI library for Minecraft that lets mod developers buil
 It embeds Chromium through JCEF, so you can render HTML/CSS/JavaScript UIs in-game while keeping a clean Java API for
 mod integration.
 
+![A Three.js scene rendered by Graphene inside Minecraft](docs/images/threejs-showcase.png)
+
+
 ## Documentation
 
 Start [HERE](docs/README.md)!
