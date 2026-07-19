@@ -2,8 +2,8 @@
 
 ## Supported Versions
 
-Only the latest released version of Graphene receives security fixes. Supported Minecraft, loader, and Java versions
-are listed in the [compatibility documentation](docs/reference/compatibility-and-installation.md).
+Only the latest released version of Graphene receives security fixes. Supported Minecraft, loader, and Java versions are
+listed in the [compatibility documentation](docs/reference/compatibility-and-installation.md).
 
 ## Reporting a Vulnerability
 
@@ -19,10 +19,10 @@ Include:
 - Clear reproduction steps or a minimal proof of concept.
 - The security impact and required attacker access.
 
-Automated scanner results must be manually verified. I will not accept unverified reports or AI-generated walls of
-text without a clear, reproducible vulnerability.
+Automated scanner results must be manually verified. I will not accept unverified reports or AI-generated walls of text
+without a clear, reproducible vulnerability.
 
-I aim to acknowledge valid reports within 14 days, but this is not a guaranteed response or remediation timeline. I
+I aim to acknowledge valid reports within **14 days**, but this is not a guaranteed response or remediation timeline. I
 may ask for more information while investigating.
 
 ## Scope
