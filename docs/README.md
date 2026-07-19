@@ -6,8 +6,11 @@ communication.
 
 ![A Three.js scene rendered by Graphene inside Minecraft](images/threejs-showcase.png)
 
-Graphene currently supports Fabric for Minecraft 1.21.11.
-See [compatibility and installation](reference/compatibility-and-installation.md) for the exact versions and dependency
+## Supported versions
+
+Graphene currently only support Minecraft 1.21.11 on Fabric.
+
+Check [compatibility and installation](reference/compatibility-and-installation.md) for the exact versions and dependency
 coordinates.
 
 ## Start here
