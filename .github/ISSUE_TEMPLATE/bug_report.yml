@@ -1,0 +1,67 @@
+name: Bug report
+description: Report a reproducible problem with Graphene
+labels: ["bug"]
+body:
+  - type: checkboxes
+    id: before-submitting
+    attributes:
+      label: Before submitting
+      options:
+        - label: I have searched for existing issues and confirmed this is not a duplicate.
+          required: true
+        - label: I can reproduce this issue.
+          required: true
+
+  - type: input
+    id: fabric-api-version
+    attributes:
+      label: Fabric API version
+      placeholder: e.g. 0.141.4+1.21.11
+    validations:
+      required: true
+
+  - type: input
+    id: minecraft-version
+    attributes:
+      label: Minecraft version
+      placeholder: e.g. 1.21.11
+    validations:
+      required: true
+
+  - type: input
+    id: graphene-version
+    attributes:
+      label: Graphene version
+    validations:
+      required: true
+
+  - type: input
+    id: java-version
+    attributes:
+      label: Java version
+      placeholder: e.g. Java 21
+    validations:
+      required: true
+
+  - type: input
+    id: operating-system
+    attributes:
+      label: Operating system
+      placeholder: e.g. Windows 11, macOS 15, or Arch Linux
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the problem, what you expected to happen, and how to reproduce it.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Crash reports or logs
+      description: Attach or paste any relevant crash reports or logs. Remove sensitive information before submitting.
+      placeholder: Drag and drop log files here, or paste the relevant output.
