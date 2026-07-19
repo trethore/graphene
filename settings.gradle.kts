@@ -1,17 +1,29 @@
 pluginManagement {
-	repositories {
-		maven {
-			name = "Fabric"
-			url = uri("https://maven.fabricmc.net/")
-		}
-		mavenCentral()
-		gradlePluginPortal()
-	}
+  includeBuild("build-logic")
 
-	val loomVersion = settings.extra["loom_version"] as String
-	plugins {
-		id("net.fabricmc.fabric-loom-remap") version loomVersion
-	}
+  repositories {
+    maven {
+      name = "Fabric"
+      url = uri("https://maven.fabricmc.net/")
+    }
+    mavenCentral()
+    gradlePluginPortal()
+  }
+
+  plugins {
+    id("net.fabricmc.fabric-loom-remap") version providers.gradleProperty("loom_version")
+  }
 }
 
-rootProject.name = "graphene-ui"
+// Gradle project name
+rootProject.name = "graphene"
+
+include("packages:common")
+
+include("packages:fabric-1.21.11")
+
+include("tools:debug-client-fabric-1.21.11")
+
+project(":tools").projectDir = file("debug-client")
+
+project(":tools:debug-client-fabric-1.21.11").projectDir = file("debug-client/fabric-1.21.11")

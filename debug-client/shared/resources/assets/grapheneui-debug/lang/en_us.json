@@ -1,0 +1,9 @@
+{
+  "key.category.grapheneui-debug.main": "Graphene Debug",
+  "key.grapheneui-debug.open_browser": "Open Graphene Browser",
+  "screen.grapheneui-debug.title": "Graphene Browser Debug",
+  "screen.grapheneui-debug.back": "<-",
+  "screen.grapheneui-debug.reload": "R",
+  "screen.grapheneui-debug.forward": "->",
+  "screen.grapheneui-debug.devtools": "DevTools"
+}

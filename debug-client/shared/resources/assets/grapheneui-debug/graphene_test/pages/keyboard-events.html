@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta content="width=device-width, initial-scale=1" name="viewport">
+<title>Graphene Keyboard Event Diagnostics</title>
+<link href="../style/main.css" rel="stylesheet">
+<script defer src="../scripts/keyboard-events.js" type="text/javascript"></script>
+</head>
+<body>
+	<main>
+		<p>
+			<a href="tests.html">Back to tests</a>
+		</p>
+		<h1>Keyboard Event Diagnostics</h1>
+		<p>Click the typing area, enter text, and use the keys that behave
+			incorrectly. The event log records the values received by the DOM.
+			Copy the report when sharing a keyboard issue.</p>
+
+		<section class="panel">
+			<label for="typing-area">Typing area</label>
+			<textarea autofocus id="typing-area"
+				placeholder="Type text and keyboard shortcuts here..." rows="6"
+				spellcheck="false" cols=""></textarea>
+			<div class="status-grid">
+				<div>
+					<span>Active element</span><strong id="active-element">unknown</strong>
+				</div>
+				<div>
+					<span>Characters</span><strong id="character-count">0</strong>
+				</div>
+				<div>
+					<span>Events</span><strong id="event-count">0</strong>
+				</div>
+				<div>
+					<span>Last event</span><strong id="last-event">none</strong>
+				</div>
+			</div>
+		</section>
+
+		<section class="panel">
+			<div class="section-heading">
+				<h2>DOM event log</h2>
+				<div class="actions">
+					<button id="copy-report" type="button">Copy report</button>
+					<button id="clear-log" type="button">Clear</button>
+				</div>
+			</div>
+			<p class="copy-status" id="copy-status" role="status"></p>
+			<div class="table-scroll">
+				<table>
+					<thead>
+						<tr>
+							<th>#</th>
+							<th>type</th>
+							<th>key / data</th>
+							<th>code / inputType</th>
+							<th>location</th>
+							<th>which</th>
+							<th>keyCode</th>
+							<th>charCode</th>
+							<th>modifiers / flags</th>
+							<th>target</th>
+						</tr>
+					</thead>
+					<tbody id="event-log"></tbody>
+				</table>
+			</div>
+		</section>
+
+		<section class="panel">
+			<div class="section-heading">
+				<h2>Environment</h2>
+			</div>
+			<pre id="environment"></pre>
+		</section>
+
+	</main>
+</body>
+</html>

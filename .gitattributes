@@ -1,6 +1,4 @@
-# Preserve cross-platform defaults while pinning launcher/script endings
-# https://help.github.com/articles/dealing-with-line-endings/
-*               text=auto
+*               text eol=lf
 
 # Linux start scripts stay LF
 /gradlew        text eol=lf
@@ -11,3 +9,4 @@
 
 # Treat packaged assets as binary
 *.png           binary
+*.jar           binary

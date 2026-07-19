@@ -1,83 +1,87 @@
 # Repository Guidelines
 
-Graphene is a modern, client-side, Chromium-based UI library for Minecraft 1.21.11 that runs on the Fabric mod loader.
-Its goal is to provide a simple yet powerful API for mod developers to create rich, web-based user interfaces in
-Minecraft using JCEF.
+Graphene is a client-side UI library for Minecraft. Its goal is to provide a simple yet powerful
+API for mod developers to create rich, web-based user interfaces in Minecraft using JCEF.
 
-## Overview
+## Project Structure
 
-Here is the structure of the repository:
+Here is an overview of the project:
 
 ```text
-/
-├── references/                           # Unpacked dependency sources for browsing and reference.
-│   ├── fabric/
-│   ├── minecraft/
-│   └── <lib-name>/
-├── src/
-│   ├── client/                         # Client core API and resources (main library code).
-│   │   ├── java/
-│   │   │   └── tytoo/grapheneui/
-│   │   │       ├── api/                # Public, supported API surface for consumers.
-│   │   │       └── internal/           # Internal implementation details.
-│   │   └── resources/
-│   ├── debug/                          # Debug mod used for manual testing (for example, opening a UI).
-│   └── test/                           # Unit tests using JUnit 6 (currently a placeholder).
-├── .gitignore
-├── build.gradle.kts
-├── gradle.properties
-└── settings.gradle.kts
+graphene/                                   # You are here!
+  .github/                                  # GitHub config and workflows.
+  build-logic/                              # Included Gradle build for custom build logic.
+    architecture-check/                     # Gradle plugin for enforcing architecture rules.
+    sonar/                                  # Gradle plugin for running SonarQube analysis.
+    unpack-sources/                         # Gradle plugin that unpacks dependency and Git reference sources.
+  debug-client/                             # Development-only clients and resources for manually testing Graphene.
+    fabric-1.21.11/                         # Fabric debug client for Minecraft 1.21.11.
+      src/main/java/io/github/trethore/graphene/debug/
+      src/main/resources/
+      build.gradle.kts
+    shared/resources/                       # Test pages, scripts, styles, translations, and assets shared by debug clients.
+  docs/
+  packages/
+    common/                                 # Loader-independent Graphene API, runtime, JCEF integration, and web resources.
+      src/main/
+        java/io/github/trethore/graphene/
+          api/                              # Public browser, bridge, configuration, runtime, and URL APIs.
+          internal/                         # Shared runtime, JCEF, bridge, HTTP, platform, and resource internals.
+        resources/assets/grapheneui/        # JavaScript resources injected into Graphene browser sessions.
+      src/test/                             # Unit tests and test resources for common functionality.
+      build.gradle.kts
+    fabric-1.21.11/                         # Fabric implementation for Minecraft 1.21.11.
+      src/main/
+        java/io/github/trethore/graphene/
+          fabric/                           # Fabric-specific public APIs and internal integrations.
+          mixin/                            # Minecraft/Fabric-version-specific mixins.
+          FabricBootstrap.java              # Fabric ModInitializer that boots common code.
+        resources/
+          assets/grapheneui/                # Fabric mod assets.
+          fabric.mod.json
+          grapheneui.mixins.json
+      src/test/                             # Unit tests for Fabric-specific functionality.
+      build.gradle.kts
+  references/                               # Dependency source code for browsing and reference.
+    <group>-<lib-name>-<version>/
+    com.mojang-minecraft-1.21.11/
+    net.fabricmc.fabric-api-fabric-api-0.141.4-1.21.11/
+      nested/                               # Source code of the nested jars.
+  .gitignore
+  build.gradle.kts                          # Root Gradle config shared by all projects
+  gradle.properties                         # Shared version and dependency properties.
+  README.md
+  settings.gradle.kts
 ```
 
 ## General Coding Conventions
 
-- Target Java 21, use 4-space indentation, and keep packages under `tytoo.grapheneui*`.
-- Prefer explicit types instead of `var`, and use descriptive names rather than one-letter identifiers.
-- Keep member order consistent in Java classes: static constants, static fields, instance fields, constructors, overridden
-  methods, public methods, protected and private helper methods, then getters and setters at the bottom.
-- Import types instead of using fully qualified names inside method bodies.
-- When adding shared utilities, express behavior through clear method names and arguments rather than abstract hierarchies.
+- `packages/common` should contain only the version-independent logic that is shared across all Minecraft implementations.
+- `packages/<loader>-<version>` should contain version-dependent code, like the mod entry point, integration logic, mixins, and Minecraft/loader dependencies.
 - Avoid comments unless documentation is explicitly requested.
-- Keep edits minimal and consistent with surrounding style; avoid unrelated refactors or formatting-only changes.
 - Assume contributors use IntelliJ IDEA, and keep code free of IDE warnings.
-- If requirements are unclear or infeasible, ask for clarification before proceeding.
 
-## Java 21 Expectations
+## Java Expectations
 
-- Assume Java 21 at runtime; use only stable features and avoid preview or incubator APIs.
-- Use modern Java 21 standard-library utilities (Streams, Optional, records) when they improve clarity.
-- Use descriptive names like `ignored` for intentionally unused variables, parameters, and caught exceptions.
-- When intentionally ignoring a caught exception, keep a short explanatory comment in the catch block.
-- Maintain explicit, readable control flow; avoid clever constructs that harm comprehension.
-
-## Minecraft Integration Rules
-
-- The codebase targets Fabric for Minecraft 1.21.11 with official Mojang mappings; use APIs that exist in this combination.
-- Prefer modern Fabric/Minecraft methods such as `Identifier.fromNamespaceAndPath(String string, String string2)` and
-  up-to-date rendering APIs; avoid deprecated signatures.
-- Route Minecraft client singleton access through `tytoo.grapheneui.internal.mc.McClient` helpers instead of calling `Minecraft.getInstance()` directly.
-- Place new assets, mixin configs, and JSON metadata within `src/client/resources/` or `src/debug/resources/`,
-  keeping identifiers in the `GrapheneCore.ID` or `GrapheneDebugClient.ID` namespace as appropriate.
-- Integrate through established abstractions unless explicitly extending them.
-- Never reference loaders, mappings, or game versions beyond the configured target without explicit user approval.
+- Prefer explicit types over `var`, and use descriptive names instead of one-letter identifiers.
+- Keep member order consistent in Java classes: static constants, static fields, instance fields, constructors, overridden methods,
+  public methods, protected and private helper methods, then getters and setters at the bottom.
+- Import types instead of using fully qualified names inside method bodies.
 
 ## Testing & Verification
 
-- Do not run Gradle commands yourself; instead provide the exact command for the user to execute and state tooling limitations clearly.
-- Encourage running `./gradlew compileJava`, `./gradlew test` and `/graphene test` in-game to validate changes,
-  `./gradlew build` for full validation, and `./gradlew runDebugClient` to test UI flows.
-- Document manual validation steps and remaining risks before completing work.
+- Run `./gradlew check` to catch Java compilation errors, formatting issues, and execute tests.
+- Run `./gradlew spotlessApply` to format changes directly instead of running `./gradlew spotlessCheck` first and then fixing formatting issues.
+- Do not run long-running Gradle tasks, such as game launches. Instead, provide the exact command for the user to run, for example:
+  `./gradlew :packages:fabric-1.21.11:runClient`
 
 ## Dependencies & External Sources
 
-- Fabric Loader and Fabric API are versioned in `gradle.properties`; Fabric Loom integrates official Mojang mappings
-  into the client source set and remaps game classes during packaging. Keep these aligned with Minecraft `1.21.11` before updating APIs.
-- `me.tytoo:jcefgithub` is this project's own JCEF library, published on GitHub Packages; browse its unpacked sources in `references/`.
-- Library sources are fetched through the `sourceDeps` configuration (see `build.gradle.kts`) and unpacked per library
-  using `./gradlew unpackSources` into `references/<library>`. Use these sources to explore library source code.
+- Library source code is available in the `references` directory for browsing and reference only. Do not edit it.
+- The `references` directory is generated via the `./gradlew unpackSources` command.
+- You can clean the generated references by running `./gradlew cleanUnpackedSources`.
 
 ## Pull Requests & Commits
 
-- Keep PRs focused on a single concern and avoid unrelated cleanups.
-- Provide clear summaries, rationale, and manual test steps; include visuals for UI changes when relevant.
-- Use Conventional Commit conventions (e.g., `feat(ui): add slider snap support`) and flag breaking API changes early.
+- Pull request summaries should include the related issue(s), a brief description of the changes, and how the changes were tested.
+- Follow the Conventional Commits specification for commit messages.

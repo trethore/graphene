@@ -1,37 +1,24 @@
-## Related issue
+<!--
+Read CONTRIBUTING.md before opening a pull request.
 
-Closes #
+Keep your description concise and written in your own words.
+Do not report security vulnerabilities in a public pull request. Follow SECURITY.md instead.
+-->
 
 ## Summary
 
-Please describe the issue and the changes you made to fix it.
+<!-- Explain what changed and why. Link any related issues. -->
 
--
+## Validation
 
-## Testing
+- [ ] Ran `./gradlew spotlessApply`.
+- [ ] Ran `./gradlew check`.
+- [ ] Ran `./gradlew build`.
 
-- [ ] `./gradlew compileJava`
-- [ ] `./gradlew test`
-- [ ] `./gradlew build`
-- [ ] `./gradlew runDebugClient`
-
-## Documentation
-
-- [ ] No docs update needed
-- [ ] README updated
-- [ ] `docs/` updated
-
-## Manual validation steps
-
-1.
+<!-- Explain any validation steps that could not be completed or did not pass. -->
 
 ## Checklist
 
-- [ ] My changes are tested and documented.
-- [ ] I have not included unrelated changes in this PR
-- [ ] The issue and fix are explained clearly
-- [ ] Screenshots or recordings are included for UI-visible changes when relevant
-
-## Notes
-
-Keep this PR description short and focused.
+- [ ] This pull request is focused and does not include unrelated changes.
+- [ ] I added or updated tests where appropriate.
+- [ ] I updated documentation when public behavior or APIs changed.

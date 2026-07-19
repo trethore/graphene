@@ -1,27 +1,33 @@
 # Graphene
 
-[![Loader: Fabric](https://img.shields.io/badge/Loader-Fabric-00BFA5?style=for-the-badge&logo=fabric)](https://modrinth.com/mod/fabric-api)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
-[![Minecraft: 1.21.11](https://img.shields.io/badge/Minecraft-1.21.11-5E8C31?style=for-the-badge&logo=minecraft)](https://www.minecraft.net/)
-[![Modrinth](https://img.shields.io/badge/Modrinth-Graphene-1BD96A?style=for-the-badge&logo=modrinth)](https://modrinth.com/mod/grapheneui)
+[![Modrinth](https://img.shields.io/modrinth/dt/grapheneui?logo=modrinth&label=Modrinth)](https://modrinth.com/mod/grapheneui)
+[![GitHub Release](https://img.shields.io/github/v/release/trethore/graphene?logo=github&label=Release)](https://github.com/trethore/graphene/releases)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.trethore/graphene-ui?logo=apachemaven&label=Maven%20Central)](https://central.sonatype.com/artifact/io.github.trethore/graphene-ui)
+[![License](https://img.shields.io/github/license/trethore/graphene)](LICENSE)
 
-Graphene is a client-side UI library for Minecraft 1.21.11 (Fabric) that lets mod developers build interfaces with web technologies.
-It embeds Chromium through JCEF, so you can render HTML/CSS/JavaScript UIs in-game while keeping a clean Java API for mod integration.
+Graphene is a client-side UI library for Minecraft that lets mod developers build interfaces with web technologies.
+It embeds Chromium through JCEF, so you can render HTML/CSS/JavaScript UIs in-game while keeping a clean Java API for
+mod integration.
 
-![Graphene demo](docs/images/demo.png)
+![A Three.js scene rendered by Graphene inside Minecraft](docs/images/threejs-showcase.png)
 
 ## What is Graphene?
 
-Graphene is meant to bridge Minecraft modding and modern web UI development.
+Graphene bridges Minecraft modding and modern web UI development. Instead of building every screen with Minecraft's
+rendering primitives, you can create interfaces with HTML, CSS, and JavaScript, then integrate them with your mod
+through a Java API.
 
-Instead of writing every screen directly with Minecraft rendering primitives, you can:
+Graphene provides:
 
-- build rich, responsive interfaces using browser capabilities;
-- connect those interfaces to your mod logic through Graphene's API;
-- iterate on UI faster with familiar web tooling and patterns;
-- keep the integration focused on Fabric + Minecraft 1.21.11.
+- interactive Chromium views that can be embedded in Minecraft screens;
+- packaged asset URLs and an optional development HTTP server;
+- two-way Java/JavaScript communication through an asynchronous bridge;
+- browser navigation, input, downloads, dialogs, context menus, and lifecycle controls;
+- off-screen browser sessions and surfaces for custom rendering integrations;
+- Chromium DevTools support for inspecting and debugging pages.
 
-In short: Graphene gives Fabric mods a practical way to use web-powered interfaces without reinventing a full UI stack inside the game.
+Check [compatibility and installation](docs/reference/compatibility-and-installation.md) for supported Minecraft and
+Loader versions.
 
 ## Requirements
 
@@ -39,29 +45,13 @@ In short: Graphene gives Fabric mods a practical way to use web-powered interfac
 
 - Windows 11 with `AZERTY` and `QWERTY` keyboard layouts
 - Linux (Wayland) with `AZERTY` and `QWERTY` keyboard layouts
-- macOS 26 with `QWERTY` keyboard layout (thanks to @Thinkseal for testing on macOS)
+- macOS 26 with `QWERTY` keyboard layout
 
 ## Installation
 
-Graphene is published on Maven Central and GitHub Packages.
-
-We recommend using Maven Central for ease of use (no authentication required).
-
-Check [Maven Central](https://repo1.maven.org/maven2/io/github/trethore/graphene-ui/) for the latest version.
-
-### Maven coordinates
-
-```xml
-<dependency>
-  <groupId>io.github.trethore</groupId>
-  <artifactId>graphene-ui</artifactId>
-  <version>&lt;version&gt;</version>
-</dependency>
-```
-
-### Add Graphene to a Fabric Minecraft Gradle project
-
-Primary model (recommended): keep Graphene as a separate mod dependency.
+Graphene is published on Maven Central. Find the latest version on [GitHub Releases](https://github.com/trethore/graphene/releases),
+[Modrinth](https://modrinth.com/mod/grapheneui), or [Maven Central](https://central.sonatype.com/artifact/io.github.trethore/graphene-ui),
+then add it as a mod dependency in your Fabric project:
 
 ```kotlin
 repositories {
@@ -73,92 +63,41 @@ dependencies {
 }
 ```
 
-Note: Graphene is also available on GitHub Packages.
-
-In your `fabric.mod.json`, declare:
+Declare Graphene as a runtime dependency in `fabric.mod.json`:
 
 ```json
 {
   "depends": {
-    "graphene-ui": ">=<version>"
+    "grapheneui": ">=<version>"
   }
 }
 ```
 
-At runtime, place both jars in `mods/`: your mod jar and `graphene-ui-<version>.jar`.
-
-Jar-in-jar embedding is also possible, but it is not the preferred default. See [docs/installation.md](docs/installation.md) for the trade-offs and setup.
-
-### Initialize Graphene in your mod
-
-Register your mod from `onInitializeClient()` with an anchor class. Graphene resolves the owning Fabric mod id from that class, and you can later resolve the scoped `GrapheneHandle` from the same anchor class:
+Register your mod from its client initializer and retain the returned context:
 
 ```java
+import io.github.trethore.graphene.api.Graphene;
+import io.github.trethore.graphene.api.GrapheneContext;
 import net.fabricmc.api.ClientModInitializer;
-import tytoo.grapheneui.api.GrapheneCore;
 
-public final class MyModClient implements ClientModInitializer {
+public final class ExampleModClient implements ClientModInitializer {
+    private static GrapheneContext graphene;
+
     @Override
     public void onInitializeClient() {
-        GrapheneCore.register(MyModClient.class);
+        graphene = Graphene.register(ExampleModClient.class);
+    }
+
+    public static GrapheneContext graphene() {
+        return graphene;
     }
 }
 ```
 
-Graphene separates per-consumer container settings from shared runtime settings.
-`jcefDownloadPath(...)` is a base directory, and Graphene installs JCEF under `<jcef-mvn-version>/<platform>`.
+See those documentation pages for more details:
 
-```java
-import java.nio.file.Path;
-import net.fabricmc.api.ClientModInitializer;
-import tytoo.grapheneui.api.GrapheneCore;
-import tytoo.grapheneui.api.GrapheneHandle;
-import tytoo.grapheneui.api.config.GrapheneConfig;
-import tytoo.grapheneui.api.config.GrapheneContainerConfig;
-import tytoo.grapheneui.api.config.GrapheneGlobalConfig;
-import tytoo.grapheneui.api.config.GrapheneHttpConfig;
-import tytoo.grapheneui.api.config.GrapheneRemoteDebugConfig;
-
-public final class MyModClient implements ClientModInitializer {
-    @Override
-    public void onInitializeClient() {
-        GrapheneCore.register(
-                MyModClient.class,
-                GrapheneConfig.builder()
-                        .container(GrapheneContainerConfig.builder()
-                                .http(GrapheneHttpConfig.builder()
-                                        .bindHost("127.0.0.1")
-                                        .randomPortInRange(20_000, 21_000)
-                                        .fileRoot(Path.of("C:/dev/my-ui-dist"))
-                                        .spaFallback("/assets/my-mod-id/web/index.html")
-                                        .build())
-                                .build())
-                        .global(GrapheneGlobalConfig.builder()
-                                .jcefDownloadPath(Path.of("./graphene-jcef"))
-                                .extensionFolder(Path.of("./config/my-mod/extensions"))
-                                .remoteDebugging(GrapheneRemoteDebugConfig.builder()
-                                        .randomPort()
-                                        .allowedOrigins("https://chrome-devtools-frontend.appspot.com")
-                                        .build())
-                                .build())
-                        .build()
-        );
-    }
-}
-```
-
-Use the handle for namespaced helpers:
-
-```java
-GrapheneHandle graphene = GrapheneCore.handle(MyModClient.class);
-
-String appUrl = graphene.appAssets().asset("web/index.html");
-String mountedHttpUrl = graphene.httpUrl("web/index.html");
-```
-
-## Documentation
-
-Start [HERE](docs/README.md)!
+- [compatibility and installation](docs/reference/compatibility-and-installation.md) for compatibility details
+- [first web-screen tutorial](docs/tutorials/first-web-screen.md) for a complete example
 
 ## Contributing
 
@@ -168,6 +107,10 @@ Contributions are welcome!
 - Report bugs or request features in [Issues](https://github.com/trethore/graphene/issues).
 - Open changes through [Pull Requests](https://github.com/trethore/graphene/pulls).
 - All pull requests must be tested before being submitted.
+
+## Documentation
+
+Start [HERE](docs/README.md)!
 
 ## License
 

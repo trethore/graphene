@@ -1,288 +1,119 @@
-import org.gradle.api.JavaVersion
-import org.gradle.api.attributes.Category
-import org.gradle.api.attributes.DocsType
-import org.gradle.api.provider.Provider
-import org.gradle.api.tasks.JavaExec
+import com.diffplug.spotless.extra.wtp.EclipseWtpFormatterStep
+import org.gradle.api.plugins.JavaPlugin
 import org.gradle.api.tasks.testing.Test
-import org.gradle.jvm.toolchain.JavaLauncher
-import org.gradle.jvm.toolchain.JavaLanguageVersion
-import org.gradle.jvm.toolchain.JavaToolchainService
-import tytoo.graphene.UnpackSourcesTask
 
 plugins {
-	id("net.fabricmc.fabric-loom-remap")
-	id("maven-publish")
-	id("signing")
+  `maven-publish`
+  id("com.diffplug.spotless") version "8.8.0"
+  id("example.unpack-sources")
+  id("example.sonar")
 }
 
-val modVersion = property("mod_version") as String
-val mavenGroup = property("maven_group") as String
-val archivesBaseName = property("archives_base_name") as String
-val minecraftVersion = property("minecraft_version") as String
-val loaderVersion = property("loader_version") as String
-val fabricApiVersion = property("fabric_api_version") as String
-val jcefGithubVersion = property("jcefgithub_version") as String
-val junitVersion = property("junit_version") as String
-val javaLanguageVersion: JavaLanguageVersion = JavaLanguageVersion.of(21)
-val grapheneDebugSelector = (findProperty("grapheneDebug") as String?)
-	?.trim()
-	?.takeIf { it.isNotEmpty() }
-val githubUsername: String? = (findProperty("gpr.user") as String?) ?: System.getenv("GITHUB_ACTOR")
-val githubToken: String? = (findProperty("gpr.key") as String?) ?: System.getenv("GITHUB_TOKEN")
-val githubRepository = (findProperty("gpr.repo") as String?) ?: System.getenv("GITHUB_REPOSITORY") ?: "trethore/graphene"
-val mavenCentralUsername: String? = (findProperty("mavenCentralUsername") as String?)
-	?: System.getenv("MAVEN_CENTRAL_USERNAME")
-val mavenCentralPassword: String? = (findProperty("mavenCentralPassword") as String?)
-	?: System.getenv("MAVEN_CENTRAL_PASSWORD")
-val mavenCentralSigningKey: String? = (findProperty("mavenCentralSigningKey") as String?)
-	?: System.getenv("MAVEN_GPG_PRIVATE_KEY")
-val mavenCentralSigningPassphrase: String? = (findProperty("mavenCentralSigningPassphrase") as String?)
-	?: System.getenv("MAVEN_GPG_PASSPHRASE")
-val isMavenCentralPublishRequested: Boolean = gradle.startParameter.taskNames.any { taskName ->
-	taskName == "publish" || taskName.contains("MavenCentral", ignoreCase = true)
+spotless {
+  java {
+    target("**/src/**/*.java")
+    targetExclude("references/**", "**/build/**")
+    googleJavaFormat()
+    removeUnusedImports()
+    formatAnnotations()
+  }
+
+  kotlinGradle {
+    target("**/*.gradle.kts")
+    targetExclude("references/**", "**/build/**", ".gradle/**")
+    ktfmt()
+  }
+
+  format("javascript") {
+    target(
+        "debug-client/shared/**/*.js",
+        "packages/common/src/main/resources/**/*.js",
+    )
+    biome("2.1.0")
+    trimTrailingWhitespace()
+    endWithNewline()
+  }
+
+  format("html") {
+    target(
+        "debug-client/shared/**/*.html",
+        "packages/common/src/main/resources/**/*.html",
+    )
+    eclipseWtp(EclipseWtpFormatterStep.HTML)
+    trimTrailingWhitespace()
+    endWithNewline()
+  }
+
+  format("misc") {
+    target("**/*.md", ".gitignore")
+    targetExclude("references/**", "**/build/**", ".gradle/**")
+    trimTrailingWhitespace()
+    endWithNewline()
+  }
 }
 
-version = modVersion
-group = mavenGroup
+allprojects {
+  version = providers.gradleProperty("mod_version").get()
+  group = providers.gradleProperty("maven_group").get()
 
-base {
-	archivesName.set(archivesBaseName)
+  repositories {
+    mavenCentral()
+    maven {
+      name = "Fabric"
+      url = uri("https://maven.fabricmc.net/")
+    }
+    maven {
+      name = "Mojang"
+      url = uri("https://libraries.minecraft.net/")
+    }
+  }
 }
 
-repositories {
-	mavenLocal()
-	mavenCentral()
+subprojects {
+  plugins.withType<JavaPlugin> {
+    dependencies {
+      "testImplementation"(
+          "org.junit.jupiter:junit-jupiter:${providers.gradleProperty("junit_version").get()}"
+      )
+      "testRuntimeOnly"(
+          "org.junit.platform:junit-platform-launcher:${providers.gradleProperty("junit_version").get()}"
+      )
+    }
+
+    tasks.withType<Test>().configureEach {
+      useJUnitPlatform()
+    }
+  }
 }
 
-val sourceDeps: Configuration by configurations.creating {
-	isCanBeConsumed = false
-	isCanBeResolved = true
-	isTransitive = false
-	attributes {
-		attribute(Category.CATEGORY_ATTRIBUTE, objects.named(Category.DOCUMENTATION))
-		attribute(DocsType.DOCS_TYPE_ATTRIBUTE, objects.named(DocsType.SOURCES))
-	}
-}
+references {
+  unpackNestedJars = true
 
-loom {
-	splitEnvironmentSourceSets() // so client source set is created
-	log4jConfigs.from(file("config/log4j2.graphene-debug.xml"))
-}
+  git(
+      url = "https://github.com/trethore/jcef.git",
+      branch = "master",
+      commit = "5855f3c197e3134cbf1499a60b2ac90129d6e502",
+  )
+  git(
+      url = "https://github.com/chromiumembedded/cef.git",
+      branch = "master",
+      commit = "82195616d8405e6081a0d90924707b82aa9e4141",
+  )
+  git(
+      url = "https://chromium.googlesource.com/chromium/src.git",
+      branch = "146.0.7680.179",
+      commit = "347d8fd10aba5b885fb19ba5ea809b39b94afd0b",
+      sparsePaths =
+          listOf(
+              "chrome/browser/file_select_helper.cc",
+              "chrome/browser/file_select_helper.h",
+          ),
+  )
 
-val clientSS: NamedDomainObjectProvider<SourceSet> = sourceSets.named("client")
-sourceSets {
-	create("debug") {
-		java.setSrcDirs(listOf("src/debug/java"))
-		resources.setSrcDirs(listOf("src/debug/resources"))
-		// Inherit classpaths + compiled output from client
-		compileClasspath += clientSS.get().compileClasspath + clientSS.get().output
-		runtimeClasspath += clientSS.get().runtimeClasspath + clientSS.get().output
-	}
-
-	named("test") {
-		compileClasspath += clientSS.get().compileClasspath + clientSS.get().output
-		runtimeClasspath += clientSS.get().runtimeClasspath + clientSS.get().output
-	}
-}
-
-loom {
-	mods {
-		register("graphene-ui") {
-			sourceSet(sourceSets.named("client").get())
-		}
-		register("graphene-ui-debug") {
-			sourceSet(sourceSets.named("debug").get())
-		}
-	}
-
-	runs {
-		named("client") {
-			client()
-			source(sourceSets.named("client").get())
-			ideConfigGenerated(true)
-		}
-		create("debugClient") {
-			client()
-			source(sourceSets.named("debug").get())
-			ideConfigGenerated(true)
-			if (grapheneDebugSelector != null) {
-				property("graphene.debug", grapheneDebugSelector)
-				property("fabric.log.level", "debug")
-			}
-		}
-	}
-}
-
-dependencies {
-	// To change the versions see the gradle.properties file
-	minecraft("com.mojang:minecraft:${minecraftVersion}")
-	mappings(loom.officialMojangMappings())
-	modImplementation("net.fabricmc:fabric-loader:${loaderVersion}")
-	// JCEF.
-	implementation("io.github.trethore:jcefgithub:${jcefGithubVersion}:all-relocated") {
-		isTransitive = false
-	}
-	include("io.github.trethore:jcefgithub:${jcefGithubVersion}:all-relocated")
-	sourceDeps("io.github.trethore:jcefgithub:${jcefGithubVersion}:sources")
-
-	// Fabric API. This is technically optional, but you probably want it anyway.
-	modImplementation("net.fabricmc.fabric-api:fabric-api:${fabricApiVersion}")
-
-	testImplementation(platform("org.junit:junit-bom:${junitVersion}"))
-	testImplementation("org.junit.jupiter:junit-jupiter")
-	testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
-	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-}
-
-tasks.withType<ProcessResources>().configureEach {
-	inputs.property("version", project.version)
-	filesMatching("fabric.mod.json") {
-		expand("version" to project.version)
-	}
-}
-
-tasks.withType<JavaCompile>().configureEach {
-	options.release.set(javaLanguageVersion.asInt())
-}
-
-java {
-	toolchain {
-		languageVersion.set(javaLanguageVersion)
-	}
-	sourceCompatibility = JavaVersion.toVersion(javaLanguageVersion.asInt())
-	targetCompatibility = JavaVersion.toVersion(javaLanguageVersion.asInt())
-	withSourcesJar()
-	withJavadocJar()
-}
-
-val javaToolchainService: JavaToolchainService = extensions.getByType(JavaToolchainService::class.java)
-val javaLauncherProvider: Provider<JavaLauncher> = javaToolchainService.launcherFor {
-	languageVersion.set(javaLanguageVersion)
-}
-
-tasks.withType<Test>().configureEach {
-	useJUnitPlatform()
-	javaLauncher.set(javaLauncherProvider)
-}
-
-tasks.withType<JavaExec>().configureEach {
-	javaLauncher.set(javaLauncherProvider)
-}
-
-tasks.jar {
-	val archivesName = project.base.archivesName
-
-	from("LICENSE") {
-		rename { "${it}_${archivesName.get()}" }
-	}
-
-	// exclude debug
-	exclude("tytoo/grapheneuidebug/**")
-	exclude("assets/graphene-ui-debug/**")
-	exclude("graphene-ui-debug.mixins.json")
-	// exclude tests
-	exclude("tytoo/grapheneuitest/**")
-}
-
-// configure the maven publication
-publishing {
-	publications {
-		create<MavenPublication>("mavenJava") {
-			artifactId = archivesBaseName
-			from(components["java"])
-			pom {
-				name.set("Graphene UI")
-				description.set("Client-side Chromium-based UI library for Minecraft Fabric mods.")
-				url.set("https://github.com/trethore/graphene")
-				licenses {
-					license {
-						name.set("MIT License")
-						url.set("https://github.com/trethore/graphene/blob/main/LICENSE")
-					}
-				}
-				developers {
-					developer {
-						id.set("trethore")
-						name.set("Titouan Rethore")
-						email.set("titou.rethore@gmail.com")
-					}
-				}
-				scm {
-					connection.set("scm:git:git://github.com/trethore/graphene.git")
-					developerConnection.set("scm:git:ssh://git@github.com/trethore/graphene.git")
-					url.set("https://github.com/trethore/graphene")
-				}
-			}
-		}
-	}
-
-	// See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
-	repositories {
-		maven {
-			name = "GitHubPackages"
-			url = uri("https://maven.pkg.github.com/$githubRepository")
-			credentials {
-				username = githubUsername
-				password = githubToken
-			}
-		}
-		maven {
-			name = "MavenCentral"
-			url = layout.buildDirectory.dir("central-portal/staging").get().asFile.toURI()
-		}
-	}
-}
-
-if (isMavenCentralPublishRequested) {
-	check(!modVersion.endsWith("-SNAPSHOT")) {
-		"Maven Central publishing requires a non-SNAPSHOT mod_version"
-	}
-	check(!mavenCentralUsername.isNullOrBlank()) {
-		"Maven Central publishing requires MAVEN_CENTRAL_USERNAME or mavenCentralUsername"
-	}
-	check(!mavenCentralPassword.isNullOrBlank()) {
-		"Maven Central publishing requires MAVEN_CENTRAL_PASSWORD or mavenCentralPassword"
-	}
-	check(!mavenCentralSigningKey.isNullOrBlank()) {
-		"Maven Central publishing requires MAVEN_GPG_PRIVATE_KEY or mavenCentralSigningKey"
-	}
-	check(!mavenCentralSigningPassphrase.isNullOrBlank()) {
-		"Maven Central publishing requires MAVEN_GPG_PASSPHRASE or mavenCentralSigningPassphrase"
-	}
-}
-
-signing {
-	setRequired { isMavenCentralPublishRequested }
-	if (!mavenCentralSigningKey.isNullOrBlank() && !mavenCentralSigningPassphrase.isNullOrBlank()) {
-		useInMemoryPgpKeys(mavenCentralSigningKey, mavenCentralSigningPassphrase)
-		sign(publishing.publications["mavenJava"])
-	}
-}
-
-// Source Browsing Helpers
-
-val unpackedSourcesDir: Directory = layout.projectDirectory.dir("references")
-val minecraftCacheDirProvider: Directory = layout.projectDirectory.dir(".gradle/loom-cache/minecraftMaven")
-val fabricCacheDirProvider: Directory = layout.projectDirectory.dir(".gradle/loom-cache/remapped_mods/remapped/net/fabricmc/fabric-api")
-
-val cleanSources by tasks.registering(Delete::class) {
-	group = "help"
-	description = "Deletes unpacked sources in references/"
-	delete(unpackedSourcesDir)
-}
-
-val unpackSources by tasks.registering(UnpackSourcesTask::class) {
-	group = "help"
-	description = "Unpacks dependency sources and clones git repos into references/"
-	dependsOn(cleanSources)
-	sourceDeps.from(configurations.named("sourceDeps"))
-	gitRepos.set(
-		listOf(
-			"https://github.com/trethore/jcef#master",
-			"https://github.com/chromiumembedded/cef"
-		)
-	)
-	outputDir.set(unpackedSourcesDir)
-	minecraftCacheDir.set(minecraftCacheDirProvider)
-	fabricCacheDir.set(fabricCacheDirProvider)
+  // Optional Git references can be added like this:
+  // git(
+  //     url = "https://github.com/FabricMC/fabric.git",
+  //     branch = "main",
+  //     commit = null,
+  // )
 }

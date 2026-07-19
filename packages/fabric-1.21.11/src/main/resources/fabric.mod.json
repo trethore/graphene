@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "grapheneui",
+  "version": "${version}",
+  "name": "Graphene",
+  "description": "A client-side UI library for Minecraft that lets mod developers build interfaces with web technologies.",
+  "authors": [
+    "trethore"
+  ],
+  "contact": {
+    "sources": "https://github.com/trethore/graphene"
+  },
+  "license": "MIT",
+  "icon": "assets/grapheneui/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "main": [
+      "io.github.trethore.graphene.FabricBootstrap"
+    ]
+  },
+  "mixins": [
+    "grapheneui.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loaderVersion}",
+    "minecraft": "~${minecraftVersion}",
+    "java": ">=21",
+    "fabric-api": ">=${fabricApiVersion}"
+  }
+}

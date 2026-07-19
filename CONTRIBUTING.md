@@ -1,86 +1,55 @@
 # Contributing to Graphene
 
-If you want to contribute to Graphene, follow these guidelines to keep the process smooth for everyone involved.
-Here are the most common types of changes that get merged:
+Contributions to Graphene are welcome. By participating, you agree to follow the
+[Code of Conduct](CODE_OF_CONDUCT.md).
 
-- Bug fixes
-- New APIs and features that allow Graphene to be used in new ways or make it easier to use.
-- Documentation improvements
-- Support for keybind layouts and region specific behaviors.
+## Issues
 
-## Development
+Search existing issues before opening a new one.
 
-Here is the recommended development setup that ensures consistency and compatibility with other contributors and users.
+Bug reports should describe:
 
-### Development Setup
+- What happened and what you expected to happen.
+- Clear steps to reproduce the problem.
+- The Graphene, Minecraft, Fabric API, Java, and operating system versions involved.
+- Relevant logs or a minimal reproduction when available.
 
-- Java `21`
-- Minecraft `1.21.11`
-- Fabric Loader `0.18.4`
-- Fabric API `0.141.3+1.21.11`
+Keep each issue focused on a single problem or request. For substantial features or API changes, open an issue first so
+the approach and scope can be discussed before implementation begins.
 
-### Public API and Internal Code
+## Pull Requests
 
-- `tytoo.grapheneui.api.*` -> supported public API for consumers
-- `tytoo.grapheneui.internal.*` -> internal implementation details that may change without notice
+Keep pull requests focused and avoid unrelated changes. A pull request should:
 
-Changes under `api/` should be reviewed as public API changes.
-If a pull request changes public behavior, update the relevant documentation in `README.md` and `docs/`.
+- Explain what changed and why.
+- Link any related issues.
+- Include or update tests when appropriate.
+- Update documentation when public behavior or APIs change.
+- Describe how the changes were tested.
 
-### Testing and Manual Validation
+Be prepared to respond to review feedback and explain the reasoning behind your implementation.
 
-Run these commands from the repository root:
+## Validation
 
-```bash
-./gradlew compileJava
-./gradlew test
+Before opening a pull request, format the project and run all checks and tests:
+
+```shell
+./gradlew spotlessApply
+./gradlew check
 ./gradlew build
-./gradlew runDebugClient
 ```
 
-When changing browser runtime, bridge, input, rendering, or loading behavior, also validate in game:
+Review any changes made by the formatter before committing them. If a check cannot be run or does not pass, explain why
+in the pull request.
 
-1. Run `./gradlew runDebugClient`.
-2. Press `F10` to open `GrapheneBrowserDebugScreen`.
-3. Validate the manual test pages pass.
-4. Record the manual steps you ran in the pull request.
+## AI-Generated Content
 
-Changes in areas such as `internal/bridge`, `internal/http`, `internal/cef`, and `internal/input` should usually include tests.
+We do not accept AI-generated walls of text in issues, pull requests, or review discussions.
 
-## Pull Request Expectations
-
-### Issue First Policy
-
-All PRs must reference an existing issue.
-Open one [HERE](https://github.com/trethore/graphene/issues) and describe the problem you are trying to solve or the feature you want to add.
-
-- Use Fixes #12 or Closes #12 in your PR description to link the issue.
-- For small fixes, a brief issue is fine - provide enough context for maintainers to understand the problem.
-
-### General Requirements
-
-- Keep pull requests small and focused
-- Explain the issue and why your change fixes it
-- Before adding new functionality, ensure it doesn't already exist elsewhere in the codebase
-- Ensure the changes are tested and documented as needed.
-
-### No AI-Generated Walls of Text
-
-Long, AI-generated PR descriptions and issues are not acceptable and may be ignored. Respect the maintainers' time:
-
-- Write short, focused descriptions
-- Explain what changed and why in your own words
-- If you can't explain it briefly, your PR might be too large
-
-### Pull Request Titles
-
-Pull request titles should use the Conventional Commit style:
-
-- `feat(ui): add browser surface load listener helpers`
-- `fix(bridge): prevent duplicate request completion`
-- `docs: update installation guide for Maven Central`
+Keep descriptions concise and explain the problem and proposed changes in your own words. You are responsible for
+understanding, verifying, and being able to explain everything you submit. Unreviewed, low-effort, or unexplained
+generated content may be closed without detailed feedback.
 
 ## Security
 
-Do not report security vulnerabilities in public issues.
-Use the process described in `SECURITY.md` once the security policy is added.
+Do not report security vulnerabilities in public issues. Use the process described in [SECURITY.md](SECURITY.md).
