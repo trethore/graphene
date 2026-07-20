@@ -6,12 +6,13 @@ on:
       target:
         description: Release destination
         required: true
-        default: maven+github
+        default: all
         type: choice
         options:
-          - maven+github
+          - all
           - maven
-          - github
+          - github-release
+          - github-packages
       version:
         description: Release version (defaults to mod_version from gradle.properties)
         required: false
@@ -39,12 +40,12 @@ jobs:
         id: metadata
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_GITHUB: ${{ inputs.target != 'maven' }}
+          RELEASE_GITHUB: ${{ inputs.target == 'all' || inputs.target == 'github-release' }}
           REQUESTED_VERSION: ${{ inputs.version }}
         run: scripts/release/prepare.sh "$REQUESTED_VERSION" "$RELEASE_GITHUB" >> "$GITHUB_OUTPUT"
 
       - name: upload release metadata
-        if: inputs.target != 'maven'
+        if: inputs.target == 'all' || inputs.target == 'github-release'
         uses: actions/upload-artifact@v7
         with:
           name: release-metadata
@@ -71,7 +72,7 @@ jobs:
 
   build:
     needs: prepare
-    if: inputs.target != 'maven'
+    if: inputs.target == 'all' || inputs.target == 'github-release'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -108,7 +109,7 @@ jobs:
     needs:
       - prepare
       - verify
-    if: inputs.target != 'github'
+    if: inputs.target == 'all' || inputs.target == 'maven'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -174,12 +175,37 @@ jobs:
 
           echo "Maven Central deployment: ${deployment_id}"
 
+  release-github-packages:
+    needs:
+      - prepare
+      - verify
+    if: inputs.target == 'all' || inputs.target == 'github-packages'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v6
+
+      - name: setup gradle
+        uses: ./.github/actions/setup-gradle
+
+      - name: publish to github packages
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          ./gradlew \
+            :packages:fabric-1.21.11:publishMavenJavaPublicationToGitHubPackagesRepository \
+            -Pmod_version="$RELEASE_VERSION"
+
   release-github:
     needs:
       - prepare
       - verify
       - build
-    if: inputs.target != 'maven'
+    if: inputs.target == 'all' || inputs.target == 'github-release'
     runs-on: ubuntu-24.04
     permissions:
       contents: write

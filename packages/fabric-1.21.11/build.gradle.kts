@@ -190,6 +190,14 @@ publishing {
       name = "MavenCentralBundle"
       url = rootProject.layout.buildDirectory.dir("central-portal/staging").get().asFile.toURI()
     }
+    maven {
+      name = "GitHubPackages"
+      url = uri("https://maven.pkg.github.com/trethore/graphene")
+      credentials {
+        username = providers.environmentVariable("GITHUB_ACTOR").orNull
+        password = providers.environmentVariable("GITHUB_TOKEN").orNull
+      }
+    }
   }
 }
 
