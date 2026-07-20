@@ -10,17 +10,8 @@ jobs:
       - name: checkout repository
         uses: actions/checkout@v6
 
-      - name: validate gradle wrapper
-        uses: gradle/actions/wrapper-validation@v6
-
-      - name: setup jdk
-        uses: actions/setup-java@v5
-        with:
-          java-version: '25'
-          distribution: 'microsoft'
-          cache: 'gradle'
-      - name: make gradle wrapper executable
-        run: chmod +x ./gradlew
+      - name: setup gradle
+        uses: ./.github/actions/setup-gradle
 
       - name: build
         run: ./gradlew build

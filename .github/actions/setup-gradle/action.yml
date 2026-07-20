@@ -1,0 +1,15 @@
+name: setup gradle
+description: Validate the Gradle wrapper and configure the project JDK
+
+runs:
+  using: composite
+  steps:
+    - name: validate gradle wrapper
+      uses: gradle/actions/wrapper-validation@v6
+
+    - name: setup jdk
+      uses: actions/setup-java@v5
+      with:
+        java-version: '25'
+        distribution: microsoft
+        cache: gradle

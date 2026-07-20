@@ -29,108 +29,22 @@ jobs:
     outputs:
       tag: ${{ steps.metadata.outputs.tag }}
       version: ${{ steps.metadata.outputs.version }}
-      release_github: ${{ steps.targets.outputs.release_github }}
-      release_maven: ${{ steps.targets.outputs.release_maven }}
     steps:
       - name: checkout repository
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - name: resolve release targets
-        id: targets
-        env:
-          RELEASE_TARGET: ${{ inputs.target }}
-        run: |
-          case "$RELEASE_TARGET" in
-            maven+github)
-              echo "release_github=true" >> "$GITHUB_OUTPUT"
-              echo "release_maven=true" >> "$GITHUB_OUTPUT"
-              ;;
-            maven)
-              echo "release_github=false" >> "$GITHUB_OUTPUT"
-              echo "release_maven=true" >> "$GITHUB_OUTPUT"
-              ;;
-            github)
-              echo "release_github=true" >> "$GITHUB_OUTPUT"
-              echo "release_maven=false" >> "$GITHUB_OUTPUT"
-              ;;
-            *)
-              echo "Unsupported release target: $RELEASE_TARGET" >&2
-              exit 1
-              ;;
-          esac
-
       - name: prepare release metadata
         id: metadata
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_GITHUB: ${{ steps.targets.outputs.release_github }}
+          RELEASE_GITHUB: ${{ inputs.target != 'maven' }}
           REQUESTED_VERSION: ${{ inputs.version }}
-        run: |
-          set -euo pipefail
-
-          version="$REQUESTED_VERSION"
-          if [[ -z "$version" ]]; then
-            version="$(awk -F= '$1 == "mod_version" { print $2; exit }' gradle.properties)"
-          fi
-
-          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z][0-9A-Za-z.-]*)?$ ]]; then
-            echo "Invalid release version: $version" >&2
-            exit 1
-          fi
-
-          jcefgithub_version="$(awk -F= '$1 == "jcefgithub_version" { print $2; exit }' gradle.properties)"
-          if [[ -z "$jcefgithub_version" ]]; then
-            echo "jcefgithub_version is missing from gradle.properties" >&2
-            exit 1
-          fi
-
-          tag="v${version}"
-          if [[ "$RELEASE_GITHUB" == "true" ]] && git rev-parse --verify --quiet "refs/tags/${tag}" >/dev/null; then
-            echo "Tag ${tag} already exists" >&2
-            exit 1
-          fi
-
-          previous_tag="$(gh api "repos/${GITHUB_REPOSITORY}/releases/latest" --jq '.tag_name' 2>/dev/null || true)"
-
-          {
-            echo "## Versions"
-            echo
-            echo "- Graphene: \`${version}\`"
-            echo "- jcefgithub: \`${jcefgithub_version}\`"
-            echo
-
-            if [[ -n "$previous_tag" ]] && git rev-parse --verify --quiet "refs/tags/${previous_tag}" >/dev/null; then
-              range="${previous_tag}..HEAD"
-              echo "## Changes since ${previous_tag}"
-            else
-              range="HEAD"
-              echo "## Recent changes"
-            fi
-
-            echo
-            commit_count="$(git rev-list --count "$range")"
-            if [[ "$commit_count" -eq 0 ]]; then
-              echo "No commits since the previous release."
-            else
-              git log "$range" --max-count=10 --format='%H%x09%h%x09%s' |
-                while IFS=$'\t' read -r full_hash short_hash subject; do
-                  printf -- '- %s ([`%s`](%s/%s/commit/%s))\n' \
-                    "$subject" "$short_hash" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$full_hash"
-                done
-
-              if [[ "$commit_count" -gt 10 ]]; then
-                echo
-                echo "_Showing the 10 most recent of ${commit_count} commits._"
-              fi
-            fi
-          } > RELEASE_NOTES.md
-
-          echo "version=${version}" >> "$GITHUB_OUTPUT"
-          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+        run: scripts/release/prepare.sh "$REQUESTED_VERSION" "$RELEASE_GITHUB" >> "$GITHUB_OUTPUT"
 
       - name: upload release metadata
+        if: inputs.target != 'maven'
         uses: actions/upload-artifact@v7
         with:
           name: release-metadata
@@ -147,18 +61,8 @@ jobs:
       - name: checkout repository
         uses: actions/checkout@v6
 
-      - name: validate gradle wrapper
-        uses: gradle/actions/wrapper-validation@v6
-
-      - name: setup jdk
-        uses: actions/setup-java@v5
-        with:
-          java-version: '25'
-          distribution: microsoft
-          cache: gradle
-
-      - name: make gradle wrapper executable
-        run: chmod +x ./gradlew
+      - name: setup gradle
+        uses: ./.github/actions/setup-gradle
 
       - name: check
         env:
@@ -167,7 +71,7 @@ jobs:
 
   build:
     needs: prepare
-    if: needs.prepare.outputs.release_github == 'true'
+    if: inputs.target != 'maven'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -176,64 +80,27 @@ jobs:
       matrix:
         include:
           - project: ':packages:fabric-1.21.11'
-            artifact_directory: packages/fabric-1.21.11/build/libs
+            artifact_directory: packages/fabric-1.21.11/build/github-release
             loader: fabric
             minecraft_version: 1.21.11
     steps:
       - name: checkout repository
         uses: actions/checkout@v6
 
-      - name: validate gradle wrapper
-        uses: gradle/actions/wrapper-validation@v6
-
-      - name: setup jdk
-        uses: actions/setup-java@v5
-        with:
-          java-version: '25'
-          distribution: microsoft
-          cache: gradle
-
-      - name: make gradle wrapper executable
-        run: chmod +x ./gradlew
+      - name: setup gradle
+        uses: ./.github/actions/setup-gradle
 
       - name: build
         env:
           RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
           RELEASE_PROJECT: ${{ matrix.project }}
-        run: ./gradlew "${RELEASE_PROJECT}:build" -Pmod_version="$RELEASE_VERSION"
-
-      - name: stage runtime jar
-        env:
-          ARTIFACT_DIRECTORY: ${{ matrix.artifact_directory }}
-          LOADER: ${{ matrix.loader }}
-          MINECRAFT_VERSION: ${{ matrix.minecraft_version }}
-          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
-        run: |
-          set -euo pipefail
-
-          mapfile -t jars < <(
-            find "$ARTIFACT_DIRECTORY" -maxdepth 1 -type f -name '*.jar' \
-              ! -name '*-sources.jar' \
-              ! -name '*-javadoc.jar' \
-              ! -name '*-dev.jar' \
-              ! -name '*-dev-shadow.jar' \
-              -print
-          )
-
-          if [[ "${#jars[@]}" -ne 1 ]]; then
-            echo "Expected exactly one runtime jar in ${ARTIFACT_DIRECTORY}, found ${#jars[@]}" >&2
-            printf '%s\n' "${jars[@]}" >&2
-            exit 1
-          fi
-
-          mkdir -p release
-          cp "${jars[0]}" "release/graphene-${LOADER}-${MINECRAFT_VERSION}-${RELEASE_VERSION}.jar"
+        run: ./gradlew "${RELEASE_PROJECT}:stageGithubRelease" -Pmod_version="$RELEASE_VERSION"
 
       - name: upload runtime jar
         uses: actions/upload-artifact@v7
         with:
           name: runtime-${{ matrix.loader }}-${{ matrix.minecraft_version }}
-          path: release/*.jar
+          path: ${{ matrix.artifact_directory }}/*.jar
           if-no-files-found: error
           retention-days: 7
 
@@ -241,7 +108,7 @@ jobs:
     needs:
       - prepare
       - verify
-    if: needs.prepare.outputs.release_maven == 'true'
+    if: inputs.target != 'github'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -249,18 +116,8 @@ jobs:
       - name: checkout repository
         uses: actions/checkout@v6
 
-      - name: validate gradle wrapper
-        uses: gradle/actions/wrapper-validation@v6
-
-      - name: setup jdk
-        uses: actions/setup-java@v5
-        with:
-          java-version: '25'
-          distribution: microsoft
-          cache: gradle
-
-      - name: make gradle wrapper executable
-        run: chmod +x ./gradlew
+      - name: setup gradle
+        uses: ./.github/actions/setup-gradle
 
       - name: validate maven central secrets
         env:
@@ -295,39 +152,7 @@ jobs:
       - name: create maven central bundle
         env:
           RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
-        run: |
-          set -euo pipefail
-
-          staging_directory="build/central-portal/staging"
-          component_directory="${staging_directory}/io/github/trethore/graphene-ui/${RELEASE_VERSION}"
-          bundle_path="build/central-portal/central-bundle.zip"
-
-          if [[ ! -d "$component_directory" ]]; then
-            echo "Expected staged Maven component at ${component_directory}" >&2
-            exit 1
-          fi
-
-          find "$staging_directory" -type f -name 'maven-metadata.xml*' -delete
-
-          while IFS= read -r -d '' artifact; do
-            md5sum "$artifact" | cut -d ' ' -f1 > "${artifact}.md5"
-            sha1sum "$artifact" | cut -d ' ' -f1 > "${artifact}.sha1"
-            sha256sum "$artifact" | cut -d ' ' -f1 > "${artifact}.sha256"
-            sha512sum "$artifact" | cut -d ' ' -f1 > "${artifact}.sha512"
-          done < <(
-            find "$staging_directory" -type f \
-              ! -name '*.md5' \
-              ! -name '*.sha1' \
-              ! -name '*.sha256' \
-              ! -name '*.sha512' \
-              -print0
-          )
-
-          rm -f "$bundle_path"
-          (
-            cd "$staging_directory"
-            zip --quiet --recurse-paths ../central-bundle.zip .
-          )
+        run: scripts/release/create-central-bundle.sh "$RELEASE_VERSION"
 
       - name: upload bundle to maven central
         env:
@@ -354,7 +179,7 @@ jobs:
       - prepare
       - verify
       - build
-    if: needs.prepare.outputs.release_github == 'true'
+    if: inputs.target != 'maven'
     runs-on: ubuntu-24.04
     permissions:
       contents: write

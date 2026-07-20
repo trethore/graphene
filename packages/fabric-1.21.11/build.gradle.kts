@@ -1,5 +1,7 @@
 import io.github.trethore.buildlogic.unpack
 import org.gradle.api.publish.tasks.GenerateModuleMetadata
+import org.gradle.api.tasks.Sync
+import org.gradle.api.tasks.bundling.AbstractArchiveTask
 
 plugins {
   id("net.fabricmc.fabric-loom-remap")
@@ -121,6 +123,18 @@ tasks.jar {
   from(rootProject.file("LICENSE")) {
     rename { "${it}_$projectName" }
   }
+}
+
+tasks.register<Sync>("stageGithubRelease") {
+  group = "distribution"
+  description = "Stages the remapped JAR for a GitHub release."
+
+  val remapJar = tasks.named<AbstractArchiveTask>("remapJar")
+
+  dependsOn(remapJar)
+  from(remapJar.flatMap { it.archiveFile })
+  into(layout.buildDirectory.dir("github-release"))
+  rename { "${rootProject.name}-fabric-${minecraftVersion}-${project.version}.jar" }
 }
 
 publishing {
