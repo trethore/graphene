@@ -89,7 +89,7 @@ final class GrapheneCefFileDialogHandler implements CefDialogHandler {
   }
 
   private static List<BrowserFileDialogPresenter.Filter> filters(
-      Vector<String> values, Vector<String> extensions, Vector<String> descriptions) {
+      List<String> values, List<String> extensions, List<String> descriptions) {
     if (values == null || values.isEmpty()) {
       return List.of();
     }
@@ -102,13 +102,14 @@ final class GrapheneCefFileDialogHandler implements CefDialogHandler {
     return filters;
   }
 
-  private static String valueAt(Vector<String> values, int index) {
+  private static String valueAt(List<String> values, int index) {
     if (values == null || index >= values.size()) {
       return "";
     }
     return Objects.requireNonNullElse(values.get(index), "");
   }
 
+  @SuppressWarnings("java:S1149")
   private static void complete(
       CefFileDialogCallback callback, List<Path> paths, Throwable failure) {
     if (failure != null || paths == null || paths.isEmpty()) {

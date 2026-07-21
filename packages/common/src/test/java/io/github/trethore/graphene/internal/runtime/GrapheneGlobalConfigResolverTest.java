@@ -99,13 +99,12 @@ final class GrapheneGlobalConfigResolverTest {
                 .build());
     GrapheneConfig disabled =
         config(GrapheneGlobalConfig.builder().disableRemoteDebugging().build());
+    Map<String, GrapheneConfig> configs = Map.of("enabled", enabled, "disabled", disabled);
 
     GrapheneGlobalConfigConflictException exception =
         assertThrows(
             GrapheneGlobalConfigConflictException.class,
-            () ->
-                GrapheneGlobalConfigResolver.resolve(
-                    Map.of("enabled", enabled, "disabled", disabled)));
+            () -> GrapheneGlobalConfigResolver.resolve(configs));
 
     assertEquals(
         GrapheneGlobalConfigConflictException.Setting.REMOTE_DEBUGGING, exception.setting());
@@ -121,13 +120,13 @@ final class GrapheneGlobalConfigResolverTest {
   void browserFileAccessRequiresUnanimousAllow() {
     GrapheneConfig allowed =
         config(GrapheneGlobalConfig.builder().allowBrowserFileAccess().build());
+    Map<String, GrapheneConfig> configs =
+        Map.of("beta", GrapheneConfig.defaults(), "alpha", allowed);
 
     GrapheneGlobalConfigConflictException exception =
         assertThrows(
             GrapheneGlobalConfigConflictException.class,
-            () ->
-                GrapheneGlobalConfigResolver.resolve(
-                    Map.of("beta", GrapheneConfig.defaults(), "alpha", allowed)));
+            () -> GrapheneGlobalConfigResolver.resolve(configs));
 
     assertEquals(
         GrapheneGlobalConfigConflictException.Setting.BROWSER_FILE_ACCESS_POLICY,

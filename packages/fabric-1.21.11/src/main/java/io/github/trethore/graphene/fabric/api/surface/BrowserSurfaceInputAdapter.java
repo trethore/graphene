@@ -199,17 +199,6 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
     }
   }
 
-  private static byte[] decodePng(String png) {
-    if (png == null || png.isEmpty()) {
-      return new byte[0];
-    }
-    try {
-      return Base64.getDecoder().decode(png);
-    } catch (IllegalArgumentException ignored) {
-      return new byte[0];
-    }
-  }
-
   private void sendText(String text, int modifiers) {
     Set<BrowserModifier> browserModifiers = GrapheneInputModifiers.fromGlfw(modifiers);
     // AltGr is reported as Right Alt plus Control, but those modifiers must not alter its text.
@@ -473,6 +462,17 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
         clipboard.write(content);
       } else if (content.text() != null && !content.text().isEmpty()) {
         MinecraftReferences.keyboardHandler().setClipboard(content.text());
+      }
+    }
+
+    private static byte[] decodePng(String png) {
+      if (png == null || png.isEmpty()) {
+        return new byte[0];
+      }
+      try {
+        return Base64.getDecoder().decode(png);
+      } catch (IllegalArgumentException ignored) {
+        return new byte[0];
       }
     }
   }

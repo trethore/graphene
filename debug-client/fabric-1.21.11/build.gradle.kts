@@ -7,6 +7,10 @@ val loaderVersion = providers.gradleProperty("loader_version").get()
 val fabricApiVersion = "0.141.4+1.21.11"
 val grapheneProject = project(":packages:fabric-1.21.11")
 val grapheneMainSourceSet = grapheneProject.extensions.getByType<SourceSetContainer>().named("main")
+val commonProject = project(":packages:common")
+val commonMainSourceSet = commonProject.extensions.getByType<SourceSetContainer>().named("main")
+val jcefGithubVersion = providers.gradleProperty("jcefgithub_version").get()
+val slf4jVersion = providers.gradleProperty("slf4j_version").get()
 val resourceProperties =
     mapOf(
         "version" to project.version.toString(),
@@ -54,8 +58,12 @@ dependencies {
   modImplementation("net.fabricmc:fabric-loader:$loaderVersion")
   modImplementation("net.fabricmc.fabric-api:fabric-api:$fabricApiVersion")
   implementation(files(grapheneMainSourceSet.map { it.output }))
-  implementation(project(":packages:common"))
+  implementation(files(commonMainSourceSet.map { it.output }))
   implementation("com.google.code.gson:gson:${providers.gradleProperty("gson_version").get()}")
+  runtimeOnly("io.github.trethore:jcefgithub:${jcefGithubVersion}:all-relocated") {
+    isTransitive = false
+  }
+  runtimeOnly("org.slf4j:slf4j-api:$slf4jVersion")
   runtimeOnly(grapheneRuntimeSourceSet.output)
 }
 

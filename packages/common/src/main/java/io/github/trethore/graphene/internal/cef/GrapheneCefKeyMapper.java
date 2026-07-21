@@ -272,6 +272,13 @@ final class GrapheneCefKeyMapper {
         default -> 0;
       };
     }
+    int functionNumber = functionNumber(key);
+    if (functionNumber >= 1 && functionNumber <= 10) {
+      return 58 + functionNumber;
+    }
+    if (functionNumber >= 11 && functionNumber <= 12) {
+      return 76 + functionNumber;
+    }
     return switch (key) {
       case ESCAPE -> 1;
       case MINUS -> 12;
@@ -320,23 +327,11 @@ final class GrapheneCefKeyMapper {
       case ALT -> 56;
       case SPACE -> 57;
       case CAPS_LOCK -> 58;
-      case F1 -> 59;
-      case F2 -> 60;
-      case F3 -> 61;
-      case F4 -> 62;
-      case F5 -> 63;
-      case F6 -> 64;
-      case F7 -> 65;
-      case F8 -> 66;
-      case F9 -> 67;
-      case F10 -> 68;
       case NUM_LOCK -> 69;
       case SCROLL_LOCK -> 70;
       case SUBTRACT -> 74;
       case ADD -> 78;
       case DECIMAL, DELETE -> 83;
-      case F11 -> 87;
-      case F12 -> 88;
       case HOME -> 71;
       case ARROW_UP -> 72;
       case PAGE_UP -> 73;

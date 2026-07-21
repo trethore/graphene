@@ -13,6 +13,7 @@ import org.cef.callback.CefMenuModel;
 final class GrapheneCefContextMenuMapper {
   private GrapheneCefContextMenuMapper() {}
 
+  @SuppressWarnings("java:S1149")
   static BrowserContextMenuContext context(BrowserSession session, CefContextMenuParams params) {
     Vector<String> suggestions = new Vector<>();
     params.getDictionarySuggestions(suggestions);

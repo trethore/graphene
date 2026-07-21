@@ -16,8 +16,10 @@ class BrowserTextInputTest {
 
   @Test
   void rejectsEmptyAndMalformedText() {
-    assertThrows(IllegalArgumentException.class, () -> new BrowserTextInput("", Set.of()));
-    assertThrows(IllegalArgumentException.class, () -> new BrowserTextInput("\uD83D", Set.of()));
-    assertThrows(IllegalArgumentException.class, () -> new BrowserTextInput("\uDE00", Set.of()));
+    Set<BrowserModifier> modifiers = Set.of();
+
+    assertThrows(IllegalArgumentException.class, () -> new BrowserTextInput("", modifiers));
+    assertThrows(IllegalArgumentException.class, () -> new BrowserTextInput("\uD83D", modifiers));
+    assertThrows(IllegalArgumentException.class, () -> new BrowserTextInput("\uDE00", modifiers));
   }
 }
