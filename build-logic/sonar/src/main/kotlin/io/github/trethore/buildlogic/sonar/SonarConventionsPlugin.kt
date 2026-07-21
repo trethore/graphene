@@ -62,6 +62,16 @@ class SonarConventionsPlugin : Plugin<Project> {
             token.set(sonarToken)
         }
 
+        project.tasks.register<SonarDuplicateTask>(SonarConstants.DUPLICATE_TASK_NAME) {
+            group = SonarConstants.TASK_GROUP
+            description = "Runs SonarQube analysis and reports duplicated code for this project."
+            dependsOn(SonarConstants.SONAR_TASK_NAME)
+            hostUrl.set(sonarHostUrl)
+            projectKey.set(project.rootProject.name)
+            reportTaskFile.set(sonarMetadataFile)
+            token.set(sonarToken)
+        }
+
         project.subprojects.forEach { subproject ->
             subproject.plugins.withType<JavaPlugin> {
                 val subprojectClasses = subproject.tasks.named(JavaPlugin.CLASSES_TASK_NAME)
