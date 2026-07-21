@@ -7,13 +7,18 @@ plugins {
 }
 
 val jcefGithubVersion = providers.gradleProperty("jcefgithub_version").get()
+val slf4jApiVersion = providers.gradleProperty("slf4j_api_version").get()
+
+configurations.testRuntimeOnly {
+  extendsFrom(configurations.compileOnly.get())
+}
 
 dependencies {
   implementation("com.google.code.gson:gson:${providers.gradleProperty("gson_version").get()}")
   implementation("io.github.trethore:jcefgithub:${jcefGithubVersion}:all-relocated") {
     isTransitive = false
   }
-  implementation("org.slf4j:slf4j-api:${providers.gradleProperty("slf4j_version").get()}")
+  compileOnly("org.slf4j:slf4j-api:$slf4jApiVersion")
   unpack(create("io.github.trethore:jcefgithub:${jcefGithubVersion}:source"))
 }
 

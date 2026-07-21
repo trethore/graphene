@@ -75,9 +75,7 @@ subprojects {
       "testImplementation"(
           "org.junit.jupiter:junit-jupiter:${providers.gradleProperty("junit_version").get()}"
       )
-      "testRuntimeOnly"(
-          "org.junit.platform:junit-platform-launcher:${providers.gradleProperty("junit_version").get()}"
-      )
+      "testRuntimeOnly"("org.junit.platform:junit-platform-launcher")
     }
 
     tasks.withType<Test>().configureEach {

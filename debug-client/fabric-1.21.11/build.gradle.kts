@@ -10,7 +10,6 @@ val grapheneMainSourceSet = grapheneProject.extensions.getByType<SourceSetContai
 val commonProject = project(":packages:common")
 val commonMainSourceSet = commonProject.extensions.getByType<SourceSetContainer>().named("main")
 val jcefGithubVersion = providers.gradleProperty("jcefgithub_version").get()
-val slf4jVersion = providers.gradleProperty("slf4j_version").get()
 val resourceProperties =
     mapOf(
         "version" to project.version.toString(),
@@ -63,7 +62,6 @@ dependencies {
   runtimeOnly("io.github.trethore:jcefgithub:${jcefGithubVersion}:all-relocated") {
     isTransitive = false
   }
-  runtimeOnly("org.slf4j:slf4j-api:$slf4jVersion")
   runtimeOnly(grapheneRuntimeSourceSet.output)
 }
 
