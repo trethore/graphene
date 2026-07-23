@@ -89,6 +89,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - project: ':packages:fabric-26.2'
+            artifact_directory: packages/fabric-26.2/build/github-release
+            loader: fabric
+            minecraft_version: 26.2
           - project: ':packages:fabric-1.21.11'
             artifact_directory: packages/fabric-1.21.11/build/github-release
             loader: fabric
@@ -167,13 +171,17 @@ jobs:
           RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           ./gradlew \
+            :packages:fabric-26.2:publishMavenJavaPublicationToMavenCentralBundleRepository \
             :packages:fabric-1.21.11:publishMavenJavaPublicationToMavenCentralBundleRepository \
             -Pmod_version="$RELEASE_VERSION"
 
       - name: create maven central bundle
         env:
           RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
-        run: scripts/release/create-central-bundle.sh "$RELEASE_VERSION"
+        run: >-
+          scripts/release/create-central-bundle.sh "$RELEASE_VERSION"
+          graphene-ui-26.2
+          graphene-ui-1.21.11
 
       - name: upload bundle to maven central
         env:
@@ -190,7 +198,7 @@ jobs:
               --request POST \
               --header "Authorization: Bearer ${auth_token}" \
               --form "bundle=@${bundle_path};type=application/octet-stream" \
-              "https://central.sonatype.com/api/v1/publisher/upload?name=io.github.trethore%3Agraphene-ui%3A${RELEASE_VERSION}&publishingType=AUTOMATIC"
+              "https://central.sonatype.com/api/v1/publisher/upload?name=graphene-${RELEASE_VERSION}&publishingType=AUTOMATIC"
           )"
 
           echo "Maven Central deployment: ${deployment_id}"
@@ -233,6 +241,7 @@ jobs:
           RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           ./gradlew \
+            :packages:fabric-26.2:publishMavenJavaPublicationToGitHubPackagesRepository \
             :packages:fabric-1.21.11:publishMavenJavaPublicationToGitHubPackagesRepository \
             -Pmod_version="$RELEASE_VERSION"
 

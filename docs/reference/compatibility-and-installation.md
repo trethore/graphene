@@ -6,7 +6,8 @@ This page is the source of truth for supported Graphene artifacts.
 
 | Graphene | Loader | Minecraft | Java        | Fabric Loader   | Fabric API                                  |
 |----------|--------|-----------|-------------|-----------------|---------------------------------------------|
-| 2.0.0    | Fabric | 1.21.11   | 21 or newer | 0.19.3 or newer | 0.141.4+1.21.11 or newer compatible release |
+| 2.1.0    | Fabric | 26.2      | 25 or newer | 0.19.3 or newer | 0.155.2+26.2 or newer compatible release    |
+| 2.1.0    | Fabric | 1.21.11   | 21 or newer | 0.19.3 or newer | 0.141.4+1.21.11 or newer compatible release |
 
 Graphene's repository separates loader-independent code from loader- and Minecraft-specific modules. Future combinations
 can be added as rows without changing the rest of the documentation.
@@ -21,7 +22,9 @@ repositories {
 }
 
 dependencies {
-  modImplementation("io.github.trethore:graphene-ui:2.0.0")
+  modImplementation("io.github.trethore:graphene-ui-26.2:2.1.0")
+  // Or for Minecraft 1.21.11:
+  // modImplementation("io.github.trethore:graphene-ui-1.21.11:2.1.0")
 }
 ```
 
@@ -32,7 +35,7 @@ Declare the runtime dependency in `fabric.mod.json`:
 ```json
 {
   "depends": {
-    "grapheneui": ">=2.0.0"
+    "grapheneui": ">=2.1.0"
   }
 }
 ```
@@ -47,13 +50,14 @@ matching the loader and Minecraft version in the compatibility table.
 [GitHub Releases](https://github.com/trethore/graphene/releases) publishes runtime JARs using this name:
 
 ```text
-graphene-<loader>-<minecraft-version>-<graphene-version>.jar
+graphene-<graphene-version>-<loader>-<minecraft-version>.jar
 ```
 
 For example:
 
 ```text
-graphene-fabric-1.21.11-2.0.0.jar
+graphene-2.1.0-fabric-26.2.jar
+graphene-2.1.0-fabric-1.21.11.jar
 ```
 
 Use Maven Central for compile-time dependency resolution. Modrinth and GitHub Releases are useful for launch profiles,
@@ -72,7 +76,8 @@ The first startup on a platform can take longer while the runtime is prepared.
 
 ## Links
 
-- [Maven Central artifact](https://central.sonatype.com/artifact/io.github.trethore/graphene-ui)
+- [Maven Central artifact for Minecraft 26.2](https://central.sonatype.com/artifact/io.github.trethore/graphene-ui-26.2)
+- [Maven Central artifact for Minecraft 1.21.11](https://central.sonatype.com/artifact/io.github.trethore/graphene-ui-1.21.11)
 - [Modrinth project](https://modrinth.com/mod/grapheneui)
 - [GitHub Releases](https://github.com/trethore/graphene/releases)
 - [First web-screen tutorial](../tutorials/first-web-screen.md)

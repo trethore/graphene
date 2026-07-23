@@ -52,10 +52,10 @@ Consumer app and HTTP URL factories are obtained from `GrapheneContext`.
 
 | Type                                                                                                                                                       | Use                                                         |
 |------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------|
-| [`GrapheneWebViewWidget`](../../packages/fabric-1.21.11/src/main/java/io/github/trethore/graphene/fabric/api/widget/GrapheneWebViewWidget.java)            | Add an interactive browser to a Minecraft screen.           |
-| [`BrowserSurface`](../../packages/fabric-1.21.11/src/main/java/io/github/trethore/graphene/fabric/api/surface/BrowserSurface.java)                         | Own and render a browser session through a custom GUI path. |
-| [`BrowserSurfaceInputAdapter`](../../packages/fabric-1.21.11/src/main/java/io/github/trethore/graphene/fabric/api/surface/BrowserSurfaceInputAdapter.java) | Translate Minecraft and GLFW input for a custom surface.    |
-| [`GrapheneScreens`](../../packages/fabric-1.21.11/src/main/java/io/github/trethore/graphene/fabric/api/screen/GrapheneScreens.java)                        | Read or change automatic web-view closure for a screen.     |
+| [`GrapheneWebViewWidget`](../../packages/fabric-26.2/src/main/java/io/github/trethore/graphene/fabric/api/widget/GrapheneWebViewWidget.java)            | Add an interactive browser to a Minecraft screen.           |
+| [`BrowserSurface`](../../packages/fabric-26.2/src/main/java/io/github/trethore/graphene/fabric/api/surface/BrowserSurface.java)                         | Own and render a browser session through a custom GUI path. |
+| [`BrowserSurfaceInputAdapter`](../../packages/fabric-26.2/src/main/java/io/github/trethore/graphene/fabric/api/surface/BrowserSurfaceInputAdapter.java) | Translate Minecraft and GLFW input for a custom surface.    |
+| [`GrapheneScreens`](../../packages/fabric-26.2/src/main/java/io/github/trethore/graphene/fabric/api/screen/GrapheneScreens.java)                        | Read or change automatic web-view closure for a screen.     |
 
 ## Policy entry points
 

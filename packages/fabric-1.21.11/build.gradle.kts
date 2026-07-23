@@ -134,13 +134,16 @@ tasks.register<Sync>("stageGithubRelease") {
   dependsOn(remapJar)
   from(remapJar.flatMap { it.archiveFile })
   into(layout.buildDirectory.dir("github-release"))
-  rename { "${rootProject.name}-fabric-${minecraftVersion}-${project.version}.jar" }
+}
+
+tasks.named<AbstractArchiveTask>("remapJar") {
+  archiveFileName.set("${rootProject.name}-${project.version}-fabric-${minecraftVersion}.jar")
 }
 
 publishing {
   publications {
     register<MavenPublication>("mavenJava") {
-      artifactId = "graphene-ui"
+      artifactId = "graphene-ui-$minecraftVersion"
       from(components["java"])
 
       pom {

@@ -5,15 +5,24 @@ set -euo pipefail
 repository_root="$(git rev-parse --show-toplevel)"
 cd "$repository_root"
 
-release_version="${1:?Usage: create-central-bundle.sh <release-version>}"
-staging_directory="build/central-portal/staging"
-component_directory="${staging_directory}/io/github/trethore/graphene-ui/${release_version}"
-bundle_path="build/central-portal/central-bundle.zip"
-
-if [[ ! -d "$component_directory" ]]; then
-  echo "Expected staged Maven component at ${component_directory}" >&2
+usage="Usage: create-central-bundle.sh <release-version> <artifact-id>..."
+release_version="${1:?$usage}"
+shift
+if [[ $# -eq 0 ]]; then
+  echo "$usage" >&2
   exit 1
 fi
+
+staging_directory="build/central-portal/staging"
+bundle_path="build/central-portal/central-bundle.zip"
+
+for artifact_id in "$@"; do
+  component_directory="${staging_directory}/io/github/trethore/${artifact_id}/${release_version}"
+  if [[ ! -d "$component_directory" ]]; then
+    echo "Expected staged Maven component at ${component_directory}" >&2
+    exit 1
+  fi
+done
 
 find "$staging_directory" -type f -name 'maven-metadata.xml*' -delete
 

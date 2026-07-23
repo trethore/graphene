@@ -1,0 +1,17 @@
+{
+  "required": true,
+  "package": "io.github.trethore.graphene.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "mixins": [
+    "GuiGraphicsExtractorMixin",
+    "KeyboardHandlerMixin",
+    "MouseHandlerMixin",
+    "ScreenMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "overwrites": {
+    "requireAnnotations": true
+  }
+}
