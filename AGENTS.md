@@ -15,7 +15,7 @@ graphene/                                   # You are here!
     sonar-analysis/                         # Gradle plugin for running SonarQube analysis.
     unpack-sources/                         # Gradle plugin that unpacks dependency and Git reference sources.
   debug-client/                             # Development-only clients and resources for manually testing Graphene.
-    fabric-1.21.11/                         # Fabric debug client for Minecraft 1.21.11.
+    <loader>-<minecraft-version>/           # Loader and Minecraft-version-specific debug client.
       src/main/java/io/github/trethore/graphene/debug/
       src/main/resources/
       build.gradle.kts
@@ -30,7 +30,7 @@ graphene/                                   # You are here!
         resources/assets/grapheneui/        # JavaScript resources injected into Graphene browser sessions.
       src/test/                             # Unit tests and test resources for common functionality.
       build.gradle.kts
-    fabric-1.21.11/                         # Fabric implementation for Minecraft 1.21.11.
+    <loader>-<minecraft-version>/           # Loader and Minecraft-version-specific implementation.
       src/main/
         java/io/github/trethore/graphene/
           fabric/                           # Fabric-specific public APIs and internal integrations.
@@ -55,10 +55,12 @@ graphene/                                   # You are here!
   settings.gradle.kts
 ```
 
+Graphene supports `fabric-1.21.11` and `fabric-26.2`. See `settings.gradle.kts` for more information.
+
 ## General Coding Conventions
 
 - `packages/common` should contain only the version-independent logic that is shared across all Minecraft implementations.
-- `packages/<loader>-<version>` should contain version-dependent code, like the mod entry point, integration logic, mixins, and Minecraft/loader dependencies.
+- `packages/<loader>-<minecraft-version>` should contain version-dependent code, like the mod entry point, integration logic, mixins, and Minecraft/loader dependencies.
 - Avoid comments unless documentation is explicitly requested.
 - Assume contributors use IntelliJ IDEA, and keep code free of IDE warnings.
 
