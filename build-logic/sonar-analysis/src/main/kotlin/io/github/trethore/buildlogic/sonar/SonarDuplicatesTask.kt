@@ -54,7 +54,7 @@ abstract class SonarDuplicatesTask : DefaultTask() {
         }
 
         logger.lifecycle("")
-        logger.lifecycle("Duplicates to fix:")
+        logger.lifecycle("Duplicate groups:")
         duplicateGroups.forEachIndexed { index, duplicateGroup ->
             logger.lifecycle("  ${index + 1}. ${formatGroupSize(duplicateGroup)}")
             duplicateGroup.occurrences.forEach { occurrence ->
