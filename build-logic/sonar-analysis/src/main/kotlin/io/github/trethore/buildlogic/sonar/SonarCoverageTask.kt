@@ -9,6 +9,10 @@ import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
 
 abstract class SonarCoverageTask : DefaultTask() {
+    private companion object {
+        const val LINES_TO_COVER = "lines_to_cover"
+    }
+
     @get:Input
     abstract val hostUrl: Property<String>
 
@@ -37,6 +41,17 @@ abstract class SonarCoverageTask : DefaultTask() {
         logLineCoverage(measures)
         logPercentage("Branches", measures["branch_coverage"])
         logPercentage("New code", measures["new_coverage"])
+
+        if ((measures[LINES_TO_COVER]?.toIntOrNull() ?: 0) > 0) {
+            val files = fetchFiles(client, sonarProjectKey)
+            if (files.isNotEmpty()) {
+                logger.lifecycle("")
+                logger.lifecycle("Files with lines to cover:")
+                files.forEach { file ->
+                    logger.lifecycle("  ${file.path}: ${file.linesToCover}")
+                }
+            }
+        }
     }
 
     private fun fetchMeasures(
@@ -48,7 +63,7 @@ abstract class SonarCoverageTask : DefaultTask() {
             "line_coverage",
             "branch_coverage",
             "new_coverage",
-            "lines_to_cover",
+            LINES_TO_COVER,
             "uncovered_lines",
         ).joinToString(",")
         val payload = client.get(
@@ -62,13 +77,46 @@ abstract class SonarCoverageTask : DefaultTask() {
         return sonarMeasureValues(component)
     }
 
+    private fun fetchFiles(
+        client: SonarApiClient,
+        sonarProjectKey: String,
+    ): List<CoverageFile> {
+        return client.getComponentTreeComponents(
+            parameters = mapOf(
+                "component" to sonarProjectKey,
+                "metricKeys" to LINES_TO_COVER,
+                "qualifiers" to "FIL",
+                "strategy" to "leaves",
+                "metricSort" to LINES_TO_COVER,
+                "metricSortFilter" to "withMeasuresOnly",
+                "s" to "metric",
+                "asc" to "false",
+            ),
+            responseName = "coverage files",
+            transform = ::coverageFile,
+        )
+    }
+
+    private fun coverageFile(component: Map<*, *>): CoverageFile? {
+        val linesToCover = sonarMeasureValues(component)[LINES_TO_COVER]?.toIntOrNull() ?: 0
+        if (linesToCover <= 0) {
+            return null
+        }
+
+        val path = component["path"]?.toString()
+            ?: component["name"]?.toString()
+            ?: component["key"]?.toString()
+            ?: "unknown"
+        return CoverageFile(path, linesToCover)
+    }
+
     private fun logPercentage(label: String, value: String?) {
         logger.lifecycle("  $label: ${value?.let { "$it%" } ?: "not available"}")
     }
 
     private fun logLineCoverage(measures: Map<String, String>) {
         val coverage = measures["line_coverage"]
-        val linesToCover = measures["lines_to_cover"]?.toIntOrNull()
+        val linesToCover = measures[LINES_TO_COVER]?.toIntOrNull()
         val uncoveredLines = measures["uncovered_lines"]?.toIntOrNull()
         val coveredLines = if (linesToCover != null && uncoveredLines != null) {
             linesToCover - uncoveredLines
@@ -83,4 +131,9 @@ abstract class SonarCoverageTask : DefaultTask() {
 
         logger.lifecycle("  Lines: ${coverage?.let { "$it%" } ?: "not available"}$lineCount")
     }
+
+    private data class CoverageFile(
+        val path: String,
+        val linesToCover: Int,
+    )
 }

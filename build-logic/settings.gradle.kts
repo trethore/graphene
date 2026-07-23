@@ -11,4 +11,4 @@ include("architecture-check")
 
 include("unpack-sources")
 
-include("sonar")
+include("sonar-analysis")

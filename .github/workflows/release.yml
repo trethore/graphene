@@ -14,9 +14,14 @@ on:
           - github-release
           - github-packages
       version:
-        description: Release version (defaults to mod_version from gradle.properties)
+        description: Release version (defaults to the version catalog)
         required: false
         type: string
+      draft:
+        description: Create the GitHub release as a draft
+        required: true
+        type: boolean
+        default: false
 
 concurrency:
   group: release
@@ -225,13 +230,23 @@ jobs:
 
       - name: create github release
         env:
+          DRAFT: ${{ inputs.draft }}
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
           RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           set -euo pipefail
-          gh release create "$RELEASE_TAG" release/*.jar \
-            --repo "$GITHUB_REPOSITORY" \
-            --target "$GITHUB_SHA" \
-            --title "Graphene ${RELEASE_VERSION}" \
+          arguments=(
+            release create "$RELEASE_TAG"
+            release/*.jar
+            --repo "$GITHUB_REPOSITORY"
+            --target "$GITHUB_SHA"
+            --title "Graphene ${RELEASE_VERSION}"
             --notes-file release/RELEASE_NOTES.md
+          )
+
+          if [[ "$DRAFT" == "true" ]]; then
+            arguments+=(--draft)
+          fi
+
+          gh "${arguments[@]}"

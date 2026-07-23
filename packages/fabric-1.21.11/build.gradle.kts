@@ -4,16 +4,16 @@ import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
 
 plugins {
-  id("net.fabricmc.fabric-loom-remap")
+  alias(libs.plugins.fabric.loom.remap)
   id("io.github.trethore.architecture-check")
   `maven-publish`
   signing
 }
 
 val minecraftVersion = "1.21.11"
-val loaderVersion = providers.gradleProperty("loader_version").get()
+val loaderVersion = libs.versions.fabric.loader.get()
 val fabricApiVersion = "0.141.4+1.21.11"
-val jcefGithubVersion = providers.gradleProperty("jcefgithub_version").get()
+val jcefGithubVersion = libs.versions.jcefgithub.get()
 val mavenCentralSigningKey = providers.environmentVariable("MAVEN_GPG_PRIVATE_KEY")
 val mavenCentralSigningPassphrase = providers.environmentVariable("MAVEN_GPG_PASSPHRASE")
 val isMavenCentralPublishRequested =
@@ -60,7 +60,7 @@ configurations.include {
 dependencies {
   unpack(minecraft("com.mojang:minecraft:$minecraftVersion"))
   mappings(loom.officialMojangMappings())
-  modImplementation("net.fabricmc:fabric-loader:$loaderVersion")
+  modImplementation(libs.fabric.loader)
   unpack(modImplementation("net.fabricmc.fabric-api:fabric-api:$fabricApiVersion"))
 
   embeddedCommon(project(":packages:common"))
@@ -207,7 +207,7 @@ tasks.withType<GenerateModuleMetadata>().configureEach {
 
 if (isMavenCentralPublishRequested) {
   check(!project.version.toString().endsWith("-SNAPSHOT")) {
-    "Maven Central publishing requires a non-SNAPSHOT mod_version"
+    "Maven Central publishing requires a non-SNAPSHOT release version"
   }
   check(mavenCentralSigningKey.isPresent) {
     "Maven Central publishing requires MAVEN_GPG_PRIVATE_KEY"

@@ -6,16 +6,15 @@ plugins {
   id("io.github.trethore.architecture-check")
 }
 
-val jcefGithubVersion = providers.gradleProperty("jcefgithub_version").get()
-val slf4jApiVersion = providers.gradleProperty("slf4j_api_version").get()
+val jcefGithubVersion = libs.versions.jcefgithub.get()
 
 configurations.testImplementation {
   extendsFrom(configurations.compileOnly.get())
 }
 
 dependencies {
-  compileOnly("com.google.code.gson:gson:${providers.gradleProperty("gson_version").get()}")
-  compileOnly("org.slf4j:slf4j-api:$slf4jApiVersion")
+  compileOnly(libs.gson)
+  compileOnly(libs.slf4j.api)
 
   implementation("io.github.trethore:jcefgithub:${jcefGithubVersion}:all-relocated") {
     isTransitive = false

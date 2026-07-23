@@ -9,6 +9,9 @@ plugins {
   id("example.sonar")
 }
 
+val modVersion = providers.gradleProperty("mod_version").orElse(libs.versions.mod)
+val junitJupiter = libs.junit.jupiter
+
 spotless {
   java {
     target("**/src/**/*.java")
@@ -53,7 +56,7 @@ spotless {
 }
 
 allprojects {
-  version = providers.gradleProperty("mod_version").get()
+  version = modVersion.get()
   group = providers.gradleProperty("maven_group").get()
 
   repositories {
@@ -72,9 +75,7 @@ allprojects {
 subprojects {
   plugins.withType<JavaPlugin> {
     dependencies {
-      "testImplementation"(
-          "org.junit.jupiter:junit-jupiter:${providers.gradleProperty("junit_version").get()}"
-      )
+      "testImplementation"(junitJupiter)
       "testRuntimeOnly"("org.junit.platform:junit-platform-launcher")
     }
 

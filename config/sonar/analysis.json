@@ -1,0 +1,13 @@
+{
+  "properties": {
+    "sonar.inclusions": ["**/*.java"],
+    "sonar.exclusions": ["references/**", "**/build/**"],
+    "sonar.gradle.scanAll": false
+  },
+  "issueExclusions": [
+    {
+      "ruleKey": "java:S4032",
+      "filePattern": "**/*"
+    }
+  ]
+}

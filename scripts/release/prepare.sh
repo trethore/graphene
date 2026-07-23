@@ -8,16 +8,22 @@ cd "$repository_root"
 requested_version="${1:-}"
 release_github="${2:-false}"
 
-read_gradle_property() {
-  local property_name="$1"
-  awk -F= -v property_name="$property_name" \
-    '$1 == property_name { print substr($0, index($0, "=") + 1); exit }' \
-    gradle.properties
+read_catalog_version() {
+  local version_name="$1"
+  python - "$version_name" <<'PY'
+import sys
+import tomllib
+
+with open("gradle/libs.versions.toml", "rb") as catalog_file:
+    catalog = tomllib.load(catalog_file)
+
+print(catalog["versions"][sys.argv[1]])
+PY
 }
 
 version="$requested_version"
 if [[ -z "$version" ]]; then
-  version="$(read_gradle_property mod_version)"
+  version="$(read_catalog_version mod)"
 fi
 
 if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z][0-9A-Za-z.-]*)?$ ]]; then
@@ -28,9 +34,9 @@ fi
 tag="v${version}"
 
 if [[ "$release_github" == "true" ]]; then
-  jcefgithub_version="$(read_gradle_property jcefgithub_version)"
+  jcefgithub_version="$(read_catalog_version jcefgithub)"
   if [[ -z "$jcefgithub_version" ]]; then
-    echo "jcefgithub_version is missing from gradle.properties" >&2
+    echo "jcefgithub is missing from the version catalog" >&2
     exit 1
   fi
 
@@ -43,6 +49,26 @@ if [[ "$release_github" == "true" ]]; then
   : "${GITHUB_SERVER_URL:?GITHUB_SERVER_URL is required for a GitHub release}"
 
   previous_tag="$(gh api "repos/${GITHUB_REPOSITORY}/releases/latest" --jq '.tag_name' 2>/dev/null || true)"
+  changelog_notes="$(python <<'PY'
+import re
+from pathlib import Path
+
+changelog = Path("CHANGELOG.md").read_text()
+match = re.search(
+    r"^## \[Unreleased\]\s*$\n(.*?)(?=^## |\Z)",
+    changelog,
+    flags=re.MULTILINE | re.DOTALL,
+)
+if match is None:
+    raise SystemExit("CHANGELOG.md does not contain an Unreleased section")
+
+notes = match.group(1).strip()
+if not notes:
+    raise SystemExit("The Unreleased section in CHANGELOG.md is empty")
+
+print(notes)
+PY
+)"
 
   {
     echo "## Versions"
@@ -50,10 +76,14 @@ if [[ "$release_github" == "true" ]]; then
     echo "- Graphene: \`${version}\`"
     echo "- jcefgithub: \`${jcefgithub_version}\`"
     echo
+    echo "## Changes"
+    echo
+    echo "$changelog_notes"
+    echo
 
     if [[ -n "$previous_tag" ]] && git rev-parse --verify --quiet "refs/tags/${previous_tag}" >/dev/null; then
       range="${previous_tag}..HEAD"
-      echo "## Changes since ${previous_tag}"
+      echo "## Commits since ${previous_tag}"
     else
       range="HEAD"
       echo "## Recent changes"

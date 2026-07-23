@@ -12,7 +12,7 @@ graphene/                                   # You are here!
   .github/                                  # GitHub config and workflows.
   build-logic/                              # Included Gradle build for custom build logic.
     architecture-check/                     # Gradle plugin for enforcing architecture rules.
-    sonar/                                  # Gradle plugin for running SonarQube analysis.
+    sonar-analysis/                         # Gradle plugin for running SonarQube analysis.
     unpack-sources/                         # Gradle plugin that unpacks dependency and Git reference sources.
   debug-client/                             # Development-only clients and resources for manually testing Graphene.
     fabric-1.21.11/                         # Fabric debug client for Minecraft 1.21.11.
@@ -49,6 +49,7 @@ graphene/                                   # You are here!
       nested/                               # Source code of the nested jars.
   .gitignore
   build.gradle.kts                          # Root Gradle config shared by all projects
+  CHANGELOG.md
   gradle.properties                         # Shared version and dependency properties.
   README.md
   settings.gradle.kts

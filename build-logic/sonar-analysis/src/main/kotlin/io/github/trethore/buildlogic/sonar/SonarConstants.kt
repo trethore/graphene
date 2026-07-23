@@ -4,7 +4,7 @@ object SonarConstants {
     const val ANALYSIS_TIMEOUT_SECONDS = 300L
     const val COVERAGE_TASK_NAME = "sonarCoverage"
     const val DEFAULT_HOST_URL = "http://localhost:9000"
-    const val DUPLICATE_TASK_NAME = "sonarDuplicate"
+    const val DUPLICATES_TASK_NAME = "sonarDuplicates"
     const val HOST_URL_ENV = "SONAR_HOST_URL"
     const val ISSUES_TASK_NAME = "sonarIssues"
     const val MAX_PAGES = 1_000

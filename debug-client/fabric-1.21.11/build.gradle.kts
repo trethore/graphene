@@ -1,15 +1,15 @@
 plugins {
-  id("net.fabricmc.fabric-loom-remap")
+  alias(libs.plugins.fabric.loom.remap)
 }
 
 val targetMinecraftVersion = "1.21.11"
-val loaderVersion = providers.gradleProperty("loader_version").get()
+val loaderVersion = libs.versions.fabric.loader.get()
 val fabricApiVersion = "0.141.4+1.21.11"
 val grapheneProject = project(":packages:fabric-1.21.11")
 val grapheneMainSourceSet = grapheneProject.extensions.getByType<SourceSetContainer>().named("main")
 val commonProject = project(":packages:common")
 val commonMainSourceSet = commonProject.extensions.getByType<SourceSetContainer>().named("main")
-val jcefGithubVersion = providers.gradleProperty("jcefgithub_version").get()
+val jcefGithubVersion = libs.versions.jcefgithub.get()
 val resourceProperties =
     mapOf(
         "version" to project.version.toString(),
@@ -54,11 +54,11 @@ loom {
 dependencies {
   minecraft("com.mojang:minecraft:$targetMinecraftVersion")
   mappings(loom.officialMojangMappings())
-  modImplementation("net.fabricmc:fabric-loader:$loaderVersion")
+  modImplementation(libs.fabric.loader)
   modImplementation("net.fabricmc.fabric-api:fabric-api:$fabricApiVersion")
   implementation(files(grapheneMainSourceSet.map { it.output }))
   implementation(files(commonMainSourceSet.map { it.output }))
-  implementation("com.google.code.gson:gson:${providers.gradleProperty("gson_version").get()}")
+  implementation(libs.gson)
   runtimeOnly("io.github.trethore:jcefgithub:${jcefGithubVersion}:all-relocated") {
     isTransitive = false
   }

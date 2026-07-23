@@ -25,16 +25,27 @@ class SonarConventionsPlugin : Plugin<Project> {
         val sonarHostUrl = envValue(SonarConstants.HOST_URL_ENV)
             .orElse(SonarConstants.DEFAULT_HOST_URL)
         val sonarMetadataFile = project.layout.buildDirectory.file("sonar/report-task.txt")
+        val sonarConfiguration =
+            SonarConfiguration.load(project.rootProject.file("config/sonar/analysis.json"))
 
         project.extensions.configure<SonarExtension> {
             properties {
+                sonarConfiguration.properties.forEach { (name, value) -> property(name, value) }
+
+                val issueExclusionIds = sonarConfiguration.issueExclusions.indices.map { "json${it + 1}" }
+                if (issueExclusionIds.isNotEmpty()) {
+                    property("sonar.issue.ignore.multicriteria", issueExclusionIds)
+                    sonarConfiguration.issueExclusions.forEachIndexed { index, exclusion ->
+                        val id = issueExclusionIds[index]
+                        property("sonar.issue.ignore.multicriteria.$id.ruleKey", exclusion.ruleKey)
+                        property("sonar.issue.ignore.multicriteria.$id.resourceKey", exclusion.filePattern)
+                    }
+                }
+
                 property("sonar.projectKey", project.rootProject.name)
                 property("sonar.projectName", project.rootProject.name)
                 property("sonar.host.url", sonarHostUrl.get())
                 property("sonar.scanner.metadataFilePath", sonarMetadataFile.get().asFile.absolutePath)
-                property("sonar.inclusions", "**/*.java")
-                property("sonar.exclusions", "references/**,**/build/**")
-                property("sonar.gradle.scanAll", "false")
 
                 val token = sonarToken.orNull
                 if (!token.isNullOrBlank()) {
@@ -63,7 +74,7 @@ class SonarConventionsPlugin : Plugin<Project> {
             token.set(sonarToken)
         }
 
-        project.tasks.register<SonarDuplicateTask>(SonarConstants.DUPLICATE_TASK_NAME) {
+        project.tasks.register<SonarDuplicatesTask>(SonarConstants.DUPLICATES_TASK_NAME) {
             group = SonarConstants.TASK_GROUP
             description = "Runs SonarQube analysis and reports duplicated code for this project."
             dependsOn(SonarConstants.SONAR_TASK_NAME)
