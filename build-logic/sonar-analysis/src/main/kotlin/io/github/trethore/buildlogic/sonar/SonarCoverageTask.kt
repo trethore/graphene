@@ -10,7 +10,9 @@ import org.gradle.api.tasks.TaskAction
 
 abstract class SonarCoverageTask : DefaultTask() {
     private companion object {
+        const val LINE_COVERAGE = "line_coverage"
         const val LINES_TO_COVER = "lines_to_cover"
+        const val UNCOVERED_LINES = "uncovered_lines"
     }
 
     @get:Input
@@ -42,13 +44,16 @@ abstract class SonarCoverageTask : DefaultTask() {
         logPercentage("Branches", measures["branch_coverage"])
         logPercentage("New code", measures["new_coverage"])
 
-        if ((measures[LINES_TO_COVER]?.toIntOrNull() ?: 0) > 0) {
+        if ((measures[UNCOVERED_LINES]?.toIntOrNull() ?: 0) > 0) {
             val files = fetchFiles(client, sonarProjectKey)
             if (files.isNotEmpty()) {
                 logger.lifecycle("")
-                logger.lifecycle("Files with lines to cover:")
+                logger.lifecycle("Files with uncovered lines:")
                 files.forEach { file ->
-                    logger.lifecycle("  ${file.path}: ${file.linesToCover}")
+                    logger.lifecycle(
+                        "  ${file.path}: ${file.lineCoverage?.let { "$it%" } ?: "not available"} " +
+                            "(${file.coveredLines}/${file.linesToCover} covered)"
+                    )
                 }
             }
         }
@@ -60,11 +65,11 @@ abstract class SonarCoverageTask : DefaultTask() {
     ): Map<String, String> {
         val metricKeys = listOf(
             "coverage",
-            "line_coverage",
+            LINE_COVERAGE,
             "branch_coverage",
             "new_coverage",
             LINES_TO_COVER,
-            "uncovered_lines",
+            UNCOVERED_LINES,
         ).joinToString(",")
         val payload = client.get(
             path = "/api/measures/component",
@@ -84,10 +89,10 @@ abstract class SonarCoverageTask : DefaultTask() {
         return client.getComponentTreeComponents(
             parameters = mapOf(
                 "component" to sonarProjectKey,
-                "metricKeys" to LINES_TO_COVER,
+                "metricKeys" to "$LINE_COVERAGE,$LINES_TO_COVER,$UNCOVERED_LINES",
                 "qualifiers" to "FIL",
                 "strategy" to "leaves",
-                "metricSort" to LINES_TO_COVER,
+                "metricSort" to UNCOVERED_LINES,
                 "metricSortFilter" to "withMeasuresOnly",
                 "s" to "metric",
                 "asc" to "false",
@@ -98,16 +103,23 @@ abstract class SonarCoverageTask : DefaultTask() {
     }
 
     private fun coverageFile(component: Map<*, *>): CoverageFile? {
-        val linesToCover = sonarMeasureValues(component)[LINES_TO_COVER]?.toIntOrNull() ?: 0
-        if (linesToCover <= 0) {
+        val measures = sonarMeasureValues(component)
+        val uncoveredLines = measures[UNCOVERED_LINES]?.toIntOrNull() ?: 0
+        if (uncoveredLines <= 0) {
             return null
         }
 
+        val linesToCover = measures[LINES_TO_COVER]?.toIntOrNull() ?: 0
         val path = component["path"]?.toString()
             ?: component["name"]?.toString()
             ?: component["key"]?.toString()
             ?: "unknown"
-        return CoverageFile(path, linesToCover)
+        return CoverageFile(
+            path = path,
+            lineCoverage = measures[LINE_COVERAGE],
+            coveredLines = linesToCover - uncoveredLines,
+            linesToCover = linesToCover,
+        )
     }
 
     private fun logPercentage(label: String, value: String?) {
@@ -115,9 +127,9 @@ abstract class SonarCoverageTask : DefaultTask() {
     }
 
     private fun logLineCoverage(measures: Map<String, String>) {
-        val coverage = measures["line_coverage"]
+        val coverage = measures[LINE_COVERAGE]
         val linesToCover = measures[LINES_TO_COVER]?.toIntOrNull()
-        val uncoveredLines = measures["uncovered_lines"]?.toIntOrNull()
+        val uncoveredLines = measures[UNCOVERED_LINES]?.toIntOrNull()
         val coveredLines = if (linesToCover != null && uncoveredLines != null) {
             linesToCover - uncoveredLines
         } else {
@@ -134,6 +146,8 @@ abstract class SonarCoverageTask : DefaultTask() {
 
     private data class CoverageFile(
         val path: String,
+        val lineCoverage: String?,
+        val coveredLines: Int,
         val linesToCover: Int,
     )
 }
