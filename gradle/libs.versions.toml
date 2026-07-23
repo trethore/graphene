@@ -1,5 +1,5 @@
 [versions]
-mod = "2.0.0"
+mod = "2.1.0"
 fabric-loom = "1.17-SNAPSHOT"
 fabric-loader = "0.19.3"
 gson = "2.13.2"

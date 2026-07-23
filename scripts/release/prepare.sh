@@ -6,69 +6,72 @@ repository_root="$(git rev-parse --show-toplevel)"
 cd "$repository_root"
 
 requested_version="${1:-}"
-release_github="${2:-false}"
+release_github="${RELEASE_GITHUB:-false}"
+draft="${DRAFT:-false}"
+github_release_action=none
+metadata_script="scripts/release/metadata.py"
 
-read_catalog_version() {
-  local version_name="$1"
-  python - "$version_name" <<'PY'
-import sys
-import tomllib
-
-with open("gradle/libs.versions.toml", "rb") as catalog_file:
-    catalog = tomllib.load(catalog_file)
-
-print(catalog["versions"][sys.argv[1]])
-PY
-}
-
-version="$requested_version"
-if [[ -z "$version" ]]; then
-  version="$(read_catalog_version mod)"
+if [[ "$release_github" != "true" && "$release_github" != "false" ]]; then
+  echo "Invalid GitHub release flag: $release_github" >&2
+  exit 1
 fi
-
-if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z][0-9A-Za-z.-]*)?$ ]]; then
-  echo "Invalid release version: $version" >&2
+if [[ "$draft" != "true" && "$draft" != "false" ]]; then
+  echo "Invalid draft flag: $draft" >&2
   exit 1
 fi
 
+version="$("$metadata_script" resolve-version "$requested_version")"
 tag="v${version}"
 
 if [[ "$release_github" == "true" ]]; then
-  jcefgithub_version="$(read_catalog_version jcefgithub)"
-  if [[ -z "$jcefgithub_version" ]]; then
-    echo "jcefgithub is missing from the version catalog" >&2
-    exit 1
-  fi
-
-  if git rev-parse --verify --quiet "refs/tags/${tag}" >/dev/null; then
-    echo "Tag ${tag} already exists" >&2
-    exit 1
-  fi
+  github_release_action=create
+  jcefgithub_version="$("$metadata_script" catalog-version jcefgithub)"
 
   : "${GITHUB_REPOSITORY:?GITHUB_REPOSITORY is required for a GitHub release}"
   : "${GITHUB_SERVER_URL:?GITHUB_SERVER_URL is required for a GitHub release}"
 
-  previous_tag="$(gh api "repos/${GITHUB_REPOSITORY}/releases/latest" --jq '.tag_name' 2>/dev/null || true)"
-  changelog_notes="$(python <<'PY'
-import re
-from pathlib import Path
+  set +e
+  release_data="$(
+    gh api "repos/$GITHUB_REPOSITORY/releases/tags/$tag" \
+      --jq '[.draft, .target_commitish] | @tsv' 2>&1
+  )"
+  release_status=$?
+  set -e
+  if [[ $release_status -ne 0 ]]; then
+    if [[ "$release_data" == *"HTTP 404"* ]]; then
+      release_data=""
+    else
+      echo "Could not inspect GitHub release $tag:" >&2
+      echo "$release_data" >&2
+      exit $release_status
+    fi
+  fi
+  if [[ -n "$release_data" ]]; then
+    IFS=$'\t' read -r is_draft target_commitish <<< "$release_data"
+    if [[ "$is_draft" != "true" ]]; then
+      echo "GitHub release $tag already exists and is not a draft" >&2
+      exit 1
+    fi
+    if [[ "$draft" == "true" ]]; then
+      echo "Draft GitHub release $tag already exists" >&2
+      exit 1
+    fi
 
-changelog = Path("CHANGELOG.md").read_text()
-match = re.search(
-    r"^## \[Unreleased\]\s*$\n(.*?)(?=^## |\Z)",
-    changelog,
-    flags=re.MULTILINE | re.DOTALL,
-)
-if match is None:
-    raise SystemExit("CHANGELOG.md does not contain an Unreleased section")
+    current_commit="$(git rev-parse HEAD)"
+    if [[ "$target_commitish" != "$current_commit" ]]; then
+      echo "Draft GitHub release $tag targets $target_commitish instead of $current_commit" >&2
+      exit 1
+    fi
+    github_release_action=promote
+  elif git rev-parse --verify --quiet "refs/tags/${tag}" >/dev/null; then
+    echo "Tag ${tag} already exists without a draft GitHub release" >&2
+    exit 1
+  fi
 
-notes = match.group(1).strip()
-if not notes:
-    raise SystemExit("The Unreleased section in CHANGELOG.md is empty")
-
-print(notes)
-PY
-)"
+  previous_tag="$(
+    git describe --tags --abbrev=0 --match 'v*' --exclude "$tag" HEAD 2>/dev/null || true
+  )"
+  changelog_notes="$("$metadata_script" unreleased)"
 
   {
     echo "## Versions"
@@ -79,34 +82,15 @@ PY
     echo "## Changes"
     echo
     echo "$changelog_notes"
-    echo
 
-    if [[ -n "$previous_tag" ]] && git rev-parse --verify --quiet "refs/tags/${previous_tag}" >/dev/null; then
-      range="${previous_tag}..HEAD"
-      echo "## Commits since ${previous_tag}"
-    else
-      range="HEAD"
-      echo "## Recent changes"
-    fi
-
-    echo
-    commit_count="$(git rev-list --count "$range")"
-    if [[ "$commit_count" -eq 0 ]]; then
-      echo "No commits since the previous release."
-    else
-      git log "$range" --max-count=10 --format='%H%x09%h%x09%s' |
-        while IFS=$'\t' read -r full_hash short_hash subject; do
-          printf -- '- %s ([`%s`](%s/%s/commit/%s))\n' \
-            "$subject" "$short_hash" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$full_hash"
-        done
-
-      if [[ "$commit_count" -gt 10 ]]; then
-        echo
-        echo "_Showing the 10 most recent of ${commit_count} commits._"
-      fi
+    if [[ -n "$previous_tag" ]]; then
+      echo
+      printf '**Full Changelog:** [`%s...%s`](%s/%s/compare/%s...%s)\n' \
+        "$previous_tag" "$tag" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$previous_tag" "$tag"
     fi
   } > RELEASE_NOTES.md
 fi
 
 echo "version=${version}"
 echo "tag=${tag}"
+echo "github_release_action=${github_release_action}"

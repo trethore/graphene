@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       target:
-        description: Release destination
+        description: Release destination (ignored in draft mode)
         required: true
         default: all
         type: choice
@@ -14,11 +14,11 @@ on:
           - github-release
           - github-packages
       version:
-        description: Release version (defaults to the version catalog)
+        description: Emergency override; leave empty to use the version catalog
         required: false
         type: string
       draft:
-        description: Create the GitHub release as a draft
+        description: Create only a draft GitHub release
         required: true
         type: boolean
         default: false
@@ -33,6 +33,7 @@ jobs:
     permissions:
       contents: read
     outputs:
+      github_release_action: ${{ steps.metadata.outputs.github_release_action }}
       tag: ${{ steps.metadata.outputs.tag }}
       version: ${{ steps.metadata.outputs.version }}
     steps:
@@ -43,14 +44,15 @@ jobs:
 
       - name: prepare release metadata
         id: metadata
+        run: scripts/release/prepare.sh "$REQUESTED_VERSION" >> "$GITHUB_OUTPUT"
         env:
+          DRAFT: ${{ inputs.draft }}
           GH_TOKEN: ${{ github.token }}
-          RELEASE_GITHUB: ${{ inputs.target == 'all' || inputs.target == 'github-release' }}
+          RELEASE_GITHUB: ${{ inputs.draft || inputs.target == 'all' || inputs.target == 'github-release' }}
           REQUESTED_VERSION: ${{ inputs.version }}
-        run: scripts/release/prepare.sh "$REQUESTED_VERSION" "$RELEASE_GITHUB" >> "$GITHUB_OUTPUT"
 
       - name: upload release metadata
-        if: inputs.target == 'all' || inputs.target == 'github-release'
+        if: inputs.draft || inputs.target == 'all' || inputs.target == 'github-release'
         uses: actions/upload-artifact@v7
         with:
           name: release-metadata
@@ -76,8 +78,10 @@ jobs:
         run: ./gradlew check -Pmod_version="$RELEASE_VERSION"
 
   build:
-    needs: prepare
-    if: inputs.target == 'all' || inputs.target == 'github-release'
+    needs:
+      - prepare
+      - verify
+    if: inputs.draft || inputs.target == 'all' || inputs.target == 'github-release'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -114,7 +118,18 @@ jobs:
     needs:
       - prepare
       - verify
-    if: inputs.target == 'all' || inputs.target == 'maven'
+      - build
+    if: >-
+      ${{
+        always() &&
+        inputs.draft == false &&
+        needs.prepare.result == 'success' &&
+        needs.verify.result == 'success' &&
+        (
+          inputs.target == 'maven' ||
+          (inputs.target == 'all' && needs.build.result == 'success')
+        )
+      }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -184,7 +199,23 @@ jobs:
     needs:
       - prepare
       - verify
-    if: inputs.target == 'all' || inputs.target == 'github-packages'
+      - build
+      - release-maven
+    if: >-
+      ${{
+        always() &&
+        inputs.draft == false &&
+        needs.prepare.result == 'success' &&
+        needs.verify.result == 'success' &&
+        (
+          inputs.target == 'github-packages' ||
+          (
+            inputs.target == 'all' &&
+            needs.build.result == 'success' &&
+            needs.release-maven.result == 'success'
+          )
+        )
+      }}
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -210,7 +241,25 @@ jobs:
       - prepare
       - verify
       - build
-    if: inputs.target == 'all' || inputs.target == 'github-release'
+      - release-maven
+      - release-github-packages
+    if: >-
+      ${{
+        always() &&
+        needs.prepare.result == 'success' &&
+        needs.verify.result == 'success' &&
+        needs.build.result == 'success' &&
+        (
+          inputs.draft ||
+          (inputs.draft == false && inputs.target == 'github-release') ||
+          (
+            inputs.draft == false &&
+            inputs.target == 'all' &&
+            needs.release-maven.result == 'success' &&
+            needs.release-github-packages.result == 'success'
+          )
+        )
+      }}
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -228,14 +277,34 @@ jobs:
           path: release
           merge-multiple: true
 
-      - name: create github release
+      - name: create or publish github release
         env:
           DRAFT: ${{ inputs.draft }}
           GH_TOKEN: ${{ github.token }}
+          RELEASE_ACTION: ${{ needs.prepare.outputs.github_release_action }}
           RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
           RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           set -euo pipefail
+
+          if [[ "$RELEASE_ACTION" == "promote" ]]; then
+            gh release upload "$RELEASE_TAG" release/*.jar \
+              --repo "$GITHUB_REPOSITORY" \
+              --clobber
+            gh release edit "$RELEASE_TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --title "Graphene ${RELEASE_VERSION}" \
+              --notes-file release/RELEASE_NOTES.md \
+              --draft=false
+            exit 0
+          fi
+
+          if [[ "$RELEASE_ACTION" != "create" ]]; then
+            echo "Unsupported GitHub release action: $RELEASE_ACTION" >&2
+            exit 1
+          fi
+
           arguments=(
             release create "$RELEASE_TAG"
             release/*.jar
