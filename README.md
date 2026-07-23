@@ -4,7 +4,7 @@
 [![GitHub Release](https://img.shields.io/github/v/release/trethore/graphene?logo=github&label=Release)](https://github.com/trethore/graphene/releases)
 [![Maven Central 26.2](https://img.shields.io/maven-central/v/io.github.trethore/graphene-ui-26.2?logo=apachemaven&label=Maven%20Central%2026.2)](https://central.sonatype.com/artifact/io.github.trethore/graphene-ui-26.2)
 [![Maven Central 1.21.11](https://img.shields.io/maven-central/v/io.github.trethore/graphene-ui-1.21.11?logo=apachemaven&label=Maven%20Central%201.21.11)](https://central.sonatype.com/artifact/io.github.trethore/graphene-ui-1.21.11)
-[![License](https://img.shields.io/github/license/trethore/graphene)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Graphene is a client-side UI library for Minecraft that lets mod developers build interfaces with web technologies.
 It embeds Chromium through JCEF, so you can render HTML/CSS/JavaScript UIs in-game while keeping a clean Java API for

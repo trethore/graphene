@@ -2,8 +2,9 @@
 
 [![Modrinth](https://img.shields.io/modrinth/dt/grapheneui?logo=modrinth&label=Modrinth)](https://modrinth.com/mod/grapheneui)
 [![GitHub Release](https://img.shields.io/github/v/release/trethore/graphene?logo=github&label=Release)](https://github.com/trethore/graphene/releases)
-[![Maven Central](https://img.shields.io/maven-central/v/io.github.trethore/graphene-ui?logo=apachemaven&label=Maven%20Central)](https://central.sonatype.com/artifact/io.github.trethore/graphene-ui)
-[![License](https://img.shields.io/github/license/trethore/graphene)](https://github.com/trethore/graphene/blob/main/LICENSE)
+[![Maven Central 26.2](https://img.shields.io/maven-central/v/io.github.trethore/graphene-ui-26.2?logo=apachemaven&label=Maven%20Central%2026.2)](https://central.sonatype.com/artifact/io.github.trethore/graphene-ui-26.2)
+[![Maven Central 1.21.11](https://img.shields.io/maven-central/v/io.github.trethore/graphene-ui-1.21.11?logo=apachemaven&label=Maven%20Central%201.21.11)](https://central.sonatype.com/artifact/io.github.trethore/graphene-ui-1.21.11)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/trethore/graphene/blob/main/LICENSE)
 
 Graphene is a client-side UI library for Minecraft that lets mod developers build interfaces with web technologies.
 It embeds Chromium through JCEF, so you can render HTML/CSS/JavaScript UIs in-game while keeping a clean Java API for
@@ -31,7 +32,7 @@ Loader versions.
 
 ## Requirements
 
-- Java: `21`
+- Java: `25` for Minecraft 26.2, `21` for Minecraft 1.21.11
 - GPU: `NVIDIA GeForce GT 720` or better
 - For macOS users: macOS 12 (Monterey) or later
 
@@ -50,8 +51,8 @@ Loader versions.
 ## Installation
 
 Graphene is published on Maven Central. Find the latest version on [GitHub Releases](https://github.com/trethore/graphene/releases),
-[Modrinth](https://modrinth.com/mod/grapheneui), or [Maven Central](https://central.sonatype.com/artifact/io.github.trethore/graphene-ui),
-then add it as a mod dependency in your Fabric project:
+[Modrinth](https://modrinth.com/mod/grapheneui), or the Minecraft-version-specific Maven Central artifacts, then add
+the artifact matching your target Minecraft version as a mod dependency:
 
 ```kotlin
 repositories {
@@ -59,7 +60,9 @@ repositories {
 }
 
 dependencies {
-    modImplementation("io.github.trethore:graphene-ui:<version>")
+    modImplementation("io.github.trethore:graphene-ui-26.2:<version>")
+    // Or for Minecraft 1.21.11:
+    // modImplementation("io.github.trethore:graphene-ui-1.21.11:<version>")
 }
 ```
 
