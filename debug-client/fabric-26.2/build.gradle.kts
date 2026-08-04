@@ -10,13 +10,6 @@ val grapheneMainSourceSet = grapheneProject.extensions.getByType<SourceSetContai
 val commonProject = project(":packages:common")
 val commonMainSourceSet = commonProject.extensions.getByType<SourceSetContainer>().named("main")
 val jcefGithubVersion = libs.versions.jcefgithub.get()
-val resourceProperties =
-    mapOf(
-        "version" to project.version.toString(),
-        "minecraftVersion" to targetMinecraftVersion,
-        "loaderVersion" to loaderVersion,
-        "fabricApiVersion" to fabricApiVersion,
-    )
 val grapheneRuntimeSourceSet =
     sourceSets.create("grapheneRuntime") {
       resources {
@@ -25,11 +18,29 @@ val grapheneRuntimeSourceSet =
       }
     }
 
+fun ProcessResources.expandFabricModProperties() {
+  val resourceProperties =
+      mapOf(
+          "version" to project.version.toString(),
+          "minecraftVersion" to targetMinecraftVersion,
+          "loaderVersion" to loaderVersion,
+          "fabricApiVersion" to fabricApiVersion,
+      )
+  inputs.properties(resourceProperties)
+  filesMatching("fabric.mod.json") {
+    expand(resourceProperties)
+  }
+}
+
 base {
   archivesName = "graphene-debug-$targetMinecraftVersion"
 }
 
 loom {
+  runs.configureEach {
+    preferGradleTask.set(true)
+  }
+
   mods {
     register("grapheneui") {
       sourceSet(grapheneRuntimeSourceSet)
@@ -66,17 +77,11 @@ dependencies {
 
 tasks.processResources {
   from(rootProject.file("debug-client/shared/resources"))
-  inputs.properties(resourceProperties)
-  filesMatching("fabric.mod.json") {
-    expand(resourceProperties)
-  }
+  expandFabricModProperties()
 }
 
 tasks.named<ProcessResources>(grapheneRuntimeSourceSet.processResourcesTaskName) {
-  inputs.properties(resourceProperties)
-  filesMatching("fabric.mod.json") {
-    expand(resourceProperties)
-  }
+  expandFabricModProperties()
 }
 
 tasks.classes {

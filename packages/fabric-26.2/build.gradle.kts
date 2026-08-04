@@ -26,6 +26,10 @@ base {
 }
 
 loom {
+  runs.configureEach {
+    preferGradleTask.set(true)
+  }
+
   runs {
     named("client") {
       displayName.set("Minecraft Client 26.2")
