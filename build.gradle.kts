@@ -6,11 +6,10 @@ import org.jetbrains.qodana.tasks.QodanaScanTask
 plugins {
   alias(libs.plugins.qodana)
   alias(libs.plugins.spotless)
-  `maven-publish`
   id("io.github.trethore.sonar")
 }
 
-val modVersion = libs.versions.mod.get()
+val modVersion = providers.gradleProperty("mod_version").get()
 
 spotless {
   java {
@@ -35,7 +34,7 @@ spotless {
         "debug-client/shared/**/*.js",
         "packages/common/src/main/resources/**/*.js",
     )
-    biome("2.1.0")
+    biome(libs.versions.biome.get())
     trimTrailingWhitespace()
     endWithNewline()
   }

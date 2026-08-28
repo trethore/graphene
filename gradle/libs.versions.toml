@@ -1,5 +1,5 @@
 [versions]
-mod = "2.1.0"
+biome = "2.1.0"
 fabric-loom = "1.17-SNAPSHOT"
 fabric-loader = "0.19.3"
 fabric-api-v12111 = "0.141.6+1.21.11"
@@ -16,6 +16,7 @@ sonarqube-gradle-plugin = "7.3.1.8318"
 spotless = "8.8.0"
 
 [libraries]
+fabric-loom-gradle-plugin = { module = "net.fabricmc:fabric-loom", version.ref = "fabric-loom" }
 fabric-loader = { module = "net.fabricmc:fabric-loader", version.ref = "fabric-loader" }
 fabric-api-v12111 = { module = "net.fabricmc.fabric-api:fabric-api", version.ref = "fabric-api-v12111" }
 fabric-api-v262 = { module = "net.fabricmc.fabric-api:fabric-api", version.ref = "fabric-api-v262" }

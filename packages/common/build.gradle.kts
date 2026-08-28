@@ -5,25 +5,18 @@ plugins {
 }
 
 val javaVersion = JavaLanguageVersion.of(21)
-val jcefGithubVersion = libs.versions.jcefgithub.get()
-
-val compileOnlyAndTestRuntime =
-    configurations.create("compileOnlyAndTestRuntime") {
-      isCanBeConsumed = false
-      isCanBeResolved = false
-    }
-
-configurations {
-  compileOnly { extendsFrom(compileOnlyAndTestRuntime) }
-  testRuntimeOnly { extendsFrom(compileOnlyAndTestRuntime) }
-}
 
 dependencies {
-  compileOnlyAndTestRuntime(libs.gson)
-  compileOnlyAndTestRuntime(libs.slf4j.api)
+  compileOnly(libs.gson)
+  compileOnly(libs.slf4j.api)
+  testImplementation(libs.gson)
+  testImplementation(libs.slf4j.api)
 
-  implementation("io.github.trethore:jcefgithub:${jcefGithubVersion}:all-relocated") {
+  implementation(libs.jcefgithub) {
     isTransitive = false
+    artifact {
+      classifier = "all-relocated"
+    }
   }
 }
 

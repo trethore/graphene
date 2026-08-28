@@ -17,4 +17,6 @@ rootProject.name = "build-logic"
 
 include("architecture-check")
 
+include("graphene-conventions")
+
 include("sonar-analysis")

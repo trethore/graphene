@@ -24,7 +24,7 @@ class SonarConventionsPluginFunctionalTest {
         projectDirectory.resolve("build.gradle").writeText(
             """
             plugins {
-                id 'example.sonar'
+                id 'io.github.trethore.sonar'
             }
 
             tasks.register('verifySonarWiring') {

@@ -1,15 +1,5 @@
 plugins {
   `kotlin-dsl`
-  `java-gradle-plugin`
-}
-
-dependencies {
-  testImplementation(kotlin("test-junit5"))
-  testRuntimeOnly(libs.junit.platform.launcher)
-}
-
-tasks.test {
-  useJUnitPlatform()
 }
 
 gradlePlugin {
