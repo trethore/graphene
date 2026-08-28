@@ -12,17 +12,23 @@ graphene/
   .github/
   build-logic/                              # Included Gradle build for custom build logic.
     architecture-check/                     # Gradle plugin for enforcing architecture rules.
+    graphene-conventions/                   # Gradle conventions that compose shared sources into concrete targets.
     sonar-analysis/                         # Gradle plugin for running SonarQube analysis.
+  config/                                   # Qodana and SonarQube configuration.
   debug-client/                             # Development-only clients and resources for manually testing Graphene.
-    <loader>-<minecraft-version>/           # Loader and Minecraft-version-specific debug client.
+    fabric-shared/                          # Fabric debug entry point and key bindings shared across Fabric targets.
+      src/main/java/io/github/trethore/graphene/debug/
+    shared/                                 # Version-shared debug UI, bridge logic, and web resources for Fabric clients.
+      src/main/java/io/github/trethore/graphene/debug/
+      resources/assets/grapheneui-debug/
+    <loader>-<minecraft-version>/           # Target-specific debug access, metadata, and Gradle configuration.
       src/main/java/io/github/trethore/graphene/debug/
       src/main/resources/
       build.gradle.kts
-    fabric-shared/
-    shared/
   docs/
+  gradle/libs.versions.toml
   packages/
-    common/                                 # Loader-independent Graphene API, runtime, JCEF integration, and web resources.
+    common/                                 # Minecraft- and loader-independent API, runtime, JCEF integration, and web resources.
       src/main/
         java/io/github/trethore/graphene/
           api/                              # Public browser, bridge, configuration, runtime, and URL APIs.
@@ -30,20 +36,27 @@ graphene/
         resources/assets/grapheneui/
       src/test/
       build.gradle.kts
-    <loader>-<minecraft-version>/           # Loader and Minecraft-version-specific implementation.
+    fabric-shared/                          # Fabric and Minecraft integrations shared across Fabric targets.
+      src/main/java/io/github/trethore/graphene/
+        fabric/                             # Shared Fabric public APIs and internal integrations.
+        mixin/
+        FabricBootstrap.java
+      src/test/java/io/github/trethore/graphene/fabric/
+    minecraft-shared/                       # Minecraft-dependent, loader-independent code shared by compatible targets.
+      src/main/java/io/github/trethore/graphene/minecraft/
+      src/test/java/io/github/trethore/graphene/minecraft/
+    <loader>-<minecraft-version>/           # Code, resources, and build configuration specific to one target.
       src/main/
         java/io/github/trethore/graphene/
-          fabric/                           # Fabric-specific public APIs and internal integrations.
+          fabric/                           # Target-specific Fabric APIs and integrations.
+          minecraft/                        # Target-specific Minecraft compatibility code.
           mixin/
-          FabricBootstrap.java
         resources/
           assets/grapheneui/
           fabric.mod.json
           grapheneui.mixins.json
-      src/test/
       build.gradle.kts
-    fabric-shared/
-    minecraft-shared/
+  scripts/release/                          # Release automation scripts.
   .gitignore
   build.gradle.kts
   CHANGELOG.md
@@ -53,13 +66,18 @@ graphene/
   settings.gradle.kts
 ```
 
-Graphene supports `fabric-1.21.11` and `fabric-26.2`. Read `settings.gradle.kts` for more information.
+Graphene supports `fabric-1.21.11` and `fabric-26.2`. Read the related `build.gradle.kts` and `settings.gradle.kts` for more information.
+The shared package and debug-client directories are composed into concrete target source sets by
+`build-logic/graphene-conventions`; they are not standalone Gradle projects.
 
 ## General Coding Conventions
 
-- `packages/common` should contain only the version-independent logic that is shared across all Minecraft implementations.
-- `packages/<loader>-<minecraft-version>` should contain version-dependent code, like the mod entry point, integration logic, mixins, and Minecraft/loader dependencies.
-- Do not write comments unless documentation is explicitly requested by the user.
+- `packages/common` must remain independent of Minecraft, Fabric, Mojang rendering, and LWJGL. Put shared public APIs, runtime logic, JCEF integration, and platform abstractions here.
+- `packages/minecraft-shared` may depend on Minecraft but must not depend on a mod loader. Code in this directory must compile unchanged for every target that includes it.
+- `packages/fabric-shared` may depend on Minecraft and Fabric. Put Fabric-specific code here when it is compatible with all supported Fabric targets.
+- `packages/<loader>-<minecraft-version>` should contain only code, resources, and build configuration that differ for that target. Move code to the narrowest valid shared layer instead of duplicating it between targets.
+- Apply the equivalent placement rules under `debug-client`: use `shared` for target-shared debug behavior and resources, `fabric-shared` for shared Fabric loader integration, and concrete target directories for version-specific adapters.
+- Avoid redundant comments. Add or update Javadocs for public APIs, and use implementation comments only to explain non-obvious constraints or behavior.
 - Assume contributors use IntelliJ IDEA, and keep code free of IDE warnings.
 
 ## Java Expectations
