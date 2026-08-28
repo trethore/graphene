@@ -6,11 +6,16 @@ plugins {
 
 val javaVersion = JavaLanguageVersion.of(21)
 
+configurations {
+  testImplementation {
+    extendsFrom(compileOnly.get())
+  }
+}
+
 dependencies {
   compileOnly(libs.gson)
+  compileOnly(libs.jetbrains.annotations)
   compileOnly(libs.slf4j.api)
-  testImplementation(libs.gson)
-  testImplementation(libs.slf4j.api)
 
   implementation(libs.jcefgithub) {
     isTransitive = false
