@@ -14,7 +14,7 @@ on:
           - github-release
           - github-packages
       version:
-        description: Emergency override; leave empty to use the version catalog
+        description: Emergency override; leave empty to use gradle.properties
         required: false
         type: string
       draft:

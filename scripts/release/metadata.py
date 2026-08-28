@@ -7,6 +7,7 @@ from datetime import date
 from pathlib import Path
 
 CATALOG_PATH = Path("gradle/libs.versions.toml")
+GRADLE_PROPERTIES_PATH = Path("gradle.properties")
 CHANGELOG_PATH = Path("CHANGELOG.md")
 UNRELEASED_PATTERN = re.compile(
     r"^## \[Unreleased\]\s*$\n(.*?)(?=^## |\Z)",
@@ -22,6 +23,15 @@ def catalog_version(name: str) -> str:
         return catalog["versions"][name]
     except KeyError as exception:
         raise SystemExit(f"Version catalog does not contain '{name}'") from exception
+
+
+def gradle_property(name: str) -> str:
+    property_pattern = re.compile(rf"^\s*{re.escape(name)}\s*=\s*(.*?)\s*$")
+    for line in GRADLE_PROPERTIES_PATH.read_text().splitlines():
+        match = property_pattern.fullmatch(line)
+        if match is not None:
+            return match.group(1)
+    raise SystemExit(f"gradle.properties does not contain '{name}'")
 
 
 def validate_version(version: str) -> str:
@@ -87,7 +97,7 @@ def main() -> None:
     if arguments.command == "catalog-version":
         print(catalog_version(arguments.name))
     elif arguments.command == "resolve-version":
-        print(validate_version(arguments.requested or catalog_version("mod")))
+        print(validate_version(arguments.requested or gradle_property("mod_version")))
     elif arguments.command == "unreleased":
         print(unreleased_notes(CHANGELOG_PATH.read_text())[1])
     elif arguments.command == "archive-changelog":
