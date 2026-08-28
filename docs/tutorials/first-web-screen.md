@@ -18,7 +18,7 @@ repositories {
 }
 
 dependencies {
-    modImplementation("io.github.trethore:graphene-ui-26.2:2.1.0")
+    implementation("io.github.trethore:graphene-ui-26.2:2.1.0")
     // Or for Minecraft 1.21.11:
     // modImplementation("io.github.trethore:graphene-ui-1.21.11:2.1.0")
 }
