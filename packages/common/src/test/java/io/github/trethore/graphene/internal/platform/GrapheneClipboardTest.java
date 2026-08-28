@@ -3,6 +3,8 @@ package io.github.trethore.graphene.internal.platform;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.awt.datatransfer.Clipboard;
@@ -13,6 +15,25 @@ import javax.imageio.ImageIO;
 import org.junit.jupiter.api.Test;
 
 class GrapheneClipboardTest {
+    @Test
+    void prefersNativeTextWhenRichClipboardIsStale() {
+        GrapheneClipboardContent richContent = new GrapheneClipboardContent("old", "<b>old</b>", new byte[] {1, 2, 3});
+
+        GrapheneClipboardContent result = richContent.reconcileNativeText("external");
+
+        assertEquals("external", result.text());
+        assertNull(result.html());
+        assertArrayEquals(new byte[0], result.png());
+    }
+
+    @Test
+    void preservesRichClipboardWhenNativeTextMatches() {
+        GrapheneClipboardContent richContent =
+                new GrapheneClipboardContent("shared", "<b>shared</b>", new byte[] {1, 2, 3});
+
+        assertSame(richContent, richContent.reconcileNativeText("shared"));
+    }
+
     @Test
     void transfersTextHtmlAndPng() throws Exception {
         GrapheneClipboard clipboard = new GrapheneClipboard(new Clipboard("graphene-test"));

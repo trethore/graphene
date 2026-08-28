@@ -27,6 +27,10 @@ class DebugClientConventionsPlugin : Plugin<Project> {
             .getByType<SourceSetContainer>()
             .named(SourceSet.MAIN_SOURCE_SET_NAME)
     val sourceSets = project.extensions.getByType<SourceSetContainer>()
+    sourceSets.named(SourceSet.MAIN_SOURCE_SET_NAME).configure {
+      java.srcDir(project.rootProject.file("debug-client/shared/src/main/java"))
+      java.srcDir(project.rootProject.file("debug-client/fabric-shared/src/main/java"))
+    }
     val grapheneRuntimeSourceSet =
         sourceSets.create("grapheneRuntime") {
           resources {

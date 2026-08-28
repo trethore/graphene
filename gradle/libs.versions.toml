@@ -8,6 +8,7 @@ fabric-api-v262 = "0.158.0+26.2"
 minecraft-v262 = "26.2"
 gson = "2.13.2"
 jcefgithub = "146.0.10-jcefgithub.10"
+jetbrains-annotations = "26.0.2"
 junit = "6.1.2"
 palantir-java-format = "2.97.0"
 qodana-gradle-plugin = "2026.2.0"
@@ -24,6 +25,7 @@ minecraft-v12111 = { module = "com.mojang:minecraft", version.ref = "minecraft-v
 minecraft-v262 = { module = "com.mojang:minecraft", version.ref = "minecraft-v262" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 jcefgithub = { module = "io.github.trethore:jcefgithub", version.ref = "jcefgithub" }
+jetbrains-annotations = { module = "org.jetbrains:annotations", version.ref = "jetbrains-annotations" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }

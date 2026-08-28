@@ -7,6 +7,8 @@ import org.gradle.api.plugins.BasePluginExtension
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
+import org.gradle.api.tasks.SourceSet
+import org.gradle.api.tasks.SourceSetContainer
 import org.gradle.api.publish.tasks.GenerateModuleMetadata
 import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
@@ -19,6 +21,8 @@ import org.gradle.kotlin.dsl.withType
 import org.gradle.language.jvm.tasks.ProcessResources
 import org.gradle.plugins.signing.SigningExtension
 
+private const val JAVA_SOURCE_PATTERN = "**/*.java"
+
 @Suppress("unused")
 class FabricPackageConventionsPlugin : Plugin<Project> {
   override fun apply(project: Project) {
@@ -27,6 +31,7 @@ class FabricPackageConventionsPlugin : Plugin<Project> {
     project.pluginManager.apply("signing")
 
     val target = project.grapheneTargetExtension()
+    configureSharedSources(project)
     project.configureFabricPackageRuns()
     configureDependencies(project)
     configureArchitectureChecks(project)
@@ -34,6 +39,18 @@ class FabricPackageConventionsPlugin : Plugin<Project> {
     configureJava(project, target)
     configureArchives(project)
     configurePublishing(project)
+  }
+
+  private fun configureSharedSources(project: Project) {
+    val sourceSets = project.extensions.getByType<SourceSetContainer>()
+    sourceSets.named(SourceSet.MAIN_SOURCE_SET_NAME).configure {
+      java.srcDir(project.rootProject.file("packages/minecraft-shared/src/main/java"))
+      java.srcDir(project.rootProject.file("packages/fabric-shared/src/main/java"))
+    }
+    sourceSets.named(SourceSet.TEST_SOURCE_SET_NAME).configure {
+      java.srcDir(project.rootProject.file("packages/minecraft-shared/src/test/java"))
+      java.srcDir(project.rootProject.file("packages/fabric-shared/src/test/java"))
+    }
   }
 
   private fun configureDependencies(project: Project) {
@@ -54,13 +71,36 @@ class FabricPackageConventionsPlugin : Plugin<Project> {
   private fun configureArchitectureChecks(project: Project) {
     project.extensions.configure<ArchitectureChecksExtension> {
       register("jcefIsolation") {
-        sources.from(project.fileTree("src") { include("**/*.java") })
+        sources.from(
+            project.fileTree("src") { include(JAVA_SOURCE_PATTERN) },
+            project.rootProject.fileTree("packages/minecraft-shared/src") {
+              include(JAVA_SOURCE_PATTERN)
+            },
+            project.rootProject.fileTree("packages/fabric-shared/src") {
+              include(JAVA_SOURCE_PATTERN)
+            },
+        )
         forbiddenImports.addAll(
             "org.cef.",
             "io.github.trethore.jcefgithub.",
         )
         failureMessage.set(
             "Fabric code must not access JCEF directly; use the common API instead."
+        )
+      }
+
+      register("minecraftSharedLoaderIndependence") {
+        sources.from(
+            project.rootProject.fileTree("packages/minecraft-shared/src/main/java") {
+              include(JAVA_SOURCE_PATTERN)
+            }
+        )
+        forbiddenImports.addAll(
+            "net.fabricmc.",
+            "io.github.trethore.graphene.fabric.",
+        )
+        failureMessage.set(
+            "Minecraft-shared code must not depend on a mod loader."
         )
       }
     }
@@ -149,16 +189,24 @@ class FabricPackageConventionsPlugin : Plugin<Project> {
               url.set("https://github.com/trethore/graphene")
             }
             withXml {
-              val dependencies = asNode().get("dependencies") as groovy.util.NodeList
+              val dependencies =
+                  asNode()
+                      .children()
+                      .filterIsInstance<groovy.util.Node>()
+                      .firstOrNull { it.name().toString() == "dependencies" }
+                      ?: return@withXml
               dependencies
-                  .flatMap { (it as groovy.util.Node).children() }
+                  .children()
                   .filterIsInstance<groovy.util.Node>()
                   .filter { dependency ->
-                    val groupId = dependency.get("groupId") as groovy.util.NodeList
-                    val artifactId = dependency.get("artifactId") as groovy.util.NodeList
-                    groupId.text() == projectGroup && artifactId.text() == "common"
+                    val values = dependency.children().filterIsInstance<groovy.util.Node>()
+                    val groupId =
+                        values.firstOrNull { it.name().toString() == "groupId" }?.text()
+                    val artifactId =
+                        values.firstOrNull { it.name().toString() == "artifactId" }?.text()
+                    groupId == projectGroup && artifactId == "common"
                   }
-                  .forEach { dependency -> dependency.parent().remove(dependency) }
+                  .forEach(dependencies::remove)
             }
           }
         }
