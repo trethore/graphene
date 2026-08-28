@@ -18,7 +18,8 @@ graphene/
       src/main/java/io/github/trethore/graphene/debug/
       src/main/resources/
       build.gradle.kts
-    shared/resources/                       # Test pages, scripts, styles, translations, and assets shared by debug clients.
+    fabric-shared/
+    shared/
   docs/
   packages/
     common/                                 # Loader-independent Graphene API, runtime, JCEF integration, and web resources.
@@ -41,6 +42,8 @@ graphene/
           grapheneui.mixins.json
       src/test/
       build.gradle.kts
+    fabric-shared/
+    minecraft-shared/
   .gitignore
   build.gradle.kts
   CHANGELOG.md
