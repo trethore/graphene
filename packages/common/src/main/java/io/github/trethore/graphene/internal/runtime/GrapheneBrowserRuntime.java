@@ -11,51 +11,50 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
 public interface GrapheneBrowserRuntime {
-  void initialize(GrapheneGlobalConfig config);
+    void initialize(GrapheneGlobalConfig config);
 
-  void shutdown();
+    void shutdown();
 
-  OptionalInt remoteDebuggingPort();
+    OptionalInt remoteDebuggingPort();
 
-  CompletionStage<List<DevToolsPageTarget>> devToolsPageTargets();
+    CompletionStage<List<DevToolsPageTarget>> devToolsPageTargets();
 
-  CompletionStage<DevToolsPageTarget> devToolsTargetFor(BrowserSession session);
+    CompletionStage<DevToolsPageTarget> devToolsTargetFor(BrowserSession session);
 
-  BrowserSession createSession(
-      String url, BrowserOptions options, int width, int height, String grapheneHttpBaseUrl);
+    BrowserSession createSession(String url, BrowserOptions options, int width, int height, String grapheneHttpBaseUrl);
 
-  static GrapheneBrowserRuntime disabled() {
-    return new GrapheneBrowserRuntime() {
-      @Override
-      public void initialize(GrapheneGlobalConfig config) {
-        // A disabled browser runtime intentionally allocates no native resources.
-      }
+    static GrapheneBrowserRuntime disabled() {
+        return new GrapheneBrowserRuntime() {
+            @Override
+            public void initialize(GrapheneGlobalConfig config) {
+                // A disabled browser runtime intentionally allocates no native resources.
+            }
 
-      @Override
-      public void shutdown() {
-        // A disabled browser runtime has no native resources to release.
-      }
+            @Override
+            public void shutdown() {
+                // A disabled browser runtime has no native resources to release.
+            }
 
-      @Override
-      public OptionalInt remoteDebuggingPort() {
-        return OptionalInt.empty();
-      }
+            @Override
+            public OptionalInt remoteDebuggingPort() {
+                return OptionalInt.empty();
+            }
 
-      @Override
-      public CompletionStage<List<DevToolsPageTarget>> devToolsPageTargets() {
-        return CompletableFuture.failedFuture(new DevToolsDisabledException());
-      }
+            @Override
+            public CompletionStage<List<DevToolsPageTarget>> devToolsPageTargets() {
+                return CompletableFuture.failedFuture(new DevToolsDisabledException());
+            }
 
-      @Override
-      public CompletionStage<DevToolsPageTarget> devToolsTargetFor(BrowserSession session) {
-        return CompletableFuture.failedFuture(new DevToolsDisabledException());
-      }
+            @Override
+            public CompletionStage<DevToolsPageTarget> devToolsTargetFor(BrowserSession session) {
+                return CompletableFuture.failedFuture(new DevToolsDisabledException());
+            }
 
-      @Override
-      public BrowserSession createSession(
-          String url, BrowserOptions options, int width, int height, String grapheneHttpBaseUrl) {
-        throw new IllegalStateException("Graphene browser runtime is not installed");
-      }
-    };
-  }
+            @Override
+            public BrowserSession createSession(
+                    String url, BrowserOptions options, int width, int height, String grapheneHttpBaseUrl) {
+                throw new IllegalStateException("Graphene browser runtime is not installed");
+            }
+        };
+    }
 }

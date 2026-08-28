@@ -1,0 +1,14 @@
+version: "1.0"
+
+linter: qodana-jvm-community
+
+profile:
+  name: qodana.recommended
+
+exclude:
+  - name: All
+    paths:
+      - build
+      - build-logic/build
+      - packages/common/build
+      - packages/fabric-1.21.11/build

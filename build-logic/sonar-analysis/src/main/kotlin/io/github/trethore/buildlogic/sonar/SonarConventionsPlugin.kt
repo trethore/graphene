@@ -3,6 +3,7 @@ package io.github.trethore.buildlogic.sonar
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPlugin
+import org.gradle.api.tasks.Exec
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
@@ -54,34 +55,45 @@ class SonarConventionsPlugin : Plugin<Project> {
             }
         }
 
-        project.tasks.register<SonarIssuesTask>(SonarConstants.ISSUES_TASK_NAME) {
-            group = SonarConstants.TASK_GROUP
-            description = "Runs SonarQube analysis and lists unresolved issues for this project."
-            dependsOn(SonarConstants.SONAR_TASK_NAME)
-            hostUrl.set(sonarHostUrl)
-            projectKey.set(project.rootProject.name)
-            reportTaskFile.set(sonarMetadataFile)
-            token.set(sonarToken)
+        fun registerReportTask(name: String, taskDescription: String, reportKind: SonarReportKind) {
+            project.tasks.register<SonarReportTask>(name) {
+                group = SonarConstants.TASK_GROUP
+                description = taskDescription
+                dependsOn(SonarConstants.SONAR_TASK_NAME)
+                hostUrl.set(sonarHostUrl)
+                projectKey.set(project.rootProject.name)
+                this.reportKind.set(reportKind)
+                reportTaskFile.set(sonarMetadataFile)
+                token.set(sonarToken)
+            }
         }
 
-        project.tasks.register<SonarCoverageTask>(SonarConstants.COVERAGE_TASK_NAME) {
-            group = SonarConstants.TASK_GROUP
-            description = "Runs SonarQube analysis and shows coverage for this project."
-            dependsOn(SonarConstants.SONAR_TASK_NAME)
-            hostUrl.set(sonarHostUrl)
-            projectKey.set(project.rootProject.name)
-            reportTaskFile.set(sonarMetadataFile)
-            token.set(sonarToken)
-        }
+        registerReportTask(
+            SonarConstants.ISSUES_TASK_NAME,
+            "Runs SonarQube analysis and lists unresolved issues for this project.",
+            SonarReportKind.ISSUES,
+        )
+        registerReportTask(
+            SonarConstants.COVERAGE_TASK_NAME,
+            "Runs SonarQube analysis and shows coverage for this project.",
+            SonarReportKind.COVERAGE,
+        )
+        registerReportTask(
+            SonarConstants.DUPLICATES_TASK_NAME,
+            "Runs SonarQube analysis and reports duplicated code for this project.",
+            SonarReportKind.DUPLICATES,
+        )
 
-        project.tasks.register<SonarDuplicatesTask>(SonarConstants.DUPLICATES_TASK_NAME) {
-            group = SonarConstants.TASK_GROUP
-            description = "Runs SonarQube analysis and reports duplicated code for this project."
-            dependsOn(SonarConstants.SONAR_TASK_NAME)
-            hostUrl.set(sonarHostUrl)
-            projectKey.set(project.rootProject.name)
-            reportTaskFile.set(sonarMetadataFile)
-            token.set(sonarToken)
+        val sonarComposeFile = project.rootProject.file("compose.sonar.yml")
+        project.tasks.register<Exec>(SonarConstants.SONAR_UP_TASK_NAME) {
+            group = SonarConstants.TASK_GROUP_LOCAL
+            description = "Starts the local SonarQube instance."
+            commandLine("docker", "compose", "-f", sonarComposeFile, "up", "-d")
+        }
+        project.tasks.register<Exec>(SonarConstants.SONAR_DOWN_TASK_NAME) {
+            group = SonarConstants.TASK_GROUP_LOCAL
+            description = "Stops the local SonarQube instance."
+            commandLine("docker", "compose", "-f", sonarComposeFile, "down")
         }
 
         project.subprojects.forEach { subproject ->

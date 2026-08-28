@@ -13,74 +13,66 @@ import org.junit.jupiter.api.Test;
 import org.lwjgl.glfw.GLFW;
 
 class BrowserSurfaceInputAdapterTest {
-  @Test
-  void recognizesPlainPasteShortcut() {
-    int shortcutModifier = shortcutModifier();
+    @Test
+    void recognizesPlainPasteShortcut() {
+        int shortcutModifier = shortcutModifier();
 
-    assertTrue(BrowserSurfaceInputAdapter.isPasteShortcut(GLFW.GLFW_KEY_V, shortcutModifier));
-    assertFalse(BrowserSurfaceInputAdapter.isPasteShortcut(GLFW.GLFW_KEY_V, 0));
-    assertFalse(
-        BrowserSurfaceInputAdapter.isPasteShortcut(
-            GLFW.GLFW_KEY_V, shortcutModifier | GLFW.GLFW_MOD_SHIFT));
-    assertFalse(BrowserSurfaceInputAdapter.isPasteShortcut(GLFW.GLFW_KEY_C, shortcutModifier));
-  }
+        assertTrue(BrowserSurfaceInputAdapter.isPasteShortcut(GLFW.GLFW_KEY_V, shortcutModifier));
+        assertFalse(BrowserSurfaceInputAdapter.isPasteShortcut(GLFW.GLFW_KEY_V, 0));
+        assertFalse(
+                BrowserSurfaceInputAdapter.isPasteShortcut(GLFW.GLFW_KEY_V, shortcutModifier | GLFW.GLFW_MOD_SHIFT));
+        assertFalse(BrowserSurfaceInputAdapter.isPasteShortcut(GLFW.GLFW_KEY_C, shortcutModifier));
+    }
 
-  @Test
-  void recognizesClipboardWriteShortcuts() {
-    int shortcutModifier = shortcutModifier();
+    @Test
+    void recognizesClipboardWriteShortcuts() {
+        int shortcutModifier = shortcutModifier();
 
-    assertTrue(
-        BrowserSurfaceInputAdapter.isClipboardWriteShortcut(GLFW.GLFW_KEY_C, shortcutModifier));
-    assertTrue(
-        BrowserSurfaceInputAdapter.isClipboardWriteShortcut(GLFW.GLFW_KEY_X, shortcutModifier));
-    assertFalse(
-        BrowserSurfaceInputAdapter.isClipboardWriteShortcut(GLFW.GLFW_KEY_V, shortcutModifier));
-    assertFalse(BrowserSurfaceInputAdapter.isClipboardWriteShortcut(GLFW.GLFW_KEY_C, 0));
-    assertFalse(
-        BrowserSurfaceInputAdapter.isClipboardWriteShortcut(
-            GLFW.GLFW_KEY_C, shortcutModifier | GLFW.GLFW_MOD_SHIFT));
-  }
+        assertTrue(BrowserSurfaceInputAdapter.isClipboardWriteShortcut(GLFW.GLFW_KEY_C, shortcutModifier));
+        assertTrue(BrowserSurfaceInputAdapter.isClipboardWriteShortcut(GLFW.GLFW_KEY_X, shortcutModifier));
+        assertFalse(BrowserSurfaceInputAdapter.isClipboardWriteShortcut(GLFW.GLFW_KEY_V, shortcutModifier));
+        assertFalse(BrowserSurfaceInputAdapter.isClipboardWriteShortcut(GLFW.GLFW_KEY_C, 0));
+        assertFalse(BrowserSurfaceInputAdapter.isClipboardWriteShortcut(
+                GLFW.GLFW_KEY_C, shortcutModifier | GLFW.GLFW_MOD_SHIFT));
+    }
 
-  @Test
-  void prefersNativeTextWhenRichClipboardIsStale() {
-    GrapheneClipboardContent richContent =
-        new GrapheneClipboardContent("old", "<b>old</b>", new byte[] {1, 2, 3});
+    @Test
+    void prefersNativeTextWhenRichClipboardIsStale() {
+        GrapheneClipboardContent richContent = new GrapheneClipboardContent("old", "<b>old</b>", new byte[] {1, 2, 3});
 
-    GrapheneClipboardContent result =
-        BrowserSurfaceInputAdapter.resolveClipboardContent(richContent, "external");
+        GrapheneClipboardContent result = BrowserSurfaceInputAdapter.resolveClipboardContent(richContent, "external");
 
-    assertEquals("external", result.text());
-    assertNull(result.html());
-    assertArrayEquals(new byte[0], result.png());
-  }
+        assertEquals("external", result.text());
+        assertNull(result.html());
+        assertArrayEquals(new byte[0], result.png());
+    }
 
-  @Test
-  void preservesRichClipboardWhenNativeTextMatches() {
-    GrapheneClipboardContent richContent =
-        new GrapheneClipboardContent("shared", "<b>shared</b>", new byte[] {1, 2, 3});
+    @Test
+    void preservesRichClipboardWhenNativeTextMatches() {
+        GrapheneClipboardContent richContent =
+                new GrapheneClipboardContent("shared", "<b>shared</b>", new byte[] {1, 2, 3});
 
-    GrapheneClipboardContent result =
-        BrowserSurfaceInputAdapter.resolveClipboardContent(richContent, "shared");
+        GrapheneClipboardContent result = BrowserSurfaceInputAdapter.resolveClipboardContent(richContent, "shared");
 
-    assertSame(richContent, result);
-  }
+        assertSame(richContent, result);
+    }
 
-  @Test
-  void preservesUnicodeTextWithoutAllocatingAnUnchangedReplacement() {
-    String text = "\uD83D\uDE00e\u0301";
+    @Test
+    void preservesUnicodeTextWithoutAllocatingAnUnchangedReplacement() {
+        String text = "\uD83D\uDE00e\u0301";
 
-    assertSame(text, BrowserSurfaceInputAdapter.normalizeText(text));
-  }
+        assertSame(text, BrowserSurfaceInputAdapter.normalizeText(text));
+    }
 
-  @Test
-  void normalizesSupportedControlsAndFiltersUnsupportedControls() {
-    assertEquals("a\b\rb", BrowserSurfaceInputAdapter.normalizeText("a\u007F\n\uF700\u0001b"));
-    assertNull(BrowserSurfaceInputAdapter.normalizeText("\uF700\u0001"));
-  }
+    @Test
+    void normalizesSupportedControlsAndFiltersUnsupportedControls() {
+        assertEquals("a\b\rb", BrowserSurfaceInputAdapter.normalizeText("a\u007F\n\uF700\u0001b"));
+        assertNull(BrowserSurfaceInputAdapter.normalizeText("\uF700\u0001"));
+    }
 
-  private static int shortcutModifier() {
-    return System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("mac")
-        ? GLFW.GLFW_MOD_SUPER
-        : GLFW.GLFW_MOD_CONTROL;
-  }
+    private static int shortcutModifier() {
+        return System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("mac")
+                ? GLFW.GLFW_MOD_SUPER
+                : GLFW.GLFW_MOD_CONTROL;
+    }
 }

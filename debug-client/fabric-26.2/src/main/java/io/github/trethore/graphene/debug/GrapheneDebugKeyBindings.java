@@ -9,30 +9,26 @@ import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
 
 final class GrapheneDebugKeyBindings {
-  private static final KeyMapping.Category CATEGORY =
-      KeyMapping.Category.register(Identifier.fromNamespaceAndPath(GrapheneDebugClient.ID, "main"));
-  private static final KeyMapping OPEN_BROWSER =
-      new KeyMapping(
-          "key.grapheneui-debug.open_browser",
-          InputConstants.Type.KEYSYM,
-          GLFW.GLFW_KEY_F10,
-          CATEGORY);
-  private static boolean registered;
+    private static final KeyMapping.Category CATEGORY =
+            KeyMapping.Category.register(Identifier.fromNamespaceAndPath(GrapheneDebugClient.ID, "main"));
+    private static final KeyMapping OPEN_BROWSER = new KeyMapping(
+            "key.grapheneui-debug.open_browser", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_F10, CATEGORY);
+    private static boolean registered;
 
-  private GrapheneDebugKeyBindings() {}
+    private GrapheneDebugKeyBindings() {}
 
-  static void register() {
-    if (registered) {
-      return;
+    static void register() {
+        if (registered) {
+            return;
+        }
+        registered = true;
+        KeyMappingHelper.registerKeyMapping(OPEN_BROWSER);
+        ClientTickEvents.END_CLIENT_TICK.register(GrapheneDebugKeyBindings::onClientTick);
     }
-    registered = true;
-    KeyMappingHelper.registerKeyMapping(OPEN_BROWSER);
-    ClientTickEvents.END_CLIENT_TICK.register(GrapheneDebugKeyBindings::onClientTick);
-  }
 
-  private static void onClientTick(Minecraft minecraft) {
-    while (OPEN_BROWSER.consumeClick()) {
-      minecraft.setScreenAndShow(GrapheneBrowserDebugScreen.instance());
+    private static void onClientTick(Minecraft minecraft) {
+        while (OPEN_BROWSER.consumeClick()) {
+            minecraft.setScreenAndShow(GrapheneBrowserDebugScreen.instance());
+        }
     }
-  }
 }

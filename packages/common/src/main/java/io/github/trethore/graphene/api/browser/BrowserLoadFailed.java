@@ -8,15 +8,11 @@ import java.util.OptionalInt;
  * only be used for diagnostics, not application control flow.
  */
 public record BrowserLoadFailed(
-    String url,
-    boolean mainFrame,
-    BrowserLoadFailureReason reason,
-    String message,
-    OptionalInt diagnosticCode) {
-  public BrowserLoadFailed {
-    url = Objects.requireNonNullElse(url, "");
-    reason = Objects.requireNonNullElse(reason, BrowserLoadFailureReason.UNKNOWN);
-    message = Objects.requireNonNullElse(message, "");
-    Objects.requireNonNull(diagnosticCode, "diagnosticCode");
-  }
+        String url, boolean mainFrame, BrowserLoadFailureReason reason, String message, OptionalInt diagnosticCode) {
+    public BrowserLoadFailed {
+        url = Objects.requireNonNullElse(url, "");
+        reason = Objects.requireNonNullElse(reason, BrowserLoadFailureReason.UNKNOWN);
+        message = Objects.requireNonNullElse(message, "");
+        Objects.requireNonNull(diagnosticCode, "diagnosticCode");
+    }
 }

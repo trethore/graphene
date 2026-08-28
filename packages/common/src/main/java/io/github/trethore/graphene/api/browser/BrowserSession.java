@@ -19,103 +19,103 @@ import java.util.Optional;
  */
 @SuppressWarnings("unused")
 public interface BrowserSession extends AutoCloseable {
-  BrowserOptions options();
+    BrowserOptions options();
 
-  /** Returns the current non-null main-frame URL. Blank URLs are exposed as {@code about:blank}. */
-  String currentUrl();
+    /** Returns the current non-null main-frame URL. Blank URLs are exposed as {@code about:blank}. */
+    String currentUrl();
 
-  /** Returns the current non-null page title, or an empty string when the page has no title. */
-  String currentTitle();
+    /** Returns the current non-null page title, or an empty string when the page has no title. */
+    String currentTitle();
 
-  boolean isClosed();
+    boolean isClosed();
 
-  boolean isLoading();
+    boolean isLoading();
 
-  boolean canGoBack();
+    boolean canGoBack();
 
-  boolean canGoForward();
+    boolean canGoForward();
 
-  BrowserCursor requestedCursor();
+    BrowserCursor requestedCursor();
 
-  void navigate(String url);
+    void navigate(String url);
 
-  void goBack();
+    void goBack();
 
-  void goForward();
+    void goForward();
 
-  void reload();
+    void reload();
 
-  void stopLoading();
+    void stopLoading();
 
-  void executeScript(String script);
+    void executeScript(String script);
 
-  /** Returns the current zoom level. The default level is {@code 0.0}. */
-  double zoomLevel();
+    /** Returns the current zoom level. The default level is {@code 0.0}. */
+    double zoomLevel();
 
-  /** Sets the zoom level. Positive values magnify and negative values reduce the page. */
-  void setZoomLevel(double zoomLevel);
+    /** Sets the zoom level. Positive values magnify and negative values reduce the page. */
+    void setZoomLevel(double zoomLevel);
 
-  /** Resets the zoom level to {@code 0.0}. */
-  void resetZoom();
+    /** Resets the zoom level to {@code 0.0}. */
+    void resetZoom();
 
-  /** Starts a new forward page-text search, replacing any active search. */
-  void startFinding(BrowserFindQuery query);
+    /** Starts a new forward page-text search, replacing any active search. */
+    void startFinding(BrowserFindQuery query);
 
-  /** Continues the active page-text search in the requested direction. */
-  void findNext(BrowserFindDirection direction);
+    /** Continues the active page-text search in the requested direction. */
+    void findNext(BrowserFindDirection direction);
 
-  /** Stops the active page-text search and clears its selection. */
-  void stopFinding();
+    /** Stops the active page-text search and clears its selection. */
+    void stopFinding();
 
-  void resize(int width, int height);
+    void resize(int width, int height);
 
-  void setFocused(boolean focused);
+    void setFocused(boolean focused);
 
-  void sendPointerInput(BrowserPointerInput input);
+    void sendPointerInput(BrowserPointerInput input);
 
-  void sendScrollInput(BrowserScrollInput input);
+    void sendScrollInput(BrowserScrollInput input);
 
-  void sendKeyInput(BrowserKeyInput input);
+    void sendKeyInput(BrowserKeyInput input);
 
-  void sendTextInput(BrowserTextInput input);
+    void sendTextInput(BrowserTextInput input);
 
-  /**
-   * Returns the latest complete frame snapshot, or an empty value before the first paint and after
-   * session closure.
-   */
-  Optional<BrowserFrame> latestFrame();
+    /**
+     * Returns the latest complete frame snapshot, or an empty value before the first paint and after
+     * session closure.
+     */
+    Optional<BrowserFrame> latestFrame();
 
-  /**
-   * Subscribes to frame snapshots delivered on the platform thread. Notifications are latest-only:
-   * at most one is queued per session and intermediate frames may be coalesced. The returned
-   * subscription is idempotently closeable.
-   */
-  GrapheneSubscription onFrame(BrowserFrameListener listener);
+    /**
+     * Subscribes to frame snapshots delivered on the platform thread. Notifications are latest-only:
+     * at most one is queued per session and intermediate frames may be coalesced. The returned
+     * subscription is idempotently closeable.
+     */
+    GrapheneSubscription onFrame(BrowserFrameListener listener);
 
-  GrapheneBridge bridge();
+    GrapheneBridge bridge();
 
-  /** Returns immutable snapshots of downloads that have not reached a terminal state. */
-  List<BrowserDownload> activeDownloads();
+    /** Returns immutable snapshots of downloads that have not reached a terminal state. */
+    List<BrowserDownload> activeDownloads();
 
-  /**
-   * Subscribes to download snapshots delivered on the browser callback thread. The returned
-   * subscription is idempotently closeable.
-   */
-  GrapheneSubscription onDownloadChanged(BrowserDownloadListener listener);
+    /**
+     * Subscribes to download snapshots delivered on the browser callback thread. The returned
+     * subscription is idempotently closeable.
+     */
+    GrapheneSubscription onDownloadChanged(BrowserDownloadListener listener);
 
-  /** Subscribes to load events delivered on the platform thread. */
-  GrapheneSubscription onLoad(BrowserLoadListener listener);
+    /** Subscribes to load events delivered on the platform thread. */
+    GrapheneSubscription onLoad(BrowserLoadListener listener);
 
-  /** Subscribes to deduplicated title changes delivered on the platform thread. */
-  GrapheneSubscription onTitleChanged(BrowserTitleListener listener);
+    /** Subscribes to deduplicated title changes delivered on the platform thread. */
+    GrapheneSubscription onTitleChanged(BrowserTitleListener listener);
 
-  /** Subscribes to deduplicated main-frame URL changes delivered on the platform thread. */
-  GrapheneSubscription onUrlChanged(BrowserUrlListener listener);
+    /** Subscribes to deduplicated main-frame URL changes delivered on the platform thread. */
+    GrapheneSubscription onUrlChanged(BrowserUrlListener listener);
 
-  /** Subscribes to browser console messages delivered on the platform thread. */
-  GrapheneSubscription onConsoleMessage(BrowserConsoleMessageListener listener);
+    /** Subscribes to browser console messages delivered on the platform thread. */
+    GrapheneSubscription onConsoleMessage(BrowserConsoleMessageListener listener);
 
-  /** Closes the browser session. Repeated calls have no additional effect. */
-  @Override
-  void close();
+    /** Closes the browser session. Repeated calls have no additional effect. */
+    @Override
+    void close();
 }

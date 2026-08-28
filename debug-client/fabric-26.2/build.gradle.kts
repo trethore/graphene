@@ -2,14 +2,17 @@ plugins {
   alias(libs.plugins.fabric.loom)
 }
 
-val targetMinecraftVersion = "26.2"
+val javaVersion = JavaLanguageVersion.of(25)
 val loaderVersion = libs.versions.fabric.loader.get()
-val fabricApiVersion = "0.155.2+26.2"
+val targetMinecraftVersion = libs.versions.minecraft.v262.get()
+val fabricApiVersion = libs.versions.fabric.api.v262.get()
 val grapheneProject = project(":packages:fabric-26.2")
-val grapheneMainSourceSet = grapheneProject.extensions.getByType<SourceSetContainer>().named("main")
+val mainSourceSet = "main"
+val grapheneMainSourceSet =
+    grapheneProject.extensions.getByType<SourceSetContainer>().named(mainSourceSet)
 val commonProject = project(":packages:common")
-val commonMainSourceSet = commonProject.extensions.getByType<SourceSetContainer>().named("main")
-val jcefGithubVersion = libs.versions.jcefgithub.get()
+val commonMainSourceSet =
+    commonProject.extensions.getByType<SourceSetContainer>().named(mainSourceSet)
 val grapheneRuntimeSourceSet =
     sourceSets.create("grapheneRuntime") {
       resources {
@@ -39,6 +42,7 @@ base {
 loom {
   runs.configureEach {
     preferGradleTask.set(true)
+    systemProperties.put("fabric.log.disableAnsi", "false")
   }
 
   mods {
@@ -69,8 +73,11 @@ dependencies {
   implementation(files(grapheneMainSourceSet.map { it.output }))
   implementation(files(commonMainSourceSet.map { it.output }))
   implementation(libs.gson)
-  runtimeOnly("io.github.trethore:jcefgithub:${jcefGithubVersion}:all-relocated") {
+  runtimeOnly(libs.jcefgithub) {
     isTransitive = false
+    artifact {
+      classifier = "all-relocated"
+    }
   }
   runtimeOnly(grapheneRuntimeSourceSet.output)
 }
@@ -95,14 +102,6 @@ tasks
       enabled = false
     }
 
-tasks.withType<JavaCompile>().configureEach {
-  options.release = 25
-}
-
 java {
-  toolchain {
-    languageVersion = JavaLanguageVersion.of(25)
-  }
-  sourceCompatibility = JavaVersion.VERSION_25
-  targetCompatibility = JavaVersion.VERSION_25
+  toolchain.languageVersion.set(javaVersion)
 }

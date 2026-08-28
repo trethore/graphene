@@ -2,17 +2,34 @@
 mod = "2.1.0"
 fabric-loom = "1.17-SNAPSHOT"
 fabric-loader = "0.19.3"
+fabric-api-v12111 = "0.141.6+1.21.11"
+minecraft-v12111 = "1.21.11"
+fabric-api-v262 = "0.158.0+26.2"
+minecraft-v262 = "26.2"
 gson = "2.13.2"
-jcefgithub = "146.0.10-jcefgithub.7"
+jcefgithub = "146.0.10-jcefgithub.9"
 junit = "6.1.2"
+palantir-java-format = "2.97.0"
+qodana-gradle-plugin = "2026.2.0"
 slf4j = "2.0.7"
+sonarqube-gradle-plugin = "7.3.1.8318"
+spotless = "8.8.0"
 
 [libraries]
 fabric-loader = { module = "net.fabricmc:fabric-loader", version.ref = "fabric-loader" }
+fabric-api-v12111 = { module = "net.fabricmc.fabric-api:fabric-api", version.ref = "fabric-api-v12111" }
+fabric-api-v262 = { module = "net.fabricmc.fabric-api:fabric-api", version.ref = "fabric-api-v262" }
+minecraft-v12111 = { module = "com.mojang:minecraft", version.ref = "minecraft-v12111" }
+minecraft-v262 = { module = "com.mojang:minecraft", version.ref = "minecraft-v262" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
+jcefgithub = { module = "io.github.trethore:jcefgithub", version.ref = "jcefgithub" }
 junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit" }
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
+sonarqube-gradle-plugin = { module = "org.sonarsource.scanner.gradle:sonarqube-gradle-plugin", version.ref = "sonarqube-gradle-plugin" }
 
 [plugins]
 fabric-loom = { id = "net.fabricmc.fabric-loom", version.ref = "fabric-loom" }
 fabric-loom-remap = { id = "net.fabricmc.fabric-loom-remap", version.ref = "fabric-loom" }
+qodana = { id = "org.jetbrains.qodana", version.ref = "qodana-gradle-plugin" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }

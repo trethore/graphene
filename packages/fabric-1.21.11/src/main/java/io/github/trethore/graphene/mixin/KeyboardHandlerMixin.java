@@ -12,19 +12,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @SuppressWarnings({"java:S100"})
 @Mixin(KeyboardHandler.class)
 abstract class KeyboardHandlerMixin {
-  @Inject(method = "keyPress", at = @At("HEAD"), cancellable = true)
-  private void graphene$routeGlobalKeyToBrowser(
-      long windowHandle, int action, KeyEvent event, CallbackInfo callbackInfo) {
-    if (GrapheneKeyboardHandlerHook.handleKeyPress(windowHandle, action, event)) {
-      callbackInfo.cancel();
+    @Inject(method = "keyPress", at = @At("HEAD"), cancellable = true)
+    private void graphene$routeGlobalKeyToBrowser(
+            long windowHandle, int action, KeyEvent event, CallbackInfo callbackInfo) {
+        if (GrapheneKeyboardHandlerHook.handleKeyPress(windowHandle, action, event)) {
+            callbackInfo.cancel();
+        }
     }
-  }
 
-  @Inject(method = "charTyped", at = @At("HEAD"), cancellable = true)
-  private void graphene$suppressContextMenuCharacter(
-      long windowHandle, CharacterEvent event, CallbackInfo callbackInfo) {
-    if (GrapheneKeyboardHandlerHook.handleCharacterInput(windowHandle)) {
-      callbackInfo.cancel();
+    @Inject(method = "charTyped", at = @At("HEAD"), cancellable = true)
+    private void graphene$suppressContextMenuCharacter(
+            long windowHandle, CharacterEvent event, CallbackInfo callbackInfo) {
+        if (GrapheneKeyboardHandlerHook.handleCharacterInput(windowHandle)) {
+            callbackInfo.cancel();
+        }
     }
-  }
 }

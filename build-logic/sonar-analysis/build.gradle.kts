@@ -1,14 +1,11 @@
 plugins {
   `kotlin-dsl`
-  `java-gradle-plugin`
 }
 
 dependencies {
-  implementation(
-      "org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:${providers.gradleProperty("sonar_gradle_plugin_version").get()}"
-  )
+  implementation(libs.sonarqube.gradle.plugin)
   testImplementation(kotlin("test-junit5"))
-  testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+  testRuntimeOnly(libs.junit.platform.launcher)
 }
 
 tasks.test {
@@ -18,7 +15,7 @@ tasks.test {
 gradlePlugin {
   plugins {
     register("sonarConventions") {
-      id = "example.sonar"
+      id = "io.github.trethore.sonar"
       implementationClass = "io.github.trethore.buildlogic.sonar.SonarConventionsPlugin"
     }
   }

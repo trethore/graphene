@@ -3,10 +3,10 @@ package io.github.trethore.buildlogic.sonar
 import org.gradle.api.GradleException
 
 internal data class SonarDuplicatesReport(
-    val affectedFiles: String?,
-    val duplicatedLines: String?,
+    val affectedFiles: Int?,
+    val duplicatedLines: Int?,
     val duplicatedLinesDensity: String?,
-    val groups: List<SonarDuplicateGroup>,
+    val groups: List<SonarDuplicateGroup>?,
 )
 
 internal data class SonarDuplicateGroup(
@@ -35,26 +35,24 @@ internal class SonarDuplicatesLoader(
 
     fun load(projectKey: String): SonarDuplicatesReport {
         val summary = fetchSummary(projectKey)
-        if (summary[DUPLICATED_FILES]?.toIntOrNull() == 0) {
-            return report(summary, emptyList())
+        val affectedFiles = summary.optionalSonarMetricInt(DUPLICATED_FILES, "duplication summary")
+        val duplicatedLines = summary.optionalSonarMetricInt(DUPLICATED_LINES, "duplication summary")
+        val groups = when (affectedFiles) {
+            null -> null
+            0 -> emptyList()
+            else -> {
+                val duplicatedFiles = fetchDuplicatedFiles(projectKey)
+                if (duplicatedFiles.isEmpty()) {
+                    throw GradleException(
+                        "SonarQube reported $affectedFiles duplicated files, but returned no duplicated file details."
+                    )
+                }
+                fetchDuplicateGroups(duplicatedFiles)
+            }
         }
-
-        val duplicatedFiles = fetchDuplicatedFiles(projectKey)
-        val groups = if (duplicatedFiles.isEmpty()) {
-            emptyList()
-        } else {
-            fetchDuplicateGroups(duplicatedFiles)
-        }
-        return report(summary, groups)
-    }
-
-    private fun report(
-        summary: Map<String, String>,
-        groups: List<SonarDuplicateGroup>,
-    ): SonarDuplicatesReport {
         return SonarDuplicatesReport(
-            affectedFiles = summary[DUPLICATED_FILES],
-            duplicatedLines = summary[DUPLICATED_LINES],
+            affectedFiles = affectedFiles,
+            duplicatedLines = duplicatedLines,
             duplicatedLinesDensity = summary[DUPLICATED_LINES_DENSITY],
             groups = groups,
         )
@@ -66,10 +64,10 @@ internal class SonarDuplicatesLoader(
             parameters = mapOf("component" to projectKey, "metricKeys" to SUMMARY_METRIC_KEYS),
             responseName = "duplication summary",
         )
-        val component = payload["component"] as? Map<*, *>
-            ?: throw GradleException("SonarQube duplication summary response did not contain a component.")
-
-        return sonarMeasureValues(component)
+        return sonarMeasureValues(
+            payload.requiredSonarObject("component", "duplication summary"),
+            "duplication summary",
+        )
     }
 
     private fun fetchDuplicatedFiles(projectKey: String): List<DuplicatedFile> {
@@ -86,23 +84,19 @@ internal class SonarDuplicatesLoader(
             ),
             responseName = "duplication files",
             transform = ::duplicatedFile,
-        )
+        ).sortedBy(DuplicatedFile::path)
     }
 
     private fun duplicatedFile(component: Map<*, *>): DuplicatedFile? {
-        val lines = sonarMeasureValues(component)[DUPLICATED_LINES]?.toIntOrNull() ?: 0
+        val responseName = "duplication file"
+        val lines = sonarMeasureValues(component, responseName)
+            .optionalSonarMetricInt(DUPLICATED_LINES, responseName) ?: return null
         if (lines == 0) {
             return null
         }
 
-        val path = component["path"]?.toString()
-            ?: component["name"]?.toString()
-            ?: component["key"]?.toString()
-            ?: "unknown"
-        val key = component["key"]?.toString()
-            ?: throw GradleException("SonarQube duplication file response did not contain a component key.")
-
-        return DuplicatedFile(key, path)
+        val identity = component.sonarComponentIdentity(responseName)
+        return DuplicatedFile(identity.key, identity.path)
     }
 
     private fun fetchDuplicateGroups(duplicatedFiles: List<DuplicatedFile>): List<SonarDuplicateGroup> {
@@ -110,49 +104,74 @@ internal class SonarDuplicatesLoader(
         val duplicateGroups = linkedSetOf<SonarDuplicateGroup>()
 
         duplicatedFiles.forEach { duplicatedFile ->
+            val responseName = "duplications for ${duplicatedFile.path}"
             val payload = client.get(
                 path = "/api/duplications/show",
                 parameters = mapOf("key" to duplicatedFile.key),
-                responseName = "duplications for ${duplicatedFile.path}",
+                responseName = responseName,
             )
-            val files = (payload["files"] as? Map<*, *>)
-                .orEmpty()
-                .mapNotNull { (reference, value) ->
-                    val file = value as? Map<*, *> ?: return@mapNotNull null
-                    val key = file["key"]?.toString() ?: return@mapNotNull null
+            val files = payload.requiredSonarObject("files", responseName)
+                .map { (reference, value) ->
+                    val file = value as? Map<*, *>
+                        ?: throw GradleException(
+                            "SonarQube $responseName response contained an invalid file for reference $reference."
+                        )
+                    val key = file.requiredSonarString("key", responseName)
                     reference.toString() to (duplicatedFilesByKey[key] ?: DuplicatedFile(
                         key = key,
-                        path = file["name"]?.toString() ?: key,
+                        path = file.optionalSonarString("name", responseName) ?: key,
                     ))
                 }
                 .toMap()
-            val duplications = (payload["duplications"] as? List<*>)
-                .orEmpty()
-                .filterIsInstance<Map<*, *>>()
+            val duplications = payload.requiredSonarArray("duplications", responseName)
 
-            duplications.forEach { duplication ->
-                val occurrences = (duplication["blocks"] as? List<*>)
-                    .orEmpty()
-                    .filterIsInstance<Map<*, *>>()
-                    .mapNotNull { block -> duplicateOccurrence(block, files) }
+            duplications.forEachIndexed { index, rawDuplication ->
+                val duplication = rawDuplication as? Map<*, *>
+                    ?: throw GradleException(
+                        "SonarQube $responseName response contained an invalid duplication at index $index."
+                    )
+                val occurrences = duplication.requiredSonarArray("blocks", responseName)
+                    .mapIndexed { blockIndex, rawBlock ->
+                        val block = rawBlock as? Map<*, *>
+                            ?: throw GradleException(
+                                "SonarQube $responseName response contained an invalid block at index $blockIndex."
+                            )
+                        duplicateOccurrence(block, files, responseName)
+                    }
+                    .distinct()
                     .sortedWith(compareBy(SonarDuplicateOccurrence::path, SonarDuplicateOccurrence::line))
-                if (occurrences.size >= 2) {
-                    duplicateGroups.add(SonarDuplicateGroup(occurrences))
+                if (occurrences.size < 2) {
+                    throw GradleException(
+                        "SonarQube $responseName response contained a duplication with fewer than two occurrences."
+                    )
                 }
+                duplicateGroups.add(SonarDuplicateGroup(occurrences))
             }
         }
 
-        return duplicateGroups.toList()
+        return duplicateGroups.sortedWith(
+            compareBy(
+                { group -> group.occurrences.first().path },
+                { group -> group.occurrences.first().line },
+            )
+        )
     }
 
     private fun duplicateOccurrence(
         block: Map<*, *>,
         files: Map<String, DuplicatedFile>,
-    ): SonarDuplicateOccurrence? {
-        val reference = block["_ref"]?.toString() ?: return null
-        val file = files[reference] ?: return null
-        val line = (block["from"] as? Number)?.toInt() ?: return null
-        val lineCount = (block["size"] as? Number)?.toInt() ?: return null
+        responseName: String,
+    ): SonarDuplicateOccurrence {
+        val reference = block.requiredSonarString("_ref", responseName)
+        val file = files[reference]
+            ?: throw GradleException("SonarQube $responseName response referenced unknown file '$reference'.")
+        val line = block.requiredSonarInt("from", responseName)
+        val lineCount = block.requiredSonarInt("size", responseName)
+        if (line < 1 || lineCount < 1) {
+            throw GradleException(
+                "SonarQube $responseName response contained an invalid duplicate range: line=$line, size=$lineCount"
+            )
+        }
         return SonarDuplicateOccurrence(
             fileKey = file.key,
             path = file.path,
@@ -170,24 +189,15 @@ internal class SonarDuplicatesLoader(
 internal object SonarDuplicatesRenderer {
     fun render(report: SonarDuplicatesReport): List<String> {
         return buildList {
-            add("Duplication summary:")
-            add("  Duplicate groups: ${report.groups.size}")
-            add("  Affected files: ${report.affectedFiles ?: SONAR_NOT_AVAILABLE}")
-            add("  Duplicated lines: ${report.duplicatedLines ?: SONAR_NOT_AVAILABLE}")
-            add("  Duplication density: ${formatSonarPercentage(report.duplicatedLinesDensity)}")
+            add("Groups: ${report.groups?.size ?: SONAR_NOT_AVAILABLE}")
+            add("Affected files: ${report.affectedFiles ?: SONAR_NOT_AVAILABLE}")
+            add("Duplicated lines: ${report.duplicatedLines ?: SONAR_NOT_AVAILABLE}")
+            add("Density: ${formatSonarPercentage(report.duplicatedLinesDensity)}")
 
-            if (report.groups.isNotEmpty()) {
-                add("")
-                add("Duplicate groups:")
-                report.groups.forEachIndexed { index, duplicateGroup ->
-                    add("  ${index + 1}. ${formatGroupSize(duplicateGroup)}")
-                    duplicateGroup.occurrences.forEach { occurrence ->
-                        add(
-                            "     - ${occurrence.path}:${occurrence.line}:1 " +
-                                "(lines ${occurrence.line}-${occurrence.endLine}, " +
-                                "${formatLineCount(occurrence.lineCount)})"
-                        )
-                    }
+            report.groups?.forEachIndexed { index, duplicateGroup ->
+                add("${index + 1}. ${formatGroupSize(duplicateGroup)}")
+                duplicateGroup.occurrences.forEach { occurrence ->
+                    add("- ${occurrence.path}:${formatRange(occurrence)}")
                 }
             }
         }
@@ -202,6 +212,14 @@ internal object SonarDuplicatesRenderer {
             "$minimumLineCount-$maximumLineCount lines"
         }
         return "$lineCount, ${duplicateGroup.occurrences.size} occurrences"
+    }
+
+    private fun formatRange(occurrence: SonarDuplicateOccurrence): String {
+        return if (occurrence.line == occurrence.endLine) {
+            occurrence.line.toString()
+        } else {
+            "${occurrence.line}-${occurrence.endLine}"
+        }
     }
 
     private fun formatLineCount(lineCount: Int): String = "$lineCount ${if (lineCount == 1) "line" else "lines"}"

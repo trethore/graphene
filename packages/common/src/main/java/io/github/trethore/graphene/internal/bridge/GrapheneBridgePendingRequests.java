@@ -11,58 +11,54 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 final class GrapheneBridgePendingRequests {
-  private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneBridgePendingRequests.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneBridgePendingRequests.class);
 
-  private final Map<String, CompletableFuture<String>> pendingById = new ConcurrentHashMap<>();
+    private final Map<String, CompletableFuture<String>> pendingById = new ConcurrentHashMap<>();
 
-  CompletableFuture<String> register(String requestId, Duration timeout) {
-    CompletableFuture<String> responseFuture = new CompletableFuture<>();
-    pendingById.put(requestId, responseFuture);
-    LOGGER.debug(
-        "Registered pending bridge request id={} timeoutMs={} pendingCount={}",
-        requestId,
-        timeout.toMillis(),
-        pendingById.size());
-    responseFuture.orTimeout(timeout.toMillis(), TimeUnit.MILLISECONDS);
-    responseFuture.whenComplete((ignoredResult, ignoredError) -> pendingById.remove(requestId));
-    return responseFuture;
-  }
-
-  void completeSuccess(String requestId, String payloadJson) {
-    CompletableFuture<String> pendingFuture = pendingById.remove(requestId);
-    if (pendingFuture != null) {
-      pendingFuture.complete(payloadJson);
-      if (LOGGER.isDebugEnabled()) {
-        int payloadSize = payloadJson == null ? 0 : payloadJson.length();
+    CompletableFuture<String> register(String requestId, Duration timeout) {
+        CompletableFuture<String> responseFuture = new CompletableFuture<>();
+        pendingById.put(requestId, responseFuture);
         LOGGER.debug(
-            "Completed pending bridge request successfully id={} payloadSize={}",
-            requestId,
-            payloadSize);
-      }
+                "Registered pending bridge request id={} timeoutMs={} pendingCount={}",
+                requestId,
+                timeout.toMillis(),
+                pendingById.size());
+        responseFuture.orTimeout(timeout.toMillis(), TimeUnit.MILLISECONDS);
+        responseFuture.whenComplete((ignoredResult, ignoredError) -> pendingById.remove(requestId));
+        return responseFuture;
     }
-  }
 
-  void completeFailure(String requestId, Throwable throwable) {
-    CompletableFuture<String> pendingFuture = pendingById.remove(requestId);
-    if (pendingFuture != null) {
-      pendingFuture.completeExceptionally(throwable);
-      LOGGER.debug(
-          "Completed pending bridge request as failure id={} reason={}",
-          requestId,
-          throwable.getMessage());
+    void completeSuccess(String requestId, String payloadJson) {
+        CompletableFuture<String> pendingFuture = pendingById.remove(requestId);
+        if (pendingFuture != null) {
+            pendingFuture.complete(payloadJson);
+            if (LOGGER.isDebugEnabled()) {
+                int payloadSize = payloadJson == null ? 0 : payloadJson.length();
+                LOGGER.debug(
+                        "Completed pending bridge request successfully id={} payloadSize={}", requestId, payloadSize);
+            }
+        }
     }
-  }
 
-  void failAll(Throwable throwable) {
-    List<CompletableFuture<String>> pendingFutures = new ArrayList<>(pendingById.values());
-    pendingById.clear();
-    LOGGER.debug(
-        "Failing all pending bridge requests count={} reason={}",
-        pendingFutures.size(),
-        throwable.getMessage());
-
-    for (CompletableFuture<String> pendingFuture : pendingFutures) {
-      pendingFuture.completeExceptionally(throwable);
+    void completeFailure(String requestId, Throwable throwable) {
+        CompletableFuture<String> pendingFuture = pendingById.remove(requestId);
+        if (pendingFuture != null) {
+            pendingFuture.completeExceptionally(throwable);
+            LOGGER.debug(
+                    "Completed pending bridge request as failure id={} reason={}", requestId, throwable.getMessage());
+        }
     }
-  }
+
+    void failAll(Throwable throwable) {
+        List<CompletableFuture<String>> pendingFutures = new ArrayList<>(pendingById.values());
+        pendingById.clear();
+        LOGGER.debug(
+                "Failing all pending bridge requests count={} reason={}",
+                pendingFutures.size(),
+                throwable.getMessage());
+
+        for (CompletableFuture<String> pendingFuture : pendingFutures) {
+            pendingFuture.completeExceptionally(throwable);
+        }
+    }
 }

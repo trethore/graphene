@@ -1,10 +1,10 @@
-# Graphene Changelog
+# Changelog
 
 ## [Unreleased]
 
 ### Added
 
-- Gradle 9.7.0.
+- Gradle 9.7.1.
 
 ## [2.1.0] - 2026-07-23
 

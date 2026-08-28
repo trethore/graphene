@@ -1,7 +1,7 @@
 # Build the project.
 
 name: build
-on: [workflow_dispatch]
+on: [pull_request, workflow_dispatch]
 
 jobs:
   build:
@@ -10,11 +10,23 @@ jobs:
       - name: checkout repository
         uses: actions/checkout@v6
 
-      - name: setup gradle
-        uses: ./.github/actions/setup-gradle
+      - name: validate gradle wrapper
+        uses: gradle/actions/wrapper-validation@v6
+
+      - name: setup jdk
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'microsoft'
+          cache: 'gradle'
+      - name: make gradle wrapper executable
+        run: chmod +x ./gradlew
 
       - name: build
         run: ./gradlew build
+
+      - name: check build logic
+        run: ./gradlew -p build-logic check
 
       - name: capture build artifacts
         uses: actions/upload-artifact@v7

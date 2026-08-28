@@ -11,52 +11,52 @@ import net.minecraft.client.input.MouseButtonEvent;
 
 @SuppressWarnings("java:S100")
 public interface GrapheneScreenBridge {
-  GrapheneScreenState graphene$state();
+    GrapheneScreenState graphene$state();
 
-  default List<GrapheneWebViewWidget> graphene$webViewWidgets() {
-    return graphene$state().webViewWidgets();
-  }
+    default List<GrapheneWebViewWidget> graphene$webViewWidgets() {
+        return graphene$state().webViewWidgets();
+    }
 
-  default void graphene$addWebViewWidget(GrapheneWebViewWidget widget) {
-    GrapheneScreenState state = graphene$state();
-    state.attach((Screen) this);
-    state.addWebViewWidget(widget);
-  }
+    default void graphene$addWebViewWidget(GrapheneWebViewWidget widget) {
+        GrapheneScreenState state = graphene$state();
+        state.attach((Screen) this);
+        state.addWebViewWidget(widget);
+    }
 
-  default void graphene$removeWebViewWidget(GrapheneWebViewWidget widget) {
-    graphene$state().removeWebViewWidget(widget);
-  }
+    default void graphene$removeWebViewWidget(GrapheneWebViewWidget widget) {
+        graphene$state().removeWebViewWidget(widget);
+    }
 
-  default boolean graphene$isWebViewAutoCloseEnabled() {
-    return graphene$state().isWebViewAutoCloseEnabled();
-  }
+    default boolean graphene$isWebViewAutoCloseEnabled() {
+        return graphene$state().isWebViewAutoCloseEnabled();
+    }
 
-  default void graphene$setWebViewAutoCloseEnabled(boolean autoClose) {
-    graphene$state().setWebViewAutoCloseEnabled(autoClose);
-  }
+    default void graphene$setWebViewAutoCloseEnabled(boolean autoClose) {
+        graphene$state().setWebViewAutoCloseEnabled(autoClose);
+    }
 
-  default CompletionStage<BrowserContextMenuPresenter.Result> graphene$showContextMenu(
-      BrowserContextMenuPresenter.Request request) {
-    return graphene$state().showContextMenu((Screen) this, request);
-  }
+    default CompletionStage<BrowserContextMenuPresenter.Result> graphene$showContextMenu(
+            BrowserContextMenuPresenter.Request request) {
+        return graphene$state().showContextMenu((Screen) this, request);
+    }
 
-  default void graphene$renderContextMenu(GuiGraphics graphics, int mouseX, int mouseY) {
-    graphene$state().renderContextMenu(graphics, mouseX, mouseY);
-  }
+    default void graphene$renderContextMenu(GuiGraphics graphics, int mouseX, int mouseY) {
+        graphene$state().renderContextMenu(graphics, mouseX, mouseY);
+    }
 
-  default boolean graphene$handleContextMenuClick(MouseButtonEvent event) {
-    return graphene$state().handleContextMenuClick(event);
-  }
+    default boolean graphene$handleContextMenuClick(MouseButtonEvent event) {
+        return graphene$state().handleContextMenuClick(event);
+    }
 
-  default boolean graphene$handleContextMenuRelease(MouseButtonEvent event) {
-    return graphene$state().handleContextMenuRelease(event);
-  }
+    default boolean graphene$handleContextMenuRelease(MouseButtonEvent event) {
+        return graphene$state().handleContextMenuRelease(event);
+    }
 
-  default boolean graphene$handleContextMenuKey(KeyEvent event) {
-    return graphene$state().handleContextMenuKey(event);
-  }
+    default boolean graphene$handleContextMenuKey(KeyEvent event) {
+        return graphene$state().handleContextMenuKey(event);
+    }
 
-  default boolean graphene$isContextMenuOpen() {
-    return graphene$state().isContextMenuOpen();
-  }
+    default boolean graphene$isContextMenuOpen() {
+        return graphene$state().isContextMenuOpen();
+    }
 }

@@ -12,65 +12,65 @@ import net.minecraft.util.Util;
 
 @SuppressWarnings("resource")
 public final class MinecraftReferences {
-  private MinecraftReferences() {}
+    private MinecraftReferences() {}
 
-  public static long windowHandle() {
-    return window().handle();
-  }
+    public static long windowHandle() {
+        return window().handle();
+    }
 
-  public static int windowWidth() {
-    return window().getWidth();
-  }
+    public static int windowWidth() {
+        return window().getWidth();
+    }
 
-  public static int windowHeight() {
-    return window().getHeight();
-  }
+    public static int windowHeight() {
+        return window().getHeight();
+    }
 
-  public static double guiScale() {
-    return window().getGuiScale();
-  }
+    public static double guiScale() {
+        return window().getGuiScale();
+    }
 
-  public static KeyboardHandler keyboardHandler() {
-    return client().keyboardHandler;
-  }
+    public static KeyboardHandler keyboardHandler() {
+        return client().keyboardHandler;
+    }
 
-  public static Options options() {
-    return client().options;
-  }
+    public static Options options() {
+        return client().options;
+    }
 
-  public static boolean hasControlDown() {
-    return client().hasControlDown();
-  }
+    public static boolean hasControlDown() {
+        return client().hasControlDown();
+    }
 
-  public static Screen screen() {
-    return client().gui.screen();
-  }
+    public static Screen screen() {
+        return client().gui.screen();
+    }
 
-  public static Font font() {
-    return client().font;
-  }
+    public static Font font() {
+        return client().font;
+    }
 
-  public static Overlay overlay() {
-    return client().gui.overlay();
-  }
+    public static Overlay overlay() {
+        return client().gui.overlay();
+    }
 
-  public static void setOverlay(Overlay overlay) {
-    client().gui.setOverlay(overlay);
-  }
+    public static void setOverlay(Overlay overlay) {
+        client().gui.setOverlay(overlay);
+    }
 
-  public static void execute(Runnable action) {
-    client().execute(action);
-  }
+    public static void execute(Runnable action) {
+        client().execute(action);
+    }
 
-  public static void openUri(String url) {
-    Util.getPlatform().openUri(URI.create(url));
-  }
+    public static void openUri(String url) {
+        Util.getPlatform().openUri(URI.create(url));
+    }
 
-  private static Minecraft client() {
-    return Minecraft.getInstance();
-  }
+    private static Minecraft client() {
+        return Minecraft.getInstance();
+    }
 
-  private static Window window() {
-    return client().getWindow();
-  }
+    private static Window window() {
+        return client().getWindow();
+    }
 }

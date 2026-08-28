@@ -1,26 +1,30 @@
-import io.github.trethore.buildlogic.unpack
-
 plugins {
   `java-library`
   `maven-publish`
   id("io.github.trethore.architecture-check")
 }
 
+val javaVersion = JavaLanguageVersion.of(21)
 val jcefGithubVersion = libs.versions.jcefgithub.get()
 
-configurations.testImplementation {
-  extendsFrom(configurations.compileOnly.get())
+val compileOnlyAndTestRuntime =
+    configurations.create("compileOnlyAndTestRuntime") {
+      isCanBeConsumed = false
+      isCanBeResolved = false
+    }
+
+configurations {
+  compileOnly { extendsFrom(compileOnlyAndTestRuntime) }
+  testRuntimeOnly { extendsFrom(compileOnlyAndTestRuntime) }
 }
 
 dependencies {
-  compileOnly(libs.gson)
-  compileOnly(libs.slf4j.api)
+  compileOnlyAndTestRuntime(libs.gson)
+  compileOnlyAndTestRuntime(libs.slf4j.api)
 
   implementation("io.github.trethore:jcefgithub:${jcefGithubVersion}:all-relocated") {
     isTransitive = false
   }
-
-  unpack(create("io.github.trethore:jcefgithub:${jcefGithubVersion}:source"))
 }
 
 architectureChecks {
@@ -66,15 +70,9 @@ architectureChecks {
   }
 }
 
-tasks.withType<JavaCompile>().configureEach {
-  options.release = 21
-}
-
 java {
   withSourcesJar()
-
-  sourceCompatibility = JavaVersion.VERSION_21
-  targetCompatibility = JavaVersion.VERSION_21
+  toolchain.languageVersion.set(javaVersion)
 }
 
 publishing {

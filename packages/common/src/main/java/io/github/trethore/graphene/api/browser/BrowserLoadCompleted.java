@@ -8,8 +8,8 @@ import java.util.OptionalInt;
  * complete successfully. The HTTP status is empty for non-HTTP loads or when unavailable.
  */
 public record BrowserLoadCompleted(String url, boolean mainFrame, OptionalInt httpStatus) {
-  public BrowserLoadCompleted {
-    url = Objects.requireNonNullElse(url, "");
-    Objects.requireNonNull(httpStatus, "httpStatus");
-  }
+    public BrowserLoadCompleted {
+        url = Objects.requireNonNullElse(url, "");
+        Objects.requireNonNull(httpStatus, "httpStatus");
+    }
 }

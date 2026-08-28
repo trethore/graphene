@@ -5,7 +5,7 @@ plugins {
 
 dependencies {
   testImplementation(kotlin("test-junit5"))
-  testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+  testRuntimeOnly(libs.junit.platform.launcher)
 }
 
 tasks.test {

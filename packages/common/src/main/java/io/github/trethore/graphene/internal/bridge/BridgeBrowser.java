@@ -1,11 +1,11 @@
 package io.github.trethore.graphene.internal.bridge;
 
 public interface BridgeBrowser {
-  void executeScript(String script, String sourceUrl);
+    void executeScript(String script, String sourceUrl);
 
-  String currentUrl();
+    String currentUrl();
 
-  boolean hasDocument();
+    boolean hasDocument();
 
-  int identifier();
+    int identifier();
 }

@@ -2,14 +2,17 @@ plugins {
   alias(libs.plugins.fabric.loom.remap)
 }
 
-val targetMinecraftVersion = "1.21.11"
+val javaVersion = JavaLanguageVersion.of(21)
 val loaderVersion = libs.versions.fabric.loader.get()
-val fabricApiVersion = "0.141.4+1.21.11"
+val targetMinecraftVersion = libs.versions.minecraft.v12111.get()
+val fabricApiVersion = libs.versions.fabric.api.v12111.get()
 val grapheneProject = project(":packages:fabric-1.21.11")
-val grapheneMainSourceSet = grapheneProject.extensions.getByType<SourceSetContainer>().named("main")
+val mainSourceSet = "main"
+val grapheneMainSourceSet =
+    grapheneProject.extensions.getByType<SourceSetContainer>().named(mainSourceSet)
 val commonProject = project(":packages:common")
-val commonMainSourceSet = commonProject.extensions.getByType<SourceSetContainer>().named("main")
-val jcefGithubVersion = libs.versions.jcefgithub.get()
+val commonMainSourceSet =
+    commonProject.extensions.getByType<SourceSetContainer>().named(mainSourceSet)
 val grapheneRuntimeSourceSet =
     sourceSets.create("grapheneRuntime") {
       resources {
@@ -39,6 +42,7 @@ base {
 loom {
   runs.configureEach {
     preferGradleTask.set(true)
+    systemProperties.put("fabric.log.disableAnsi", "false")
   }
 
   mods {
@@ -63,15 +67,18 @@ loom {
 }
 
 dependencies {
-  minecraft("com.mojang:minecraft:$targetMinecraftVersion")
+  minecraft(libs.minecraft.v12111)
   mappings(loom.officialMojangMappings())
   modImplementation(libs.fabric.loader)
-  modImplementation("net.fabricmc.fabric-api:fabric-api:$fabricApiVersion")
+  modImplementation(libs.fabric.api.v12111)
   implementation(files(grapheneMainSourceSet.map { it.output }))
   implementation(files(commonMainSourceSet.map { it.output }))
   implementation(libs.gson)
-  runtimeOnly("io.github.trethore:jcefgithub:${jcefGithubVersion}:all-relocated") {
+  runtimeOnly(libs.jcefgithub) {
     isTransitive = false
+    artifact {
+      classifier = "all-relocated"
+    }
   }
   runtimeOnly(grapheneRuntimeSourceSet.output)
 }
@@ -96,11 +103,6 @@ tasks
       enabled = false
     }
 
-tasks.withType<JavaCompile>().configureEach {
-  options.release = 21
-}
-
 java {
-  sourceCompatibility = JavaVersion.VERSION_21
-  targetCompatibility = JavaVersion.VERSION_21
+  toolchain.languageVersion.set(javaVersion)
 }

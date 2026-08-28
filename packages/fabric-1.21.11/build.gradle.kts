@@ -1,4 +1,3 @@
-import io.github.trethore.buildlogic.unpack
 import org.gradle.api.publish.tasks.GenerateModuleMetadata
 import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.bundling.AbstractArchiveTask
@@ -10,10 +9,10 @@ plugins {
   signing
 }
 
-val minecraftVersion = "1.21.11"
+val javaVersion = JavaLanguageVersion.of(21)
 val loaderVersion = libs.versions.fabric.loader.get()
-val fabricApiVersion = "0.141.4+1.21.11"
-val jcefGithubVersion = libs.versions.jcefgithub.get()
+val targetMinecraftVersion = libs.versions.minecraft.v12111.get()
+val fabricApiVersion = libs.versions.fabric.api.v12111.get()
 val mavenCentralSigningKey = providers.environmentVariable("MAVEN_GPG_PRIVATE_KEY")
 val mavenCentralSigningPassphrase = providers.environmentVariable("MAVEN_GPG_PASSPHRASE")
 val isMavenCentralPublishRequested =
@@ -28,18 +27,19 @@ base {
 loom {
   runs.configureEach {
     preferGradleTask.set(true)
+    systemProperties.put("fabric.log.disableAnsi", "false")
   }
 
   runs {
     named("client") {
-      displayName.set("Minecraft Client 1.21.11")
+      displayName.set("Minecraft Client (Fabric $targetMinecraftVersion)")
       appendProjectPathToDisplayName.set(false)
       generateRunConfig.set(true)
       runDirectory.set(layout.projectDirectory.dir("run/client"))
     }
 
     named("server") {
-      displayName.set("Minecraft Server 1.21.11")
+      displayName.set("Minecraft Server (Fabric $targetMinecraftVersion)")
       appendProjectPathToDisplayName.set(false)
       generateRunConfig.set(true)
       runDirectory.set(layout.projectDirectory.dir("run/server"))
@@ -62,13 +62,13 @@ configurations.include {
 }
 
 dependencies {
-  unpack(minecraft("com.mojang:minecraft:$minecraftVersion"))
+  minecraft(libs.minecraft.v12111)
   mappings(loom.officialMojangMappings())
   modImplementation(libs.fabric.loader)
-  unpack(modImplementation("net.fabricmc.fabric-api:fabric-api:$fabricApiVersion"))
+  modImplementation(libs.fabric.api.v12111)
 
   embeddedCommon(project(":packages:common"))
-  include("io.github.trethore:jcefgithub:${jcefGithubVersion}") {
+  include(libs.jcefgithub) {
     isTransitive = false
     artifact {
       classifier = "all-relocated"
@@ -92,7 +92,7 @@ tasks.processResources {
   val properties =
       mapOf(
           "version" to version,
-          "minecraftVersion" to minecraftVersion,
+          "minecraftVersion" to targetMinecraftVersion,
           "loaderVersion" to loaderVersion,
           "fabricApiVersion" to fabricApiVersion,
       )
@@ -103,16 +103,11 @@ tasks.processResources {
   }
 }
 
-tasks.withType<JavaCompile>().configureEach {
-  options.release = 21
-}
-
 java {
   withSourcesJar()
   withJavadocJar()
 
-  sourceCompatibility = JavaVersion.VERSION_21
-  targetCompatibility = JavaVersion.VERSION_21
+  toolchain.languageVersion.set(javaVersion)
 }
 
 tasks.named<Jar>("sourcesJar") {
@@ -141,13 +136,13 @@ tasks.register<Sync>("stageGithubRelease") {
 }
 
 tasks.named<AbstractArchiveTask>("remapJar") {
-  archiveFileName.set("${rootProject.name}-${project.version}-fabric-${minecraftVersion}.jar")
+  archiveFileName.set("${rootProject.name}-${project.version}-fabric-${targetMinecraftVersion}.jar")
 }
 
 publishing {
   publications {
     register<MavenPublication>("mavenJava") {
-      artifactId = "graphene-ui-$minecraftVersion"
+      artifactId = "graphene-ui-$targetMinecraftVersion"
       from(components["java"])
 
       pom {

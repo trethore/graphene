@@ -1,9 +1,9 @@
 package io.github.trethore.graphene.internal.platform;
 
 public interface GrapheneWindowMetrics {
-  int width();
+    int width();
 
-  int height();
+    int height();
 
-  double scaleFactor();
+    double scaleFactor();
 }

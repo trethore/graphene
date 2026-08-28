@@ -8,46 +8,44 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 final class GrapheneBridgeOutboundQueueTest {
-  @Test
-  void queuesBeforeReadyAndFlushesInOrder() {
-    List<String> dispatchedMessages = new ArrayList<>();
-    GrapheneBridgeOutboundQueue queue =
-        new GrapheneBridgeOutboundQueue(dispatchedMessages::add, 16);
+    @Test
+    void queuesBeforeReadyAndFlushesInOrder() {
+        List<String> dispatchedMessages = new ArrayList<>();
+        GrapheneBridgeOutboundQueue queue = new GrapheneBridgeOutboundQueue(dispatchedMessages::add, 16);
 
-    queue.queueOrDispatch("first");
-    queue.queueOrDispatch("second");
-    assertTrue(dispatchedMessages.isEmpty());
+        queue.queueOrDispatch("first");
+        queue.queueOrDispatch("second");
+        assertTrue(dispatchedMessages.isEmpty());
 
-    queue.markReadyAndFlush();
-    assertEquals(List.of("first", "second"), dispatchedMessages);
+        queue.markReadyAndFlush();
+        assertEquals(List.of("first", "second"), dispatchedMessages);
 
-    queue.queueOrDispatch("third");
-    assertEquals(List.of("first", "second", "third"), dispatchedMessages);
-  }
+        queue.queueOrDispatch("third");
+        assertEquals(List.of("first", "second", "third"), dispatchedMessages);
+    }
 
-  @Test
-  void clearDropsQueuedMessages() {
-    List<String> dispatchedMessages = new ArrayList<>();
-    GrapheneBridgeOutboundQueue queue =
-        new GrapheneBridgeOutboundQueue(dispatchedMessages::add, 16);
+    @Test
+    void clearDropsQueuedMessages() {
+        List<String> dispatchedMessages = new ArrayList<>();
+        GrapheneBridgeOutboundQueue queue = new GrapheneBridgeOutboundQueue(dispatchedMessages::add, 16);
 
-    queue.queueOrDispatch("queued");
-    queue.clear();
-    queue.markReadyAndFlush();
+        queue.queueOrDispatch("queued");
+        queue.clear();
+        queue.markReadyAndFlush();
 
-    assertTrue(dispatchedMessages.isEmpty());
-  }
+        assertTrue(dispatchedMessages.isEmpty());
+    }
 
-  @Test
-  void dropsTheOldestMessageWhenFull() {
-    List<String> dispatchedMessages = new ArrayList<>();
-    GrapheneBridgeOutboundQueue queue = new GrapheneBridgeOutboundQueue(dispatchedMessages::add, 2);
+    @Test
+    void dropsTheOldestMessageWhenFull() {
+        List<String> dispatchedMessages = new ArrayList<>();
+        GrapheneBridgeOutboundQueue queue = new GrapheneBridgeOutboundQueue(dispatchedMessages::add, 2);
 
-    queue.queueOrDispatch("first");
-    queue.queueOrDispatch("second");
-    queue.queueOrDispatch("third");
-    queue.markReadyAndFlush();
+        queue.queueOrDispatch("first");
+        queue.queueOrDispatch("second");
+        queue.queueOrDispatch("third");
+        queue.markReadyAndFlush();
 
-    assertEquals(List.of("second", "third"), dispatchedMessages);
-  }
+        assertEquals(List.of("second", "third"), dispatchedMessages);
+    }
 }

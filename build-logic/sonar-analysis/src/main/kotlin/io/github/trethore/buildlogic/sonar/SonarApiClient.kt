@@ -133,15 +133,29 @@ internal class SonarApiClient private constructor(
     private fun urlEncode(value: String): String = URLEncoder.encode(value, StandardCharsets.UTF_8)
 }
 
-internal fun sonarMeasureValues(component: Map<*, *>): Map<String, String> {
-    return (component["measures"] as? List<*>)
-        .orEmpty()
-        .filterIsInstance<Map<*, *>>()
-        .mapNotNull { measure ->
-            val metric = measure["metric"]?.toString() ?: return@mapNotNull null
+internal fun sonarMeasureValues(component: Map<*, *>, responseName: String): Map<String, String> {
+    val rawMeasures = component["measures"] ?: return emptyMap()
+    val measures = rawMeasures as? List<*>
+        ?: throw GradleException("SonarQube $responseName response did not contain a valid 'measures' array.")
+    return measures
+        .mapIndexedNotNull { index, rawMeasure ->
+            val measure = rawMeasure as? Map<*, *>
+                ?: throw GradleException(
+                    "SonarQube $responseName response contained an invalid measure at index $index."
+                )
+            val metric = measure.requiredSonarString("metric", responseName)
+            val rawPeriod = measure["period"]
+            val period = if (rawPeriod == null) {
+                null
+            } else {
+                rawPeriod as? Map<*, *>
+                    ?: throw GradleException(
+                        "SonarQube $responseName response contained an invalid period for metric '$metric'."
+                    )
+            }
             val value = measure["value"]?.toString()
-                ?: (measure["period"] as? Map<*, *>)?.get("value")?.toString()
-                ?: return@mapNotNull null
+                ?: period?.get("value")?.toString()
+                ?: return@mapIndexedNotNull null
             metric to value
         }
         .toMap()

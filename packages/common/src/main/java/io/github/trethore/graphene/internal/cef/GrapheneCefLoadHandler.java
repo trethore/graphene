@@ -14,85 +14,77 @@ import org.cef.handler.CefLoadHandlerAdapter;
 import org.cef.network.CefRequest;
 
 final class GrapheneCefLoadHandler extends CefLoadHandlerAdapter {
-  private final GrapheneBridgeRuntime bridgeRuntime;
-  private final GrapheneTaskExecutor taskExecutor;
+    private final GrapheneBridgeRuntime bridgeRuntime;
+    private final GrapheneTaskExecutor taskExecutor;
 
-  GrapheneCefLoadHandler(GrapheneBridgeRuntime bridgeRuntime, GrapheneTaskExecutor taskExecutor) {
-    this.bridgeRuntime = Objects.requireNonNull(bridgeRuntime, "bridgeRuntime");
-    this.taskExecutor = Objects.requireNonNull(taskExecutor, "taskExecutor");
-  }
+    GrapheneCefLoadHandler(GrapheneBridgeRuntime bridgeRuntime, GrapheneTaskExecutor taskExecutor) {
+        this.bridgeRuntime = Objects.requireNonNull(bridgeRuntime, "bridgeRuntime");
+        this.taskExecutor = Objects.requireNonNull(taskExecutor, "taskExecutor");
+    }
 
-  @Override
-  public void onLoadingStateChange(
-      CefBrowser browser, boolean loading, boolean canGoBack, boolean canGoForward) {
-    if (browser instanceof GrapheneCefBrowserSession session) {
-      BrowserLoadingState state = new BrowserLoadingState(loading, canGoBack, canGoForward);
-      taskExecutor.execute(() -> session.publishLoadingState(state));
+    @Override
+    public void onLoadingStateChange(CefBrowser browser, boolean loading, boolean canGoBack, boolean canGoForward) {
+        if (browser instanceof GrapheneCefBrowserSession session) {
+            BrowserLoadingState state = new BrowserLoadingState(loading, canGoBack, canGoForward);
+            taskExecutor.execute(() -> session.publishLoadingState(state));
+        }
     }
-  }
 
-  @Override
-  public void onLoadStart(
-      CefBrowser browser, CefFrame frame, CefRequest.TransitionType transitionType) {
-    GrapheneCefBrowserAdapter browserAdapter = new GrapheneCefBrowserAdapter(browser);
-    BrowserLoadStarted event =
-        new BrowserLoadStarted(
-            frameUrl(frame),
-            isMainFrame(frame),
-            GrapheneCefLoadEventMapper.transition(transitionType));
-    if (event.mainFrame()) {
-      bridgeRuntime.onLoadStart(browserAdapter);
+    @Override
+    public void onLoadStart(CefBrowser browser, CefFrame frame, CefRequest.TransitionType transitionType) {
+        GrapheneCefBrowserAdapter browserAdapter = new GrapheneCefBrowserAdapter(browser);
+        BrowserLoadStarted event = new BrowserLoadStarted(
+                frameUrl(frame), isMainFrame(frame), GrapheneCefLoadEventMapper.transition(transitionType));
+        if (event.mainFrame()) {
+            bridgeRuntime.onLoadStart(browserAdapter);
+        }
+        if (browser instanceof GrapheneCefBrowserSession session) {
+            taskExecutor.execute(() -> session.publishLoadStarted(event));
+        }
     }
-    if (browser instanceof GrapheneCefBrowserSession session) {
-      taskExecutor.execute(() -> session.publishLoadStarted(event));
-    }
-  }
 
-  @Override
-  public void onLoadEnd(CefBrowser browser, CefFrame frame, int httpStatusCode) {
-    boolean mainFrame = isMainFrame(frame);
-    if (mainFrame && browser instanceof GrapheneCefBrowserSession session) {
-      session.restoreFocusAfterNavigation();
-    }
-    GrapheneCefBrowserAdapter browserAdapter = new GrapheneCefBrowserAdapter(browser);
-    BrowserLoadCompleted event =
-        new BrowserLoadCompleted(
-            frameUrl(frame), mainFrame, GrapheneCefLoadEventMapper.httpStatus(httpStatusCode));
-    taskExecutor.execute(
-        () -> {
-          if (browser instanceof GrapheneCefBrowserSession session) {
-            session.publishLoadCompleted(event);
-          }
-          if (event.mainFrame()) {
-            bridgeRuntime.onLoadEnd(browserAdapter, event.url());
-          }
+    @Override
+    public void onLoadEnd(CefBrowser browser, CefFrame frame, int httpStatusCode) {
+        boolean mainFrame = isMainFrame(frame);
+        if (mainFrame && browser instanceof GrapheneCefBrowserSession session) {
+            session.restoreFocusAfterNavigation();
+        }
+        GrapheneCefBrowserAdapter browserAdapter = new GrapheneCefBrowserAdapter(browser);
+        BrowserLoadCompleted event = new BrowserLoadCompleted(
+                frameUrl(frame), mainFrame, GrapheneCefLoadEventMapper.httpStatus(httpStatusCode));
+        taskExecutor.execute(() -> {
+            if (browser instanceof GrapheneCefBrowserSession session) {
+                session.publishLoadCompleted(event);
+            }
+            if (event.mainFrame()) {
+                bridgeRuntime.onLoadEnd(browserAdapter, event.url());
+            }
         });
-  }
-
-  @Override
-  public void onLoadError(
-      CefBrowser browser,
-      CefFrame frame,
-      CefLoadHandler.ErrorCode errorCode,
-      String errorText,
-      String failedUrl) {
-    BrowserLoadFailed event =
-        new BrowserLoadFailed(
-            failedUrl,
-            isMainFrame(frame),
-            GrapheneCefLoadEventMapper.failureReason(errorCode),
-            errorText,
-            GrapheneCefLoadEventMapper.diagnosticCode(errorCode));
-    if (browser instanceof GrapheneCefBrowserSession session) {
-      taskExecutor.execute(() -> session.publishLoadFailed(event));
     }
-  }
 
-  private static boolean isMainFrame(CefFrame frame) {
-    return frame == null || frame.isMain();
-  }
+    @Override
+    public void onLoadError(
+            CefBrowser browser,
+            CefFrame frame,
+            CefLoadHandler.ErrorCode errorCode,
+            String errorText,
+            String failedUrl) {
+        BrowserLoadFailed event = new BrowserLoadFailed(
+                failedUrl,
+                isMainFrame(frame),
+                GrapheneCefLoadEventMapper.failureReason(errorCode),
+                errorText,
+                GrapheneCefLoadEventMapper.diagnosticCode(errorCode));
+        if (browser instanceof GrapheneCefBrowserSession session) {
+            taskExecutor.execute(() -> session.publishLoadFailed(event));
+        }
+    }
 
-  private static String frameUrl(CefFrame frame) {
-    return frame == null ? "" : frame.getURL();
-  }
+    private static boolean isMainFrame(CefFrame frame) {
+        return frame == null || frame.isMain();
+    }
+
+    private static String frameUrl(CefFrame frame) {
+        return frame == null ? "" : frame.getURL();
+    }
 }

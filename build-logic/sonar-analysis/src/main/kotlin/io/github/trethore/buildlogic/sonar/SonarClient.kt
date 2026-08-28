@@ -37,16 +37,22 @@ internal fun <T> SonarClient.getComponentTreeComponents(
             ),
             responseName = responseName,
         )
-        val pageComponents = (payload["components"] as? List<*>)
-            .orEmpty()
-            .filterIsInstance<Map<*, *>>()
+        val pageComponents = payload.requiredSonarArray("components", responseName)
+            .mapIndexed { index, component ->
+                component as? Map<*, *>
+                    ?: throw GradleException(
+                        "SonarQube $responseName response contained an invalid component at index $index."
+                    )
+            }
         componentCount += pageComponents.size
         pageComponents.mapNotNullTo(transformedComponents, transform)
 
-        val paging = payload["paging"] as? Map<*, *>
-            ?: throw GradleException("SonarQube $responseName response did not contain paging information.")
-        val total = (paging["total"] as? Number)?.toInt()
-            ?: throw GradleException("SonarQube $responseName response did not contain a total.")
+        val paging = payload.requiredSonarObject("paging", responseName)
+        val total = requireNonNegativeSonarValue(
+            paging.requiredSonarInt("total", responseName),
+            "total",
+            responseName,
+        )
 
         if (componentCount >= total) {
             return transformedComponents

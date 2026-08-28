@@ -11,32 +11,33 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class GrapheneCefInstallerTest {
-  @TempDir Path temporaryDirectory;
+    @TempDir
+    Path temporaryDirectory;
 
-  @Test
-  void configuresPortableSettingsAndFixedDebugPort() {
-    GrapheneGlobalConfig config =
-        GrapheneGlobalConfig.builder()
-            .browserRuntimePath(temporaryDirectory)
-            .remoteDebugging(GrapheneRemoteDebugConfig.builder().port(9333).build())
-            .build();
+    @Test
+    void configuresPortableSettingsAndFixedDebugPort() {
+        GrapheneGlobalConfig config = GrapheneGlobalConfig.builder()
+                .browserRuntimePath(temporaryDirectory)
+                .remoteDebugging(GrapheneRemoteDebugConfig.builder().port(9333).build())
+                .build();
 
-    CefAppBuilder builder = GrapheneCefInstaller.createBuilder(config);
+        CefAppBuilder builder = GrapheneCefInstaller.createBuilder(config);
 
-    assertEquals(9333, builder.getCefSettings().remote_debugging_port);
-    assertTrue(builder.getCefSettings().windowless_rendering_enabled);
-    assertTrue(builder.getJcefArgs().contains("--disable-extensions"));
-    assertTrue(builder.getJcefArgs().contains("--force-color-profile=srgb"));
-    assertTrue(Path.of(builder.getCefSettings().cache_path).startsWith(temporaryDirectory));
-  }
+        assertEquals(9333, builder.getCefSettings().remote_debugging_port);
+        assertTrue(builder.getCefSettings().windowless_rendering_enabled);
+        assertTrue(builder.getJcefArgs().contains("--disable-extensions"));
+        assertTrue(builder.getJcefArgs().contains("--force-color-profile=srgb"));
+        assertTrue(Path.of(builder.getCefSettings().cache_path).startsWith(temporaryDirectory));
+    }
 
-  @Test
-  void disablesRemoteDebuggingByDefault() {
-    GrapheneGlobalConfig config =
-        GrapheneGlobalConfig.builder().browserRuntimePath(temporaryDirectory).build();
+    @Test
+    void disablesRemoteDebuggingByDefault() {
+        GrapheneGlobalConfig config = GrapheneGlobalConfig.builder()
+                .browserRuntimePath(temporaryDirectory)
+                .build();
 
-    CefAppBuilder builder = GrapheneCefInstaller.createBuilder(config);
+        CefAppBuilder builder = GrapheneCefInstaller.createBuilder(config);
 
-    assertEquals(0, builder.getCefSettings().remote_debugging_port);
-  }
+        assertEquals(0, builder.getCefSettings().remote_debugging_port);
+    }
 }

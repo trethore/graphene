@@ -10,13 +10,12 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class GrapheneBrowserFrameUploaderTest {
-  @Test
-  void requiresFullUploadWhenFrameSequenceIsNotConsecutive() {
-    BrowserFrame frame =
-        new BrowserFrame(
-            10, 10, 3, List.of(new BrowserDirtyRegion(0, 0, 1, 1)), ByteBuffer.allocateDirect(400));
+    @Test
+    void requiresFullUploadWhenFrameSequenceIsNotConsecutive() {
+        BrowserFrame frame = new BrowserFrame(
+                10, 10, 3, List.of(new BrowserDirtyRegion(0, 0, 1, 1)), ByteBuffer.allocateDirect(400));
 
-    assertTrue(GrapheneBrowserFrameUploader.shouldUploadFullFrame(frame, false));
-    assertFalse(GrapheneBrowserFrameUploader.shouldUploadFullFrame(frame, true));
-  }
+        assertTrue(GrapheneBrowserFrameUploader.shouldUploadFullFrame(frame, false));
+        assertFalse(GrapheneBrowserFrameUploader.shouldUploadFullFrame(frame, true));
+    }
 }

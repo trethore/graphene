@@ -8,14 +8,14 @@ import java.util.function.UnaryOperator;
 
 @FunctionalInterface
 public interface GrapheneContextFactory {
-  GrapheneContext create(Parameters parameters);
+    GrapheneContext create(Parameters parameters);
 
-  record Parameters(
-      String id,
-      GrapheneConfig config,
-      GrapheneAssetUrls appAssets,
-      GrapheneAssetUrls classpathAssets,
-      GrapheneAssetUrls httpAssets,
-      UnaryOperator<String> httpUrlFactory,
-      BrowserSessions browsers) {}
+    record Parameters(
+            String id,
+            GrapheneConfig config,
+            GrapheneAssetUrls appAssets,
+            GrapheneAssetUrls classpathAssets,
+            GrapheneAssetUrls httpAssets,
+            UnaryOperator<String> httpUrlFactory,
+            BrowserSessions browsers) {}
 }

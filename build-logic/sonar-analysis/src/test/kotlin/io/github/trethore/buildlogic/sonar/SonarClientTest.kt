@@ -52,9 +52,9 @@ class SonarClientTest {
                 "measures" to listOf(
                     mapOf("metric" to "coverage", "value" to "80.0"),
                     mapOf("metric" to "new_coverage", "period" to mapOf("value" to "90.0")),
-                    mapOf("value" to "ignored"),
                 )
-            )
+            ),
+            "measures",
         )
 
         assertEquals(

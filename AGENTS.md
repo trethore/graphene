@@ -8,12 +8,11 @@ API for mod developers to create rich, web-based user interfaces in Minecraft us
 Here is an overview of the project:
 
 ```text
-graphene/                                   # You are here!
-  .github/                                  # GitHub config and workflows.
+graphene/
+  .github/
   build-logic/                              # Included Gradle build for custom build logic.
     architecture-check/                     # Gradle plugin for enforcing architecture rules.
     sonar-analysis/                         # Gradle plugin for running SonarQube analysis.
-    unpack-sources/                         # Gradle plugin that unpacks dependency and Git reference sources.
   debug-client/                             # Development-only clients and resources for manually testing Graphene.
     <loader>-<minecraft-version>/           # Loader and Minecraft-version-specific debug client.
       src/main/java/io/github/trethore/graphene/debug/
@@ -27,41 +26,37 @@ graphene/                                   # You are here!
         java/io/github/trethore/graphene/
           api/                              # Public browser, bridge, configuration, runtime, and URL APIs.
           internal/                         # Shared runtime, JCEF, bridge, HTTP, platform, and resource internals.
-        resources/assets/grapheneui/        # JavaScript resources injected into Graphene browser sessions.
-      src/test/                             # Unit tests and test resources for common functionality.
+        resources/assets/grapheneui/
+      src/test/
       build.gradle.kts
     <loader>-<minecraft-version>/           # Loader and Minecraft-version-specific implementation.
       src/main/
         java/io/github/trethore/graphene/
           fabric/                           # Fabric-specific public APIs and internal integrations.
-          mixin/                            # Minecraft/Fabric-version-specific mixins.
-          FabricBootstrap.java              # Fabric ModInitializer that boots common code.
+          mixin/
+          FabricBootstrap.java
         resources/
-          assets/grapheneui/                # Fabric mod assets.
+          assets/grapheneui/
           fabric.mod.json
           grapheneui.mixins.json
-      src/test/                             # Unit tests for Fabric-specific functionality.
+      src/test/
       build.gradle.kts
-  references/                               # Dependency source code for browsing and reference.
-    <group>-<lib-name>-<version>/
-    com.mojang-minecraft-1.21.11/
-    net.fabricmc.fabric-api-fabric-api-0.141.4-1.21.11/
-      nested/                               # Source code of the nested jars.
   .gitignore
-  build.gradle.kts                          # Root Gradle config shared by all projects
+  build.gradle.kts
   CHANGELOG.md
-  gradle.properties                         # Shared version and dependency properties.
+  gradle.properties
+  LICENSE
   README.md
   settings.gradle.kts
 ```
 
-Graphene supports `fabric-1.21.11` and `fabric-26.2`. See `settings.gradle.kts` for more information.
+Graphene supports `fabric-1.21.11` and `fabric-26.2`. Read `settings.gradle.kts` for more information.
 
 ## General Coding Conventions
 
 - `packages/common` should contain only the version-independent logic that is shared across all Minecraft implementations.
 - `packages/<loader>-<minecraft-version>` should contain version-dependent code, like the mod entry point, integration logic, mixins, and Minecraft/loader dependencies.
-- Avoid comments unless documentation is explicitly requested.
+- Do not write comments unless documentation is explicitly requested by the user.
 - Assume contributors use IntelliJ IDEA, and keep code free of IDE warnings.
 
 ## Java Expectations
@@ -73,18 +68,18 @@ Graphene supports `fabric-1.21.11` and `fabric-26.2`. See `settings.gradle.kts` 
 
 ## Testing & Verification
 
-- Run `./gradlew check` to catch Java compilation errors, formatting issues, and execute tests.
-- Run `./gradlew spotlessApply` to format changes directly instead of running `./gradlew spotlessCheck` first and then fixing formatting issues.
+- Run `./gradlew check --quiet` to catch Java compilation errors, formatting issues, and execute tests.
+- Run `./gradlew spotlessApply --quiet` to format changes directly instead of running `./gradlew spotlessCheck` first and then fixing formatting issues.
 - Do not run long-running Gradle tasks, such as game launches. Instead, provide the exact command for the user to run, for example:
   `./gradlew :packages:fabric-1.21.11:runClient`
 
-## Dependencies & External Sources
+## Dependencies and External Source Browsing
 
-- Library source code is available in the `references` directory for browsing and reference only. Do not edit it.
-- The `references` directory is generated via the `./gradlew unpackSources` command.
-- You can clean the generated references by running `./gradlew cleanUnpackedSources`.
+- Assume that JDK tools such as `javap`, `jdeps`, and `javadoc`, as well as `cfr`, are available.
+- Read `gradle/libs.versions.toml` to identify the dependencies and versions used by the project.
+- Look in `~/.gradle/caches/modules-2/files-2.1/` to locate the downloaded dependencies.
 
-## Pull Requests & Commits
+## Commits & Pull Requests
 
-- Pull request summaries should include the related issue(s), a brief description of the changes, and how the changes were tested.
 - Follow the Conventional Commits specification for commit messages.
+- Pull request summaries should include the related issue(s), a brief description of the changes, and how the changes were tested.

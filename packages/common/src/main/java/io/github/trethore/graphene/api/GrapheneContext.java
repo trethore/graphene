@@ -16,74 +16,74 @@ import java.util.function.UnaryOperator;
  */
 @SuppressWarnings("unused")
 public final class GrapheneContext {
-  private final String id;
-  private final GrapheneConfig config;
-  private final GrapheneAssetUrls appAssets;
-  private final GrapheneAssetUrls classpathAssets;
-  private final GrapheneAssetUrls httpAssets;
-  private final UnaryOperator<String> httpUrlFactory;
-  private final BrowserSessions browsers;
+    private final String id;
+    private final GrapheneConfig config;
+    private final GrapheneAssetUrls appAssets;
+    private final GrapheneAssetUrls classpathAssets;
+    private final GrapheneAssetUrls httpAssets;
+    private final UnaryOperator<String> httpUrlFactory;
+    private final BrowserSessions browsers;
 
-  GrapheneContext(
-      String id,
-      GrapheneConfig config,
-      GrapheneAssetUrls appAssets,
-      GrapheneAssetUrls classpathAssets,
-      GrapheneAssetUrls httpAssets,
-      UnaryOperator<String> httpUrlFactory,
-      BrowserSessions browsers) {
-    this.id = Objects.requireNonNull(id, "id");
-    this.config = Objects.requireNonNull(config, "config");
-    this.appAssets = Objects.requireNonNull(appAssets, "appAssets");
-    this.classpathAssets = Objects.requireNonNull(classpathAssets, "classpathAssets");
-    this.httpAssets = Objects.requireNonNull(httpAssets, "httpAssets");
-    this.httpUrlFactory = Objects.requireNonNull(httpUrlFactory, "httpUrlFactory");
-    this.browsers = Objects.requireNonNull(browsers, "browsers");
-  }
+    GrapheneContext(
+            String id,
+            GrapheneConfig config,
+            GrapheneAssetUrls appAssets,
+            GrapheneAssetUrls classpathAssets,
+            GrapheneAssetUrls httpAssets,
+            UnaryOperator<String> httpUrlFactory,
+            BrowserSessions browsers) {
+        this.id = Objects.requireNonNull(id, "id");
+        this.config = Objects.requireNonNull(config, "config");
+        this.appAssets = Objects.requireNonNull(appAssets, "appAssets");
+        this.classpathAssets = Objects.requireNonNull(classpathAssets, "classpathAssets");
+        this.httpAssets = Objects.requireNonNull(httpAssets, "httpAssets");
+        this.httpUrlFactory = Objects.requireNonNull(httpUrlFactory, "httpUrlFactory");
+        this.browsers = Objects.requireNonNull(browsers, "browsers");
+    }
 
-  public String id() {
-    return id;
-  }
+    public String id() {
+        return id;
+    }
 
-  public GrapheneConfig config() {
-    return config;
-  }
+    public GrapheneConfig config() {
+        return config;
+    }
 
-  public GrapheneContainerConfig containerConfig() {
-    return config.container();
-  }
+    public GrapheneContainerConfig containerConfig() {
+        return config.container();
+    }
 
-  public GrapheneGlobalConfig globalConfig() {
-    return config.global();
-  }
+    public GrapheneGlobalConfig globalConfig() {
+        return config.global();
+    }
 
-  /** Returns the effective process-wide configuration resolved from all registered consumers. */
-  public GrapheneGlobalConfig effectiveGlobalConfig() {
-    return Graphene.globalConfig();
-  }
+    /** Returns the effective process-wide configuration resolved from all registered consumers. */
+    public GrapheneGlobalConfig effectiveGlobalConfig() {
+        return Graphene.globalConfig();
+    }
 
-  public GrapheneRuntime runtime() {
-    return Graphene.runtime();
-  }
+    public GrapheneRuntime runtime() {
+        return Graphene.runtime();
+    }
 
-  public GrapheneAssetUrls appAssets() {
-    return appAssets;
-  }
+    public GrapheneAssetUrls appAssets() {
+        return appAssets;
+    }
 
-  public GrapheneAssetUrls classpathAssets() {
-    return classpathAssets;
-  }
+    public GrapheneAssetUrls classpathAssets() {
+        return classpathAssets;
+    }
 
-  public GrapheneAssetUrls httpAssets() {
-    return httpAssets;
-  }
+    public GrapheneAssetUrls httpAssets() {
+        return httpAssets;
+    }
 
-  /** Creates a URL under this consumer's HTTP asset mount. */
-  public String httpUrl(String path) {
-    return httpUrlFactory.apply(path);
-  }
+    /** Creates a URL under this consumer's HTTP asset mount. */
+    public String httpUrl(String path) {
+        return httpUrlFactory.apply(path);
+    }
 
-  public BrowserSessions browsers() {
-    return browsers;
-  }
+    public BrowserSessions browsers() {
+        return browsers;
+    }
 }
