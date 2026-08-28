@@ -148,9 +148,16 @@ class FabricPackageConventionsPlugin : Plugin<Project> {
     val projectName = project.rootProject.name
     val projectVersion = project.version.toString()
     val minecraftVersion = project.minecraftVersion()
+    val targetArchiveName = "$projectName-$projectVersion-fabric-$minecraftVersion"
     val runtimeArchive = project.tasks.named<AbstractArchiveTask>(runtimeArchiveTaskName)
     runtimeArchive.configure {
-      archiveFileName.set("$projectName-$projectVersion-fabric-$minecraftVersion.jar")
+      archiveFileName.set("$targetArchiveName.jar")
+    }
+    project.tasks.named<Jar>("sourcesJar") {
+      archiveFileName.set("$targetArchiveName-sources.jar")
+    }
+    project.tasks.named<Jar>("javadocJar") {
+      archiveFileName.set("$targetArchiveName-javadoc.jar")
     }
     stageGithubRelease.configure {
       dependsOn(runtimeArchive)

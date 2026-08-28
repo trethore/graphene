@@ -1,5 +1,6 @@
 import com.diffplug.spotless.extra.wtp.EclipseWtpFormatterStep
 import org.gradle.api.plugins.JavaPlugin
+import org.gradle.api.tasks.javadoc.Javadoc
 import org.gradle.api.tasks.testing.Test
 import org.jetbrains.qodana.tasks.QodanaScanTask
 
@@ -84,6 +85,12 @@ tasks.named<QodanaScanTask>("qodanaScan") {
       "--print-problems",
       "--disable-update-checks",
   )
+}
+
+tasks.withType<Javadoc>().configureEach {
+  (options as StandardJavadocDocletOptions).apply {
+    addStringOption("Xdoclint:all,-missing", "-quiet")
+  }
 }
 
 subprojects {
