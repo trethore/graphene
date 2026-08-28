@@ -155,7 +155,7 @@ final class GrapheneBrowserDebugScreen extends Screen {
     }
 
     private static String defaultUrl() {
-        return GrapheneDebugClient.context().appAssets().url("graphene_test/pages/welcome.html");
+        return GrapheneDebugClient.context().httpUrl("graphene_test/pages/welcome.html");
     }
 
     private static void rememberLastUrl(String url) {

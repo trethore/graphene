@@ -66,6 +66,7 @@ Consumer app and HTTP URL factories are obtained from `GrapheneContext`.
 | [`BrowserDownloadPolicy`](../../packages/common/src/main/java/io/github/trethore/graphene/api/browser/download/BrowserDownloadPolicy.java)         | Cancel a download, save it directly, or show a save dialog.               |
 | [`BrowserContextMenuPolicy`](../../packages/common/src/main/java/io/github/trethore/graphene/api/browser/menu/BrowserContextMenuPolicy.java)       | Select which browser-proposed context-menu commands are available.        |
 | [`BrowserContextMenuPresenter`](../../packages/common/src/main/java/io/github/trethore/graphene/api/browser/menu/BrowserContextMenuPresenter.java) | Present a configured menu asynchronously.                                 |
+| [`BrowserFileDialogPolicy`](../../packages/common/src/main/java/io/github/trethore/graphene/api/browser/dialog/BrowserFileDialogPolicy.java)       | Decide which browser documents may present file dialogs.                  |
 | [`BrowserFileDialogPresenter`](../../packages/common/src/main/java/io/github/trethore/graphene/api/browser/dialog/BrowserFileDialogPresenter.java) | Present file selection asynchronously.                                    |
 | [`BrowserJsDialogPresenter`](../../packages/common/src/main/java/io/github/trethore/graphene/api/browser/dialog/BrowserJsDialogPresenter.java)     | Present alert, confirm, prompt, and before-unload dialogs asynchronously. |
 

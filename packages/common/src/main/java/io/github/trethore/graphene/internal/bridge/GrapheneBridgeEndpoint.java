@@ -13,7 +13,9 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -41,6 +43,7 @@ final class GrapheneBridgeEndpoint implements GrapheneBridge {
     private final GrapheneBridgeRequestLifecycle requestLifecycle;
     private final GrapheneBridgeInboundRouter inboundRouter;
     private final GrapheneBridgeClipboardAccess clipboardAccess = new GrapheneBridgeClipboardAccess();
+    private final Set<String> documentRequestChannels = ConcurrentHashMap.newKeySet();
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final AtomicLong documentGeneration = new AtomicLong();
     private final AtomicReference<DocumentIdentity> documentScriptsDocument = new AtomicReference<>();
@@ -174,7 +177,10 @@ final class GrapheneBridgeEndpoint implements GrapheneBridge {
         BridgeQueryCallback validatedCallback = Objects.requireNonNull(callback, "callback");
         boolean bridgeAllowed =
                 exposureState == ExposureState.ALLOWED && validatedFrame.mainFrame() && allows(validatedFrame.url());
-        if (!bridgeAllowed && !allowsAuthorizedClipboardWrite(validatedFrame, requestJson)) {
+        boolean restrictedRequestAllowed = allowsDocumentRequest(validatedFrame, requestJson);
+        if (!bridgeAllowed
+                && !restrictedRequestAllowed
+                && !allowsAuthorizedClipboardWrite(validatedFrame, requestJson)) {
             validatedCallback.failure(403, "Graphene bridge access is denied for this document");
             return true;
         }
@@ -203,6 +209,7 @@ final class GrapheneBridgeEndpoint implements GrapheneBridge {
         outboundQueue.clear();
         requestLifecycle.failAllForClose();
         handlers.clear();
+        documentRequestChannels.clear();
         LOGGER.debug("Closed bridge endpoint browserId={}", browserIdentifier());
     }
 
@@ -271,6 +278,14 @@ final class GrapheneBridgeEndpoint implements GrapheneBridge {
 
     GrapheneSubscription onInternalRequest(String channel, GrapheneBridgeRequestHandler handler) {
         return onRequestValidated(validateInternalChannel(channel), handler);
+    }
+
+    GrapheneSubscription onDocumentRequest(String channel, GrapheneBridgeRequestHandler handler) {
+        String validatedChannel = validateInternalChannel(channel);
+        Objects.requireNonNull(handler, "handler");
+        ensureOpen();
+        documentRequestChannels.add(validatedChannel);
+        return handlers.onRequest(validatedChannel, handler, () -> documentRequestChannels.remove(validatedChannel));
     }
 
     void emitInternal(String channel, String payloadJson) {
@@ -347,6 +362,17 @@ final class GrapheneBridgeEndpoint implements GrapheneBridge {
     private boolean allowsAuthorizedClipboardWrite(BridgeFrame frame, String requestJson) {
         GrapheneBridgePacket packet = codec.parsePacket(requestJson);
         return clipboardAccess.allows(frame, packet, documentGeneration.get());
+    }
+
+    private boolean allowsDocumentRequest(BridgeFrame frame, String requestJson) {
+        if (!frame.mainFrame() || !Objects.equals(frame.url(), currentUrl())) {
+            return false;
+        }
+        GrapheneBridgePacket packet = codec.parsePacket(requestJson);
+        return packet != null
+                && GrapheneBridgeProtocol.KIND_REQUEST.equals(packet.kind)
+                && packet.channel != null
+                && documentRequestChannels.contains(packet.channel);
     }
 
     private void tryInjectDocumentScripts(String documentUrl, String injectionPath) {

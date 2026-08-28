@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta content="width=device-width, initial-scale=1" name="viewport">
+<title>File System Access</title>
+<link href="../style/main.css" rel="stylesheet">
+</head>
+<body>
+	<h1>File System Access</h1>
+	<p><a href="tests.html">Back to tests page</a></p>
+
+	<p>
+		<button id="directory-picker" type="button">Call showDirectoryPicker()</button>
+	</p>
+	<p>
+		<label>
+			Folder upload input, expected to cancel:
+			<input id="folder-upload" type="file" webkitdirectory>
+		</label>
+	</p>
+	<pre id="result">Ready</pre>
+
+	<script>
+		const result = document.getElementById("result");
+		const directoryPicker = document.getElementById("directory-picker");
+		const supported = typeof window.showDirectoryPicker === "function";
+		directoryPicker.disabled = !supported;
+		result.textContent = JSON.stringify(
+			{
+				origin: window.location.origin,
+				secureContext: window.isSecureContext,
+				showDirectoryPicker: supported,
+			},
+			null,
+			2,
+		);
+		directoryPicker.addEventListener("click", async function () {
+				try {
+					const handle = await window.showDirectoryPicker();
+					const permission = await handle.queryPermission({ mode: "readwrite" });
+					result.textContent = JSON.stringify(
+						{ kind: handle.kind, name: handle.name, permission: permission },
+						null,
+						2,
+					);
+				} catch (error) {
+					result.textContent = error.name + ": " + error.message;
+				}
+			});
+		document.getElementById("folder-upload").addEventListener("change", function () {
+			result.textContent = "Folder upload unexpectedly selected files";
+		});
+	</script>
+</body>
+</html>

@@ -32,6 +32,12 @@ public final class GrapheneBridgeInternals {
         return endpoint(bridge).onInternalRequest(channel, handler);
     }
 
+    /** Registers a main-frame request available without exposing the public bridge to the document. */
+    public static GrapheneSubscription onDocumentRequest(
+            GrapheneBridge bridge, String channel, GrapheneBridgeRequestHandler handler) {
+        return endpoint(bridge).onDocumentRequest(channel, handler);
+    }
+
     public static void emitJson(GrapheneBridge bridge, String channel, Object payload) {
         endpoint(bridge).emitInternal(channel, GrapheneBridgeJson.toJson(payload));
     }

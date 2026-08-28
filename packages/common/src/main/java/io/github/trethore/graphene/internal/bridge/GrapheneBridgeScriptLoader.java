@@ -13,14 +13,16 @@ final class GrapheneBridgeScriptLoader {
     private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneBridgeScriptLoader.class);
 
     private static final String CLIPBOARD_SCRIPT_RESOURCE_PATH = "assets/grapheneui/bridge/clipboard.js";
+    private static final String FILE_DIALOG_ROUTING_SCRIPT_RESOURCE_PATH = "assets/grapheneui/file-dialog-routing.js";
 
     private static final String CLIPBOARD_SCRIPT = BrowserKeyPlatform.current() == BrowserKeyPlatform.LINUX
             ? loadSingleScript(GrapheneBridgeScriptLoader.class.getClassLoader(), CLIPBOARD_SCRIPT_RESOURCE_PATH)
             : null;
+    private static final String FILE_DIALOG_ROUTING_SCRIPT = loadSingleScript(
+            GrapheneBridgeScriptLoader.class.getClassLoader(), FILE_DIALOG_ROUTING_SCRIPT_RESOURCE_PATH);
 
     private static final List<String> SCRIPTS = loadScripts();
-    private static final List<String> DOCUMENT_SCRIPTS =
-            CLIPBOARD_SCRIPT == null ? List.of() : List.of(CLIPBOARD_SCRIPT);
+    private static final List<String> DOCUMENT_SCRIPTS = loadDocumentScripts();
 
     private GrapheneBridgeScriptLoader() {}
 
@@ -36,7 +38,7 @@ final class GrapheneBridgeScriptLoader {
         ClassLoader classLoader = GrapheneBridgeScriptLoader.class.getClassLoader();
         List<String> loadedScripts = new ArrayList<>(CLIPBOARD_SCRIPT == null ? 4 : 5);
         loadedScripts.add(loadSingleScript(classLoader, "assets/grapheneui/bridge/bridge.js"));
-        loadedScripts.add(loadSingleScript(classLoader, "assets/grapheneui/file-dialog-routing.js"));
+        loadedScripts.add(FILE_DIALOG_ROUTING_SCRIPT);
         loadedScripts.add(loadSingleScript(classLoader, "assets/grapheneui/bridge/navigation.js"));
         if (CLIPBOARD_SCRIPT != null) {
             loadedScripts.add(CLIPBOARD_SCRIPT);
@@ -46,6 +48,12 @@ final class GrapheneBridgeScriptLoader {
         LOGGER.debug("Loaded {} Graphene bridge bootstrap script(s)", loadedScripts.size());
 
         return List.copyOf(loadedScripts);
+    }
+
+    private static List<String> loadDocumentScripts() {
+        return CLIPBOARD_SCRIPT == null
+                ? List.of(FILE_DIALOG_ROUTING_SCRIPT)
+                : List.of(FILE_DIALOG_ROUTING_SCRIPT, CLIPBOARD_SCRIPT);
     }
 
     private static String loadSingleScript(ClassLoader classLoader, String scriptResourcePath) {

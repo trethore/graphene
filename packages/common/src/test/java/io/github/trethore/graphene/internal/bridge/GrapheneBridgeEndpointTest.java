@@ -18,6 +18,9 @@ import org.junit.jupiter.api.Test;
 final class GrapheneBridgeEndpointTest {
     private static final String CLIPBOARD_WRITE_REQUEST = "{\"bridge\":\"grapheneui\",\"version\":1,\"kind\":\"event\","
             + "\"channel\":\"graphene:clipboard:write\",\"payload\":{\"text\":\"copied\"}}";
+    private static final String DIRECTORY_PICKER_REQUEST = "{\"bridge\":\"grapheneui\",\"version\":1,"
+            + "\"kind\":\"request\",\"id\":\"directory-picker-1\","
+            + "\"channel\":\"graphene:file-dialog:arm-directory\",\"payload\":null}";
 
     @Test
     void injectsBootstrapAndFlushesQueuedMessagesAfterReadyHandshake() {
@@ -90,6 +93,49 @@ final class GrapheneBridgeEndpointTest {
         assertEquals(GrapheneBridgeScriptLoader.documentScripts().size(), browser.executedScripts.size());
         assertEquals(403, callback.failureCode);
         assertFalse(endpoint.isReady());
+    }
+
+    @Test
+    void allowsRegisteredDocumentRequestsWithoutPublicBridgeExposure() {
+        TestBrowser browser = new TestBrowser();
+        browser.currentUrl = "https://example.com/index.html";
+        GrapheneBridgeEndpoint endpoint = endpoint(browser);
+        boolean[] requestHandled = {false};
+        try (GrapheneSubscription subscription = GrapheneBridgeInternals.onDocumentRequest(
+                endpoint, "graphene:file-dialog:arm-directory", (channel, payload) -> {
+                    requestHandled[0] = true;
+                    return null;
+                })) {
+            assertNotNull(subscription);
+            endpoint.onPageLoadEnd(browser.currentUrl());
+            TestQueryCallback callback = new TestQueryCallback();
+
+            boolean handled = endpoint.handleQuery(mainFrame(browser.currentUrl()), DIRECTORY_PICKER_REQUEST, callback);
+
+            assertTrue(handled);
+            assertTrue(requestHandled[0]);
+            assertTrue(callback.successResponse.contains("\"ok\":true"));
+            assertEquals(GrapheneBridgeScriptLoader.documentScripts().size(), browser.executedScripts.size());
+        }
+    }
+
+    @Test
+    void deniesRegisteredDocumentRequestsFromSubframes() {
+        TestBrowser browser = new TestBrowser();
+        browser.currentUrl = "https://example.com/index.html";
+        GrapheneBridgeEndpoint endpoint = endpoint(browser);
+        try (GrapheneSubscription subscription = GrapheneBridgeInternals.onDocumentRequest(
+                endpoint, "graphene:file-dialog:arm-directory", (channel, payload) -> null)) {
+            assertNotNull(subscription);
+            endpoint.onPageLoadEnd(browser.currentUrl());
+            RecordingQueryCallback callback = new RecordingQueryCallback();
+
+            boolean handled = endpoint.handleQuery(
+                    new BridgeFrame(browser.currentUrl(), false), DIRECTORY_PICKER_REQUEST, callback);
+
+            assertTrue(handled);
+            assertEquals(403, callback.failureCode);
+        }
     }
 
     @Test

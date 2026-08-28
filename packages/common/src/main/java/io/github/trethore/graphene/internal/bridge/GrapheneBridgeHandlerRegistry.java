@@ -38,13 +38,20 @@ final class GrapheneBridgeHandlerRegistry {
     }
 
     GrapheneSubscription onRequest(String channel, GrapheneBridgeRequestHandler handler) {
+        return onRequest(channel, handler, () -> {});
+    }
+
+    GrapheneSubscription onRequest(String channel, GrapheneBridgeRequestHandler handler, Runnable unsubscribeAction) {
         GrapheneBridgeRequestHandler previousHandler = requestHandlersByChannel.put(channel, handler);
         if (previousHandler != null && previousHandler != handler) {
             LOGGER.warn("Replacing existing Graphene bridge request handler for channel {}", channel);
         }
 
         LOGGER.debug("Registered bridge request handler channel={} replaced={}", channel, previousHandler != null);
-        return GrapheneSubscriptions.create(() -> requestHandlersByChannel.remove(channel, handler));
+        return GrapheneSubscriptions.create(() -> {
+            requestHandlersByChannel.remove(channel, handler);
+            unsubscribeAction.run();
+        });
     }
 
     GrapheneBridgeRequestHandler requestHandler(String channel) {

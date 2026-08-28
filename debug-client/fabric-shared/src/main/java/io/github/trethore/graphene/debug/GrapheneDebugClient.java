@@ -3,7 +3,9 @@ package io.github.trethore.graphene.debug;
 import io.github.trethore.graphene.api.Graphene;
 import io.github.trethore.graphene.api.GrapheneContext;
 import io.github.trethore.graphene.api.config.GrapheneConfig;
+import io.github.trethore.graphene.api.config.GrapheneContainerConfig;
 import io.github.trethore.graphene.api.config.GrapheneGlobalConfig;
+import io.github.trethore.graphene.api.config.GrapheneHttpConfig;
 import io.github.trethore.graphene.api.config.GrapheneRemoteDebugConfig;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
@@ -31,6 +33,9 @@ public final class GrapheneDebugClient implements ClientModInitializer {
         context = Graphene.register(
                 ID,
                 GrapheneConfig.builder()
+                        .container(GrapheneContainerConfig.builder()
+                                .http(GrapheneHttpConfig.builder().build())
+                                .build())
                         .global(GrapheneGlobalConfig.builder()
                                 .allowBrowserFileAccess()
                                 .remoteDebugging(GrapheneRemoteDebugConfig.builder()

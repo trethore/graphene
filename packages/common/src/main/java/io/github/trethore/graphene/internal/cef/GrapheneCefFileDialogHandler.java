@@ -1,9 +1,11 @@
 package io.github.trethore.graphene.internal.cef;
 
 import io.github.trethore.graphene.api.browser.BrowserSession;
+import io.github.trethore.graphene.api.browser.dialog.BrowserFileDialogPolicy;
 import io.github.trethore.graphene.api.browser.dialog.BrowserFileDialogPresenter;
 import io.github.trethore.graphene.api.config.BrowserFileAccessPolicy;
 import io.github.trethore.graphene.internal.platform.GrapheneTaskExecutor;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,8 +14,12 @@ import java.util.Vector;
 import org.cef.browser.CefBrowser;
 import org.cef.callback.CefFileDialogCallback;
 import org.cef.handler.CefDialogHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 final class GrapheneCefFileDialogHandler implements CefDialogHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneCefFileDialogHandler.class);
+
     private final BrowserFileAccessPolicy fileAccessPolicy;
     private final BrowserFileDialogPresenter defaultPresenter;
     private final GrapheneTaskExecutor mainThreadExecutor;
@@ -46,31 +52,65 @@ final class GrapheneCefFileDialogHandler implements CefDialogHandler {
         }
         boolean directoryIntent =
                 (mode == FileDialogMode.FILE_DIALOG_OPEN || mode == FileDialogMode.FILE_DIALOG_OPEN_FOLDER)
-                        && browser instanceof GrapheneCefBrowserSession session
-                        && session.consumeDirectoryPickerIntent();
+                        && browser instanceof GrapheneCefDirectoryPickerIntentSource intentSource
+                        && intentSource.consumeDirectoryPickerIntent();
         if (mode == FileDialogMode.FILE_DIALOG_OPEN_FOLDER && !directoryIntent) {
             // CEF displays an unhandled Chromium confirmation dialog after upload-folder selection,
             // which is unsafe with off-screen rendering.
             callback.Cancel();
             return true;
         }
-        BrowserFileDialogPresenter presenter = presenter(browser);
+        if (!(browser instanceof BrowserSession session)) {
+            callback.Cancel();
+            return true;
+        }
         BrowserFileDialogPresenter.Request request = new BrowserFileDialogPresenter.Request(
                 directoryIntent ? BrowserFileDialogPresenter.Mode.OPEN_FOLDER : mode(mode),
                 Objects.requireNonNullElse(title, ""),
                 Objects.requireNonNullElse(defaultFilePath, ""),
                 filters(acceptFilters, acceptExtensions, acceptDescriptions));
+        BrowserFileDialogPolicy.Source source = directoryIntent
+                ? BrowserFileDialogPolicy.Source.FILE_SYSTEM_DIRECTORY_PICKER
+                : BrowserFileDialogPolicy.Source.BROWSER_DIALOG;
+        if (!allows(session, documentUrl(browser, session), source, request)) {
+            callback.Cancel();
+            return true;
+        }
+        BrowserFileDialogPresenter presenter =
+                session.options().fileDialogPresenter().orElse(defaultPresenter);
         mainThreadExecutor
                 .supplyStage(() -> presenter.show(request))
-                .whenComplete((paths, failure) -> mainThreadExecutor.execute(() -> complete(callback, paths, failure)));
+                .whenComplete((paths, failure) ->
+                        mainThreadExecutor.execute(() -> complete(callback, request.mode(), paths, failure)));
         return true;
     }
 
-    private BrowserFileDialogPresenter presenter(CefBrowser browser) {
-        if (browser instanceof BrowserSession session) {
-            return session.options().fileDialogPresenter().orElse(defaultPresenter);
+    private static boolean allows(
+            BrowserSession session,
+            String documentUrl,
+            BrowserFileDialogPolicy.Source source,
+            BrowserFileDialogPresenter.Request dialogRequest) {
+        BrowserFileDialogPolicy.Request policyRequest =
+                new BrowserFileDialogPolicy.Request(session, documentUrl, source, dialogRequest);
+        try {
+            BrowserFileDialogPolicy.Decision decision =
+                    session.options().fileDialogPolicy().decide(policyRequest);
+            if (decision != null) {
+                return decision == BrowserFileDialogPolicy.Decision.ALLOW;
+            }
+            LOGGER.warn("Browser file-dialog policy returned null for {}", policyRequest.documentUrl());
+        } catch (RuntimeException exception) {
+            LOGGER.warn("Browser file-dialog policy failed for {}", policyRequest.documentUrl(), exception);
         }
-        return defaultPresenter;
+        return false;
+    }
+
+    private static String documentUrl(CefBrowser browser, BrowserSession session) {
+        try {
+            return Objects.requireNonNullElse(browser.getURL(), session.currentUrl());
+        } catch (RuntimeException exception) {
+            return session.currentUrl();
+        }
     }
 
     private static BrowserFileDialogPresenter.Mode mode(FileDialogMode mode) {
@@ -106,20 +146,34 @@ final class GrapheneCefFileDialogHandler implements CefDialogHandler {
     }
 
     @SuppressWarnings("java:S1149")
-    private static void complete(CefFileDialogCallback callback, List<Path> paths, Throwable failure) {
+    private static void complete(
+            CefFileDialogCallback callback, BrowserFileDialogPresenter.Mode mode, List<Path> paths, Throwable failure) {
         if (failure != null || paths == null || paths.isEmpty()) {
+            callback.Cancel();
+            return;
+        }
+        if (mode == BrowserFileDialogPresenter.Mode.OPEN_FOLDER
+                && (paths.size() != 1 || !isDirectory(paths.getFirst()))) {
             callback.Cancel();
             return;
         }
         Vector<String> selectedPaths = new Vector<>();
         try {
             for (Path path : paths) {
-                selectedPaths.add(path.toAbsolutePath().toString());
+                selectedPaths.add(path.toAbsolutePath().normalize().toString());
             }
         } catch (RuntimeException exception) {
             callback.Cancel();
             return;
         }
         callback.Continue(selectedPaths);
+    }
+
+    private static boolean isDirectory(Path path) {
+        try {
+            return path != null && Files.isDirectory(path);
+        } catch (RuntimeException exception) {
+            return false;
+        }
     }
 }

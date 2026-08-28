@@ -129,6 +129,28 @@ presenter.
 Enable it only when required by trusted content. Prefer app or loopback HTTP assets over direct `file://` resources, and
 remember that all consumers must contribute the same process-wide file-access policy.
 
+Use the per-browser file-dialog policy to restrict which documents may present a picker:
+
+```java
+.fileDialogPolicy(request ->
+        request.documentUrl().startsWith("app://")
+                ? BrowserFileDialogPolicy.Decision.ALLOW
+                : BrowserFileDialogPolicy.Decision.DENY)
+```
+
+The default file-dialog policy allows requests after the process-wide policy has allowed browser file access. Policy
+exceptions and `null` decisions cancel the request. The request source distinguishes routed `showDirectoryPicker()`
+calls from other browser dialogs.
+
+`showDirectoryPicker()` is routed through a restricted internal message that does not expose the public Graphene
+bridge. If routing cannot be established, Graphene rejects the JavaScript promise instead of falling back to a file
+picker. Folder-upload inputs remain unsupported because Chromium presents an additional confirmation UI that JCEF does
+not expose safely for off-screen rendering.
+
+The File System Access API is exposed only in secure contexts. Use a remote HTTPS page or enable Graphene's loopback
+HTTP asset mount and load the page through `context.httpUrl(...)`. Do not assume that Chromium will expose the API to
+`app://`, `classpath://`, or `file://` documents; feature-detect `window.showDirectoryPicker` before using it.
+
 ## Present file and JavaScript dialogs
 
 Graphene supports asynchronous custom presenters:

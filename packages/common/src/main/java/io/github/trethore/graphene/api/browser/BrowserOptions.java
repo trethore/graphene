@@ -1,6 +1,7 @@
 package io.github.trethore.graphene.api.browser;
 
 import io.github.trethore.graphene.api.browser.bridge.BrowserBridgePolicy;
+import io.github.trethore.graphene.api.browser.dialog.BrowserFileDialogPolicy;
 import io.github.trethore.graphene.api.browser.dialog.BrowserFileDialogPresenter;
 import io.github.trethore.graphene.api.browser.dialog.BrowserJsDialogPresenter;
 import io.github.trethore.graphene.api.browser.download.BrowserDownloadPolicy;
@@ -13,7 +14,8 @@ import java.util.Optional;
 /**
  * Immutable options controlling browser behavior, policies, and presentation hooks. Defaults use a
  * transparent 60 FPS browser with JavaScript enabled, expose the bridge only to Graphene-owned
- * documents, cancel downloads, allow ordinary same-session navigation, and disable context menus.
+ * documents, cancel downloads, allow ordinary same-session navigation and file dialogs, and disable
+ * context menus. The process-wide browser file-access policy still denies file dialogs by default.
  */
 @SuppressWarnings("unused")
 public final class BrowserOptions {
@@ -30,6 +32,7 @@ public final class BrowserOptions {
     private final BrowserDownloadPolicy downloadPolicy;
     private final BrowserContextMenuPolicy contextMenuPolicy;
     private final BrowserContextMenuPresenter contextMenuPresenter;
+    private final BrowserFileDialogPolicy fileDialogPolicy;
     private final BrowserFileDialogPresenter fileDialogPresenter;
     private final BrowserJsDialogPresenter jsDialogPresenter;
 
@@ -43,6 +46,7 @@ public final class BrowserOptions {
         this.downloadPolicy = Objects.requireNonNull(builder.downloadPolicy, "downloadPolicy");
         this.contextMenuPolicy = Objects.requireNonNull(builder.contextMenuPolicy, "contextMenuPolicy");
         this.contextMenuPresenter = builder.contextMenuPresenter;
+        this.fileDialogPolicy = Objects.requireNonNull(builder.fileDialogPolicy, "fileDialogPolicy");
         this.fileDialogPresenter = builder.fileDialogPresenter;
         this.jsDialogPresenter = builder.jsDialogPresenter;
     }
@@ -91,6 +95,11 @@ public final class BrowserOptions {
         return Optional.ofNullable(contextMenuPresenter);
     }
 
+    /** Returns the policy applied to browser file-dialog requests. */
+    public BrowserFileDialogPolicy fileDialogPolicy() {
+        return fileDialogPolicy;
+    }
+
     public Optional<BrowserFileDialogPresenter> fileDialogPresenter() {
         return Optional.ofNullable(fileDialogPresenter);
     }
@@ -124,6 +133,7 @@ public final class BrowserOptions {
         private BrowserDownloadPolicy downloadPolicy = BrowserDownloadPolicy.defaultPolicy();
         private BrowserContextMenuPolicy contextMenuPolicy = BrowserContextMenuPolicy.disabled();
         private BrowserContextMenuPresenter contextMenuPresenter;
+        private BrowserFileDialogPolicy fileDialogPolicy = BrowserFileDialogPolicy.defaultPolicy();
         private BrowserFileDialogPresenter fileDialogPresenter;
         private BrowserJsDialogPresenter jsDialogPresenter;
 
@@ -173,6 +183,12 @@ public final class BrowserOptions {
 
         public Builder contextMenuPresenter(BrowserContextMenuPresenter contextMenuPresenter) {
             this.contextMenuPresenter = Objects.requireNonNull(contextMenuPresenter, "contextMenuPresenter");
+            return this;
+        }
+
+        /** Sets the per-browser authorization policy for file-dialog requests. */
+        public Builder fileDialogPolicy(BrowserFileDialogPolicy fileDialogPolicy) {
+            this.fileDialogPolicy = Objects.requireNonNull(fileDialogPolicy, "fileDialogPolicy");
             return this;
         }
 

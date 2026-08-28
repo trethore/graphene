@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.trethore.graphene.api.browser.bridge.BrowserBridgePolicy;
+import io.github.trethore.graphene.api.browser.dialog.BrowserFileDialogPolicy;
 import io.github.trethore.graphene.api.browser.dialog.BrowserFileDialogPresenter;
 import io.github.trethore.graphene.api.browser.dialog.BrowserJsDialogPresenter;
 import io.github.trethore.graphene.api.browser.menu.BrowserContextMenuPolicy;
@@ -53,20 +54,26 @@ class BrowserOptionsTest {
 
     @Test
     void configuresDialogPresenters() {
+        BrowserFileDialogPolicy filePolicy = BrowserFileDialogPolicy.disabled();
         BrowserFileDialogPresenter filePresenter =
                 request -> CompletableFuture.completedFuture(List.of(Path.of("selected.txt")));
         BrowserJsDialogPresenter jsPresenter =
                 request -> CompletableFuture.completedFuture(BrowserJsDialogPresenter.Result.accept());
 
         BrowserOptions options = BrowserOptions.builder()
+                .fileDialogPolicy(filePolicy)
                 .fileDialogPresenter(filePresenter)
                 .jsDialogPresenter(jsPresenter)
                 .build();
 
+        assertSame(filePolicy, options.fileDialogPolicy());
         assertSame(filePresenter, options.fileDialogPresenter().orElseThrow());
         assertSame(jsPresenter, options.jsDialogPresenter().orElseThrow());
         assertTrue(BrowserOptions.defaults().fileDialogPresenter().isEmpty());
         assertTrue(BrowserOptions.defaults().jsDialogPresenter().isEmpty());
+        assertEquals(
+                BrowserFileDialogPolicy.Decision.ALLOW,
+                BrowserOptions.defaults().fileDialogPolicy().decide(null));
     }
 
     @Test

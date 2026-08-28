@@ -71,6 +71,7 @@ consumer enables it.
 | Download policy             | Cancel                           | No download starts without an explicit policy.                         |
 | Context-menu policy         | Disabled                         | No menu is presented.                                                  |
 | Context-menu presenter      | Platform default                 | Used when the policy returns menu items.                               |
+| File-dialog policy          | Allow                            | Applies after the process-wide browser file-access policy.             |
 | File-dialog presenter       | Platform default                 | Handles selection only when browser file access is `ALLOW`.            |
 | JavaScript-dialog presenter | Platform default                 | Handles alert, confirm, prompt, and before-unload.                     |
 
@@ -82,6 +83,7 @@ consumer enables it.
 | `BrowserNavigationPolicy`  | Runs synchronously on browser callback thread; must not block | Cancels navigation.        |
 | `BrowserDownloadPolicy`    | Runs synchronously on browser callback thread; must not block | Cancels download.          |
 | `BrowserContextMenuPolicy` | Runs synchronously on browser callback thread; must not block | Disables the menu.         |
+| `BrowserFileDialogPolicy`  | Runs synchronously on browser callback thread; must not block | Cancels the dialog.        |
 
 Failed or `null` asynchronous presenter completions are treated as cancellation or rejection as documented by each
 presenter interface.

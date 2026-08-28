@@ -58,7 +58,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 final class GrapheneCefBrowserSession extends CefBrowserWindowless
-        implements BrowserSession, BridgeBrowser, CefRenderHandler {
+        implements BrowserSession, BridgeBrowser, CefRenderHandler, GrapheneCefDirectoryPickerIntentSource {
     private static final String BLANK_URL = "about:blank";
     private static final String INPUT_NAME = "input";
     private static final Logger LOGGER = LoggerFactory.getLogger(GrapheneCefBrowserSession.class);
@@ -434,7 +434,8 @@ final class GrapheneCefBrowserSession extends CefBrowserWindowless
         setFocus(true);
     }
 
-    boolean consumeDirectoryPickerIntent() {
+    @Override
+    public boolean consumeDirectoryPickerIntent() {
         return fileDialogRouting.consumeDirectoryIntent();
     }
 

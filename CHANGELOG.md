@@ -5,6 +5,13 @@
 ### Added
 
 - Gradle 9.7.1.
+- Added per-browser file-dialog authorization policies.
+- Added routed support for the File System Access API's `showDirectoryPicker()` method.
+
+### Changed
+
+- Directory-picker routing now works without exposing the public JavaScript bridge and fails closed when unavailable.
+- Folder selections are validated before they are returned to Chromium.
 
 ## [2.1.0] - 2026-07-23
 
