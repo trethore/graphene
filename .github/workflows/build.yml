@@ -1,7 +1,7 @@
 # Build the project.
 
 name: build
-on: [pull_request, workflow_dispatch]
+on: [ pull_request, workflow_dispatch ]
 
 jobs:
   build:
@@ -10,15 +10,15 @@ jobs:
       - name: checkout repository
         uses: actions/checkout@v6
 
-      - name: validate gradle wrapper
-        uses: gradle/actions/wrapper-validation@v6
-
       - name: setup jdk
         uses: actions/setup-java@v5
         with:
           java-version: '25'
           distribution: 'microsoft'
-          cache: 'gradle'
+
+      - name: setup gradle
+        uses: gradle/actions/setup-gradle@v6
+
       - name: make gradle wrapper executable
         run: chmod +x ./gradlew
 
@@ -33,3 +33,4 @@ jobs:
         with:
           name: Artifacts
           path: packages/fabric-*/build/libs/
+          if-no-files-found: error
