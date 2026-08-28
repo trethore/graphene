@@ -12,13 +12,13 @@ graphene/
   .github/
   build-logic/                              # Included Gradle build for custom build logic.
     architecture-check/                     # Gradle plugin for enforcing architecture rules.
-    graphene-conventions/                   # Gradle conventions that compose shared sources into concrete targets.
+    graphene-conventions/                   # Gradle conventions for Fabric packages, debug clients, and shared sources.
     sonar-analysis/                         # Gradle plugin for running SonarQube analysis.
   config/                                   # Qodana and SonarQube configuration.
   debug-client/                             # Development-only clients and resources for manually testing Graphene.
     fabric-shared/                          # Fabric debug entry point and key bindings shared across Fabric targets.
       src/main/java/io/github/trethore/graphene/debug/
-    shared/                                 # Version-shared debug UI, bridge logic, and web resources for Fabric clients.
+    shared/                                 # Debug UI, bridge logic, tests, and web resources shared across Fabric targets.
       src/main/java/io/github/trethore/graphene/debug/
       resources/assets/grapheneui-debug/
     <loader>-<minecraft-version>/           # Target-specific debug access, metadata, and Gradle configuration.
@@ -31,8 +31,8 @@ graphene/
     common/                                 # Minecraft- and loader-independent API, runtime, JCEF integration, and web resources.
       src/main/
         java/io/github/trethore/graphene/
-          api/                              # Public browser, bridge, configuration, runtime, and URL APIs.
-          internal/                         # Shared runtime, JCEF, bridge, HTTP, platform, and resource internals.
+          api/                              # Public browser, bridge, configuration, DevTools, runtime, and URL APIs.
+          internal/                         # Shared bridge, browser, JCEF, event, HTTP, input, platform, resource, runtime, and URL internals.
         resources/assets/grapheneui/
       src/test/
       build.gradle.kts
@@ -67,8 +67,12 @@ graphene/
 ```
 
 Graphene supports `fabric-1.21.11` and `fabric-26.2`. Read the related `build.gradle.kts` and `settings.gradle.kts` for more information.
-The shared package and debug-client directories are composed into concrete target source sets by
-`build-logic/graphene-conventions`; they are not standalone Gradle projects.
+The convention plugins in `build-logic/graphene-conventions` compose these shared source directories into concrete target projects:
+
+- Package sources: `packages/minecraft-shared` and `packages/fabric-shared`.
+- Debug-client sources: `debug-client/shared` and `debug-client/fabric-shared`.
+
+These source directories are not standalone Gradle projects.
 
 ## General Coding Conventions
 
