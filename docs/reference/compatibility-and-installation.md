@@ -6,8 +6,8 @@ This page is the source of truth for supported Graphene artifacts.
 
 | Graphene | Loader | Minecraft | Java        | Fabric Loader   | Fabric API                                  |
 |----------|--------|-----------|-------------|-----------------|---------------------------------------------|
-| 2.1.0    | Fabric | 26.2      | 25 or newer | 0.19.3 or newer | 0.158.0+26.2 or newer compatible release    |
-| 2.1.0    | Fabric | 1.21.11   | 21 or newer | 0.19.3 or newer | 0.141.6+1.21.11 or newer compatible release |
+| 2.2.0    | Fabric | 26.2      | 25 or newer | 0.19.3 or newer | 0.158.0+26.2 or newer compatible release    |
+| 2.2.0    | Fabric | 1.21.11   | 21 or newer | 0.19.3 or newer | 0.141.6+1.21.11 or newer compatible release |
 
 Graphene's repository separates loader-independent code from loader- and Minecraft-specific modules. Future combinations
 can be added as rows without changing the rest of the documentation.
@@ -22,9 +22,9 @@ repositories {
 }
 
 dependencies {
-    implementation("io.github.trethore:graphene-ui-26.2:2.1.0")
+    implementation("io.github.trethore:graphene-ui-26.2:2.2.0")
     // Or for Minecraft 1.21.11:
-    // modImplementation("io.github.trethore:graphene-ui-1.21.11:2.1.0")
+    // modImplementation("io.github.trethore:graphene-ui-1.21.11:2.2.0")
 }
 ```
 
@@ -35,7 +35,7 @@ Declare the runtime dependency in `fabric.mod.json`:
 ```json
 {
   "depends": {
-    "grapheneui": ">=2.1.0"
+    "grapheneui": ">=2.2.0"
   }
 }
 ```
@@ -56,8 +56,8 @@ graphene-<graphene-version>-<loader>-<minecraft-version>.jar
 For example:
 
 ```text
-graphene-2.1.0-fabric-26.2.jar
-graphene-2.1.0-fabric-1.21.11.jar
+graphene-2.2.0-fabric-26.2.jar
+graphene-2.2.0-fabric-1.21.11.jar
 ```
 
 Use Maven Central for compile-time dependency resolution. Modrinth and GitHub Releases are useful for launch profiles,
