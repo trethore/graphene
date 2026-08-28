@@ -62,8 +62,9 @@ context.runtime()
                     }));
 ```
 
-`targetFor(...)` matches a remotely inspectable page to the supplied `BrowserSession`. `pageTargets()` returns all
-discoverable page targets when a diagnostic tool needs the complete list.
+On its first successful call, `targetFor(...)` matches a remotely inspectable page by URL and, when needed, title. It
+then binds the discovered target ID to the session for later calls. `pageTargets()` returns all discoverable page
+targets when a diagnostic tool needs the complete list.
 
 ![Graphene running in Minecraft with Chromium DevTools inspecting the page](../images/devtools-inspection.png)
 
@@ -71,13 +72,13 @@ discoverable page targets when a diagnostic tool needs the complete list.
 
 The returned stage can fail with:
 
-| Failure                               | Meaning                                      |
-|---------------------------------------|----------------------------------------------|
-| `DevToolsDisabledException`           | Remote debugging was not enabled.            |
-| `DevToolsRuntimeUnavailableException` | The Graphene runtime is not running.         |
-| `DevToolsTargetNotFoundException`     | No target matches the browser URL and title. |
-| `DevToolsTargetAmbiguousException`    | Multiple targets match the browser.          |
-| `DevToolsDiscoveryException`          | The endpoint could not be queried or parsed. |
+| Failure                               | Meaning                                              |
+|---------------------------------------|------------------------------------------------------|
+| `DevToolsDisabledException`           | Remote debugging was not enabled.                    |
+| `DevToolsRuntimeUnavailableException` | The Graphene runtime is not running.                 |
+| `DevToolsTargetNotFoundException`     | No target matches the bound ID or initial URL/title. |
+| `DevToolsTargetAmbiguousException`    | Multiple targets match the initial URL/title.        |
+| `DevToolsDiscoveryException`          | The endpoint could not be queried or parsed.         |
 
 Asynchronous wrappers may expose the original failure as a completion exception's cause. Unwrap it before selecting a
 user-facing message.

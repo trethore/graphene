@@ -10,7 +10,7 @@ Returns whether the Java/JavaScript handshake completed.
 
 ```javascript
 if (globalThis.grapheneBridge.isReady()) {
-  // Messages can be sent.
+    // Messages can be sent.
 }
 ```
 
@@ -39,7 +39,7 @@ Registers a listener for Java -> JavaScript events. It returns an unsubscribe fu
 
 ```javascript
 const unsubscribe = bridge.on("example:status", (payload) => {
-  console.log(payload);
+    console.log(payload);
 });
 ```
 
@@ -58,7 +58,7 @@ bridge.off("example:status", listener);
 Sends a one-way JavaScript -> Java event and returns a promise for message delivery.
 
 ```javascript
-await bridge.emit("example:changed", { value: 42 });
+await bridge.emit("example:changed", {value: 42});
 ```
 
 An absent Java event listener does not produce a response value.
@@ -71,7 +71,7 @@ Registers the JavaScript handler for Java -> JavaScript requests and returns an 
 
 ```javascript
 const unregister = bridge.handle("example:lookup", async (payload) => {
-  return { result: await lookup(payload.key) };
+    return {result: await lookup(payload.key)};
 });
 ```
 
@@ -85,7 +85,7 @@ Handlers can return a value or promise. A thrown error or rejected promise becom
 Sends a JavaScript -> Java request and returns a promise for its response payload.
 
 ```javascript
-const response = await bridge.request("example:greet", { name: "Alex" });
+const response = await bridge.request("example:greet", {name: "Alex"});
 console.log(response.message);
 ```
 
@@ -113,9 +113,9 @@ available.
 
 ```javascript
 try {
-  await bridge.request("example:missing", null);
+    await bridge.request("example:missing", null);
 } catch (error) {
-  console.error(error.code, error.message);
+    console.error(error.code, error.message);
 }
 ```
 
@@ -143,8 +143,10 @@ Channels beginning with `graphene:` are reserved for Graphene platform integrati
 
 ## Security
 
-The bridge exists only in documents allowed by `BrowserBridgePolicy`. Packaged Graphene documents are allowed by
-default. Do not broaden exposure to remote origins without reviewing every Java handler reachable from those pages.
+The bridge exists only in documents allowed by `BrowserBridgePolicy`. Graphene-managed app, classpath, and shared HTTP
+documents are allowed by default. Asset namespaces and consumer HTTP mounts are not separate trust domains, so review
+every Java handler reachable from any page allowed by the selected policy. Do not broaden exposure to remote origins
+without the same review.
 
 ## Related documentation
 

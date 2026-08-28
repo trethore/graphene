@@ -19,7 +19,11 @@ Create a URL through the registered context:
 String url = context.appAssets().url("ui/index.html");
 ```
 
-This produces an `app://` URL scoped to the consumer's mod ID. Relative links inside the page work normally.
+This produces `app://assets/<mod-id>/ui/index.html`. The context defaults the asset namespace to the consumer's mod ID,
+and relative links inside the page work normally.
+
+The namespace is part of the URL path. Graphene's bridge-origin checks treat all generated app asset URLs as the same
+`app://assets` origin; use bridge policies and Java handler design accordingly when multiple mods contribute content.
 
 Use another namespace only when you intentionally need an asset owned by another loaded resource namespace:
 

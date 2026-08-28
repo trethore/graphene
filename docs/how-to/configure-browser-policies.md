@@ -1,6 +1,6 @@
 # Configure Browser Policies
 
-`BrowserOptions` applies behavior and security policies when a browser is created. Defaults favor packaged Graphene
+`BrowserOptions` applies behavior and security policies when a browser is created. Defaults favor Graphene-managed
 content and reject capabilities that require an explicit consumer decision.
 
 ## Build browser options
@@ -27,7 +27,8 @@ BrowserSurface surface =
 
 ## Restrict bridge exposure
 
-The default policy allows the bridge only for Graphene-owned app, classpath, and built-in HTTP documents.
+The default policy allows the bridge only for Graphene-managed app, classpath, and shared HTTP-origin documents. These
+sources are shared trust domains: an asset namespace or consumer HTTP mount is not a separate browser origin.
 
 Disable it completely:
 
@@ -40,6 +41,9 @@ Allow only the origin used to create the browser:
 ```java
 .bridgePolicy(BrowserBridgePolicy.initialOrigin())
 ```
+
+Origin-only policies do not distinguish app asset namespaces or consumer mounts on Graphene's shared HTTP server. Use a
+custom policy that inspects `request.documentUrl()` when those paths must be isolated.
 
 Allow an exact origin:
 
@@ -86,7 +90,8 @@ The Fabric integration provides its platform presenter when no custom presenter 
 `contextMenuPresenter(...)` only when your UI needs a different asynchronous presentation.
 
 Custom policies receive browser-proposed items and return the subset to present. Preserve command IDs from the proposed
-items so the selected action can be executed correctly.
+items so the selected action can be executed correctly. The policy runs synchronously on the browser callback thread and
+must not block.
 
 ## Handle downloads
 
@@ -105,23 +110,10 @@ Use Chromium's native save dialog:
 ```
 
 The download policy runs synchronously on the browser callback thread and must not block. Validate consumer-selected
-paths and avoid deriving unrestricted filesystem paths from remote filenames.
+paths, create required parent directories before returning `saveTo(...)`, and avoid deriving unrestricted filesystem
+paths from remote filenames.
 
-## Present file and JavaScript dialogs
-
-Graphene supports asynchronous custom presenters:
-
-```java
-.fileDialogPresenter(request -> showFilePicker(request))
-.jsDialogPresenter(request -> showBrowserDialog(request))
-```
-
-A file presenter completes with selected paths or an empty list to cancel. A JavaScript-dialog presenter completes with
-`BrowserJsDialogPresenter.Result.accept(...)` or `Result.cancel()`.
-
-When no custom presenter is configured, the Fabric platform integration supplies its default presenter.
-
-## Allow direct file access only when required
+## Allow browser file access only when required
 
 Browser file access is a process-wide setting and is denied by default:
 
@@ -130,8 +122,33 @@ GrapheneGlobalConfig global =
         GrapheneGlobalConfig.builder().allowBrowserFileAccess().build();
 ```
 
-Only enable it for content that must directly load local `file://` resources. Prefer app or loopback HTTP assets, which
-provide narrower access.
+`ALLOW` is required for browser file-selection requests, including file inputs and file-system picker APIs, as well as
+direct local-file capabilities. With the default `DENY` policy, Graphene cancels file-dialog requests before invoking a
+presenter.
+
+Enable it only when required by trusted content. Prefer app or loopback HTTP assets over direct `file://` resources, and
+remember that all consumers must contribute the same process-wide file-access policy.
+
+## Present file and JavaScript dialogs
+
+Graphene supports asynchronous custom presenters:
+
+```java
+.fileDialogPresenter(request ->
+
+showFilePicker(request))
+        .
+
+jsDialogPresenter(request ->
+
+showBrowserDialog(request))
+```
+
+A file presenter completes with selected paths or an empty list to cancel. It is called only when the process-wide
+browser file-access policy is `ALLOW`. A JavaScript-dialog presenter completes with
+`BrowserJsDialogPresenter.Result.accept(...)` or `Result.cancel()` and does not require file access.
+
+When no custom presenter is configured, the Fabric platform integration supplies its default presenter.
 
 ## Next steps
 

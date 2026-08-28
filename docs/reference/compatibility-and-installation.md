@@ -6,8 +6,8 @@ This page is the source of truth for supported Graphene artifacts.
 
 | Graphene | Loader | Minecraft | Java        | Fabric Loader   | Fabric API                                  |
 |----------|--------|-----------|-------------|-----------------|---------------------------------------------|
-| 2.1.0    | Fabric | 26.2      | 25 or newer | 0.19.3 or newer | 0.155.2+26.2 or newer compatible release    |
-| 2.1.0    | Fabric | 1.21.11   | 21 or newer | 0.19.3 or newer | 0.141.4+1.21.11 or newer compatible release |
+| 2.1.0    | Fabric | 26.2      | 25 or newer | 0.19.3 or newer | 0.158.0+26.2 or newer compatible release    |
+| 2.1.0    | Fabric | 1.21.11   | 21 or newer | 0.19.3 or newer | 0.141.6+1.21.11 or newer compatible release |
 
 Graphene's repository separates loader-independent code from loader- and Minecraft-specific modules. Future combinations
 can be added as rows without changing the rest of the documentation.
@@ -18,13 +18,13 @@ Maven Central is the canonical dependency source for mod development.
 
 ```kotlin
 repositories {
-  mavenCentral()
+    mavenCentral()
 }
 
 dependencies {
-  modImplementation("io.github.trethore:graphene-ui-26.2:2.1.0")
-  // Or for Minecraft 1.21.11:
-  // modImplementation("io.github.trethore:graphene-ui-1.21.11:2.1.0")
+    modImplementation("io.github.trethore:graphene-ui-26.2:2.1.0")
+    // Or for Minecraft 1.21.11:
+    // modImplementation("io.github.trethore:graphene-ui-1.21.11:2.1.0")
 }
 ```
 

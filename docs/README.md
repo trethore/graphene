@@ -10,8 +10,8 @@ communication.
 
 Graphene supports Minecraft 26.2 and 1.21.11 on Fabric.
 
-Check [compatibility and installation](reference/compatibility-and-installation.md) for the exact versions and dependency
-coordinates.
+Check [compatibility and installation](reference/compatibility-and-installation.md) for the exact versions and
+dependency coordinates.
 
 ## Start here
 

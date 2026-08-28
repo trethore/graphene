@@ -60,19 +60,19 @@ consumer enables it.
 
 ## `BrowserOptions`
 
-| Setting                     | Default                          | Constraints or behavior                                         |
-|-----------------------------|----------------------------------|-----------------------------------------------------------------|
-| Maximum frame rate          | `60`                             | Integer from `1` through `60`.                                  |
-| Transparent                 | `true`                           | Browser frames preserve transparency.                           |
-| Background color            | `0xFFFFFF`                       | 24-bit RGB value used for opaque rendering.                     |
-| JavaScript enabled          | `true`                           | Disable only for noninteractive documents.                      |
-| Bridge policy               | Graphene-owned documents         | App, classpath, and built-in HTTP documents receive the bridge. |
-| Navigation policy           | Same-session ordinary navigation | New browsing contexts are cancelled.                            |
-| Download policy             | Cancel                           | No download starts without an explicit policy.                  |
-| Context-menu policy         | Disabled                         | No menu is presented.                                           |
-| Context-menu presenter      | Platform default                 | Used when the policy returns menu items.                        |
-| File-dialog presenter       | Platform default                 | Handles browser file selection.                                 |
-| JavaScript-dialog presenter | Platform default                 | Handles alert, confirm, prompt, and before-unload.              |
+| Setting                     | Default                          | Constraints or behavior                                                |
+|-----------------------------|----------------------------------|------------------------------------------------------------------------|
+| Maximum frame rate          | `60`                             | Integer from `1` through `60`.                                         |
+| Transparent                 | `true`                           | Browser frames preserve transparency.                                  |
+| Background color            | `0xFFFFFF`                       | 24-bit RGB value used for opaque rendering.                            |
+| JavaScript enabled          | `true`                           | Disable only for noninteractive documents.                             |
+| Bridge policy               | Graphene-managed documents       | App, classpath, and shared Graphene HTTP documents receive the bridge. |
+| Navigation policy           | Same-session ordinary navigation | New browsing contexts are cancelled.                                   |
+| Download policy             | Cancel                           | No download starts without an explicit policy.                         |
+| Context-menu policy         | Disabled                         | No menu is presented.                                                  |
+| Context-menu presenter      | Platform default                 | Used when the policy returns menu items.                               |
+| File-dialog presenter       | Platform default                 | Handles selection only when browser file access is `ALLOW`.            |
+| JavaScript-dialog presenter | Platform default                 | Handles alert, confirm, prompt, and before-unload.                     |
 
 ## Policy failure behavior
 
@@ -81,7 +81,7 @@ consumer enables it.
 | `BrowserBridgePolicy`      | Thread-safe and non-blocking                                  | Denies bridge exposure.    |
 | `BrowserNavigationPolicy`  | Runs synchronously on browser callback thread; must not block | Cancels navigation.        |
 | `BrowserDownloadPolicy`    | Runs synchronously on browser callback thread; must not block | Cancels download.          |
-| `BrowserContextMenuPolicy` | Return browser-proposed items to present                      | Disables the menu.         |
+| `BrowserContextMenuPolicy` | Runs synchronously on browser callback thread; must not block | Disables the menu.         |
 
 Failed or `null` asynchronous presenter completions are treated as cancellation or rejection as documented by each
 presenter interface.

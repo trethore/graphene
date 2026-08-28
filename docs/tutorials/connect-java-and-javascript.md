@@ -10,15 +10,20 @@ packaged page.
 Add small records for the payloads exchanged with the page:
 
 ```java
-record GreetingRequest(String name) {}
+record GreetingRequest(String name) {
+}
 
-record GreetingResponse(String message) {}
+record GreetingResponse(String message) {
+}
 
-record TextRequest(String value) {}
+record TextRequest(String value) {
+}
 
-record TextResponse(String value) {}
+record TextResponse(String value) {
+}
 
-record StatusMessage(String message) {}
+record StatusMessage(String message) {
+}
 ```
 
 Graphene's JSON helpers serialize and deserialize these records with Gson.
@@ -36,28 +41,41 @@ After constructing `webView`, register the handlers:
 ```java
 GrapheneBridge bridge = webView.bridge();
 
-bridgeSubscriptions.add(
-    bridge.onRequestJson(
-        "example:greet",
-        GreetingRequest.class,
-        (channel, request) ->
-            CompletableFuture.completedFuture(
-                new GreetingResponse("Hello, " + request.name() + "!"))));
+bridgeSubscriptions.
 
-bridgeSubscriptions.add(
-    bridge.onEvent(
-        "example:page-ready",
+add(
+        bridge.onRequestJson(
+                "example:greet",
+        GreetingRequest .class,
+        (channel, request) ->
+        CompletableFuture.
+
+completedFuture(
+                new GreetingResponse("Hello, "+request.name() +"!"))));
+
+        bridgeSubscriptions.
+
+add(
+        bridge.onEvent(
+                "example:page-ready",
         (channel, payloadJson) ->
-            bridge
-                .requestJson(
+        bridge
+        .
+
+requestJson(
                     "example:uppercase",
-                    new TextRequest("message from Java"),
-                    TextResponse.class)
-                .thenAccept(
-                    response ->
-                        bridge.emitJson(
+                            new TextRequest("message from Java"),
+
+TextResponse .class)
+        .
+
+thenAccept(
+        response ->
+        bridge.
+
+emitJson(
                             "example:status",
-                            new StatusMessage("Java received: " + response.value())))));
+                                    new StatusMessage("Java received: "+response.value())))));
 ```
 
 Required imports:
@@ -65,6 +83,7 @@ Required imports:
 ```java
 import io.github.trethore.graphene.api.GrapheneSubscription;
 import io.github.trethore.graphene.api.bridge.GrapheneBridge;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -79,29 +98,29 @@ Replace `app.js` with:
 
 ```javascript
 async function connect() {
-  const bridge = globalThis.grapheneBridge;
-  await bridge.ready();
+    const bridge = globalThis.grapheneBridge;
+    await bridge.ready();
 
-  const output = document.getElementById("status");
+    const output = document.getElementById("status");
 
-  bridge.on("example:status", (payload) => {
-    output.textContent = payload.message;
-  });
+    bridge.on("example:status", (payload) => {
+        output.textContent = payload.message;
+    });
 
-  bridge.handle("example:uppercase", (payload) => ({
-    value: payload.value.toUpperCase(),
-  }));
+    bridge.handle("example:uppercase", (payload) => ({
+        value: payload.value.toUpperCase(),
+    }));
 
-  const greeting = await bridge.request("example:greet", {
-    name: "Graphene developer",
-  });
-  output.textContent = greeting.message;
+    const greeting = await bridge.request("example:greet", {
+        name: "Graphene developer",
+    });
+    output.textContent = greeting.message;
 
-  await bridge.emit("example:page-ready", null);
+    await bridge.emit("example:page-ready", null);
 }
 
 connect().catch((error) => {
-  document.getElementById("status").textContent = error.message;
+    document.getElementById("status").textContent = error.message;
 });
 ```
 
@@ -114,8 +133,8 @@ Screen closure closes the widget, but subscriptions owned by your screen should 
 
 ```java
 private void closeBridgeSubscriptions() {
-  bridgeSubscriptions.forEach(GrapheneSubscription::unsubscribe);
-  bridgeSubscriptions.clear();
+    bridgeSubscriptions.forEach(GrapheneSubscription::unsubscribe);
+    bridgeSubscriptions.clear();
 }
 ```
 
@@ -139,8 +158,9 @@ Graphene's debug client provides a broader bridge test covering the same message
 - Use stable, namespaced channels such as `example:greet`.
 - Do not use channels beginning with `graphene:`. That prefix is reserved for Graphene's platform integrations.
 - Register page-side handlers again after navigation because a new document receives a new JavaScript environment.
-- Bridge exposure is document-dependent. Packaged Graphene assets are allowed by default; arbitrary remote pages are
-  not.
+- Bridge exposure is document-dependent. Graphene-managed app, classpath, and shared HTTP documents are allowed by
+  default; asset namespaces and consumer HTTP mounts are not separate trust domains. Arbitrary remote pages are not
+  allowed.
 
 ## Next steps
 

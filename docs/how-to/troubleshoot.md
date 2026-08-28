@@ -92,6 +92,14 @@ server settings identical across consumers.
 For `fileRoot`, confirm that the resolved file remains inside the configured root and is readable. Filesystem resources
 take precedence over packaged resources.
 
+## A browser file picker is immediately canceled
+
+**Cause:** the process-wide browser file-access policy is `DENY`, which is the default.
+
+**Fix:** for trusted content that requires file inputs or file-system picker APIs, configure
+`GrapheneGlobalConfig.builder().allowBrowserFileAccess()` for every Graphene consumer. A custom
+`BrowserFileDialogPresenter` does not bypass the process-wide policy.
+
 ## Global configuration conflicts
 
 **Cause:** consumers contributed different browser runtime paths, remote-debug settings, or browser-file-access
