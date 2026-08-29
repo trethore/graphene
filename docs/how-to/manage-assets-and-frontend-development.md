@@ -110,6 +110,32 @@ their output can run in Chromium as ordinary HTML, CSS, JavaScript, and assets.
 Configure the frontend build for relative asset paths or for the path exposed by `context.httpUrl(...)`. Emit production
 files into your mod's resources before building the release JAR.
 
+## Serve video assets
+
+Graphene serves `.webm` and `.mp4` assets with their standard MIME types and supports single byte-range requests for
+HTTP, app, and classpath resources. MIME and range support do not guarantee that the bundled browser runtime can decode
+every codec used by those containers.
+
+Use WebM with VP8 or VP9 for video intended to work with Graphene's default JCEF runtime. MP4 assets are served
+correctly, but H.264 and AAC playback is not guaranteed. The default Chromium-derived runtime does not automatically
+use an operating system H.264 installation when its build excludes proprietary codecs. A separately built JCEF runtime
+may provide additional codec support.
+
+Browser code can select a source based on runtime capabilities:
+
+```javascript
+const video = document.createElement("video");
+const supportsVp9 = video.canPlayType('video/webm; codecs="vp9"') !== "";
+const supportsH264 = video.canPlayType('video/mp4; codecs="avc1.42E01E"') !== "";
+```
+
+For packaged assets, convert H.264 MP4 input to VP9 WebM during the frontend build when broad compatibility with the
+default runtime is required:
+
+```bash
+ffmpeg -i input.mp4 -c:v libvpx-vp9 -crf 32 -b:v 0 -c:a libopus output.webm
+```
+
 ## Shared HTTP settings
 
 All consumers with HTTP enabled share one loopback server. Their `bindHost` and port-selection settings must agree. Each

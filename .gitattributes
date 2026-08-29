@@ -10,3 +10,5 @@
 # Treat packaged assets as binary
 *.png           binary
 *.jar           binary
+*.mp4           binary
+*.webm          binary

@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Added
+
+- Added MP4 and WebM MIME detection for Graphene-managed assets.
+- Added single byte-range responses for HTTP, app, and classpath resources.
+
 ## [2.1.0] - 2026-08-29
 
 ### Added

@@ -1,10 +1,12 @@
 package io.github.trethore.graphene.internal.cef;
 
 import io.github.trethore.graphene.api.url.GrapheneClasspathUrls;
+import io.github.trethore.graphene.internal.resource.GrapheneByteRange;
 import io.github.trethore.graphene.internal.resource.GrapheneMimeTypes;
 import io.github.trethore.graphene.internal.url.GrapheneAppUrls;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
 import org.cef.browser.CefBrowser;
 import org.cef.browser.CefFrame;
 import org.cef.callback.CefCallback;
@@ -15,6 +17,7 @@ import org.cef.misc.IntRef;
 import org.cef.misc.StringRef;
 import org.cef.network.CefRequest;
 import org.cef.network.CefResponse;
+import org.jetbrains.annotations.NotNull;
 
 final class GrapheneClasspathSchemeHandlerFactory implements CefSchemeHandlerFactory {
     @Override
@@ -27,6 +30,8 @@ final class GrapheneClasspathSchemeHandlerFactory implements CefSchemeHandlerFac
 
         private byte[] responseBytes = EMPTY_RESPONSE;
         private String mimeType = "text/plain";
+        private String contentRange = "";
+        private int statusCode = 404;
         private int readOffset;
         private boolean found;
 
@@ -38,6 +43,10 @@ final class GrapheneClasspathSchemeHandlerFactory implements CefSchemeHandlerFac
             found = resource.found();
             if (found) {
                 mimeType = GrapheneMimeTypes.resolve(resourcePath);
+                applyByteRange(request.getHeaderByName("Range"), resource.bytes());
+            } else {
+                statusCode = 404;
+                contentRange = "";
             }
             readOffset = 0;
             callback.Continue();
@@ -47,7 +56,13 @@ final class GrapheneClasspathSchemeHandlerFactory implements CefSchemeHandlerFac
         @Override
         public void getResponseHeaders(CefResponse response, IntRef responseLength, StringRef redirectUrl) {
             response.setMimeType(mimeType);
-            response.setStatus(found ? 200 : 404);
+            response.setStatus(statusCode);
+            if (found) {
+                response.setHeaderByName("Accept-Ranges", "bytes", true);
+            }
+            if (!contentRange.isEmpty()) {
+                response.setHeaderByName("Content-Range", contentRange, true);
+            }
             responseLength.set(responseBytes.length);
         }
 
@@ -68,8 +83,28 @@ final class GrapheneClasspathSchemeHandlerFactory implements CefSchemeHandlerFac
         @Override
         public void cancel() {
             responseBytes = EMPTY_RESPONSE;
+            contentRange = "";
+            statusCode = 404;
             readOffset = 0;
             found = false;
+        }
+
+        private void applyByteRange(String rangeHeader, byte[] resourceBytes) {
+            GrapheneByteRange.Resolution range = GrapheneByteRange.resolve(rangeHeader, resourceBytes.length);
+            contentRange = range.contentRange();
+            if (range.status() == GrapheneByteRange.Status.UNSATISFIABLE) {
+                responseBytes = EMPTY_RESPONSE;
+                statusCode = 416;
+                return;
+            }
+            if (range.status() == GrapheneByteRange.Status.PARTIAL) {
+                responseBytes = Arrays.copyOfRange(resourceBytes, range.startInclusive(), range.endExclusive());
+                statusCode = 206;
+                return;
+            }
+
+            responseBytes = resourceBytes;
+            statusCode = 200;
         }
 
         private static String normalizeResourcePath(String url) {
@@ -90,6 +125,24 @@ final class GrapheneClasspathSchemeHandlerFactory implements CefSchemeHandlerFac
         }
 
         private record ResourceResult(boolean found, byte[] bytes) {
+            @Override
+            public boolean equals(Object object) {
+                return this == object
+                        || object instanceof ResourceResult(boolean found1, byte[] bytes1)
+                                && found == found1
+                                && Arrays.equals(bytes, bytes1);
+            }
+
+            @Override
+            public int hashCode() {
+                return 31 * Boolean.hashCode(found) + Arrays.hashCode(bytes);
+            }
+
+            @Override
+            public @NotNull String toString() {
+                return "ResourceResult[found=" + found + ", bytes=" + Arrays.toString(bytes) + "]";
+            }
+
             private static ResourceResult found(byte[] bytes) {
                 return new ResourceResult(true, bytes);
             }

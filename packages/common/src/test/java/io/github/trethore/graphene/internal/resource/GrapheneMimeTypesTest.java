@@ -10,6 +10,9 @@ final class GrapheneMimeTypesTest {
         assertEquals("text/html", GrapheneMimeTypes.resolve("index.HTML"));
         assertEquals("text/javascript", GrapheneMimeTypes.resolve("web/app.js"));
         assertEquals("application/wasm", GrapheneMimeTypes.resolve("web/module.wasm"));
+        assertEquals("video/mp4", GrapheneMimeTypes.resolve("video/intro.MP4"));
+        assertEquals("video/webm", GrapheneMimeTypes.resolve("video/intro.webm"));
+        assertEquals("text/vtt", GrapheneMimeTypes.resolve("video/captions.vtt"));
     }
 
     @Test
