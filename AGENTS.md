@@ -8,62 +8,65 @@ API for mod developers to create rich, web-based user interfaces in Minecraft us
 Here is an overview of the project:
 
 ```text
-graphene/
-  .github/
-  build-logic/                              # Included Gradle build for custom build logic.
-    architecture-check/                     # Gradle plugin for enforcing architecture rules.
-    graphene-conventions/                   # Gradle conventions for Fabric packages, debug clients, and shared sources.
-    sonar-analysis/                         # Gradle plugin for running SonarQube analysis.
-  config/                                   # Qodana and SonarQube configuration.
-  debug-client/                             # Development-only clients and resources for manually testing Graphene.
-    fabric-shared/                          # Fabric debug entry point and key bindings shared across Fabric targets.
-      src/main/java/io/github/trethore/graphene/debug/
-    shared/                                 # Debug UI, bridge logic, tests, and web resources shared across Fabric targets.
-      src/main/java/io/github/trethore/graphene/debug/
-      resources/assets/grapheneui-debug/
-    <loader>-<minecraft-version>/           # Target-specific debug access, metadata, and Gradle configuration.
-      src/main/java/io/github/trethore/graphene/debug/
-      src/main/resources/
-      build.gradle.kts
-  docs/
-  gradle/libs.versions.toml
-  packages/
-    common/                                 # Minecraft- and loader-independent API, runtime, JCEF integration, and web resources.
-      src/main/
+.github/
+build-logic/                                 # Included Gradle build for custom build logic.
+  architecture-check/                        # Gradle plugin for enforcing architecture rules.
+  graphene-conventions/                      # Gradle conventions for Fabric packages, debug clients, and shared sources.
+  sonar-analysis/                            # Gradle plugin for running SonarQube analysis.
+config/                                      # Qodana and SonarQube configuration.
+debug-client/                                # Development-only clients and resources for manually testing Graphene.
+  <loader>-<minecraft-version>/              # Target-specific debug access, metadata, and Gradle configuration.
+    src/main/
+      java/io/github/trethore/graphene/debug/
+      resources/
+    build.gradle.kts
+  fabric-shared/                             # Fabric debug entry point and key bindings shared across Fabric targets.
+    src/main/java/io/github/trethore/graphene/debug/
+  shared/                                    # Debug UI, bridge logic, tests, and web resources shared across Fabric targets.
+    resources/assets/grapheneui-debug/
+    src/main/java/io/github/trethore/graphene/debug/
+docs/
+gradle/libs.versions.toml
+packages/
+  <loader>-<minecraft-version>/              # Code, resources, and build configuration specific to one target.
+    src/main/
+      java/io/github/trethore/graphene/
+        fabric/                              # Target-specific Fabric APIs and integrations.
+        minecraft/                           # Target-specific Minecraft compatibility code.
+        mixin/
+      resources/
+        assets/grapheneui/
+        fabric.mod.json
+        grapheneui.mixins.json
+    build.gradle.kts
+  common/                                    # Minecraft- and loader-independent API, runtime, JCEF integration, and web resources.
+    src/
+      main/
         java/io/github/trethore/graphene/
-          api/                              # Public browser, bridge, configuration, DevTools, runtime, and URL APIs.
-          internal/                         # Shared bridge, browser, JCEF, event, HTTP, input, platform, resource, runtime, and URL internals.
+          api/                               # Public browser, bridge, configuration, DevTools, runtime, and URL APIs.
+          internal/                          # Shared bridge, browser, JCEF, event, HTTP, input, platform, resource, runtime, and URL internals.
         resources/assets/grapheneui/
-      src/test/
-      build.gradle.kts
-    fabric-shared/                          # Fabric and Minecraft integrations shared across Fabric targets.
-      src/main/java/io/github/trethore/graphene/
-        fabric/                             # Shared Fabric public APIs and internal integrations.
+      test/
+    build.gradle.kts
+  fabric-shared/                             # Fabric and Minecraft integrations shared across Fabric targets.
+    src/
+      main/java/io/github/trethore/graphene/
+        fabric/                              # Shared Fabric public APIs and internal integrations.
         mixin/
         FabricBootstrap.java
-      src/test/java/io/github/trethore/graphene/fabric/
-    minecraft-shared/                       # Minecraft-dependent, loader-independent code shared by compatible targets.
-      src/main/java/io/github/trethore/graphene/minecraft/
-      src/test/java/io/github/trethore/graphene/minecraft/
-    <loader>-<minecraft-version>/           # Code, resources, and build configuration specific to one target.
-      src/main/
-        java/io/github/trethore/graphene/
-          fabric/                           # Target-specific Fabric APIs and integrations.
-          minecraft/                        # Target-specific Minecraft compatibility code.
-          mixin/
-        resources/
-          assets/grapheneui/
-          fabric.mod.json
-          grapheneui.mixins.json
-      build.gradle.kts
-  scripts/release/                          # Release automation scripts.
-  .gitignore
-  build.gradle.kts
-  CHANGELOG.md
-  gradle.properties
-  LICENSE
-  README.md
-  settings.gradle.kts
+      test/java/io/github/trethore/graphene/fabric/
+  minecraft-shared/                          # Minecraft-dependent, loader-independent code shared by compatible targets.
+    src/
+      main/java/io/github/trethore/graphene/minecraft/
+      test/java/io/github/trethore/graphene/minecraft/
+scripts/release/                             # Release automation scripts.
+.gitignore
+build.gradle.kts
+CHANGELOG.md
+gradle.properties
+LICENSE
+README.md
+settings.gradle.kts
 ```
 
 Graphene supports `fabric-1.21.11` and `fabric-26.2`. Read the related `build.gradle.kts` and `settings.gradle.kts` for more information.
