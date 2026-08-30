@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-08-31
+
 ### Removed
 
 - Removed the deprecated `BrowserSurface` and `BrowserSurfaceInputAdapter` compatibility APIs and the corresponding
