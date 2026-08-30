@@ -3,6 +3,9 @@
 `BrowserWorldSurface` projects a `BrowserView` onto a rectangular plane in local XY space. The browser remains a 2D
 framebuffer; the world surface places that framebuffer in a 3D render path.
 
+Use an opaque browser when the surface content does not need transparency. Opaque surfaces write depth, preventing
+translucent world geometry behind them from showing through.
+
 ## Create a view and world surface
 
 World views normally use an explicit browser resolution:
@@ -11,12 +14,15 @@ World views normally use an explicit browser resolution:
 BrowserView view =
         BrowserView.builder(context)
                 .url(context.appAssets().url("ui/monitor.html"))
+                .options(BrowserOptions.builder().transparent(false).build())
                 .resolution(1024, 576)
                 .build();
 
 BrowserWorldSurface surface =
         BrowserWorldSurface.builder(view)
                 .dimensions(2.0F, 1.125F)
+                .fullBright(true)
+                .transparencyMode(WorldSurfaceTransparency.OPAQUE)
                 .build();
 ```
 
@@ -35,11 +41,29 @@ surface.submit(submitNodeCollector, poseStack);
 poseStack.popPose();
 ```
 
-The default plane is depth-tested, emissive, and back-face culled. Enable rendering from both sides when required:
+The plane is depth-tested and back-face culled. Full-bright mode uses maximum light and disables directional surface
+shading. It does not disable distance or environmental fog. Enable rendering from both sides when required:
 
 ```java
 surface.setDoubleSided(true);
 ```
+
+World-surface transparency is independent of whether the browser preserves its alpha channel:
+
+- `OPAQUE` ignores alpha for blending and writes depth.
+- `CUTOUT` discards low-alpha pixels and writes depth for the remaining pixels.
+- `BLENDED` preserves partial alpha but does not write depth.
+
+Use `BrowserOptions.transparent(true)` when `CUTOUT` or `BLENDED` needs the page's alpha channel. A surface-wide opacity
+multiplier is also available:
+
+```java
+surface.setTransparencyMode(WorldSurfaceTransparency.BLENDED);
+surface.setOpacity(0.5F);
+```
+
+An opacity below `1.0` uses blended rendering regardless of the selected transparency mode because partial opacity
+cannot be represented by an opaque or cutout pipeline.
 
 Graphene does not register the surface in the world or manage chunk and entity lifecycle. The owning integration must
 close the `BrowserView` when its world object is permanently removed.

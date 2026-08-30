@@ -45,7 +45,11 @@ public final class GrapheneDebugClient implements ClientModInitializer {
                                 .build())
                         .build());
         GrapheneDebugKeyBindings.register();
-        ClientLifecycleEvents.CLIENT_STOPPING.register(minecraft -> GrapheneBrowserDebugScreen.closeSession());
+        GrapheneDebugWorldSurface.register();
+        ClientLifecycleEvents.CLIENT_STOPPING.register(ignored -> {
+            GrapheneBrowserDebugScreen.closeSession();
+            GrapheneDebugWorldSurface.close();
+        });
         LOGGER.info("Graphene debug client initialized");
     }
 }
