@@ -15,7 +15,7 @@ rootProject.name = "graphene"
 
 include("packages:common")
 
-listOf("fabric-1.21.11", "fabric-26.2").forEach { target ->
+listOf("fabric-1.21.11", "fabric-26.1.2", "fabric-26.2").forEach { target ->
   include("packages:$target")
   include("tools:debug-client-$target")
   project(":tools:debug-client-$target").projectDir = file("debug-client/$target")

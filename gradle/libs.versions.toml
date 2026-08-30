@@ -4,6 +4,8 @@ fabric-loom = "1.17-SNAPSHOT"
 fabric-loader = "0.19.3"
 fabric-api-v12111 = "0.141.6+1.21.11"
 minecraft-v12111 = "1.21.11"
+fabric-api-v2612 = "0.155.2+26.1.2"
+minecraft-v2612 = "26.1.2"
 fabric-api-v262 = "0.158.0+26.2"
 minecraft-v262 = "26.2"
 gson = "2.13.2"
@@ -20,8 +22,10 @@ spotless = "8.8.0"
 fabric-loom-gradle-plugin = { module = "net.fabricmc:fabric-loom", version.ref = "fabric-loom" }
 fabric-loader = { module = "net.fabricmc:fabric-loader", version.ref = "fabric-loader" }
 fabric-api-v12111 = { module = "net.fabricmc.fabric-api:fabric-api", version.ref = "fabric-api-v12111" }
+fabric-api-v2612 = { module = "net.fabricmc.fabric-api:fabric-api", version.ref = "fabric-api-v2612" }
 fabric-api-v262 = { module = "net.fabricmc.fabric-api:fabric-api", version.ref = "fabric-api-v262" }
 minecraft-v12111 = { module = "com.mojang:minecraft", version.ref = "minecraft-v12111" }
+minecraft-v2612 = { module = "com.mojang:minecraft", version.ref = "minecraft-v2612" }
 minecraft-v262 = { module = "com.mojang:minecraft", version.ref = "minecraft-v262" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 jcefgithub = { module = "io.github.trethore:jcefgithub", version.ref = "jcefgithub" }

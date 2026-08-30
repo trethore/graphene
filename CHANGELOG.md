@@ -4,6 +4,7 @@
 
 ### Added
 
+- Added Fabric support for Minecraft 26.1.2.
 - Added MP4 and WebM MIME detection for Graphene-managed assets.
 - Added single byte-range responses for HTTP, app, and classpath resources.
 

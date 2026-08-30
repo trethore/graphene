@@ -8,7 +8,7 @@ communication.
 
 ## Supported versions
 
-Graphene supports Minecraft 26.2 and 1.21.11 on Fabric.
+Graphene supports Minecraft 26.2, 26.1.2, and 1.21.11 on Fabric.
 
 Check [compatibility and installation](reference/compatibility-and-installation.md) for the exact versions and
 dependency coordinates.
@@ -46,6 +46,7 @@ dependency coordinates.
 ## Distribution
 
 - [Maven Central for Minecraft 26.2](https://central.sonatype.com/artifact/io.github.trethore/graphene-ui-26.2)
+- [Maven Central for Minecraft 26.1.2](https://central.sonatype.com/artifact/io.github.trethore/graphene-ui-26.1.2)
 - [Maven Central for Minecraft 1.21.11](https://central.sonatype.com/artifact/io.github.trethore/graphene-ui-1.21.11)
 - [Modrinth](https://modrinth.com/mod/grapheneui)
 - [GitHub Releases](https://github.com/trethore/graphene/releases)

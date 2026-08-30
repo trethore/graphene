@@ -69,7 +69,7 @@ README.md
 settings.gradle.kts
 ```
 
-Graphene supports `fabric-1.21.11` and `fabric-26.2`. Read the related `build.gradle.kts` and `settings.gradle.kts` for more information.
+Graphene supports `fabric-1.21.11`, `fabric-26.1.2`, and `fabric-26.2`. Read the related `build.gradle.kts` and `settings.gradle.kts` for more information.
 The convention plugins in `build-logic/graphene-conventions` compose these shared source directories into concrete target projects:
 
 - Package sources: `packages/minecraft-shared` and `packages/fabric-shared`.
