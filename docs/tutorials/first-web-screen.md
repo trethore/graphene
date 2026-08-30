@@ -18,11 +18,11 @@ repositories {
 }
 
 dependencies {
-    implementation("io.github.trethore:graphene-ui-26.2:2.3.0")
+    implementation("io.github.trethore:graphene-ui-26.2:2.4.0")
     // Or for Minecraft 26.1.2:
-    // implementation("io.github.trethore:graphene-ui-26.1.2:2.3.0")
+    // implementation("io.github.trethore:graphene-ui-26.1.2:2.4.0")
     // Or for Minecraft 1.21.11:
-    // modImplementation("io.github.trethore:graphene-ui-1.21.11:2.3.0")
+    // modImplementation("io.github.trethore:graphene-ui-1.21.11:2.4.0")
 }
 ```
 
@@ -31,7 +31,7 @@ Declare Graphene as a dependency in `fabric.mod.json` so Fabric loads it before 
 ```json
 {
   "depends": {
-    "grapheneui": ">=2.3.0"
+    "grapheneui": ">=2.4.0"
   }
 }
 ```
