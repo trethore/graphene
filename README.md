@@ -25,7 +25,7 @@ Graphene provides:
 - packaged asset URLs and an optional development HTTP server;
 - two-way Java/JavaScript communication through an asynchronous bridge;
 - browser navigation, input, downloads, dialogs, context menus, and lifecycle controls;
-- off-screen browser sessions and surfaces for custom rendering integrations;
+- neutral browser views with GUI, world-space, and advanced texture rendering integrations;
 - Chromium DevTools support for inspecting and debugging pages.
 
 Check [compatibility and installation](docs/reference/compatibility-and-installation.md) for supported Minecraft and

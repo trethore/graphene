@@ -1,29 +1,54 @@
 package io.github.trethore.graphene.fabric.internal.browser;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuTexture;
 import com.mojang.blaze3d.textures.GpuTextureView;
+import java.util.concurrent.atomic.AtomicLong;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.texture.AbstractTexture;
+import net.minecraft.resources.Identifier;
 
-final class GrapheneBrowserGpuTexture implements AutoCloseable {
-    private GpuTexture texture;
-    private GpuTextureView view;
+public final class GrapheneBrowserGpuTexture extends AbstractTexture {
+    private static final AtomicLong NEXT_ID = new AtomicLong();
+
+    private final Identifier identifier = Identifier.fromNamespaceAndPath(
+            "grapheneui", "browser/" + Long.toUnsignedString(NEXT_ID.getAndIncrement()));
     private long uploadedSequence = Long.MIN_VALUE;
+    private boolean released;
+
+    public GrapheneBrowserGpuTexture() {
+        sampler = RenderSystem.getSamplerCache().getClampToEdge(FilterMode.LINEAR);
+        Minecraft.getInstance().getTextureManager().register(identifier, this);
+    }
 
     void ensureSize(int width, int height) {
         if (texture != null && texture.getWidth(0) == width && texture.getHeight(0) == height) {
             return;
         }
-        close();
+        closeGpuResources();
         texture = GrapheneBrowserGpuTextureFactory.create(width, height);
-        view = RenderSystem.getDevice().createTextureView(texture);
+        textureView = RenderSystem.getDevice().createTextureView(texture);
     }
 
     GpuTexture texture() {
         return texture;
     }
 
-    GpuTextureView view() {
-        return view;
+    public Identifier identifier() {
+        return identifier;
+    }
+
+    public boolean isReady() {
+        return texture != null && textureView != null;
+    }
+
+    public GpuTexture gpuTexture() {
+        return getTexture();
+    }
+
+    public GpuTextureView view() {
+        return getTextureView();
     }
 
     boolean isUploaded(long sequence) {
@@ -38,11 +63,23 @@ final class GrapheneBrowserGpuTexture implements AutoCloseable {
         uploadedSequence = sequence;
     }
 
+    public void release() {
+        if (released) {
+            return;
+        }
+        released = true;
+        Minecraft.getInstance().getTextureManager().release(identifier);
+    }
+
     @Override
     public void close() {
-        if (view != null) {
-            view.close();
-            view = null;
+        closeGpuResources();
+    }
+
+    private void closeGpuResources() {
+        if (textureView != null) {
+            textureView.close();
+            textureView = null;
         }
         if (texture != null) {
             texture.close();

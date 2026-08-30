@@ -12,7 +12,7 @@ final class GrapheneFramePixelConverterTest {
     @Test
     void convertsBgraPixelsToRgba() {
         ByteBuffer pixels = ByteBuffer.allocateDirect(8);
-        pixels.put(new byte[] {1, 2, 3, 4, 5, 6, 7, 8}).flip();
+        pixels.put(new byte[] {1, 2, 3, (byte) 255, 5, 6, 7, (byte) 255}).flip();
         BrowserFrame frame = new BrowserFrame(2, 1, 1, List.of(new BrowserDirtyRegion(0, 0, 2, 1)), pixels);
 
         ByteBuffer converted =
@@ -20,7 +20,21 @@ final class GrapheneFramePixelConverterTest {
 
         byte[] result = new byte[converted.remaining()];
         converted.get(result);
-        assertArrayEquals(new byte[] {3, 2, 1, 4, 7, 6, 5, 8}, result);
+        assertArrayEquals(new byte[] {3, 2, 1, (byte) 255, 7, 6, 5, (byte) 255}, result);
+    }
+
+    @Test
+    void unpremultipliesTransparentPixels() {
+        ByteBuffer pixels = ByteBuffer.allocateDirect(4);
+        pixels.put(new byte[] {25, 50, 100, (byte) 128}).flip();
+        BrowserFrame frame = new BrowserFrame(1, 1, 1, List.of(new BrowserDirtyRegion(0, 0, 1, 1)), pixels);
+
+        ByteBuffer converted =
+                new GrapheneFramePixelConverter().convert(frame, new BrowserDirtyRegion(0, 0, 1, 1), true);
+
+        byte[] result = new byte[converted.remaining()];
+        converted.get(result);
+        assertArrayEquals(new byte[] {(byte) 199, 100, 50, (byte) 128}, result);
     }
 
     @Test

@@ -3,7 +3,7 @@ package io.github.trethore.graphene.debug;
 import io.github.trethore.graphene.api.browser.BrowserOptions;
 import io.github.trethore.graphene.api.browser.menu.BrowserContextMenuPolicy;
 import io.github.trethore.graphene.fabric.api.screen.GrapheneScreens;
-import io.github.trethore.graphene.fabric.api.surface.BrowserSurface;
+import io.github.trethore.graphene.fabric.api.surface.BrowserView;
 import io.github.trethore.graphene.fabric.api.widget.GrapheneWebViewWidget;
 import java.util.concurrent.CompletionException;
 import net.minecraft.client.Minecraft;
@@ -54,13 +54,12 @@ final class GrapheneBrowserDebugScreen extends Screen {
         String initialUrl = lastUrl == null ? defaultUrl() : lastUrl;
 
         if (webView == null) {
-            BrowserSurface surface = BrowserSurface.builder(GrapheneDebugClient.context())
+            BrowserView view = BrowserView.builder(GrapheneDebugClient.context())
                     .url(initialUrl)
                     .options(BROWSER_OPTIONS)
-                    .size(webViewWidth, webViewHeight)
                     .build();
-            webView = new GrapheneWebViewWidget(
-                    this, 8, webViewY, webViewWidth, webViewHeight, Component.empty(), surface);
+            webView =
+                    new GrapheneWebViewWidget(this, 8, webViewY, webViewWidth, webViewHeight, Component.empty(), view);
             debugBridge = new GrapheneBrowserDebugBridge(webView.bridge());
         } else {
             webView.setPosition(8, webViewY);
@@ -116,7 +115,7 @@ final class GrapheneBrowserDebugScreen extends Screen {
         GrapheneDebugClient.context()
                 .runtime()
                 .devTools()
-                .targetFor(webView.surface().browser())
+                .targetFor(webView.view().browser())
                 .whenComplete((target, failure) -> Minecraft.getInstance().execute(() -> {
                     if (failure != null) {
                         LOGGER.error("Failed to discover browser DevTools target", unwrap(failure));

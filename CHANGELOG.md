@@ -4,12 +4,16 @@
 
 ### Added
 
+- Added neutral `BrowserView` ownership for browser sessions, resolution, and shared GPU frame textures.
+- Added `BrowserGuiSurface` and `BrowserWorldSurface` projections with GUI and world input adapters.
+- Added experimental borrowed browser texture access through `BrowserView.texture()`.
 - Added Fabric support for Minecraft 26.1.2.
 - Added MP4 and WebM MIME detection for Graphene-managed assets.
 - Added single byte-range responses for HTTP, app, and classpath resources.
 
 ### Changed
 
+- Deprecated `BrowserSurface` and `BrowserSurfaceInputAdapter` in favor of the view and projection APIs.
 - Reworked Fabric version-specific packages to deduplicate shared code.
 
 ## [2.2.0] - 2026-08-29

@@ -1,15 +1,15 @@
 # Control and Observe the Browser
 
-`BrowserSession` is the loader-independent browser API. Obtain it from a widget's surface:
+`BrowserSession` is the loader-independent browser API. Obtain it from a widget's view:
 
 ```java
-BrowserSession browser = webView.surface().browser();
+BrowserSession browser = webView.view().browser();
 ```
 
-or from a custom surface:
+or from a custom view:
 
 ```java
-BrowserSession browser = surface.browser();
+BrowserSession browser = view.browser();
 ```
 
 ## Navigate and inspect state
@@ -101,7 +101,8 @@ These deduplicated callbacks are delivered on the platform thread.
 `latestFrame()` returns the most recent complete off-screen frame. `onFrame(...)` reports latest-only frame snapshots;
 Graphene may coalesce intermediate frames when rendering runs faster than the platform thread consumes them.
 
-Most consumers should let `BrowserSurface` upload and render frames instead of reading pixel buffers directly.
+Most consumers should let `BrowserView` upload frames and use a GUI or world surface instead of reading pixel buffers
+directly.
 
 ## Observe and cancel downloads
 

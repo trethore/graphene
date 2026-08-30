@@ -1,19 +1,16 @@
 package io.github.trethore.graphene.fabric.api.surface;
 
-import io.github.trethore.graphene.internal.platform.GrapheneClipboardContent;
+import java.util.Objects;
 
-/**
- * Compatibility input adapter for {@link BrowserSurface}.
- *
- * @deprecated Use {@link BrowserGuiSurfaceInputAdapter}.
- */
-@Deprecated(since = "2.3.0")
+/** Maps Minecraft window coordinates into a browser GUI surface and forwards browser input. */
 @SuppressWarnings("unused")
-public final class BrowserSurfaceInputAdapter implements AutoCloseable {
-    private final BrowserGuiSurfaceInputAdapter input;
+public final class BrowserGuiSurfaceInputAdapter implements AutoCloseable {
+    private final BrowserGuiSurface surface;
+    private final BrowserViewInputAdapter input;
 
-    public BrowserSurfaceInputAdapter(BrowserSurface surface) {
-        input = new BrowserGuiSurfaceInputAdapter(surface.guiSurface());
+    public BrowserGuiSurfaceInputAdapter(BrowserGuiSurface surface) {
+        this.surface = Objects.requireNonNull(surface, "surface");
+        input = new BrowserViewInputAdapter(surface.view());
     }
 
     public void setFocused(boolean focused) {
@@ -28,7 +25,10 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
             int renderedWidth,
             int renderedHeight,
             int modifiers) {
-        input.mouseMoved(mouseX, mouseY, surfaceX, surfaceY, renderedWidth, renderedHeight, modifiers);
+        input.mouseMoved(
+                surface.toBrowserX(mouseX - surfaceX, renderedWidth),
+                surface.toBrowserY(mouseY - surfaceY, renderedHeight),
+                modifiers);
     }
 
     public void mouseButton(
@@ -43,12 +43,8 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
             int clickCount,
             int modifiers) {
         input.mouseButton(
-                mouseX,
-                mouseY,
-                surfaceX,
-                surfaceY,
-                renderedWidth,
-                renderedHeight,
+                surface.toBrowserX(mouseX - surfaceX, renderedWidth),
+                surface.toBrowserY(mouseY - surfaceY, renderedHeight),
                 button,
                 pressed,
                 clickCount,
@@ -63,7 +59,10 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
             int renderedWidth,
             int renderedHeight,
             int modifiers) {
-        input.mouseDragged(mouseX, mouseY, surfaceX, surfaceY, renderedWidth, renderedHeight, modifiers);
+        input.mouseDragged(
+                surface.toBrowserX(mouseX - surfaceX, renderedWidth),
+                surface.toBrowserY(mouseY - surfaceY, renderedHeight),
+                modifiers);
     }
 
     public void mouseScrolled(
@@ -77,7 +76,11 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
             double vertical,
             int modifiers) {
         input.mouseScrolled(
-                mouseX, mouseY, surfaceX, surfaceY, renderedWidth, renderedHeight, horizontal, vertical, modifiers);
+                surface.toBrowserX(mouseX - surfaceX, renderedWidth),
+                surface.toBrowserY(mouseY - surfaceY, renderedHeight),
+                horizontal,
+                vertical,
+                modifiers);
     }
 
     public void key(int keyCode, int scanCode, boolean pressed, int modifiers) {
@@ -95,17 +98,5 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
     @Override
     public void close() {
         input.close();
-    }
-
-    static GrapheneClipboardContent resolveClipboardContent(GrapheneClipboardContent richContent, String nativeText) {
-        return BrowserViewInputAdapter.resolveClipboardContent(richContent, nativeText);
-    }
-
-    static boolean isPasteShortcut(int keyCode, int modifiers) {
-        return BrowserViewInputAdapter.isPasteShortcut(keyCode, modifiers);
-    }
-
-    static boolean isClipboardWriteShortcut(int keyCode, int modifiers) {
-        return BrowserViewInputAdapter.isClipboardWriteShortcut(keyCode, modifiers);
     }
 }

@@ -44,7 +44,7 @@ update game UI.
 ## Open DevTools for one browser
 
 ```java
-BrowserSession browser = webView.surface().browser();
+BrowserSession browser = webView.view().browser();
 
 context.runtime()
     .devTools()

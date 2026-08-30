@@ -111,7 +111,7 @@ process-wide values. Extension folders are combined rather than required to matc
 ## Mouse or keyboard input does not work
 
 **Cause:** a custom surface is not focused, input is not forwarded, or rendered bounds differ from the bounds supplied
-to `BrowserSurfaceInputAdapter`.
+to `BrowserGuiSurfaceInputAdapter`.
 
 **Fix:** use `GrapheneWebViewWidget` for normal screens. For custom surfaces, forward focus, pointer, scroll, key, and
 text input with the real rendered position and dimensions.

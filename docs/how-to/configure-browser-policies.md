@@ -14,14 +14,14 @@ BrowserOptions options =
                 .build();
 ```
 
-Pass the options to a surface:
+Pass the options to a view:
 
 ```java
-BrowserSurface surface =
-        BrowserSurface.builder(context)
+BrowserView view =
+        BrowserView.builder(context)
                 .url(url)
                 .options(options)
-                .size(width, height)
+                .resolution(width, height)
                 .build();
 ```
 

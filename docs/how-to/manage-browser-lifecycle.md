@@ -61,14 +61,19 @@ if (webView != null) {
 Ownership flows downward:
 
 ```text
-GrapheneWebViewWidget -> BrowserSurface -> BrowserSession
+GrapheneWebViewWidget -> BrowserView -> BrowserSession
 ```
 
-- Closing a widget closes its input adapter and owned surface.
-- Closing a surface closes its renderer and owned browser session.
+- Closing a widget closes its input adapter and owned view.
+- Closing a view closes its GPU texture and owned browser session.
+- GUI and world surfaces borrow their view and do not close it.
 - Closing a session directly invalidates further state-changing operations.
-- Closing `BrowserSurfaceInputAdapter` removes adapter subscriptions but does not close its surface.
+- Closing a surface input adapter removes adapter subscriptions but does not close its view.
 - Closing a `GrapheneSubscription` removes only its listener or handler.
+
+Constructing a `GrapheneWebViewWidget` with an existing `BrowserView` or `BrowserGuiSurface` transfers ownership of the
+view to the widget. Closing the widget then closes that view. Do not pass a view that must remain available to another
+longer-lived projection.
 
 Close the highest-level object you own instead of closing every nested object independently.
 
