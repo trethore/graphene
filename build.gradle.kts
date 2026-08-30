@@ -87,12 +87,6 @@ tasks.named<QodanaScanTask>("qodanaScan") {
   )
 }
 
-tasks.withType<Javadoc>().configureEach {
-  (options as StandardJavadocDocletOptions).apply {
-    addStringOption("Xdoclint:all,-missing", "-quiet")
-  }
-}
-
 subprojects {
   plugins.withType<JavaPlugin> {
     dependencies {
@@ -102,6 +96,12 @@ subprojects {
 
     tasks.withType<Test>().configureEach {
       useJUnitPlatform()
+    }
+
+    tasks.withType<Javadoc>().configureEach {
+      (options as StandardJavadocDocletOptions).apply {
+        addStringOption("Xdoclint:all,-missing", "-quiet")
+      }
     }
   }
 }
