@@ -10,9 +10,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 @SuppressWarnings("unused")
 public final class BrowserSurface extends AbstractBrowserSurface {
-    private static final String WIDTH_NAME = "width";
-    private static final String HEIGHT_NAME = "height";
-
     private final GrapheneBrowserGpuRenderer renderer = new GrapheneBrowserGpuRenderer();
 
     private BrowserSurface(Builder builder) {
@@ -89,8 +86,8 @@ public final class BrowserSurface extends AbstractBrowserSurface {
         }
 
         public Builder size(int width, int height) {
-            this.width = requirePositive(width, WIDTH_NAME);
-            this.height = requirePositive(height, HEIGHT_NAME);
+            this.width = requirePositive(width, "width");
+            this.height = requirePositive(height, "height");
             return this;
         }
 
