@@ -5,7 +5,7 @@ This tutorial creates a Fabric screen that displays HTML, CSS, and JavaScript pa
 ## Prerequisites
 
 - A Fabric client mod for a [supported Minecraft version](../reference/compatibility-and-installation.md).
-- Java 25 or newer for Minecraft 26.2, or Java 21 or newer for Minecraft 1.21.11.
+- Java 25 or newer for Minecraft 26.2 and Minecraft 26.1.2, or Java 21 or newer for Minecraft 1.21.11.
 - A client entrypoint and a way to open a custom Minecraft `Screen`.
 
 ## 1. Add Graphene
@@ -19,6 +19,8 @@ repositories {
 
 dependencies {
     implementation("io.github.trethore:graphene-ui-26.2:2.2.0")
+    // Or for Minecraft 26.1.2:
+    // implementation("io.github.trethore:graphene-ui-26.1.2:2.2.0")
     // Or for Minecraft 1.21.11:
     // modImplementation("io.github.trethore:graphene-ui-1.21.11:2.2.0")
 }
