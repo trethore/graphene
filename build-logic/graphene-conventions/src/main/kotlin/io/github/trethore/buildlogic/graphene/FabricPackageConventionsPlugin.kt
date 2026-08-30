@@ -1,6 +1,7 @@
 package io.github.trethore.buildlogic.graphene
 
 import io.github.trethore.buildlogic.architecture.ArchitectureChecksExtension
+import java.util.zip.ZipFile
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.BasePluginExtension
@@ -19,6 +20,7 @@ import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.withType
 import org.gradle.language.jvm.tasks.ProcessResources
+import org.gradle.language.base.plugins.LifecycleBasePlugin
 import org.gradle.plugins.signing.SigningExtension
 
 private const val JAVA_SOURCE_PATTERN = "**/*.java"
@@ -39,6 +41,7 @@ class FabricPackageConventionsPlugin : Plugin<Project> {
     configureJava(project, target)
     configureArchives(project)
     configurePublishing(project)
+    configurePublicationVerification(project)
   }
 
   private fun configureSharedSources(project: Project) {
@@ -55,17 +58,10 @@ class FabricPackageConventionsPlugin : Plugin<Project> {
   }
 
   private fun configureDependencies(project: Project) {
-    val embeddedCommon =
-        project.configurations.create("embeddedCommon") {
-          isCanBeConsumed = false
-          isCanBeResolved = false
-        }
-    project.configurations.named("implementation").configure { extendsFrom(embeddedCommon) }
-    project.configurations.named("include").configure { extendsFrom(embeddedCommon) }
-    project.dependencies.add(
-        embeddedCommon.name,
-        project.dependencies.project(project.commonProject().path),
-    )
+    val commonDependency = project.dependencies.project(project.commonProject().path)
+    project.dependencies.add("compileOnly", commonDependency)
+    project.dependencies.add("testImplementation", commonDependency)
+    project.dependencies.add("include", commonDependency)
     project.addRelocatedJcefDependency("include")
   }
 
@@ -168,7 +164,6 @@ class FabricPackageConventionsPlugin : Plugin<Project> {
 
   private fun configurePublishing(project: Project) {
     val publishing = project.extensions.getByType<PublishingExtension>()
-    val projectGroup = project.group.toString()
     val minecraftVersion = project.minecraftVersion()
     val publication =
         publishing.publications.register("mavenJava", MavenPublication::class.java) {
@@ -195,26 +190,6 @@ class FabricPackageConventionsPlugin : Plugin<Project> {
               connection.set("scm:git:git://github.com/trethore/graphene.git")
               developerConnection.set("scm:git:ssh://git@github.com/trethore/graphene.git")
               url.set("https://github.com/trethore/graphene")
-            }
-            withXml {
-              val dependencies =
-                  asNode()
-                      .children()
-                      .filterIsInstance<groovy.util.Node>()
-                      .firstOrNull { it.name().toString() == "dependencies" }
-                      ?: return@withXml
-              dependencies
-                  .children()
-                  .filterIsInstance<groovy.util.Node>()
-                  .filter { dependency ->
-                    val values = dependency.children().filterIsInstance<groovy.util.Node>()
-                    val groupId =
-                        values.firstOrNull { it.name().toString() == "groupId" }?.text()
-                    val artifactId =
-                        values.firstOrNull { it.name().toString() == "artifactId" }?.text()
-                    groupId == projectGroup && artifactId == "common"
-                  }
-                  .forEach(dependencies::remove)
             }
           }
         }
@@ -266,5 +241,38 @@ class FabricPackageConventionsPlugin : Plugin<Project> {
         sign(publication.get())
       }
     }
+  }
+
+  private fun configurePublicationVerification(project: Project) {
+    val generatedPom =
+        project.layout.buildDirectory.file("publications/mavenJava/pom-default.xml")
+    val runtimeArchiveTaskName =
+        if (project.pluginManager.hasPlugin("net.fabricmc.fabric-loom-remap")) "remapJar" else "jar"
+    val runtimeArchive = project.tasks.named<AbstractArchiveTask>(runtimeArchiveTaskName)
+    val runtimeArchiveFile = runtimeArchive.flatMap { it.archiveFile }
+    val embeddedCommonPath = "META-INF/jars/common-${project.version}.jar"
+    val verifyMavenPublication =
+        project.tasks.register("verifyMavenPublication") {
+          group = LifecycleBasePlugin.VERIFICATION_GROUP
+          description = "Verifies that the Maven publication is self-contained."
+          dependsOn("generatePomFileForMavenJavaPublication", runtimeArchive)
+          inputs.file(generatedPom)
+          inputs.file(runtimeArchiveFile)
+
+          doLast {
+            val pomContents = generatedPom.get().asFile.readText()
+            check("<artifactId>common</artifactId>" !in pomContents) {
+              "The Maven POM must not declare the embedded common project as a dependency"
+            }
+
+            ZipFile(runtimeArchiveFile.get().asFile).use { runtimeJar ->
+              check(runtimeJar.getEntry(embeddedCommonPath) != null) {
+                "The runtime JAR does not contain $embeddedCommonPath"
+              }
+            }
+          }
+        }
+
+    project.tasks.named("check").configure { dependsOn(verifyMavenPublication) }
   }
 }
