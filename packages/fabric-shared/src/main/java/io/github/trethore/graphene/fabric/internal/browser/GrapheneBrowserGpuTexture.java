@@ -32,7 +32,7 @@ public final class GrapheneBrowserGpuTexture extends AbstractTexture {
     }
 
     GpuTexture texture() {
-        return texture;
+        return getTexture();
     }
 
     public Identifier identifier() {
