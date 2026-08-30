@@ -21,10 +21,13 @@ public final class GrapheneMimeTypes {
             Map.entry("webp", "image/webp"),
             Map.entry("ico", "image/x-icon"),
             Map.entry("svg", "image/svg+xml"),
+            Map.entry("mp4", "video/mp4"),
+            Map.entry("webm", "video/webm"),
             Map.entry("woff", "font/woff"),
             Map.entry("woff2", "font/woff2"),
             Map.entry("ttf", "font/ttf"),
             Map.entry("otf", "font/otf"),
+            Map.entry("vtt", "text/vtt"),
             Map.entry("wasm", "application/wasm"));
 
     private GrapheneMimeTypes() {}

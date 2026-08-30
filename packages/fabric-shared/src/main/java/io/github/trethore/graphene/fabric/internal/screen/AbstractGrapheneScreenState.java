@@ -3,6 +3,7 @@ package io.github.trethore.graphene.fabric.internal.screen;
 import io.github.trethore.graphene.api.browser.menu.BrowserContextMenuContext;
 import io.github.trethore.graphene.api.browser.menu.BrowserContextMenuPresenter;
 import io.github.trethore.graphene.fabric.api.widget.GrapheneWebViewWidget;
+import io.github.trethore.graphene.fabric.internal.render.GrapheneGuiGraphics;
 import io.github.trethore.graphene.minecraft.internal.util.MinecraftReferences;
 import java.util.List;
 import java.util.Objects;
@@ -26,7 +27,7 @@ abstract class AbstractGrapheneScreenState {
             return;
         }
         removalListenerRegistered = true;
-        ScreenEvents.remove(screen).register(removedScreen -> closeContextMenu());
+        ScreenEvents.remove(screen).register(ignoredRemovedScreen -> closeContextMenu());
     }
 
     final List<GrapheneWebViewWidget> webViewWidgets() {
@@ -122,17 +123,22 @@ abstract class AbstractGrapheneScreenState {
         return contextMenu != null;
     }
 
-    protected final GrapheneContextMenuOverlaySupport activeContextMenu() {
-        return contextMenu;
+    final void renderContextMenu(GrapheneGuiGraphics graphics, int mouseX, int mouseY) {
+        GrapheneContextMenuOverlaySupport activeMenu = contextMenu;
+        if (activeMenu != null) {
+            activeMenu.render(graphics, mouseX, mouseY);
+        }
     }
 
-    abstract GrapheneContextMenuOverlaySupport createContextMenuOverlay(
+    private static GrapheneContextMenuOverlaySupport createContextMenuOverlay(
             BrowserContextMenuPresenter.Request request,
             Font font,
             int anchorX,
             int anchorY,
             int screenWidth,
-            int screenHeight);
+            int screenHeight) {
+        return new GrapheneContextMenuOverlay(request, font, anchorX, anchorY, screenWidth, screenHeight);
+    }
 
     private void closeContextMenu() {
         GrapheneContextMenuOverlaySupport activeMenu = contextMenu;

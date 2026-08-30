@@ -1,53 +1,23 @@
 package io.github.trethore.graphene.fabric.api.surface;
 
-import io.github.trethore.graphene.api.GrapheneSubscription;
-import io.github.trethore.graphene.api.browser.BrowserSession;
-import io.github.trethore.graphene.api.browser.input.BrowserKeyPlatform;
-import io.github.trethore.graphene.api.browser.input.BrowserModifier;
-import io.github.trethore.graphene.api.browser.input.BrowserPointerAction;
-import io.github.trethore.graphene.api.browser.input.BrowserPointerButton;
-import io.github.trethore.graphene.api.browser.input.BrowserPointerInput;
-import io.github.trethore.graphene.api.browser.input.BrowserScrollInput;
-import io.github.trethore.graphene.api.browser.input.BrowserTextInput;
-import io.github.trethore.graphene.internal.bridge.GrapheneBridgeInternals;
-import io.github.trethore.graphene.internal.browser.GrapheneBrowserInputState;
-import io.github.trethore.graphene.internal.platform.GrapheneClipboard;
 import io.github.trethore.graphene.internal.platform.GrapheneClipboardContent;
-import io.github.trethore.graphene.minecraft.internal.input.GrapheneInputModifiers;
-import io.github.trethore.graphene.minecraft.internal.input.GrapheneKeyboardMapper;
-import io.github.trethore.graphene.minecraft.internal.util.MinecraftReferences;
-import java.util.Base64;
-import java.util.Objects;
-import java.util.Set;
-import org.lwjgl.glfw.GLFW;
 
 /**
- * Translates Minecraft and GLFW input into normalized input for a browser surface. Pointer methods
- * accept window coordinates, the rendered surface bounds, and a GLFW modifier bit field; key
- * methods accept GLFW key and scan codes.
+ * Compatibility input adapter for {@link BrowserSurface}.
+ *
+ * @deprecated Use {@link BrowserGuiSurfaceInputAdapter}.
  */
+@Deprecated(since = "2.3.0")
 @SuppressWarnings("unused")
 public final class BrowserSurfaceInputAdapter implements AutoCloseable {
-    private static final String CLIPBOARD_WRITE_CHANNEL = "graphene:clipboard:write";
-    private static final String EXTRA_MOUSE_BUTTON_CHANNEL = "graphene:mouse:button";
-    private static final int SCROLL_DELTA = 120;
-
-    private final BrowserSurface surface;
-    private final ClipboardWorkaround clipboardWorkaround;
-    private final GrapheneBrowserInputState inputState = new GrapheneBrowserInputState();
+    private final BrowserGuiSurfaceInputAdapter input;
 
     public BrowserSurfaceInputAdapter(BrowserSurface surface) {
-        this.surface = Objects.requireNonNull(surface, "surface");
-        clipboardWorkaround = BrowserKeyPlatform.current() == BrowserKeyPlatform.LINUX
-                ? new ClipboardWorkaround(surface.browser())
-                : null;
+        input = new BrowserGuiSurfaceInputAdapter(surface.guiSurface());
     }
 
     public void setFocused(boolean focused) {
-        surface.browser().setFocused(focused);
-        if (!focused) {
-            inputState.reset();
-        }
+        input.setFocused(focused);
     }
 
     public void mouseMoved(
@@ -58,18 +28,7 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
             int renderedWidth,
             int renderedHeight,
             int modifiers) {
-        BrowserPointerAction action = inputState.pointerMovementAction();
-        sendPointer(
-                action,
-                inputState.pressedButton(),
-                mouseX,
-                mouseY,
-                surfaceX,
-                surfaceY,
-                renderedWidth,
-                renderedHeight,
-                0,
-                modifiers);
+        input.mouseMoved(mouseX, mouseY, surfaceX, surfaceY, renderedWidth, renderedHeight, modifiers);
     }
 
     public void mouseButton(
@@ -83,25 +42,15 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
             boolean pressed,
             int clickCount,
             int modifiers) {
-        if (handleHistoryNavigation(button, pressed)) {
-            return;
-        }
-
-        BrowserPointerButton browserButton = pointerButton(button);
-        if (browserButton == BrowserPointerButton.NONE) {
-            sendExtraMouseButton(mouseX, mouseY, surfaceX, surfaceY, renderedWidth, renderedHeight, button, pressed);
-            return;
-        }
-        inputState.updatePointerButton(browserButton, pressed);
-        sendPointer(
-                pressed ? BrowserPointerAction.PRESS : BrowserPointerAction.RELEASE,
-                browserButton,
+        input.mouseButton(
                 mouseX,
                 mouseY,
                 surfaceX,
                 surfaceY,
                 renderedWidth,
                 renderedHeight,
+                button,
+                pressed,
                 clickCount,
                 modifiers);
     }
@@ -114,17 +63,7 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
             int renderedWidth,
             int renderedHeight,
             int modifiers) {
-        sendPointer(
-                BrowserPointerAction.DRAG,
-                inputState.pressedButton(),
-                mouseX,
-                mouseY,
-                surfaceX,
-                surfaceY,
-                renderedWidth,
-                renderedHeight,
-                0,
-                modifiers);
+        input.mouseDragged(mouseX, mouseY, surfaceX, surfaceY, renderedWidth, renderedHeight, modifiers);
     }
 
     public void mouseScrolled(
@@ -137,248 +76,36 @@ public final class BrowserSurfaceInputAdapter implements AutoCloseable {
             double horizontal,
             double vertical,
             int modifiers) {
-        int browserX = surface.toBrowserX(mouseX - surfaceX, renderedWidth);
-        int browserY = surface.toBrowserY(mouseY - surfaceY, renderedHeight);
-        surface.browser()
-                .sendScrollInput(new BrowserScrollInput(
-                        browserX,
-                        browserY,
-                        (int) Math.round(horizontal * SCROLL_DELTA),
-                        (int) Math.round(vertical * SCROLL_DELTA),
-                        GrapheneInputModifiers.fromGlfw(modifiers)));
+        input.mouseScrolled(
+                mouseX, mouseY, surfaceX, surfaceY, renderedWidth, renderedHeight, horizontal, vertical, modifiers);
     }
 
     public void key(int keyCode, int scanCode, boolean pressed, int modifiers) {
-        Set<BrowserModifier> browserModifiers = GrapheneInputModifiers.fromGlfw(modifiers);
-        inputState.updateModifiers(browserModifiers);
-        if (clipboardWorkaround != null && clipboardWorkaround.handleKey(keyCode, pressed, modifiers)) {
-            return;
-        }
-        if (keyCode == GLFW.GLFW_KEY_RIGHT_ALT) {
-            inputState.setRightAltPressed(pressed);
-        }
-        surface.browser()
-                .sendKeyInput(GrapheneKeyboardMapper.map(keyCode, scanCode, pressed, modifiers, browserModifiers));
-        if (pressed) {
-            String syntheticText = syntheticText(keyCode, modifiers);
-            if (syntheticText != null) {
-                surface.browser()
-                        .sendTextInput(
-                                inputState.syntheticText(syntheticText, browserModifiers, System.currentTimeMillis()));
-            }
-        }
+        input.key(keyCode, scanCode, pressed, modifiers);
     }
 
     public void text(String text, int modifiers) {
-        BrowserTextInput input =
-                inputState.committedText(text, GrapheneInputModifiers.fromGlfw(modifiers), System.currentTimeMillis());
-        if (input != null) {
-            surface.browser().sendTextInput(input);
-        }
+        input.text(text, modifiers);
     }
 
     public void text(String text) {
-        BrowserTextInput input =
-                inputState.committedText(text, inputState.currentModifiers(), System.currentTimeMillis());
-        if (input != null) {
-            surface.browser().sendTextInput(input);
-        }
+        input.text(text);
     }
 
-    /** Releases adapter-specific bridge subscriptions without closing the surface. */
     @Override
     public void close() {
-        if (clipboardWorkaround != null) {
-            clipboardWorkaround.close();
-        }
-    }
-
-    private static String syntheticText(int keyCode, int modifiers) {
-        if (keyCode == GLFW.GLFW_KEY_BACKSPACE) {
-            return "\b";
-        }
-        if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
-            return "\r";
-        }
-        if (keyCode >= GLFW.GLFW_KEY_KP_0
-                && keyCode <= GLFW.GLFW_KEY_KP_9
-                && (modifiers & GLFW.GLFW_MOD_NUM_LOCK) != 0) {
-            return Character.toString('0' + keyCode - GLFW.GLFW_KEY_KP_0);
-        }
-        return switch (keyCode) {
-            case GLFW.GLFW_KEY_KP_DECIMAL -> (modifiers & GLFW.GLFW_MOD_NUM_LOCK) != 0 ? "." : null;
-            case GLFW.GLFW_KEY_KP_DIVIDE -> "/";
-            case GLFW.GLFW_KEY_KP_MULTIPLY -> "*";
-            case GLFW.GLFW_KEY_KP_SUBTRACT -> "-";
-            case GLFW.GLFW_KEY_KP_ADD -> "+";
-            case GLFW.GLFW_KEY_KP_EQUAL -> "=";
-            default -> null;
-        };
-    }
-
-    private void sendPointer(
-            BrowserPointerAction action,
-            BrowserPointerButton button,
-            double mouseX,
-            double mouseY,
-            int surfaceX,
-            int surfaceY,
-            int renderedWidth,
-            int renderedHeight,
-            int clickCount,
-            int modifiers) {
-        BrowserSession browser = surface.browser();
-        browser.sendPointerInput(new BrowserPointerInput(
-                action,
-                surface.toBrowserX(mouseX - surfaceX, renderedWidth),
-                surface.toBrowserY(mouseY - surfaceY, renderedHeight),
-                button,
-                clickCount,
-                GrapheneInputModifiers.fromGlfw(modifiers)));
-    }
-
-    private boolean handleHistoryNavigation(int button, boolean pressed) {
-        return switch (button) {
-            case GLFW.GLFW_MOUSE_BUTTON_4 -> {
-                if (pressed) {
-                    surface.browser().goBack();
-                }
-                yield true;
-            }
-            case GLFW.GLFW_MOUSE_BUTTON_5 -> {
-                if (pressed) {
-                    surface.browser().goForward();
-                }
-                yield true;
-            }
-            default -> false;
-        };
-    }
-
-    private void sendExtraMouseButton(
-            double mouseX,
-            double mouseY,
-            int surfaceX,
-            int surfaceY,
-            int renderedWidth,
-            int renderedHeight,
-            int button,
-            boolean pressed) {
-        if (button < GLFW.GLFW_MOUSE_BUTTON_6 || button > GLFW.GLFW_MOUSE_BUTTON_8) {
-            return;
-        }
-        GrapheneBridgeInternals.emitJson(
-                surface.browser().bridge(),
-                EXTRA_MOUSE_BUTTON_CHANNEL,
-                new ExtraMouseButtonInput(
-                        button,
-                        pressed,
-                        surface.toBrowserX(mouseX - surfaceX, renderedWidth),
-                        surface.toBrowserY(mouseY - surfaceY, renderedHeight)));
-    }
-
-    private static BrowserPointerButton pointerButton(int button) {
-        return switch (button) {
-            case GLFW.GLFW_MOUSE_BUTTON_LEFT -> BrowserPointerButton.LEFT;
-            case GLFW.GLFW_MOUSE_BUTTON_MIDDLE -> BrowserPointerButton.MIDDLE;
-            case GLFW.GLFW_MOUSE_BUTTON_RIGHT -> BrowserPointerButton.RIGHT;
-            default -> BrowserPointerButton.NONE;
-        };
+        input.close();
     }
 
     static GrapheneClipboardContent resolveClipboardContent(GrapheneClipboardContent richContent, String nativeText) {
-        return Objects.requireNonNull(richContent, "richContent").reconcileNativeText(nativeText);
+        return BrowserViewInputAdapter.resolveClipboardContent(richContent, nativeText);
     }
 
     static boolean isPasteShortcut(int keyCode, int modifiers) {
-        return keyCode == GLFW.GLFW_KEY_V && hasPlainShortcutModifier(modifiers);
+        return BrowserViewInputAdapter.isPasteShortcut(keyCode, modifiers);
     }
 
     static boolean isClipboardWriteShortcut(int keyCode, int modifiers) {
-        return (keyCode == GLFW.GLFW_KEY_C || keyCode == GLFW.GLFW_KEY_X) && hasPlainShortcutModifier(modifiers);
+        return BrowserViewInputAdapter.isClipboardWriteShortcut(keyCode, modifiers);
     }
-
-    private static boolean hasPlainShortcutModifier(int modifiers) {
-        int shortcutModifier =
-                BrowserKeyPlatform.current() == BrowserKeyPlatform.MACOS ? GLFW.GLFW_MOD_SUPER : GLFW.GLFW_MOD_CONTROL;
-        int disallowedModifiers = GLFW.GLFW_MOD_SHIFT | GLFW.GLFW_MOD_ALT;
-        return (modifiers & shortcutModifier) != 0 && (modifiers & disallowedModifiers) == 0;
-    }
-
-    private static final class ClipboardWorkaround implements AutoCloseable {
-        private final BrowserSession browser;
-        private final GrapheneClipboard clipboard = new GrapheneClipboard();
-        private final GrapheneSubscription writeSubscription;
-        private boolean pasteShortcutPressed;
-
-        private ClipboardWorkaround(BrowserSession browser) {
-            this.browser = browser;
-            writeSubscription = GrapheneBridgeInternals.onEventJson(
-                    browser.bridge(),
-                    CLIPBOARD_WRITE_CHANNEL,
-                    ClipboardPayload.class,
-                    (channel, payload) -> writeClipboard(payload));
-        }
-
-        @Override
-        public void close() {
-            writeSubscription.unsubscribe();
-        }
-
-        private boolean handleKey(int keyCode, boolean pressed, int modifiers) {
-            if (pressed && isPasteShortcut(keyCode, modifiers)) {
-                pasteShortcutPressed = true;
-                pasteClipboard();
-                return true;
-            }
-            if (pressed && isClipboardWriteShortcut(keyCode, modifiers)) {
-                GrapheneBridgeInternals.authorizeClipboardWrite(browser.bridge());
-            }
-            if (!pressed && keyCode == GLFW.GLFW_KEY_V && pasteShortcutPressed) {
-                pasteShortcutPressed = false;
-                return true;
-            }
-            return false;
-        }
-
-        private void pasteClipboard() {
-            GrapheneClipboardContent richContent = clipboard.read();
-            String nativeText = MinecraftReferences.keyboardHandler().getClipboard();
-            GrapheneClipboardContent content = resolveClipboardContent(richContent, nativeText);
-            byte[] png = content.png();
-            ClipboardPayload payload = new ClipboardPayload(
-                    content.text(),
-                    content.html(),
-                    png.length == 0 ? null : Base64.getEncoder().encodeToString(png));
-            GrapheneBridgeInternals.pasteClipboard(browser.bridge(), payload);
-        }
-
-        private void writeClipboard(ClipboardPayload payload) {
-            if (payload == null) {
-                return;
-            }
-            byte[] png = decodePng(payload.png());
-            GrapheneClipboardContent content = new GrapheneClipboardContent(payload.text(), payload.html(), png);
-            if (clipboard.isAvailable()) {
-                clipboard.write(content);
-            } else if (content.text() != null && !content.text().isEmpty()) {
-                MinecraftReferences.keyboardHandler().setClipboard(content.text());
-            }
-        }
-
-        private static byte[] decodePng(String png) {
-            if (png == null || png.isEmpty()) {
-                return new byte[0];
-            }
-            try {
-                return Base64.getDecoder().decode(png);
-            } catch (IllegalArgumentException ignored) {
-                return new byte[0];
-            }
-        }
-    }
-
-    private record ExtraMouseButtonInput(int button, boolean pressed, int x, int y) {}
-
-    private record ClipboardPayload(String text, String html, String png) {}
 }

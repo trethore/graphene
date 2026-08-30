@@ -7,6 +7,7 @@ import com.sun.net.httpserver.HttpServer;
 import io.github.trethore.graphene.api.config.GrapheneHttpConfig;
 import io.github.trethore.graphene.api.runtime.GrapheneHttpServer;
 import io.github.trethore.graphene.api.url.AssetId;
+import io.github.trethore.graphene.internal.resource.GrapheneByteRange;
 import io.github.trethore.graphene.internal.resource.GrapheneMimeTypes;
 import io.github.trethore.graphene.internal.url.GrapheneHttpUrls;
 import java.io.IOException;
@@ -20,6 +21,7 @@ import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -30,7 +32,10 @@ public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, Auto
     private static final String ASSETS_PREFIX = "assets" + PATH_DELIMITER;
     private static final String MODS_PREFIX = "mods" + PATH_DELIMITER;
     private static final String ALLOW_METHODS = "GET, HEAD, POST";
+    private static final String HEADER_ACCEPT_RANGES = "Accept-Ranges";
     private static final String HEADER_CONTENT_TYPE = "Content-Type";
+    private static final String HEADER_CONTENT_RANGE = "Content-Range";
+    private static final String HEADER_RANGE = "Range";
     private static final String HEADER_ALLOW = "Allow";
     private static final String CONTENT_TYPE_TEXT_PLAIN = "text/plain";
     private static final String HTTP_SCHEME = "http";
@@ -254,11 +259,17 @@ public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, Auto
         private final int statusCode;
         private final String contentType;
         private final byte[] payload;
+        private final Map<String, String> headers;
 
         private ResourceResponse(int statusCode, String contentType, byte[] payload) {
+            this(statusCode, contentType, payload, Map.of());
+        }
+
+        private ResourceResponse(int statusCode, String contentType, byte[] payload, Map<String, String> headers) {
             this.statusCode = statusCode;
             this.contentType = contentType;
             this.payload = payload == null ? EMPTY_BYTES : payload;
+            this.headers = Map.copyOf(headers);
         }
 
         private int statusCode() {
@@ -271,6 +282,31 @@ public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, Auto
 
         private byte[] payload() {
             return payload;
+        }
+
+        private Map<String, String> headers() {
+            return headers;
+        }
+
+        private ResourceResponse applyByteRange(String rangeHeader) {
+            if (statusCode != 200) {
+                return this;
+            }
+
+            LinkedHashMap<String, String> rangedHeaders = new LinkedHashMap<>(headers);
+            rangedHeaders.put(HEADER_ACCEPT_RANGES, "bytes");
+            GrapheneByteRange.Resolution range = GrapheneByteRange.resolve(rangeHeader, payload.length);
+            if (range.status() == GrapheneByteRange.Status.FULL) {
+                return new ResourceResponse(statusCode, contentType, payload, rangedHeaders);
+            }
+
+            rangedHeaders.put(HEADER_CONTENT_RANGE, range.contentRange());
+            if (range.status() == GrapheneByteRange.Status.UNSATISFIABLE) {
+                return new ResourceResponse(416, contentType, EMPTY_BYTES, rangedHeaders);
+            }
+
+            byte[] partialPayload = Arrays.copyOfRange(payload, range.startInclusive(), range.endExclusive());
+            return new ResourceResponse(206, contentType, partialPayload, rangedHeaders);
         }
     }
 
@@ -312,14 +348,26 @@ public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, Auto
         }
 
         private static void send(
-                HttpExchange exchange, int statusCode, String contentType, byte[] payload, boolean headRequest)
+                HttpExchange exchange,
+                int statusCode,
+                String contentType,
+                byte[] payload,
+                Map<String, String> headers,
+                boolean headRequest)
                 throws IOException {
             Headers responseHeaders = exchange.getResponseHeaders();
+            headers.forEach(responseHeaders::set);
             responseHeaders.set(HEADER_CONTENT_TYPE, contentType == null ? CONTENT_TYPE_TEXT_PLAIN : contentType);
 
             byte[] responsePayload = payload == null ? EMPTY_BYTES : payload;
             if (headRequest) {
                 responseHeaders.set("Content-Length", Integer.toString(responsePayload.length));
+                exchange.sendResponseHeaders(statusCode, -1);
+                return;
+            }
+
+            if (responsePayload.length == 0) {
+                responseHeaders.set("Content-Length", "0");
                 exchange.sendResponseHeaders(statusCode, -1);
                 return;
             }
@@ -346,7 +394,7 @@ public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, Auto
                     responseHeaders.set(HEADER_ALLOW, ALLOW_METHODS);
                     responseHeaders.set(HEADER_CONTENT_TYPE, CONTENT_TYPE_TEXT_PLAIN);
                     byte[] payload = "Method Not Allowed".getBytes(StandardCharsets.UTF_8);
-                    send(exchange, 405, CONTENT_TYPE_TEXT_PLAIN, payload, false);
+                    send(exchange, 405, CONTENT_TYPE_TEXT_PLAIN, payload, Map.of(), false);
                     return;
                 }
 
@@ -358,12 +406,23 @@ public final class GrapheneHttpServerRuntime implements GrapheneHttpServer, Auto
                             400,
                             CONTENT_TYPE_TEXT_PLAIN,
                             "Invalid path".getBytes(StandardCharsets.UTF_8),
+                            Map.of(),
                             isHeadRequest);
                     return;
                 }
 
                 ResourceResponse response = loadResourceResponse(requestPath, true);
-                send(exchange, response.statusCode(), response.contentType(), response.payload(), isHeadRequest);
+                if (isGetRequest || isHeadRequest) {
+                    response =
+                            response.applyByteRange(exchange.getRequestHeaders().getFirst(HEADER_RANGE));
+                }
+                send(
+                        exchange,
+                        response.statusCode(),
+                        response.contentType(),
+                        response.payload(),
+                        response.headers(),
+                        isHeadRequest);
             }
         }
 

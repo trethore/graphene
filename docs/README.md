@@ -8,7 +8,7 @@ communication.
 
 ## Supported versions
 
-Graphene supports Minecraft 26.2 and 1.21.11 on Fabric.
+Graphene supports Minecraft 26.2, 26.1.2, and 1.21.11 on Fabric.
 
 Check [compatibility and installation](reference/compatibility-and-installation.md) for the exact versions and
 dependency coordinates.
@@ -25,6 +25,7 @@ dependency coordinates.
 - [Manage assets and frontend development](how-to/manage-assets-and-frontend-development.md)
 - [Control and observe the browser](how-to/control-and-observe-the-browser.md)
 - [Render a custom browser surface](how-to/render-a-custom-browser-surface.md)
+- [Render a browser in the world](how-to/render-a-browser-in-the-world.md)
 - [Configure browser policies](how-to/configure-browser-policies.md)
 - [Use Chromium DevTools](how-to/use-devtools.md)
 - [Manage browser lifecycle](how-to/manage-browser-lifecycle.md)
@@ -33,7 +34,7 @@ dependency coordinates.
 ## Understand Graphene
 
 - [Architecture and runtime](explanation/architecture-and-runtime.md)
-- [Browser sessions, surfaces, and widgets](explanation/browser-layers.md)
+- [Browser sessions, views, surfaces, and widgets](explanation/browser-layers.md)
 - [Assets, origins, and bridge security](explanation/assets-origins-and-bridge-security.md)
 
 ## Look up an API
@@ -46,6 +47,7 @@ dependency coordinates.
 ## Distribution
 
 - [Maven Central for Minecraft 26.2](https://central.sonatype.com/artifact/io.github.trethore/graphene-ui-26.2)
+- [Maven Central for Minecraft 26.1.2](https://central.sonatype.com/artifact/io.github.trethore/graphene-ui-26.1.2)
 - [Maven Central for Minecraft 1.21.11](https://central.sonatype.com/artifact/io.github.trethore/graphene-ui-1.21.11)
 - [Modrinth](https://modrinth.com/mod/grapheneui)
 - [GitHub Releases](https://github.com/trethore/graphene/releases)

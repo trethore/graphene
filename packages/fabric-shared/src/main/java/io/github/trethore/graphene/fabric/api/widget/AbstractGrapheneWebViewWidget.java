@@ -4,8 +4,10 @@ import com.mojang.blaze3d.platform.cursor.CursorType;
 import com.mojang.blaze3d.platform.cursor.CursorTypes;
 import io.github.trethore.graphene.api.GrapheneContext;
 import io.github.trethore.graphene.api.bridge.GrapheneBridge;
+import io.github.trethore.graphene.fabric.api.surface.BrowserGuiSurface;
+import io.github.trethore.graphene.fabric.api.surface.BrowserGuiSurfaceInputAdapter;
 import io.github.trethore.graphene.fabric.api.surface.BrowserSurface;
-import io.github.trethore.graphene.fabric.api.surface.BrowserSurfaceInputAdapter;
+import io.github.trethore.graphene.fabric.api.surface.BrowserView;
 import io.github.trethore.graphene.fabric.internal.screen.GrapheneScreenBridgeSupport;
 import io.github.trethore.graphene.internal.input.GrapheneClickCounter;
 import io.github.trethore.graphene.minecraft.internal.util.MinecraftReferences;
@@ -20,10 +22,13 @@ import net.minecraft.util.Util;
 import org.jspecify.annotations.NonNull;
 import org.lwjgl.glfw.GLFW;
 
+@SuppressWarnings("resource")
 abstract class AbstractGrapheneWebViewWidget extends AbstractWidget implements AutoCloseable {
     private final Screen screen;
-    private final BrowserSurface surface;
-    private final BrowserSurfaceInputAdapter inputAdapter;
+    private final BrowserView view;
+    private final BrowserGuiSurface surface;
+    private final BrowserGuiSurfaceInputAdapter inputAdapter;
+    private final AutoCloseable owner;
     private final GrapheneClickCounter clickCounter = new GrapheneClickCounter();
     private boolean closed;
 
@@ -36,6 +41,11 @@ abstract class AbstractGrapheneWebViewWidget extends AbstractWidget implements A
             int height,
             Component message,
             String url) {
+        this(screen, x, y, width, height, message, createSurface(context, url, width, height));
+    }
+
+    protected AbstractGrapheneWebViewWidget(
+            Screen screen, int x, int y, int width, int height, Component message, BrowserView view) {
         this(
                 screen,
                 x,
@@ -43,21 +53,43 @@ abstract class AbstractGrapheneWebViewWidget extends AbstractWidget implements A
                 width,
                 height,
                 message,
-                BrowserSurface.builder(context).url(url).size(width, height).build());
+                new SurfaceOwner(
+                        BrowserGuiSurface.builder(view).size(width, height).build(), view));
     }
 
     protected AbstractGrapheneWebViewWidget(
+            Screen screen, int x, int y, int width, int height, Component message, BrowserGuiSurface surface) {
+        this(screen, x, y, width, height, message, new SurfaceOwner(surface, surface.view()));
+    }
+
+    /**
+     * @deprecated Use the {@link BrowserView} or {@link BrowserGuiSurface} constructor.
+     */
+    @Deprecated(since = "2.3.0")
+    protected AbstractGrapheneWebViewWidget(
             Screen screen, int x, int y, int width, int height, Component message, BrowserSurface surface) {
+        this(screen, x, y, width, height, message, new SurfaceOwner(surface.guiSurface(), surface));
+    }
+
+    private AbstractGrapheneWebViewWidget(
+            Screen screen, int x, int y, int width, int height, Component message, SurfaceOwner surfaceOwner) {
         super(x, y, width, height, message);
         this.screen = Objects.requireNonNull(screen, "screen");
-        this.surface = Objects.requireNonNull(surface, "surface");
-        inputAdapter = new BrowserSurfaceInputAdapter(surface);
+        SurfaceOwner validatedOwner = Objects.requireNonNull(surfaceOwner, "surfaceOwner");
+        surface = validatedOwner.surface();
+        view = surface.view();
+        owner = validatedOwner.owner();
+        inputAdapter = new BrowserGuiSurfaceInputAdapter(surface);
         GLFW.glfwSetInputMode(MinecraftReferences.windowHandle(), GLFW.GLFW_LOCK_KEY_MODS, GLFW.GLFW_TRUE);
         requireScreenBridge(screen).graphene$addWebViewWidget((GrapheneWebViewWidget) this);
         surface.resize(width, height);
     }
 
-    public BrowserSurface surface() {
+    public BrowserView view() {
+        return view;
+    }
+
+    public BrowserGuiSurface surface() {
         return surface;
     }
 
@@ -186,10 +218,10 @@ abstract class AbstractGrapheneWebViewWidget extends AbstractWidget implements A
         closed = true;
         requireScreenBridge(screen).graphene$removeWebViewWidget((GrapheneWebViewWidget) this);
         inputAdapter.close();
-        surface.close();
+        closeOwner();
     }
 
-    protected final BrowserSurfaceInputAdapter inputAdapter() {
+    protected final BrowserGuiSurfaceInputAdapter inputAdapter() {
         return inputAdapter;
     }
 
@@ -216,5 +248,28 @@ abstract class AbstractGrapheneWebViewWidget extends AbstractWidget implements A
         }
         throw new IllegalStateException("Screen does not implement GrapheneScreenBridgeSupport: "
                 + screen.getClass().getName());
+    }
+
+    private static SurfaceOwner createSurface(GrapheneContext context, String url, int width, int height) {
+        BrowserView view = BrowserView.builder(context).url(url).build();
+        return new SurfaceOwner(
+                BrowserGuiSurface.builder(view).size(width, height).build(), view);
+    }
+
+    private void closeOwner() {
+        try {
+            owner.close();
+        } catch (RuntimeException exception) {
+            throw exception;
+        } catch (Exception exception) {
+            throw new IllegalStateException("Failed to close browser view", exception);
+        }
+    }
+
+    private record SurfaceOwner(BrowserGuiSurface surface, AutoCloseable owner) {
+        private SurfaceOwner {
+            Objects.requireNonNull(surface, "surface");
+            Objects.requireNonNull(owner, "owner");
+        }
     }
 }

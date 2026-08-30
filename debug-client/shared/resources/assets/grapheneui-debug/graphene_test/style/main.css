@@ -195,7 +195,7 @@ th, td {
 	padding: 6px 8px;
 	text-align: left;
 	vertical-align: top;
-	word-break: break-word;
+	overflow-wrap: anywhere;
 }
 
 th {
@@ -235,6 +235,32 @@ tbody tr:nth-child(even) {
 	background: #4caf50;
 	height: 64px;
 	width: 64px;
+}
+
+.video-grid {
+	display: grid;
+	gap: 20px;
+	grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+	margin-top: 20px;
+}
+
+.video-panel {
+	background: #f5f5f5;
+	padding: 16px;
+}
+
+.video-panel h2 {
+	margin-top: 0;
+}
+
+.video-panel video {
+	background: #000;
+	display: block;
+	width: 100%;
+}
+
+.video-status {
+	min-height: 1.5em;
 }
 
 @keyframes move {

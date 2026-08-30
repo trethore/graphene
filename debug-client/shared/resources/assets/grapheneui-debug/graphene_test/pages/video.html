@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta content="width=device-width, initial-scale=1" name="viewport">
+<title>Graphene Video Playback Test</title>
+<link href="../style/main.css" rel="stylesheet">
+</head>
+<body>
+	<h1>Video Playback Test</h1>
+	<p>
+		<a href="tests.html">Back to tests page</a>
+	</p>
+
+	<p>This page checks MIME handling, single byte-range responses, and
+		CEF codec support. Both videos contain the same four-second moving
+		test pattern and have no audio.</p>
+
+	<div class="actions">
+		<button id="play-all" type="button">Play both</button>
+		<button id="pause-all" type="button">Pause both</button>
+		<button id="run-range-tests" type="button">Run range tests</button>
+	</div>
+
+	<div class="video-grid">
+		<section class="video-panel">
+			<h2>WebM: VP9</h2>
+			<video controls id="webm-video" muted playsinline preload="metadata"
+				src="../media/video-test-vp9.webm">
+				<track default kind="captions" label="English"
+					src="../media/video-test-captions.vtt" srclang="en" />
+				<track kind="descriptions" label="English descriptions"
+					src="../media/video-test-descriptions.vtt" srclang="en" />
+			</video>
+			<p class="video-status" id="webm-status">Waiting for media
+				events.</p>
+		</section>
+
+		<section class="video-panel">
+			<h2>MP4: H.264</h2>
+			<video controls id="mp4-video" muted playsinline preload="metadata"
+				src="../media/video-test-h264.mp4">
+				<track default kind="captions" label="English"
+					src="../media/video-test-captions.vtt" srclang="en" />
+				<track kind="descriptions" label="English descriptions"
+					src="../media/video-test-descriptions.vtt" srclang="en" />
+			</video>
+			<p class="video-status" id="mp4-status">Waiting for media events.</p>
+		</section>
+	</div>
+
+	<h2>CEF format support</h2>
+	<table>
+		<thead>
+			<tr>
+				<th>Format</th>
+				<th><code>canPlayType</code></th>
+			</tr>
+		</thead>
+		<tbody id="codec-results"></tbody>
+	</table>
+
+	<h2>HTTP range diagnostics</h2>
+	<pre id="range-results">Range tests have not run.</pre>
+
+	<h2>Media event log</h2>
+	<pre id="video-log">Waiting for media events.</pre>
+
+	<script src="../scripts/video.js" type="module"></script>
+</body>
+</html>

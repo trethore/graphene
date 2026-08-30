@@ -3,7 +3,8 @@ package io.github.trethore.graphene.debug;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.github.trethore.graphene.api.browser.BrowserSession;
-import io.github.trethore.graphene.fabric.api.surface.BrowserSurface;
+import io.github.trethore.graphene.fabric.api.surface.BrowserGuiSurface;
+import io.github.trethore.graphene.fabric.api.surface.BrowserView;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -43,22 +44,24 @@ final class GrapheneDebugTestRunner {
         results.add(test(
                 "runtime",
                 () -> require(GrapheneDebugClient.context().runtime().isInitialized(), "Runtime is not initialized")));
-        results.add(test("browser-surface", () -> {
-            try (BrowserSurface surface = BrowserSurface.builder(GrapheneDebugClient.context())
+        results.add(test("browser-view", () -> {
+            try (BrowserView view = BrowserView.builder(GrapheneDebugClient.context())
                     .url("about:blank")
-                    .size(16, 16)
+                    .resolution(16, 16)
                     .build()) {
+                BrowserGuiSurface surface =
+                        BrowserGuiSurface.builder(view).size(16, 16).build();
                 surface.resize(24, 24);
                 surface.setResolution(32, 32);
                 surface.useAutoResolution();
             }
         }));
         results.add(test("browser-navigation", () -> {
-            try (BrowserSurface surface = BrowserSurface.builder(GrapheneDebugClient.context())
+            try (BrowserView view = BrowserView.builder(GrapheneDebugClient.context())
                     .url("about:blank")
-                    .size(16, 16)
+                    .resolution(16, 16)
                     .build()) {
-                BrowserSession browser = surface.browser();
+                BrowserSession browser = view.browser();
                 require(!browser.isClosed(), "Browser closed immediately");
                 browser.reload();
             }

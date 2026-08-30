@@ -10,6 +10,7 @@ import io.github.trethore.graphene.api.url.GrapheneAssetUrls;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
+import java.net.http.HttpHeaders;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
@@ -54,6 +55,21 @@ final class GrapheneHttpServerRuntimeTest {
 
     private static TestHttpResponse sendHead(String url) throws IOException {
         return sendRequest("HEAD", url);
+    }
+
+    private static TestBinaryHttpResponse sendRangeRequest(String method, String url, String range) throws IOException {
+        HttpRequest request = HttpRequest.newBuilder(URI.create(url))
+                .method(method, HttpRequest.BodyPublishers.noBody())
+                .header("Range", range)
+                .timeout(REQUEST_TIMEOUT)
+                .build();
+        try {
+            HttpResponse<byte[]> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofByteArray());
+            return new TestBinaryHttpResponse(response.statusCode(), response.body(), response.headers());
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted while performing HTTP request", exception);
+        }
     }
 
     private static boolean tryCreateSymbolicLink(Path linkPath, Path targetPath) {
@@ -131,6 +147,100 @@ final class GrapheneHttpServerRuntimeTest {
 
             assertEquals(200, response.statusCode());
             assertEquals(scriptBody, response.body());
+        }
+    }
+
+    @Test
+    void servesSingleByteRangesForMountedResources() throws IOException {
+        Path videoPath = tempDir.resolve("video/sample.webm");
+        Files.createDirectories(videoPath.getParent());
+        Files.writeString(videoPath, "0123456789", StandardCharsets.UTF_8);
+
+        GrapheneHttpConfig config = GrapheneHttpConfig.builder()
+                .randomPortInRange(30_000, 60_000)
+                .fileRoot(tempDir)
+                .build();
+
+        try (GrapheneHttpServerRuntime server = GrapheneHttpServerRuntime.start(Map.of("my-mod-id", config))) {
+            String url = server.baseUrl() + "/mods/my-mod-id/video/sample.webm";
+            TestBinaryHttpResponse bounded = sendRangeRequest("GET", url, "bytes=2-5");
+            TestBinaryHttpResponse openEnded = sendRangeRequest("GET", url, "bytes=6-");
+            TestBinaryHttpResponse suffix = sendRangeRequest("GET", url, "bytes=-3");
+
+            assertEquals(206, bounded.statusCode());
+            assertEquals("2345", bounded.bodyText());
+            assertEquals("bytes", bounded.header("Accept-Ranges"));
+            assertEquals("bytes 2-5/10", bounded.header("Content-Range"));
+            assertEquals("4", bounded.header("Content-Length"));
+            assertEquals("video/webm", bounded.header("Content-Type"));
+            assertEquals("6789", openEnded.bodyText());
+            assertEquals("789", suffix.bodyText());
+        }
+    }
+
+    @Test
+    void servesRangeHeadersForHeadRequests() throws IOException {
+        Path videoPath = tempDir.resolve("video/sample.mp4");
+        Files.createDirectories(videoPath.getParent());
+        Files.writeString(videoPath, "0123456789", StandardCharsets.UTF_8);
+
+        GrapheneHttpConfig config = GrapheneHttpConfig.builder()
+                .randomPortInRange(30_000, 60_000)
+                .fileRoot(tempDir)
+                .build();
+
+        try (GrapheneHttpServerRuntime server = GrapheneHttpServerRuntime.start(Map.of("my-mod-id", config))) {
+            String url = server.baseUrl() + "/mods/my-mod-id/video/sample.mp4";
+            TestBinaryHttpResponse response = sendRangeRequest("HEAD", url, "bytes=1-4");
+
+            assertEquals(206, response.statusCode());
+            assertEquals(0, response.body().length);
+            assertEquals("bytes 1-4/10", response.header("Content-Range"));
+            assertEquals("4", response.header("Content-Length"));
+            assertEquals("video/mp4", response.header("Content-Type"));
+        }
+    }
+
+    @Test
+    void rejectsUnsatisfiableByteRanges() throws IOException {
+        Path resourcePath = tempDir.resolve("video/sample.webm");
+        Files.createDirectories(resourcePath.getParent());
+        Files.writeString(resourcePath, "0123456789", StandardCharsets.UTF_8);
+
+        GrapheneHttpConfig config = GrapheneHttpConfig.builder()
+                .randomPortInRange(30_000, 60_000)
+                .fileRoot(tempDir)
+                .build();
+
+        try (GrapheneHttpServerRuntime server = GrapheneHttpServerRuntime.start(Map.of("my-mod-id", config))) {
+            String url = server.baseUrl() + "/mods/my-mod-id/video/sample.webm";
+            TestBinaryHttpResponse response = sendRangeRequest("GET", url, "bytes=20-30");
+
+            assertEquals(416, response.statusCode());
+            assertEquals(0, response.body().length);
+            assertEquals("bytes */10", response.header("Content-Range"));
+            assertEquals("0", response.header("Content-Length"));
+        }
+    }
+
+    @Test
+    void ignoresMultipleByteRanges() throws IOException {
+        Path resourcePath = tempDir.resolve("video/sample.webm");
+        Files.createDirectories(resourcePath.getParent());
+        Files.writeString(resourcePath, "0123456789", StandardCharsets.UTF_8);
+
+        GrapheneHttpConfig config = GrapheneHttpConfig.builder()
+                .randomPortInRange(30_000, 60_000)
+                .fileRoot(tempDir)
+                .build();
+
+        try (GrapheneHttpServerRuntime server = GrapheneHttpServerRuntime.start(Map.of("my-mod-id", config))) {
+            String url = server.baseUrl() + "/mods/my-mod-id/video/sample.webm";
+            TestBinaryHttpResponse response = sendRangeRequest("GET", url, "bytes=0-1,4-5");
+
+            assertEquals(200, response.statusCode());
+            assertEquals("0123456789", response.bodyText());
+            assertEquals("bytes", response.header("Accept-Ranges"));
         }
     }
 
@@ -340,4 +450,14 @@ final class GrapheneHttpServerRuntimeTest {
     }
 
     private record TestHttpResponse(int statusCode, String body) {}
+
+    private record TestBinaryHttpResponse(int statusCode, byte[] body, HttpHeaders headers) {
+        private String bodyText() {
+            return new String(body, StandardCharsets.UTF_8);
+        }
+
+        private String header(String name) {
+            return headers.firstValue(name).orElse("");
+        }
+    }
 }

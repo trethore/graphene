@@ -35,6 +35,7 @@ class DebugClientConventionsPlugin : Plugin<Project> {
         sourceSets.create("grapheneRuntime") {
           resources {
             srcDir(grapheneProject.layout.projectDirectory.dir("src/main/resources"))
+            srcDir(project.rootProject.file("packages/fabric-shared/src/main/resources"))
             include("fabric.mod.json")
           }
         }

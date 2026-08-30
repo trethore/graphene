@@ -93,6 +93,10 @@ jobs:
             artifact_directory: packages/fabric-26.2/build/github-release
             loader: fabric
             minecraft_version: 26.2
+          - project: ':packages:fabric-26.1.2'
+            artifact_directory: packages/fabric-26.1.2/build/github-release
+            loader: fabric
+            minecraft_version: 26.1.2
           - project: ':packages:fabric-1.21.11'
             artifact_directory: packages/fabric-1.21.11/build/github-release
             loader: fabric
@@ -172,6 +176,7 @@ jobs:
         run: |
           ./gradlew \
             :packages:fabric-26.2:publishMavenJavaPublicationToMavenCentralBundleRepository \
+            :packages:fabric-26.1.2:publishMavenJavaPublicationToMavenCentralBundleRepository \
             :packages:fabric-1.21.11:publishMavenJavaPublicationToMavenCentralBundleRepository \
             -Pmod_version="$RELEASE_VERSION"
 
@@ -181,6 +186,7 @@ jobs:
         run: >-
           scripts/release/create-central-bundle.sh "$RELEASE_VERSION"
           graphene-ui-26.2
+          graphene-ui-26.1.2
           graphene-ui-1.21.11
 
       - name: upload bundle to maven central
@@ -242,6 +248,7 @@ jobs:
         run: |
           ./gradlew \
             :packages:fabric-26.2:publishMavenJavaPublicationToGitHubPackagesRepository \
+            :packages:fabric-26.1.2:publishMavenJavaPublicationToGitHubPackagesRepository \
             :packages:fabric-1.21.11:publishMavenJavaPublicationToGitHubPackagesRepository \
             -Pmod_version="$RELEASE_VERSION"
 
