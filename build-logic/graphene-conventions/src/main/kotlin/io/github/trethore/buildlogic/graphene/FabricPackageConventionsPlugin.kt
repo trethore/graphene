@@ -2,6 +2,8 @@ package io.github.trethore.buildlogic.graphene
 
 import io.github.trethore.buildlogic.architecture.ArchitectureChecksExtension
 import java.util.zip.ZipFile
+import javax.xml.XMLConstants
+import javax.xml.parsers.DocumentBuilderFactory
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.BasePluginExtension
@@ -21,16 +23,16 @@ import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.withType
 import org.gradle.language.jvm.tasks.ProcessResources
 import org.gradle.language.base.plugins.LifecycleBasePlugin
-import org.gradle.plugins.signing.SigningExtension
+import org.w3c.dom.Element
 
 private const val JAVA_SOURCE_PATTERN = "**/*.java"
+private const val COMMON_ARTIFACT_ID = "graphene-ui-common"
 
 @Suppress("unused")
 class FabricPackageConventionsPlugin : Plugin<Project> {
   override fun apply(project: Project) {
     project.pluginManager.apply("io.github.trethore.architecture-check")
-    project.pluginManager.apply("maven-publish")
-    project.pluginManager.apply("signing")
+    project.pluginManager.apply("io.github.trethore.maven-publishing")
 
     val target = project.grapheneTargetExtension()
     configureSharedSources(project)
@@ -58,10 +60,17 @@ class FabricPackageConventionsPlugin : Plugin<Project> {
   }
 
   private fun configureDependencies(project: Project) {
-    val commonDependency = project.dependencies.project(project.commonProject().path)
-    project.dependencies.add("compileOnly", commonDependency)
-    project.dependencies.add("testImplementation", commonDependency)
-    project.dependencies.add("include", commonDependency)
+    val embeddedCommon =
+        project.configurations.create("embeddedCommon") {
+          isCanBeConsumed = false
+          isCanBeResolved = false
+        }
+    project.configurations.named("api").configure { extendsFrom(embeddedCommon) }
+    project.configurations.named("include").configure { extendsFrom(embeddedCommon) }
+    project.dependencies.add(
+        embeddedCommon.name,
+        project.dependencies.project(project.commonProject().path),
+    )
     project.addRelocatedJcefDependency("include")
   }
 
@@ -165,82 +174,12 @@ class FabricPackageConventionsPlugin : Plugin<Project> {
   private fun configurePublishing(project: Project) {
     val publishing = project.extensions.getByType<PublishingExtension>()
     val minecraftVersion = project.minecraftVersion()
-    val publication =
-        publishing.publications.register("mavenJava", MavenPublication::class.java) {
-          artifactId = "graphene-ui-$minecraftVersion"
-          from(project.components.getByName("java"))
-          pom {
-            name.set("Graphene UI")
-            description.set("Client-side Chromium-based UI library for Minecraft Fabric mods.")
-            url.set("https://github.com/trethore/graphene")
-            licenses {
-              license {
-                name.set("MIT License")
-                url.set("https://github.com/trethore/graphene/blob/main/LICENSE")
-              }
-            }
-            developers {
-              developer {
-                id.set("trethore")
-                name.set("Titouan Rethore")
-                email.set("titou.rethore@gmail.com")
-              }
-            }
-            scm {
-              connection.set("scm:git:git://github.com/trethore/graphene.git")
-              developerConnection.set("scm:git:ssh://git@github.com/trethore/graphene.git")
-              url.set("https://github.com/trethore/graphene")
-            }
-          }
-        }
-
-    publishing.repositories {
-      maven {
-        name = "MavenCentralBundle"
-        url = project.rootProject.layout.buildDirectory
-            .dir("central-portal/staging")
-            .get()
-            .asFile
-            .toURI()
-      }
-      maven {
-        name = "GitHubPackages"
-        url = project.uri("https://maven.pkg.github.com/trethore/graphene")
-        credentials {
-          username = project.providers.environmentVariable("GITHUB_ACTOR").orNull
-          password = project.providers.environmentVariable("GITHUB_TOKEN").orNull
-        }
-      }
+    publishing.publications.register("mavenJava", MavenPublication::class.java) {
+      artifactId = "graphene-ui-$minecraftVersion"
+      from(project.components.getByName("java"))
     }
 
     project.tasks.withType<GenerateModuleMetadata>().configureEach { enabled = false }
-
-    val signingKey = project.providers.environmentVariable("MAVEN_GPG_PRIVATE_KEY")
-    val signingPassphrase = project.providers.environmentVariable("MAVEN_GPG_PASSPHRASE")
-    val centralPublishRequested =
-        project.gradle.startParameter.taskNames.any {
-          it.contains("MavenCentralBundle", ignoreCase = true)
-        }
-
-    if (centralPublishRequested) {
-      check(!project.version.toString().endsWith("-SNAPSHOT")) {
-        "Maven Central publishing requires a non-SNAPSHOT release version"
-      }
-      check(signingKey.isPresent) {
-        "Maven Central publishing requires MAVEN_GPG_PRIVATE_KEY"
-      }
-      check(signingPassphrase.isPresent) {
-        "Maven Central publishing requires MAVEN_GPG_PASSPHRASE"
-      }
-    }
-
-    project.extensions.configure<SigningExtension> {
-      setRequired { centralPublishRequested }
-      if (signingKey.isPresent && signingPassphrase.isPresent) {
-        useInMemoryPgpKeys(signingKey.get(), signingPassphrase.get())
-        sign(publication.get())
-      }
-    }
   }
 
   private fun configurePublicationVerification(project: Project) {
@@ -251,6 +190,9 @@ class FabricPackageConventionsPlugin : Plugin<Project> {
     val runtimeArchive = project.tasks.named<AbstractArchiveTask>(runtimeArchiveTaskName)
     val runtimeArchiveFile = runtimeArchive.flatMap { it.archiveFile }
     val embeddedCommonPath = "META-INF/jars/common-${project.version}.jar"
+    val commonProject = project.commonProject()
+    val commonGroup = commonProject.group.toString()
+    val commonVersion = commonProject.version.toString()
     val verifyMavenPublication =
         project.tasks.register("verifyMavenPublication") {
           group = LifecycleBasePlugin.VERIFICATION_GROUP
@@ -260,10 +202,11 @@ class FabricPackageConventionsPlugin : Plugin<Project> {
           inputs.file(runtimeArchiveFile)
 
           doLast {
-            val pomContents = generatedPom.get().asFile.readText()
-            check("<artifactId>common</artifactId>" !in pomContents) {
-              "The Maven POM must not declare the embedded common project as a dependency"
-            }
+            verifyCommonPomDependency(
+                generatedPom.get().asFile,
+                commonGroup,
+                commonVersion,
+            )
 
             ZipFile(runtimeArchiveFile.get().asFile).use { runtimeJar ->
               check(runtimeJar.getEntry(embeddedCommonPath) != null) {
@@ -274,5 +217,46 @@ class FabricPackageConventionsPlugin : Plugin<Project> {
         }
 
     project.tasks.named("check").configure { dependsOn(verifyMavenPublication) }
+  }
+
+  private fun verifyCommonPomDependency(
+      pomFile: java.io.File,
+      expectedGroup: String,
+      expectedVersion: String,
+  ) {
+    val documentBuilderFactory = DocumentBuilderFactory.newInstance()
+    documentBuilderFactory.isNamespaceAware = true
+    documentBuilderFactory.setFeature(
+        "http://apache.org/xml/features/disallow-doctype-decl",
+        true,
+    )
+    documentBuilderFactory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "")
+    documentBuilderFactory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "")
+
+    val document = documentBuilderFactory.newDocumentBuilder().parse(pomFile)
+    val dependencies = document.getElementsByTagNameNS("*", "dependency")
+    val hasCommonDependency =
+        (0 until dependencies.length).any { index ->
+          val dependency = dependencies.item(index) as Element
+          dependency.childText("groupId") == expectedGroup &&
+              dependency.childText("artifactId") == COMMON_ARTIFACT_ID &&
+              dependency.childText("version") == expectedVersion &&
+              dependency.childText("scope") == "compile"
+        }
+
+    check(hasCommonDependency) {
+      "The Maven POM must declare $expectedGroup:$COMMON_ARTIFACT_ID:$expectedVersion " +
+          "with compile scope for the consumer development classpath"
+    }
+  }
+
+  private fun Element.childText(name: String): String? {
+    for (index in 0 until childNodes.length) {
+      val child = childNodes.item(index)
+      if (child is Element && child.localName == name) {
+        return child.textContent.trim()
+      }
+    }
+    return null
   }
 }

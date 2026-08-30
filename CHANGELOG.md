@@ -9,7 +9,8 @@
 
 ### Fixed
 
-- Fixed Maven publications declaring the embedded `common` module as an external dependency.
+- Published the shared module as `graphene-ui-common` for development environments while retaining its embedding in
+  runtime JARs.
 
 ## [2.3.0] - 2026-08-30
 

@@ -175,6 +175,7 @@ jobs:
           RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           ./gradlew \
+            :packages:common:publishMavenJavaPublicationToMavenCentralBundleRepository \
             :packages:fabric-26.2:publishMavenJavaPublicationToMavenCentralBundleRepository \
             :packages:fabric-26.1.2:publishMavenJavaPublicationToMavenCentralBundleRepository \
             :packages:fabric-1.21.11:publishMavenJavaPublicationToMavenCentralBundleRepository \
@@ -185,6 +186,7 @@ jobs:
           RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
         run: >-
           scripts/release/create-central-bundle.sh "$RELEASE_VERSION"
+          graphene-ui-common
           graphene-ui-26.2
           graphene-ui-26.1.2
           graphene-ui-1.21.11
@@ -247,6 +249,7 @@ jobs:
           RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           ./gradlew \
+            :packages:common:publishMavenJavaPublicationToGitHubPackagesRepository \
             :packages:fabric-26.2:publishMavenJavaPublicationToGitHubPackagesRepository \
             :packages:fabric-26.1.2:publishMavenJavaPublicationToGitHubPackagesRepository \
             :packages:fabric-1.21.11:publishMavenJavaPublicationToGitHubPackagesRepository \

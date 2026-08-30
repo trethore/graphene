@@ -20,6 +20,11 @@ gradlePlugin {
       id = "io.github.trethore.fabric-package"
       implementationClass = "io.github.trethore.buildlogic.graphene.FabricPackageConventionsPlugin"
     }
+    register("mavenPublishingConventions") {
+      id = "io.github.trethore.maven-publishing"
+      implementationClass =
+          "io.github.trethore.buildlogic.graphene.MavenPublishingConventionsPlugin"
+    }
     register("debugClientConventions") {
       id = "io.github.trethore.debug-client"
       implementationClass = "io.github.trethore.buildlogic.graphene.DebugClientConventionsPlugin"

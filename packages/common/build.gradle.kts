@@ -1,7 +1,7 @@
 plugins {
   `java-library`
-  `maven-publish`
   id("io.github.trethore.architecture-check")
+  id("io.github.trethore.maven-publishing")
 }
 
 val javaVersion = JavaLanguageVersion.of(21)
@@ -69,6 +69,7 @@ architectureChecks {
 }
 
 java {
+  withJavadocJar()
   withSourcesJar()
   toolchain.languageVersion.set(javaVersion)
 }
@@ -76,6 +77,7 @@ java {
 publishing {
   publications {
     register<MavenPublication>("mavenJava") {
+      artifactId = "graphene-ui-common"
       from(components["java"])
     }
   }
