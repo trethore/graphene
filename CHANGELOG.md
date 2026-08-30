@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Removed
+
+- Removed the deprecated `BrowserSurface` and `BrowserSurfaceInputAdapter` compatibility APIs and the corresponding
+  `GrapheneWebViewWidget` constructors.
+
 ## [2.3.0] - 2026-08-30
 
 ### Added
