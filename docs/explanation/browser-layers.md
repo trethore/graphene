@@ -91,8 +91,6 @@ view resolution chosen for their expected physical size and viewing distance.
 - GUI and world surfaces borrow their view and have no close operation.
 - Close an input adapter -> only adapter-specific subscriptions close.
 
-`BrowserSurface` and `BrowserSurfaceInputAdapter` remain as deprecated compatibility facades.
-
 ## Related documentation
 
 - [Build your first web screen](../tutorials/first-web-screen.md)

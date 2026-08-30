@@ -63,8 +63,6 @@ Consumer app and HTTP URL factories are obtained from `GrapheneContext`.
 | [`BrowserTexture`](../../packages/fabric-shared/src/main/java/io/github/trethore/graphene/fabric/api/surface/BrowserTexture.java)                                                                                                                                                                                                                                                                                   | Experimental borrowed access to the current GPU texture. |
 | [`GrapheneScreens`](../../packages/fabric-shared/src/main/java/io/github/trethore/graphene/fabric/api/screen/GrapheneScreens.java)                                                                                                                                                                                                                                                                                  | Read or change automatic web-view closure for a screen.     |
 
-`BrowserSurface` and `BrowserSurfaceInputAdapter` are deprecated compatibility facades.
-
 ## Policy entry points
 
 | Type                                                                                                                                               | Use                                                                       |

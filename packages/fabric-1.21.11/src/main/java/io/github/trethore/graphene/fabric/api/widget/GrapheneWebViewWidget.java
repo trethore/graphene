@@ -2,7 +2,6 @@ package io.github.trethore.graphene.fabric.api.widget;
 
 import io.github.trethore.graphene.api.GrapheneContext;
 import io.github.trethore.graphene.fabric.api.surface.BrowserGuiSurface;
-import io.github.trethore.graphene.fabric.api.surface.BrowserSurface;
 import io.github.trethore.graphene.fabric.api.surface.BrowserView;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
@@ -38,17 +37,6 @@ public class GrapheneWebViewWidget extends AbstractGrapheneWebViewWidget {
      */
     public GrapheneWebViewWidget(
             Screen screen, int x, int y, int width, int height, Component message, BrowserGuiSurface surface) {
-        super(screen, x, y, width, height, message, surface);
-    }
-
-    /**
-     * Creates a widget that takes ownership of {@code surface} and closes it when the widget closes.
-     *
-     * @deprecated Use the {@link BrowserView} or {@link BrowserGuiSurface} constructor.
-     */
-    @Deprecated(since = "2.3.0")
-    public GrapheneWebViewWidget(
-            Screen screen, int x, int y, int width, int height, Component message, BrowserSurface surface) {
         super(screen, x, y, width, height, message, surface);
     }
 

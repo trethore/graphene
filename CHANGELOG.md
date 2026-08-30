@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### Removed
+
+- Removed the deprecated `BrowserSurface` and `BrowserSurfaceInputAdapter` compatibility APIs and the corresponding
+  `GrapheneWebViewWidget` constructors.
+
+### Fixed
+
+- Fixed Maven publications declaring the embedded `common` module as an external dependency.
+
 ## [2.3.0] - 2026-08-30
 
 ### Added

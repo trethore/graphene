@@ -6,7 +6,6 @@ import io.github.trethore.graphene.api.GrapheneContext;
 import io.github.trethore.graphene.api.bridge.GrapheneBridge;
 import io.github.trethore.graphene.fabric.api.surface.BrowserGuiSurface;
 import io.github.trethore.graphene.fabric.api.surface.BrowserGuiSurfaceInputAdapter;
-import io.github.trethore.graphene.fabric.api.surface.BrowserSurface;
 import io.github.trethore.graphene.fabric.api.surface.BrowserView;
 import io.github.trethore.graphene.fabric.internal.screen.GrapheneScreenBridgeSupport;
 import io.github.trethore.graphene.internal.input.GrapheneClickCounter;
@@ -60,15 +59,6 @@ abstract class AbstractGrapheneWebViewWidget extends AbstractWidget implements A
     protected AbstractGrapheneWebViewWidget(
             Screen screen, int x, int y, int width, int height, Component message, BrowserGuiSurface surface) {
         this(screen, x, y, width, height, message, new SurfaceOwner(surface, surface.view()));
-    }
-
-    /**
-     * @deprecated Use the {@link BrowserView} or {@link BrowserGuiSurface} constructor.
-     */
-    @Deprecated(since = "2.3.0")
-    protected AbstractGrapheneWebViewWidget(
-            Screen screen, int x, int y, int width, int height, Component message, BrowserSurface surface) {
-        this(screen, x, y, width, height, message, new SurfaceOwner(surface.guiSurface(), surface));
     }
 
     private AbstractGrapheneWebViewWidget(
