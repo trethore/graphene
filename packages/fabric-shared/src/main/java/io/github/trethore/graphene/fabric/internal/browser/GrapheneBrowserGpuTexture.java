@@ -3,7 +3,6 @@ package io.github.trethore.graphene.fabric.internal.browser;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuTexture;
 import com.mojang.blaze3d.textures.GpuTextureView;
-import com.mojang.blaze3d.textures.TextureFormat;
 
 final class GrapheneBrowserGpuTexture implements AutoCloseable {
     private GpuTexture texture;
@@ -15,15 +14,7 @@ final class GrapheneBrowserGpuTexture implements AutoCloseable {
             return;
         }
         close();
-        texture = RenderSystem.getDevice()
-                .createTexture(
-                        () -> "Graphene Browser",
-                        GpuTexture.USAGE_COPY_DST | GpuTexture.USAGE_TEXTURE_BINDING,
-                        TextureFormat.RGBA8,
-                        width,
-                        height,
-                        1,
-                        1);
+        texture = GrapheneBrowserGpuTextureFactory.create(width, height);
         view = RenderSystem.getDevice().createTextureView(texture);
     }
 

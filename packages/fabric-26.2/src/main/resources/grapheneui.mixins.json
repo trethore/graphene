@@ -6,6 +6,7 @@
     "GuiGraphicsExtractorMixin",
     "KeyboardHandlerMixin",
     "MouseHandlerMixin",
+    "ScreenLifecycleMixin",
     "ScreenMixin"
   ],
   "injectors": {

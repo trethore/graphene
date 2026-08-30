@@ -1,32 +1,30 @@
 package io.github.trethore.graphene.fabric.api.surface;
 
 import io.github.trethore.graphene.api.GrapheneContext;
+import io.github.trethore.graphene.api.browser.BrowserFrame;
 import io.github.trethore.graphene.api.browser.BrowserOptions;
 import io.github.trethore.graphene.api.browser.BrowserSession;
+import io.github.trethore.graphene.fabric.internal.browser.GrapheneBrowserGpuRenderer;
+import io.github.trethore.graphene.fabric.internal.render.GrapheneGuiGraphics;
 import io.github.trethore.graphene.internal.browser.GrapheneBrowserSurfaceState;
 import io.github.trethore.graphene.minecraft.internal.util.MinecraftReferences;
+import java.util.Objects;
+import java.util.Optional;
 
 abstract class AbstractBrowserSurface implements AutoCloseable {
     private final GrapheneBrowserSurfaceState state;
+    private final GrapheneBrowserGpuRenderer renderer = new GrapheneBrowserGpuRenderer();
 
-    protected AbstractBrowserSurface(
-            GrapheneContext context,
-            String url,
-            BrowserOptions options,
-            int width,
-            int height,
-            boolean autoResolution,
-            int resolutionWidth,
-            int resolutionHeight) {
+    protected AbstractBrowserSurface(Builder builder) {
         state = new GrapheneBrowserSurfaceState(
-                context,
-                url,
-                options,
-                width,
-                height,
-                autoResolution,
-                resolutionWidth,
-                resolutionHeight,
+                builder.context,
+                builder.url,
+                builder.options,
+                builder.width,
+                builder.height,
+                builder.autoResolution,
+                builder.resolutionWidth,
+                builder.resolutionHeight,
                 MinecraftReferences.guiScale());
     }
 
@@ -76,6 +74,10 @@ abstract class AbstractBrowserSurface implements AutoCloseable {
 
     @Override
     public void close() {
+        if (isClosed()) {
+            return;
+        }
+        renderer.close();
         state.close();
     }
 
@@ -87,10 +89,72 @@ abstract class AbstractBrowserSurface implements AutoCloseable {
         state.ensureOpen();
     }
 
+    protected final void render(GrapheneGuiGraphics graphics, int x, int y) {
+        render(graphics, x, y, width(), height());
+    }
+
+    @SuppressWarnings("resource")
+    protected final void render(GrapheneGuiGraphics graphics, int x, int y, int renderedWidth, int renderedHeight) {
+        ensureOpen();
+        GrapheneGuiGraphics validatedGraphics = Objects.requireNonNull(graphics, "graphics");
+        int validatedWidth = requirePositive(renderedWidth, "renderedWidth");
+        int validatedHeight = requirePositive(renderedHeight, "renderedHeight");
+        Optional<BrowserFrame> availableFrame = browser().latestFrame();
+        if (availableFrame.isEmpty()) {
+            return;
+        }
+        renderer.render(
+                validatedGraphics,
+                availableFrame.get(),
+                browser().options().transparent(),
+                x,
+                y,
+                validatedWidth,
+                validatedHeight);
+    }
+
     protected static int requirePositive(int value, String name) {
         if (value <= 0) {
             throw new IllegalArgumentException(name + " must be positive");
         }
         return value;
+    }
+
+    protected static class Builder {
+        private final GrapheneContext context;
+        private String url = "about:blank";
+        private BrowserOptions options = BrowserOptions.defaults();
+        private int width = 1;
+        private int height = 1;
+        private boolean autoResolution = true;
+        private int resolutionWidth = 1;
+        private int resolutionHeight = 1;
+
+        protected Builder(GrapheneContext context) {
+            this.context = Objects.requireNonNull(context, "context");
+        }
+
+        protected final void setUrl(String url) {
+            this.url = Objects.requireNonNull(url, "url");
+        }
+
+        protected final void setOptions(BrowserOptions options) {
+            this.options = Objects.requireNonNull(options, "options");
+        }
+
+        protected final void setSize(int width, int height) {
+            this.width = requirePositive(width, "width");
+            this.height = requirePositive(height, "height");
+        }
+
+        protected final void setResolution(int width, int height) {
+            autoResolution = false;
+            resolutionWidth = requirePositive(width, "resolutionWidth");
+            resolutionHeight = requirePositive(height, "resolutionHeight");
+        }
+
+        protected final void enableAutoResolution() {
+            autoResolution = true;
+        }
     }
 }

@@ -48,6 +48,7 @@ internal fun Project.configureFabricModExpansion(
           "minecraftVersion" to minecraftVersion(),
           "loaderVersion" to catalog.findVersion("fabric-loader").get().requiredVersion,
           "fabricApiVersion" to target.fabricApiVersion.get(),
+          "javaVersion" to target.javaVersion.get(),
       )
   task.inputs.properties(resourceProperties)
   task.filesMatching("fabric.mod.json") {

@@ -46,6 +46,7 @@ class FabricPackageConventionsPlugin : Plugin<Project> {
     sourceSets.named(SourceSet.MAIN_SOURCE_SET_NAME).configure {
       java.srcDir(project.rootProject.file("packages/minecraft-shared/src/main/java"))
       java.srcDir(project.rootProject.file("packages/fabric-shared/src/main/java"))
+      resources.srcDir(project.rootProject.file("packages/fabric-shared/src/main/resources"))
     }
     sourceSets.named(SourceSet.TEST_SOURCE_SET_NAME).configure {
       java.srcDir(project.rootProject.file("packages/minecraft-shared/src/test/java"))
