@@ -45,12 +45,12 @@ public final class FabricPlatformServices {
         return new GrapheneLifecycle() {
             @Override
             public void onStarted(Runnable action) {
-                ClientLifecycleEvents.CLIENT_STARTED.register(_ -> action.run());
+                ClientLifecycleEvents.CLIENT_STARTED.register(ignored -> action.run());
             }
 
             @Override
             public void onStopping(Runnable action) {
-                ClientLifecycleEvents.CLIENT_STOPPING.register(_ -> action.run());
+                ClientLifecycleEvents.CLIENT_STOPPING.register(ignored -> action.run());
             }
         };
     }
