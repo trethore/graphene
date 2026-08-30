@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-08-30
+
 ### Added
 
 - Added neutral `BrowserView` ownership for browser sessions, resolution, and shared GPU frame textures.
