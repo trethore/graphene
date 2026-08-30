@@ -12,7 +12,7 @@
 
 - Reworked Fabric version-specific packages to deduplicate shared code.
 
-## [2.1.0] - 2026-08-29
+## [2.2.0] - 2026-08-29
 
 ### Added
 
