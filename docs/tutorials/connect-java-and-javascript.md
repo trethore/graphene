@@ -41,41 +41,27 @@ After constructing `webView`, register the handlers:
 ```java
 GrapheneBridge bridge = webView.bridge();
 
-bridgeSubscriptions.
-
-add(
+bridgeSubscriptions.add(
         bridge.onRequestJson(
                 "example:greet",
-        GreetingRequest .class,
-        (channel, request) ->
-        CompletableFuture.
+                GreetingRequest.class,
+                (channel, request) ->
+                        CompletableFuture.completedFuture(
+                                new GreetingResponse("Hello, " + request.name() + "!"))));
 
-completedFuture(
-                new GreetingResponse("Hello, "+request.name() +"!"))));
-
-        bridgeSubscriptions.
-
-add(
+bridgeSubscriptions.add(
         bridge.onEvent(
                 "example:page-ready",
-        (channel, payloadJson) ->
-        bridge
-        .
-
-requestJson(
-                    "example:uppercase",
-                            new TextRequest("message from Java"),
-
-TextResponse .class)
-        .
-
-thenAccept(
-        response ->
-        bridge.
-
-emitJson(
-                            "example:status",
-                                    new StatusMessage("Java received: "+response.value())))));
+                (channel, payloadJson) ->
+                        bridge.requestJson(
+                                        "example:uppercase",
+                                        new TextRequest("message from Java"),
+                                        TextResponse.class)
+                                .thenAccept(response ->
+                                        bridge.emitJson(
+                                                "example:status",
+                                                new StatusMessage(
+                                                        "Java received: " + response.value())))));
 ```
 
 Required imports:

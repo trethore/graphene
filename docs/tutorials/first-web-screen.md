@@ -36,7 +36,8 @@ Declare Graphene as a dependency in `fabric.mod.json` so Fabric loads it before 
 }
 ```
 
-See [compatibility and installation](../reference/compatibility-and-installation.md) when updating versions.
+See [Install Graphene](../how-to/install-graphene.md) for installation details and the
+[compatibility reference](../reference/compatibility-and-installation.md) when updating versions.
 
 ## 2. Register your mod
 
@@ -133,6 +134,7 @@ Create a screen that keeps one `GrapheneWebViewWidget` and resizes it with the s
 package com.example.examplemod;
 
 import io.github.trethore.graphene.fabric.api.widget.GrapheneWebViewWidget;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 

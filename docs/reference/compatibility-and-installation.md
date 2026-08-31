@@ -1,6 +1,7 @@
-# Compatibility and Installation
+# Compatibility and Artifacts
 
-This page is the source of truth for supported Graphene artifacts.
+This page is the source of truth for supported Graphene targets, artifact coordinates, and runtime file locations. For
+installation steps, use [Install Graphene](../how-to/install-graphene.md).
 
 ## Compatibility
 
@@ -10,45 +11,22 @@ This page is the source of truth for supported Graphene artifacts.
 | 2.4.1    | Fabric | 26.1.2    | 25 or newer | 0.19.3 or newer | 0.155.2+26.1.2 or newer compatible release  |
 | 2.4.1    | Fabric | 1.21.11   | 21 or newer | 0.19.3 or newer | 0.141.6+1.21.11 or newer compatible release |
 
-Graphene's repository separates loader-independent code from loader- and Minecraft-specific modules. Future combinations
-can be added as rows without changing the rest of the documentation.
+Graphene's repository separates loader-independent code from loader- and Minecraft-specific modules.
 
-## Maven Central
+## Maven coordinates
 
-Maven Central is the canonical dependency source for mod development.
+| Minecraft | Maven coordinate                                      |
+|-----------|-------------------------------------------------------|
+| 26.2      | `io.github.trethore:graphene-ui-26.2:2.4.1`           |
+| 26.1.2    | `io.github.trethore:graphene-ui-26.1.2:2.4.1`         |
+| 1.21.11   | `io.github.trethore:graphene-ui-1.21.11:2.4.1`        |
 
-```kotlin
-repositories {
-    mavenCentral()
-}
+The Fabric mod ID is `grapheneui`.
 
-dependencies {
-    implementation("io.github.trethore:graphene-ui-26.2:2.4.1")
-    // Or for Minecraft 26.1.2:
-    // implementation("io.github.trethore:graphene-ui-26.1.2:2.4.1")
-    // Or for Minecraft 1.21.11:
-    // modImplementation("io.github.trethore:graphene-ui-1.21.11:2.4.1")
-}
-```
-
-Your Fabric project must also provide Fabric Loader and Fabric API versions compatible with the table above.
-
-Declare the runtime dependency in `fabric.mod.json`:
-
-```json
-{
-  "depends": {
-    "grapheneui": ">=2.4.1"
-  }
-}
-```
-
-## Modrinth
+## Packaged releases
 
 Packaged releases are available from [Graphene on Modrinth](https://modrinth.com/mod/grapheneui). Select the file
 matching the loader and Minecraft version in the compatibility table.
-
-## GitHub Releases
 
 [GitHub Releases](https://github.com/trethore/graphene/releases) publishes runtime JARs using this name:
 
@@ -64,19 +42,25 @@ graphene-2.4.1-fabric-26.1.2.jar
 graphene-2.4.1-fabric-1.21.11.jar
 ```
 
-Use Maven Central for compile-time dependency resolution. Modrinth and GitHub Releases are useful for launch profiles,
-modpack distribution, and manual testing.
+Maven Central is the dependency source for mod development. Modrinth and GitHub Releases provide runtime JARs for
+launch profiles, modpack distribution, and manual testing.
 
 ## Runtime installation
 
-The Graphene mod includes the JCEF integration needed to install and launch its platform-specific browser runtime. By
-default, native runtime files, browser cache, and logs are stored below:
+The Graphene mod includes the JCEF integration needed to install and launch its platform-specific browser runtime. The
+default base directory is:
 
 ```text
 ./graphene/browser-runtime/
 ```
 
-The first startup on a platform can take longer while the runtime is prepared.
+Graphene adds the JCEF version and platform identifier below this base directory:
+
+```text
+./graphene/browser-runtime/<jcef-version>/<platform>/
+```
+
+The browser cache is in `cache/` below that directory. The Chromium/JCEF log is `logs.txt` in the same directory.
 
 ## Links
 
@@ -85,4 +69,5 @@ The first startup on a platform can take longer while the runtime is prepared.
 - [Maven Central artifact for Minecraft 1.21.11](https://central.sonatype.com/artifact/io.github.trethore/graphene-ui-1.21.11)
 - [Modrinth project](https://modrinth.com/mod/grapheneui)
 - [GitHub Releases](https://github.com/trethore/graphene/releases)
+- [Installation guide](../how-to/install-graphene.md)
 - [First web-screen tutorial](../tutorials/first-web-screen.md)

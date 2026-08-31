@@ -29,7 +29,8 @@ Use `http(...)` to enable the mount and `disableHttp()` to remove it from a buil
 | `spaFallback` | None                                               | Asset returned when a requested consumer resource is missing.  |
 
 Port values must be between `1024` and `65535`. All HTTP-enabled consumers must agree on bind host and port selection.
-`fileRoot` and SPA fallback belong to each consumer mount.
+`fileRoot` and SPA fallback belong to each consumer mount. Shared host and port conflicts are detected when runtime
+initialization starts.
 
 ## `GrapheneGlobalConfig`
 
@@ -101,6 +102,6 @@ presenter interface.
 
 ## Related documentation
 
-- [Compatibility and installation](compatibility-and-installation.md)
+- [Compatibility and artifacts](compatibility-and-installation.md)
 - [Architecture and runtime](../explanation/architecture-and-runtime.md)
 - [Configure browser policies](../how-to/configure-browser-policies.md)

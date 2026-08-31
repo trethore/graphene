@@ -57,13 +57,16 @@ GrapheneConfig config =
 GrapheneContext context = Graphene.register(ExampleModClient.class, config);
 ```
 
-Create an HTTP URL for a packaged resource:
+After runtime initialization completes, create an HTTP URL for a packaged resource:
 
 ```java
 String url = context.httpUrl("ui/index.html");
 ```
 
-The shared server binds to loopback. Its final host and port are available after initialization:
+`context.httpUrl(...)` and `context.httpAssets().url(...)` require the shared HTTP server to be running. They throw
+`IllegalStateException` when HTTP is disabled or runtime initialization has not completed.
+
+The shared server binds to loopback. Its final host and port are also available after initialization:
 
 ```java
 GrapheneHttpServer server = context.runtime().httpServer();

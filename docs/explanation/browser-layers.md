@@ -55,8 +55,8 @@ The surface does not register itself in the world or manage block entities, enti
 
 ## `BrowserSession`
 
-The session is the loader-independent off-screen browser API. It provides navigation, state, script execution, normalized
-input, frame snapshots, downloads, and the Java/JavaScript bridge.
+The session is the loader-independent off-screen browser API. It provides navigation, state, script execution,
+browser-pixel input, frame snapshots, downloads, and the Java/JavaScript bridge.
 
 Use a session directly for a new loader integration, browser automation, or a renderer that does not use Graphene's GPU
 texture.

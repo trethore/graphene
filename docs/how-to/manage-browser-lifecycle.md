@@ -82,8 +82,9 @@ Close the highest-level object you own instead of closing every nested object in
 Minecraft can call `init()` again when a screen changes size. Keep the widget in a field, update its position and size,
 then add it back to the renderable-widget list. This preserves its browser session and avoids unnecessary recreation.
 
-`GrapheneWebViewWidget.setSize(...)` updates the surface resolution. Custom integrations can call `handleScreenResize()`
-to resynchronize resolution after a screen-size change.
+`GrapheneWebViewWidget.setSize(...)` updates the surface's logical size. It also updates browser resolution while the
+surface uses automatic resolution. Custom integrations can call `handleScreenResize()` to resynchronize automatic
+resolution after a screen-size change or GUI-scale update.
 
 ## Persistent bridge handlers
 

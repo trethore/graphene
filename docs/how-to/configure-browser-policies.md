@@ -156,14 +156,8 @@ HTTP asset mount and load the page through `context.httpUrl(...)`. Do not assume
 Graphene supports asynchronous custom presenters:
 
 ```java
-.fileDialogPresenter(request ->
-
-showFilePicker(request))
-        .
-
-jsDialogPresenter(request ->
-
-showBrowserDialog(request))
+.fileDialogPresenter(request -> showFilePicker(request))
+.jsDialogPresenter(request -> showBrowserDialog(request))
 ```
 
 A file presenter completes with selected paths or an empty list to cancel. It is called only when the process-wide

@@ -55,7 +55,8 @@ bridge.off("example:status", listener);
 
 ### `emit(channel, payload)`
 
-Sends a one-way JavaScript -> Java event and returns a promise for message delivery.
+Sends a one-way JavaScript -> Java event and returns a promise for transport acknowledgement. The promise does not
+indicate that a Java event listener was registered or completed.
 
 ```javascript
 await bridge.emit("example:changed", {value: 42});
